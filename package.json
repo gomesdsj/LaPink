@@ -1,0 +1,16 @@
+{
+  "name": "lapink",
+  "version": "1.0.0",
+  "description": "LaPink - Loja de Semijoias",
+  "main": "dev-server.js",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -15,7 +15,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .nav-links a{font-size:12px;color:#993556;text-decoration:none;cursor:pointer;}
 .nav-links a:hover{color:#72243E;}
 .nav-actions{display:flex;gap:12px;align-items:center;}
-.nav-icon{color:#993556;font-size:18px;cursor:pointer;}
+.nav-icon{color:#993556;font-size:18px;cursor:pointer;transition:transform .2s ease;}
+.nav-icon:hover{transform:scale(1.08);}
+.login-link{display:inline-flex;align-items:center;justify-content:center;}
+.nav-user{color:#4B1528;font-size:12px;font-weight:500;background:#F4C0D1;padding:6px 12px;border-radius:14px;display:inline-flex;align-items:center;gap:6px;}
+.logout-btn{background:none;border:none;cursor:pointer;}
+.btn-buy{margin-top:10px;width:100%;padding:10px 0;border-radius:14px;font-size:11px;font-weight:500;}
 .search-bar{flex:1;max-width:200px;margin:0 16px;background:#FBEAF0;border:0.5px solid #F4C0D1;border-radius:20px;display:flex;align-items:center;padding:0 10px;gap:6px;height:30px;}
 .search-bar input{border:none;background:transparent;font-size:11px;color:#72243E;outline:none;width:100%;}
 .search-bar input::placeholder{color:#ED93B1;}
@@ -89,7 +94,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="nav-actions">
       <i class="ti ti-heart nav-icon"></i>
-      <i class="ti ti-user nav-icon"></i>
+      <span class="nav-user" id="navUser"></span>
+      <a href="login.html" class="nav-icon login-link" aria-label="Entrar" id="loginLink">
+        <i class="ti ti-user"></i>
+      </a>
+      <button class="nav-icon logout-btn" id="logoutBtn" title="Sair" style="display:none; background:none; border:none; padding:0;">
+        <i class="ti ti-power"></i>
+      </button>
       <i class="ti ti-shopping-bag nav-icon"></i>
     </div>
   </div>
@@ -125,15 +136,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="prod-grid">
       <div class="prod-card">
         <div class="prod-img"><i class="ti ti-circle" style="font-size:30px;color:#ED93B1;"></i><span class="prod-badge">Novo</span><i class="ti ti-heart prod-fav"></i></div>
-        <div class="prod-info"><div class="prod-name">Anel solitário rose gold</div><div><span class="prod-price">R$ 89,90</span></div></div>
+        <div class="prod-info"><div class="prod-name">Anel solitário rose gold</div><div><span class="prod-price">R$ 89,90</span></div><button class="btn-secondary btn-buy" data-product="Anel solitário rose gold">Comprar</button></div>
       </div>
       <div class="prod-card">
         <div class="prod-img"><i class="ti ti-link" style="font-size:30px;color:#ED93B1;"></i><span class="prod-badge">-20%</span><i class="ti ti-heart prod-fav"></i></div>
-        <div class="prod-info"><div class="prod-name">Colar coração delicado</div><div><span class="prod-price">R$ 69,90</span><span class="prod-old">R$ 87,90</span></div></div>
+        <div class="prod-info"><div class="prod-name">Colar coração delicado</div><div><span class="prod-price">R$ 69,90</span><span class="prod-old">R$ 87,90</span></div><button class="btn-secondary btn-buy" data-product="Colar coração delicado">Comprar</button></div>
       </div>
       <div class="prod-card">
         <div class="prod-img"><i class="ti ti-briefcase" style="font-size:30px;color:#ED93B1;"></i><i class="ti ti-heart prod-fav"></i></div>
-        <div class="prod-info"><div class="prod-name">Bolsa mini clutch rose</div><div><span class="prod-price">R$ 149,90</span></div></div>
+        <div class="prod-info"><div class="prod-name">Bolsa mini clutch rose</div><div><span class="prod-price">R$ 149,90</span></div><button class="btn-secondary btn-buy" data-product="Bolsa mini clutch rose">Comprar</button></div>
       </div>
     </div>
   </div>
@@ -168,5 +179,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="footer-bottom"><span>© 2025 Bella Joias · Todos os direitos reservados · CNPJ 00.000.000/0001-00</span></div>
 </div>
+<script src="js/storage.js"></script>
+<script src="js/v1.js"></script>
 </body>
 </html>

@@ -100,6 +100,12 @@
 .pay-icons { display: flex; gap: 8px; }
 .pay-icon { background: var(--white); border: .5px solid var(--pink-100); border-radius: 6px; padding: 3px 8px; font-size: 9px; color: var(--pink-400); font-weight: 700; }
 
+/* ── Auth UI ── */
+.nav-user { color: var(--pink-600); font-size: 12px; font-weight: 700; background: var(--pink-100); padding: 6px 12px; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 6px; }
+.logout-btn { background: none; border: none; cursor: pointer; color: var(--pink-400); transition: color var(--transition); }
+.logout-btn:hover { color: var(--pink-600); }
+.login-link { text-decoration: none; }
+
 /* ── Login / Register modal ── */
 .profile-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
 .profile-btn { background: var(--pink-50); border: 1.5px solid var(--pink-200); border-radius: var(--radius-md); padding: 20px 12px; text-align: center; cursor: pointer; transition: all var(--transition); }

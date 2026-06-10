@@ -9,9 +9,19 @@
 <link rel="stylesheet" href="../css/PrincipalPublica.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 <style>
-  .auth-card { max-width: 420px; width:100%; margin:auto; padding:28px; }
-  .auth-card h2 { margin-bottom:16px; }
+  body{background:#FBEAF0;}
+  .auth-card { max-width: 420px; width:100%; margin:auto; padding:28px; background:#fff; border:0.5px solid #F4C0D1; box-shadow:0 18px 55px rgba(116,34,58,0.08); border-radius:18px; }
+  .login-brand { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; padding-bottom:12px; border-bottom:0.5px solid #F4C0D1; }
+  .login-brand i { color:#D4537E; font-size:28px; }
+  .login-brand span { color:#4B1528; font-size:20px; font-weight:700; letter-spacing:0.08em; }
+  .auth-card h2 { margin-bottom:12px; color:#4B1528; }
+  .auth-card p { color:#993556; margin-bottom:20px; }
+  .form-group label { color:#72243E; font-size:12px; margin-bottom:8px; display:block; }
+  .form-group input { width:100%; padding:12px 14px; border:1px solid #F4C0D1; border-radius:12px; outline:none; color:#4B1528; background:#FFF7FB; }
+  .form-group input:focus { border-color:#D4537E; }
+  .form-actions .btn-full { width:100%; background:#D4537E; border:none; color:#fff; padding:12px 16px; border-radius:14px; font-weight:600; }
   .form-message { margin-top:14px; font-weight:600; }
+  body .store-nav { background:transparent; border:none; padding:18px 20px; }
 </style>
 </head>
 <body>
@@ -25,6 +35,10 @@
 
   <section class="store-section" style="min-height:calc(100vh - 90px); display:flex; align-items:center; justify-content:center; padding:40px 20px;">
     <article class="card auth-card">
+      <div class="login-brand">
+        <i class="ti ti-diamond"></i>
+        <span>Bella Joias</span>
+      </div>
       <h2>Login</h2>
       <p>Entre com seu e-mail e senha para acessar.</p>
       <form id="loginForm">
@@ -45,34 +59,7 @@
     </article>
   </section>
 
-  <script>
-    const STORAGE_KEY = 'lapinkClients';
-    const loginForm = document.getElementById('loginForm');
-    const loginMessage = document.getElementById('loginMessage');
-
-    function getClients() {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    }
-
-    function setMessage(text, success = false) {
-      loginMessage.textContent = text;
-      loginMessage.style.color = success ? '#1e7e34' : '#c82333';
-    }
-
-    loginForm.addEventListener('submit', event => {
-      event.preventDefault();
-      const email = document.getElementById('login-email').value.trim().toLowerCase();
-      const password = document.getElementById('login-password').value;
-      const clients = getClients();
-      const client = clients.find(user => user.email === email && user.password === password);
-      if (!client) {
-        setMessage('E-mail ou senha incorretos.', false);
-        return;
-      }
-      localStorage.setItem('lapinkLoggedClient', JSON.stringify(client));
-      setMessage('Login realizado com sucesso! Redirecionando...', true);
-      setTimeout(() => location.href = 'index.html', 1200);
-    });
-  </script>
+  <script src="js/storage.js"></script>
+  <script src="js/login.js"></script>
 </body>
 </html>

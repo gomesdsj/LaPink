@@ -57,56 +57,7 @@
     </article>
   </section>
 
-  <script>
-    const STORAGE_KEY = 'lapinkClients';
-    const registerForm = document.getElementById('registerForm');
-    const registerMessage = document.getElementById('registerMessage');
-
-    function getClients() {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    }
-
-    function saveClients(clients) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
-    }
-
-    function setMessage(text, success = false) {
-      registerMessage.textContent = text;
-      registerMessage.style.color = success ? '#1e7e34' : '#c82333';
-    }
-
-    registerForm.addEventListener('submit', event => {
-      event.preventDefault();
-      const name = document.getElementById('register-name').value.trim();
-      const email = document.getElementById('register-email').value.trim().toLowerCase();
-      const whatsapp = document.getElementById('register-whatsapp').value.trim();
-      const password = document.getElementById('register-password').value;
-      const confirm = document.getElementById('register-password-confirm').value;
-      if (!name || !email || !whatsapp || !password || !confirm) {
-        setMessage('Preencha todos os campos.', false);
-        return;
-      }
-      if (password !== confirm) {
-        setMessage('As senhas não conferem.', false);
-        return;
-      }
-      const clients = getClients();
-      if (clients.some(client => client.email === email)) {
-        setMessage('Este e-mail já está cadastrado.', false);
-        return;
-      }
-      clients.push({
-        name,
-        email,
-        whatsapp,
-        password,
-        totalSpent: 0,
-        purchases: [],
-      });
-      saveClients(clients);
-      setMessage('Cadastro realizado com sucesso! Redirecionando para login...', true);
-      setTimeout(() => location.href = 'login.html', 1200);
-    });
-  </script>
+  <script src="js/storage.js"></script>
+  <script src="js/register.js"></script>
 </body>
 </html>

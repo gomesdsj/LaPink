@@ -27,11 +27,17 @@
     </nav>
     <div class="nav-actions" style="gap:8px;">
       <button class="nav-icon-btn" aria-label="Favoritos"><i class="ti ti-heart"></i></button>
-      <button class="nav-icon-btn" aria-label="Conta"><i class="ti ti-user"></i></button>
+      <a href="login.html" class="nav-icon-btn login-link" id="loginLink" aria-label="Entrar" style="display:inline-flex; align-items:center;">
+        <i class="ti ti-user"></i>
+      </a>
+      <span class="nav-user" id="navUser" style="display:none;"></span>
+      <button class="nav-icon-btn logout-btn" id="logoutBtn" aria-label="Sair" title="Sair" style="display:none; background:none; border:none;">
+        <i class="ti ti-power"></i>
+      </button>
       <button class="nav-icon-btn" aria-label="Carrinho"><i class="ti ti-shopping-bag"></i><span class="cart-badge">3</span></button>
-      <button class="btn btn-secondary" onclick="location.href='login.html'">Entrar</button>
-      <button class="btn btn-primary" onclick="location.href='register.html'">Cadastro</button>
-      <button class="nav-admin-btn" onclick="location.href='../admin/admin.html'">Painel</button>
+      <button class="btn btn-secondary" id="loginBtn" onclick="location.href='login.html'">Entrar</button>
+      <button class="btn btn-primary" id="registerBtn" onclick="location.href='register.html'">Cadastro</button>
+      <button class="nav-admin-btn" id="panelBtn" onclick="location.href='../admin/admin.html'">Painel</button>
     </div>
   </header>
 
@@ -139,5 +145,7 @@
     </div>
   </footer>
   <div class="footer-bottom"><span>© 2025 Bella Joias · Todos os direitos reservados</span></div>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
 </body>
 </html>
