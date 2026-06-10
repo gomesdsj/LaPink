@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Relatórios</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body>
+  <div id="app-admin">
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">Bella Joias</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link active" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Relatórios</h1>
+          <div class="topbar-right"><span>Olá, Carol</span><span class="admin-badge">Admin</span></div>
+        </header>
+
+        <section class="admin-page show">
+          <div class="page-header">
+            <div>
+              <h2>Lucros e desempenho</h2>
+              <p>Relatório completo dos produtos com foco no lucro e margens de venda.</p>
+            </div>
+            <button class="btn btn-primary">Exportar PDF</button>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card"><div class="s-label">Lucro total</div><div class="s-value">R$ 12.480</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +18%</div></div>
+            <div class="stat-card"><div class="s-label">Margem média</div><div class="s-value">42%</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +4%</div></div>
+            <div class="stat-card"><div class="s-label">Produtos mais lucrativos</div><div class="s-value">3</div><div class="s-delta neutral"><i class="ti ti-info-circle"></i> Estável</div></div>
+            <div class="stat-card"><div class="s-label">Vendas brutas</div><div class="s-value">R$ 29.800</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +11%</div></div>
+          </div>
+
+          <div class="chart-grid-2">
+            <div class="chart-box"><h3>Lucro por produto</h3><div class="map-placeholder"><i class="ti ti-chart-pie"></i><span>Gráfico de margens</span></div></div>
+            <div class="chart-box"><h3>Receita x custo</h3><div class="map-placeholder"><i class="ti ti-chart-line"></i><span>Comparativo de desempenho</span></div></div>
+          </div>
+
+          <div class="page-header" style="margin-top:24px;">
+            <div><h2>Produtos em destaque</h2><p>Foco nos itens que mais trazem lucro para a loja.</p></div>
+          </div>
+
+          <div class="chart-grid-3">
+            <div class="card">
+              <div class="section-header"><span class="section-title">Melhor lucro</span></div>
+              <div class="top-item"><span class="top-item-name">Anel solitário rosê</span><div class="top-bar-wrap"><div class="top-bar" style="width:92%"></div></div><span class="top-val">R$ 4.150</span></div>
+              <div class="top-item"><span class="top-item-name">Corrente de ouro</span><div class="top-bar-wrap"><div class="top-bar" style="width:78%"></div></div><span class="top-val">R$ 2.860</span></div>
+              <div class="top-item"><span class="top-item-name">Brincos de pérola</span><div class="top-bar-wrap"><div class="top-bar" style="width:68%"></div></div><span class="top-val">R$ 1.990</span></div>
+            </div>
+            <div class="card">
+              <div class="section-header"><span class="section-title">Maior margem</span></div>
+              <div class="top-item"><span class="top-item-name">Colar de coração</span><div class="top-bar-wrap"><div class="top-bar" style="width:84%"></div></div><span class="top-val">54%</span></div>
+              <div class="top-item"><span class="top-item-name">Anel solitário rosê</span><div class="top-bar-wrap"><div class="top-bar" style="width:72%"></div></div><span class="top-val">47%</span></div>
+              <div class="top-item"><span class="top-item-name">Bolsa mini clutch</span><div class="top-bar-wrap"><div class="top-bar" style="width:60%"></div></div><span class="top-val">32%</span></div>
+            </div>
+          </div>
+
+          <div class="page-header" style="margin-top:24px;">
+            <div><h2>Relatório de produtos</h2><p>Visão detalhada de custo, preço e lucro por item.</p></div>
+          </div>
+
+          <div class="table-box">
+            <table class="data-table">
+              <thead><tr><th>Produto</th><th>Custo</th><th>Preço</th><th>Lucro</th><th>Margem</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>Anel solitário rosê</td><td>R$ 44,90</td><td>R$ 89,90</td><td class="profit-cell">R$ 45,00</td><td>50%</td><td><span class="badge badge-green">Venda forte</span></td></tr>
+                <tr><td>Colar de coração</td><td>R$ 32,90</td><td>R$ 69,90</td><td class="profit-cell">R$ 37,00</td><td>53%</td><td><span class="badge badge-green">Alta margem</span></td></tr>
+                <tr><td>Bolsa mini clutch</td><td>R$ 99,90</td><td>R$ 149,90</td><td class="profit-cell">R$ 50,00</td><td>33%</td><td><span class="badge badge-amber">Estoque baixo</span></td></tr>
+                <tr><td>Brincos de pérola</td><td>R$ 34,90</td><td>R$ 74,90</td><td class="profit-cell">R$ 40,00</td><td>41%</td><td><span class="badge badge-green">Venda regular</span></td></tr>
+                <tr><td>Corrente de ouro</td><td>R$ 74,90</td><td>R$ 129,90</td><td class="profit-cell">R$ 55,00</td><td>42%</td><td><span class="badge badge-pink">Premium</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.getElementById('sidebarToggle');
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+    toggle.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+  </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Cadastro de Cliente</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .form-card { max-width: 540px; width: 100%; }
+  .forgot-password-section { display: none; margin-top: 24px; gap: 12px; }
+  .forgot-password-section.active { display: grid; }
+  .forgot-password-note { font-size: 0.95rem; color: #6b6b6b; }
+</style>
+</head>
+<body>
+  <div id="app-admin">
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">Bella Joias</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Cadastro de cliente</h1>
+          <div class="topbar-right"><span>Olá, Carol</span><span class="admin-badge">Admin</span></div>
+        </header>
+
+        <section class="admin-page show">
+          <div class="page-header">
+            <div>
+              <h2>Novo cliente</h2>
+              <p>Cadastre o cliente com e-mail, WhatsApp e senha. Redefina se esquecer a senha.</p>
+            </div>
+            <button class="btn btn-secondary" onclick="location.href='clientes.html'">Voltar</button>
+          </div>
+
+          <div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin-top:16px;">
+            <form id="clientForm" class="card form-card">
+              <div class="form-group">
+                <label for="cliente-nome">Nome completo</label>
+                <input id="cliente-nome" type="text" placeholder="Nome do cliente" />
+              </div>
+              <div class="form-group">
+                <label for="cliente-email">E-mail</label>
+                <input id="cliente-email" type="email" placeholder="email@dominio.com" />
+              </div>
+              <div class="form-group">
+                <label for="cliente-whatsapp">WhatsApp</label>
+                <input id="cliente-whatsapp" type="tel" placeholder="(11) 99999-9999" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="cliente-senha">Senha</label>
+                  <input id="cliente-senha" type="password" placeholder="Nova senha" />
+                </div>
+                <div class="form-group">
+                  <label for="cliente-senha-confirm">Confirmar senha</label>
+                  <input id="cliente-senha-confirm" type="password" placeholder="Repita a senha" />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn-cancel-form" onclick="location.href='clientes.html'">Cancelar</button>
+                <button type="submit" class="btn-save-form">Salvar cliente</button>
+              </div>
+              <div id="formMessage" style="margin-top:14px; font-weight:600;"></div>
+              <div style="margin-top:18px; display:flex; justify-content:center;">
+                <button type="button" class="btn btn-secondary" onclick="toggleForgotPassword()">Esqueci minha senha</button>
+              </div>
+              <div class="forgot-password-section" id="forgotPasswordSection">
+                <p class="forgot-password-note">Digite um novo acesso para o cliente caso ele tenha esquecido a senha.</p>
+                <div class="form-group">
+                  <label for="nova-senha">Nova senha</label>
+                  <input id="nova-senha" type="password" placeholder="Digite a nova senha" />
+                </div>
+                <div class="form-group">
+                  <label for="confirm-nova-senha">Confirmar nova senha</label>
+                  <input id="confirm-nova-senha" type="password" placeholder="Repita a nova senha" />
+                </div>
+                <div class="form-actions" style="justify-content:flex-end;">
+                  <button type="button" class="btn btn-primary">Redefinir senha</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.getElementById('sidebarToggle');
+    const forgotSection = document.getElementById('forgotPasswordSection');
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+    function toggleForgotPassword() {
+      forgotSection.classList.toggle('active');
+    }
+    toggle.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+    const STORAGE_KEY = 'lapinkClients';
+    const clientForm = document.getElementById('clientForm');
+    const formMessage = document.getElementById('formMessage');
+    const editEmail = new URLSearchParams(window.location.search).get('email');
+
+    function getClients() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    }
+
+    function saveClients(clients) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    }
+
+    function setMessage(message, type = 'success') {
+      formMessage.textContent = message;
+      formMessage.style.color = type === 'success' ? '#1e7e34' : '#c82333';
+    }
+
+    function loadClient(email) {
+      const clients = getClients();
+      return clients.find(client => client.email === email);
+    }
+
+    function populateForm(client) {
+      document.getElementById('cliente-nome').value = client.name;
+      document.getElementById('cliente-email').value = client.email;
+      document.getElementById('cliente-whatsapp').value = client.whatsapp;
+      document.getElementById('cliente-senha').value = client.password;
+      document.getElementById('cliente-senha-confirm').value = client.password;
+      document.querySelector('.page-header h2').textContent = 'Editar cliente';
+      document.querySelector('.page-header p').textContent = 'Atualize os dados do cliente cadastrado.';
+    }
+
+    function validateForm(name, email, whatsapp, password, confirm) {
+      if (!name || !email || !whatsapp || !password || !confirm) {
+        setMessage('Preencha todos os campos.', 'error');
+        return false;
+      }
+      if (password !== confirm) {
+        setMessage('As senhas não conferem.', 'error');
+        return false;
+      }
+      return true;
+    }
+
+    function handleFormSubmit(event) {
+      event.preventDefault();
+      const name = document.getElementById('cliente-nome').value.trim();
+      const email = document.getElementById('cliente-email').value.trim().toLowerCase();
+      const whatsapp = document.getElementById('cliente-whatsapp').value.trim();
+      const password = document.getElementById('cliente-senha').value;
+      const confirm = document.getElementById('cliente-senha-confirm').value;
+      if (!validateForm(name, email, whatsapp, password, confirm)) return;
+
+      const clients = getClients();
+      const existingEmail = clients.find(client => client.email === email);
+      const isEditing = !!editEmail;
+      const currentEmail = editEmail ? decodeURIComponent(editEmail) : null;
+
+      if (isEditing) {
+        const index = clients.findIndex(client => client.email === currentEmail);
+        if (index === -1) {
+          setMessage('Cliente não encontrado.', 'error');
+          return;
+        }
+        if (existingEmail && existingEmail.email !== currentEmail) {
+          setMessage('Este e-mail já está em uso.', 'error');
+          return;
+        }
+        clients[index] = {
+          ...clients[index],
+          name,
+          email,
+          whatsapp,
+          password,
+        };
+        saveClients(clients);
+        setMessage('Cliente atualizado com sucesso. Redirecionando...', 'success');
+      } else {
+        if (existingEmail) {
+          setMessage('Este e-mail já está cadastrado.', 'error');
+          return;
+        }
+        clients.push({
+          name,
+          email,
+          whatsapp,
+          password,
+          totalSpent: 0,
+          purchases: [],
+        });
+        saveClients(clients);
+        setMessage('Cliente cadastrado com sucesso. Redirecionando...', 'success');
+      }
+
+      setTimeout(() => location.href = 'clientes.html', 1200);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (editEmail) {
+        const client = loadClient(decodeURIComponent(editEmail));
+        if (client) populateForm(client);
+      }
+      clientForm.addEventListener('submit', handleFormSubmit);
+    });
+  </script>
+</body>
+</html>

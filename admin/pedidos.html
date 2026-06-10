@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Pedidos</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .order-card .order-items { display: none; margin-top: 12px; padding-left: 20px; line-height: 1.8; }
+  .order-card.open .order-items { display: block; }
+  .order-card-toggle { display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: flex-start; }
+</style>
+</head>
+<body>
+  <div id="app-admin">
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">Bella Joias</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link active" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Pedidos</h1>
+          <div class="topbar-right"><span>Olá, Carol</span><span class="admin-badge">Admin</span></div>
+        </header>
+
+        <section class="admin-page show">
+          <div class="page-header">
+            <div>
+              <h2>Pedidos recentes</h2>
+              <p>Veja os pedidos por cliente e visualize os produtos selecionados para cada um.</p>
+            </div>
+            <button class="btn btn-primary" onclick="location.href='cadastro-produto.html'">Novo produto</button>
+          </div>
+
+          <div class="order-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px; margin-top:24px;">
+            <article class="card order-card" style="padding:20px;">
+              <div class="section-header" style="margin-bottom:16px;">
+                <span class="section-title">Pedido #3412</span>
+                <span class="badge badge-green">Concluído</span>
+              </div>
+              <div style="margin-bottom:16px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div><strong>Cliente</strong><br/>Mariana S.</div>
+                <div><strong>Total</strong><br/>R$ 279,70</div>
+              </div>
+              <div style="border-top:1px solid #ececec; padding-top:14px;">
+                <button type="button" class="btn btn-secondary order-card-toggle" onclick="toggleOrder(this)">Visualizar produtos</button>
+                <ul class="order-items">
+                  <li>Anel solitário rosê × 1</li>
+                  <li>Colar de coração × 1</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="card order-card" style="padding:20px;">
+              <div class="section-header" style="margin-bottom:16px;">
+                <span class="section-title">Pedido #3413</span>
+                <span class="badge badge-pink">Aguardando</span>
+              </div>
+              <div style="margin-bottom:16px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div><strong>Cliente</strong><br/>Camila R.</div>
+                <div><strong>Total</strong><br/>R$ 149,90</div>
+              </div>
+              <div style="border-top:1px solid #ececec; padding-top:14px;">
+                <button type="button" class="btn btn-secondary order-card-toggle" onclick="toggleOrder(this)">Visualizar produtos</button>
+                <ul class="order-items">
+                  <li>Bolsa mini clutch × 1</li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="card order-card" style="padding:20px;">
+              <div class="section-header" style="margin-bottom:16px;">
+                <span class="section-title">Pedido #3414</span>
+                <span class="badge badge-amber">Em preparo</span>
+              </div>
+              <div style="margin-bottom:16px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div><strong>Cliente</strong><br/>Bruna F.</div>
+                <div><strong>Total</strong><br/>R$ 209,80</div>
+              </div>
+              <div style="border-top:1px solid #ececec; padding-top:14px;">
+                <button type="button" class="btn btn-secondary order-card-toggle" onclick="toggleOrder(this)">Visualizar produtos</button>
+                <ul class="order-items">
+                  <li>Anel solitário rosê × 1</li>
+                  <li>Brincos de pérola × 1</li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.getElementById('sidebarToggle');
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+    toggle.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+    function toggleOrder(button) {
+      const card = button.closest('.order-card');
+      card.classList.toggle('open');
+      button.textContent = card.classList.contains('open') ? 'Ocultar produtos' : 'Visualizar produtos';
+    }
+  </script>
+</body>
+</html>

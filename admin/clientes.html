@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Clientes</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .customer-card { padding: 22px; display: grid; gap: 14px; }
+  .customer-meta { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+  .customer-details { display: grid; gap: 8px; }
+  .customer-details span.password { color: #6b6b6b; }
+  .customer-purchases { border-top: 1px solid #ececec; padding-top: 14px; margin-top: 14px; }
+  .customer-purchase-item { display: flex; justify-content: space-between; gap: 12px; }
+  .customer-actions { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .reset-password-form { display:none; margin-top:14px; border-top:1px solid #ececec; padding-top:14px; }
+  .reset-password-form .form-group { display:grid; gap:6px; margin-bottom:12px; }
+  .reset-password-form input { width:100%; padding:10px 12px; border:1px solid #dcdcdc; border-radius:8px; }
+</style>
+</head>
+<body>
+  <div id="app-admin">
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">Bella Joias</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link active" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Clientes</h1>
+          <div class="topbar-right"><span>Olá, Carol</span><span class="admin-badge">Admin</span></div>
+        </header>
+
+        <section class="admin-page show">
+          <div class="page-header">
+            <div>
+              <h2>Clientes salvos</h2>
+              <p>Lista de clientes com compras anteriores, e-mail, WhatsApp e senha para acesso.</p>
+            </div>
+            <button class="btn btn-primary" onclick="location.href='cadastro-cliente.html'">Novo cliente</button>
+          </div>
+
+          <div class="search-bar-admin">
+            <input type="search" placeholder="Buscar cliente por nome, e-mail ou WhatsApp" />
+            <select>
+              <option>Todos os clientes</option>
+              <option>Mais recentes</option>
+              <option>Maior gasto</option>
+            </select>
+            <button class="btn btn-secondary">Filtrar</button>
+          </div>
+
+          <div id="clientGrid" class="order-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px; margin-top:24px;"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.getElementById('sidebarToggle');
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+    toggle.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+    const STORAGE_KEY = 'lapinkClients';
+    const clientGrid = document.getElementById('clientGrid');
+    const searchInput = document.querySelector('.search-bar-admin input');
+
+    function getClients() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    }
+
+    function saveClients(clients) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    }
+
+    function maskPassword(password) {
+      return password ? '•'.repeat(Math.max(8, password.length)) : 'Senha não definida';
+    }
+
+    function renderClients() {
+      const query = searchInput.value.trim().toLowerCase();
+      const clients = getClients().filter(client => {
+        return client.name.toLowerCase().includes(query) ||
+          client.email.toLowerCase().includes(query) ||
+          client.whatsapp.toLowerCase().includes(query);
+      });
+
+      if (clients.length === 0) {
+        clientGrid.innerHTML = '<div class="card" style="padding:20px;"><p>Nenhum cliente registrado ainda. Use o botão "Novo cliente" para cadastrar.</p></div>';
+        return;
+      }
+
+      clientGrid.innerHTML = clients.map((client, index) => {
+        const purchases = client.purchases && client.purchases.length > 0
+          ? client.purchases.map(p => `<div class="customer-purchase-item"><span>${p.order}</span><span>${p.items} itens</span></div>`).join('')
+          : '<div class="customer-purchase-item"><span>Nenhuma compra registrada</span><span>0 itens</span></div>';
+        return `
+          <article class="card customer-card" data-email="${client.email}">
+            <div class="customer-meta">
+              <div class="customer-details">
+                <strong>${client.name}</strong>
+                <span>${client.email}</span>
+                <span>WhatsApp: ${client.whatsapp}</span>
+                <span class="password">Senha: ${maskPassword(client.password)}</span>
+              </div>
+              <span class="badge badge-green">R$ ${client.totalSpent.toFixed(2)}</span>
+            </div>
+            <div>
+              <div><strong>Compras anteriores</strong></div>
+              <div class="customer-purchases">
+                ${purchases}
+              </div>
+            </div>
+            <div class="customer-actions">
+              <button type="button" class="btn btn-secondary" onclick="editClient('${encodeURIComponent(client.email)}')">Editar</button>
+              <button type="button" class="btn btn-danger" onclick="deleteClient('${encodeURIComponent(client.email)}')">Excluir</button>
+              <button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)">Redefinir senha</button>
+            </div>
+            <form class="reset-password-form" style="display:none;">
+              <div class="form-group">
+                <label>Nova senha</label>
+                <input name="resetPassword" type="password" placeholder="Digite a nova senha" />
+              </div>
+              <div class="form-group">
+                <label>Confirmar senha</label>
+                <input name="confirmResetPassword" type="password" placeholder="Repita a nova senha" />
+              </div>
+              <div class="customer-actions">
+                <button type="button" class="btn btn-primary" onclick="saveClientPassword(this)">Salvar senha</button>
+                <button type="button" class="btn btn-secondary" onclick="togglePasswordReset(this, true)">Cancelar</button>
+              </div>
+            </form>
+          </article>`;
+      }).join('');
+    }
+
+    function editClient(encodedEmail) {
+      const email = decodeURIComponent(encodedEmail);
+      location.href = `cadastro-cliente.html?email=${encodeURIComponent(email)}`;
+    }
+
+    function deleteClient(encodedEmail) {
+      const email = decodeURIComponent(encodedEmail);
+      if (!confirm(`Deseja excluir o cliente ${email}?`)) return;
+      const clients = getClients().filter(client => client.email !== email);
+      saveClients(clients);
+      renderClients();
+    }
+
+    function togglePasswordReset(button, close = false) {
+      const card = button.closest('.customer-card');
+      const form = card.querySelector('.reset-password-form');
+      const toggleBtn = card.querySelector('.reset-password-button');
+      if (close || form.style.display === 'block') {
+        form.style.display = 'none';
+        if (toggleBtn) toggleBtn.textContent = 'Redefinir senha';
+      } else {
+        form.style.display = 'block';
+        if (toggleBtn) toggleBtn.textContent = 'Fechar redefinição';
+      }
+    }
+
+    function saveClientPassword(button) {
+      const card = button.closest('.customer-card');
+      const email = card.dataset.email;
+      const passwordField = card.querySelector('input[name="resetPassword"]');
+      const confirmField = card.querySelector('input[name="confirmResetPassword"]');
+      const password = passwordField.value;
+      const confirm = confirmField.value;
+      if (!password || !confirm) {
+        alert('Preencha os dois campos de senha.');
+        return;
+      }
+      if (password !== confirm) {
+        alert('As senhas não conferem.');
+        return;
+      }
+      const clients = getClients();
+      const index = clients.findIndex(client => client.email === email);
+      if (index === -1) {
+        alert('Cliente não encontrado.');
+        return;
+      }
+      clients[index].password = password;
+      saveClients(clients);
+      alert('Senha atualizada com sucesso.');
+      card.querySelector('.password').textContent = `Senha: ${maskPassword(password)}`;
+      togglePasswordReset(button, true);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderClients();
+      if (searchInput) searchInput.addEventListener('input', renderClients);
+    });
+  </script>
+</body>
+</html>
