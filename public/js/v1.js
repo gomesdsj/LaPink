@@ -22,6 +22,10 @@ function updateNav() {
   }
 }
 
+function forceLogoutOnV1() {
+  clearLoggedClient();
+}
+
 function handleBuy(event) {
   const client = getLoggedClient();
   const product = event.target.dataset.product;
@@ -35,6 +39,7 @@ function handleBuy(event) {
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
+    forceLogoutOnV1();
     document.querySelectorAll('.btn-buy').forEach(button => {
       button.addEventListener('click', handleBuy);
     });
@@ -48,6 +53,7 @@ if (document.readyState === 'loading') {
     updateNav();
   });
 } else {
+  forceLogoutOnV1();
   document.querySelectorAll('.btn-buy').forEach(button => {
     button.addEventListener('click', handleBuy);
   });

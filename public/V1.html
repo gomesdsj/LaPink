@@ -4,79 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Bella Joias — Homepage v1</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;}
-.site{background:#fff;overflow:hidden;}
-.nav{background:#fff;border-bottom:0.5px solid #F4C0D1;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;}
-.logo{font-size:15px;font-weight:500;color:#72243E;letter-spacing:0.04em;}
-.nav-links{display:flex;gap:18px;}
-.nav-links a{font-size:12px;color:#993556;text-decoration:none;cursor:pointer;}
-.nav-links a:hover{color:#72243E;}
-.nav-actions{display:flex;gap:12px;align-items:center;}
-.nav-icon{color:#993556;font-size:18px;cursor:pointer;transition:transform .2s ease;}
-.nav-icon:hover{transform:scale(1.08);}
-.login-link{display:inline-flex;align-items:center;justify-content:center;}
-.nav-user{color:#4B1528;font-size:12px;font-weight:500;background:#F4C0D1;padding:6px 12px;border-radius:14px;display:inline-flex;align-items:center;gap:6px;}
-.logout-btn{background:none;border:none;cursor:pointer;}
-.btn-buy{margin-top:10px;width:100%;padding:10px 0;border-radius:14px;font-size:11px;font-weight:500;}
-.search-bar{flex:1;max-width:200px;margin:0 16px;background:#FBEAF0;border:0.5px solid #F4C0D1;border-radius:20px;display:flex;align-items:center;padding:0 10px;gap:6px;height:30px;}
-.search-bar input{border:none;background:transparent;font-size:11px;color:#72243E;outline:none;width:100%;}
-.search-bar input::placeholder{color:#ED93B1;}
-.hero{background:#FBEAF0;padding:32px 24px;display:flex;align-items:center;gap:20px;border-bottom:0.5px solid #F4C0D1;}
-.hero-text{flex:1;}
-.hero-eyebrow{font-size:11px;color:#D4537E;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;}
-.hero-title{font-size:22px;font-weight:500;color:#4B1528;line-height:1.3;margin-bottom:8px;}
-.hero-sub{font-size:12px;color:#993556;line-height:1.6;margin-bottom:16px;}
-.hero-btns{display:flex;gap:8px;}
-.btn-primary{background:#D4537E;color:#fff;font-size:12px;padding:8px 16px;border-radius:20px;border:none;cursor:pointer;font-weight:500;}
-.btn-secondary{background:transparent;color:#D4537E;font-size:12px;padding:8px 16px;border-radius:20px;border:0.5px solid #D4537E;cursor:pointer;}
-.hero-img{width:160px;height:130px;background:#F4C0D1;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.announce{background:#D4537E;padding:8px 20px;text-align:center;}
-.announce span{font-size:11px;color:#fff;font-weight:500;letter-spacing:0.04em;}
-.section{padding:20px 20px;}
-.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-.section-title{font-size:15px;font-weight:500;color:#4B1528;}
-.section-link{font-size:11px;color:#D4537E;cursor:pointer;text-decoration:none;}
-.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-.cat-card{background:#FBEAF0;border:0.5px solid #F4C0D1;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;}
-.cat-card:hover{background:#F4C0D1;}
-.cat-icon{font-size:22px;color:#D4537E;margin-bottom:6px;}
-.cat-name{font-size:11px;color:#72243E;font-weight:500;}
-.prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px;}
-.prod-card{background:#fff;border:0.5px solid #F4C0D1;border-radius:12px;overflow:hidden;cursor:pointer;}
-.prod-card:hover{border-color:#D4537E;}
-.prod-img{background:#FBEAF0;height:90px;display:flex;align-items:center;justify-content:center;position:relative;}
-.prod-badge{background:#D4537E;color:#fff;font-size:9px;font-weight:500;padding:2px 7px;border-radius:10px;position:absolute;top:8px;left:8px;}
-.prod-fav{position:absolute;top:8px;right:8px;color:#D4537E;font-size:14px;}
-.prod-info{padding:10px;}
-.prod-name{font-size:11px;font-weight:500;color:#4B1528;margin-bottom:3px;}
-.prod-price{font-size:12px;color:#D4537E;font-weight:500;}
-.prod-old{font-size:10px;color:#ED93B1;text-decoration:line-through;margin-left:4px;}
-.banner{background:#FBEAF0;border:0.5px solid #F4C0D1;border-radius:12px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;margin:0 20px 20px;}
-.banner-text .eyebrow{font-size:10px;color:#D4537E;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
-.banner-text h3{font-size:16px;font-weight:500;color:#4B1528;margin-bottom:4px;}
-.banner-text p{font-size:11px;color:#993556;}
-.banner-img{width:80px;height:70px;background:#F4C0D1;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.reviews{padding:0 20px 20px;}
-.rev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.rev-card{background:#FBEAF0;border:0.5px solid #F4C0D1;border-radius:12px;padding:12px;}
-.rev-stars{color:#D4537E;font-size:13px;margin-bottom:6px;}
-.rev-text{font-size:11px;color:#72243E;line-height:1.5;margin-bottom:8px;}
-.rev-author{font-size:10px;color:#993556;font-weight:500;}
-.newsletter{background:#D4537E;padding:20px;margin:0 20px 20px;border-radius:12px;text-align:center;}
-.newsletter h3{font-size:14px;font-weight:500;color:#fff;margin-bottom:4px;}
-.newsletter p{font-size:11px;color:#F4C0D1;margin-bottom:12px;}
-.nl-form{display:flex;gap:8px;max-width:320px;margin:0 auto;}
-.nl-input{flex:1;background:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:11px;color:#4B1528;outline:none;}
-.nl-btn{background:#4B1528;color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:11px;cursor:pointer;font-weight:500;white-space:nowrap;}
-.footer{background:#FBEAF0;border-top:0.5px solid #F4C0D1;padding:16px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.footer-col h4{font-size:11px;font-weight:500;color:#4B1528;margin-bottom:8px;}
-.footer-col a{display:block;font-size:11px;color:#993556;margin-bottom:4px;text-decoration:none;cursor:pointer;}
-.footer-bottom{background:#FBEAF0;border-top:0.5px solid #F4C0D1;padding:10px 20px;text-align:center;}
-.footer-bottom span{font-size:10px;color:#993556;}
-</style>
+<meta name="theme-color" content="#ff66b2" />
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="css/v1.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 </head>
 <body>
 <div class="site">
@@ -86,7 +17,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="nav">
     <div class="logo"><i class="ti ti-diamond"></i> Bella Joias</div>
     <div class="search-bar">
-      <i class="ti ti-search" style="font-size:13px;color:#ED93B1;"></i>
+      <i class="ti ti-search"></i>
       <input type="text" placeholder="Buscar semijoias, bolsas..."/>
     </div>
     <div class="nav-links">
@@ -98,9 +29,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <a href="login.html" class="nav-icon login-link" aria-label="Entrar" id="loginLink">
         <i class="ti ti-user"></i>
       </a>
-      <button class="nav-icon logout-btn" id="logoutBtn" title="Sair" style="display:none; background:none; border:none; padding:0;">
+      <button id="installBtn" class="nav-icon" style="display:none;">Instalar</button>
+      <button class="nav-icon logout-btn" id="logoutBtn" title="Sair">
         <i class="ti ti-power"></i>
       </button>
+      <button id="downloadBtn" class="nav-icon" title="Baixar página">Baixar</button>
       <i class="ti ti-shopping-bag nav-icon"></i>
     </div>
   </div>
@@ -114,9 +47,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn-secondary">Promoções</button>
       </div>
     </div>
-    <div class="hero-img"><i class="ti ti-diamond" style="font-size:40px;color:#D4537E;"></i></div>
+    <div class="hero-img"><i class="ti ti-diamond"></i></div>
   </div>
-  <div class="section" style="background:#fff;">
+  <div class="section bg-white">
     <div class="section-header">
       <span class="section-title">Categorias</span>
       <a class="section-link">Ver todas →</a>
@@ -128,22 +61,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="cat-card"><div class="cat-icon"><i class="ti ti-briefcase"></i></div><div class="cat-name">Bolsas</div></div>
     </div>
   </div>
-  <div class="section" style="background:#FBEAF0;border-top:0.5px solid #F4C0D1;border-bottom:0.5px solid #F4C0D1;">
+  <div class="section bg-tint">
     <div class="section-header">
       <span class="section-title">Mais vendidos</span>
       <a class="section-link">Ver tudo →</a>
     </div>
     <div class="prod-grid">
       <div class="prod-card">
-        <div class="prod-img"><i class="ti ti-circle" style="font-size:30px;color:#ED93B1;"></i><span class="prod-badge">Novo</span><i class="ti ti-heart prod-fav"></i></div>
+        <div class="prod-img"><i class="ti ti-circle"></i><span class="prod-badge">Novo</span><i class="ti ti-heart prod-fav"></i></div>
         <div class="prod-info"><div class="prod-name">Anel solitário rose gold</div><div><span class="prod-price">R$ 89,90</span></div><button class="btn-secondary btn-buy" data-product="Anel solitário rose gold">Comprar</button></div>
       </div>
       <div class="prod-card">
-        <div class="prod-img"><i class="ti ti-link" style="font-size:30px;color:#ED93B1;"></i><span class="prod-badge">-20%</span><i class="ti ti-heart prod-fav"></i></div>
+        <div class="prod-img"><i class="ti ti-link"></i><span class="prod-badge">-20%</span><i class="ti ti-heart prod-fav"></i></div>
         <div class="prod-info"><div class="prod-name">Colar coração delicado</div><div><span class="prod-price">R$ 69,90</span><span class="prod-old">R$ 87,90</span></div><button class="btn-secondary btn-buy" data-product="Colar coração delicado">Comprar</button></div>
       </div>
       <div class="prod-card">
-        <div class="prod-img"><i class="ti ti-briefcase" style="font-size:30px;color:#ED93B1;"></i><i class="ti ti-heart prod-fav"></i></div>
+        <div class="prod-img"><i class="ti ti-briefcase"></i><i class="ti ti-heart prod-fav"></i></div>
         <div class="prod-info"><div class="prod-name">Bolsa mini clutch rose</div><div><span class="prod-price">R$ 149,90</span></div><button class="btn-secondary btn-buy" data-product="Bolsa mini clutch rose">Comprar</button></div>
       </div>
     </div>
@@ -154,7 +87,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <h3>Compre no atacado<br>com preços especiais</h3>
       <p>Cadastre-se como revendedora e acesse preços exclusivos.</p>
     </div>
-    <div class="banner-img"><i class="ti ti-building-store" style="font-size:32px;color:#D4537E;"></i></div>
+    <div class="banner-img"><i class="ti ti-building-store"></i></div>
   </div>
   <div class="reviews">
     <div class="section-header"><span class="section-title">O que dizem nossas clientes</span></div>
@@ -181,5 +114,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <script src="js/storage.js"></script>
 <script src="js/v1.js"></script>
+<script>
+// Registrar service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW registration failed', err));
+}
+
+// Before install prompt
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-block';
+});
+
+installBtn && installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
+});
+
+// Download current page as HTML
+const downloadBtn = document.getElementById('downloadBtn');
+downloadBtn && downloadBtn.addEventListener('click', () => {
+  const html = '<!doctype html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'LaPink-V1.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+</script>
 </body>
 </html>

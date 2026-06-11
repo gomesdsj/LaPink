@@ -4,36 +4,22 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bella Joias — Login</title>
-<link rel="stylesheet" href="../css/Principal.css" />
-<link rel="stylesheet" href="../css/componentes.css" />
-<link rel="stylesheet" href="../css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-<style>
-  body{background:#FBEAF0;}
-  .auth-card { max-width: 420px; width:100%; margin:auto; padding:28px; background:#fff; border:0.5px solid #F4C0D1; box-shadow:0 18px 55px rgba(116,34,58,0.08); border-radius:18px; }
-  .login-brand { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; padding-bottom:12px; border-bottom:0.5px solid #F4C0D1; }
-  .login-brand i { color:#D4537E; font-size:28px; }
-  .login-brand span { color:#4B1528; font-size:20px; font-weight:700; letter-spacing:0.08em; }
-  .auth-card h2 { margin-bottom:12px; color:#4B1528; }
-  .auth-card p { color:#993556; margin-bottom:20px; }
-  .form-group label { color:#72243E; font-size:12px; margin-bottom:8px; display:block; }
-  .form-group input { width:100%; padding:12px 14px; border:1px solid #F4C0D1; border-radius:12px; outline:none; color:#4B1528; background:#FFF7FB; }
-  .form-group input:focus { border-color:#D4537E; }
-  .form-actions .btn-full { width:100%; background:#D4537E; border:none; color:#fff; padding:12px 16px; border-radius:14px; font-weight:600; }
-  .form-message { margin-top:14px; font-weight:600; }
-  body .store-nav { background:transparent; border:none; padding:18px 20px; }
-</style>
 </head>
-<body>
+<body class="auth-background">
   <header class="store-nav">
-    <a class="store-logo" href="index.html" style="display:flex;align-items:center;gap:8px;"><i class="ti ti-diamond"></i><span class="logo-name">Bella Joias</span></a>
-    <div class="nav-actions" style="gap:12px;">
+    <a class="store-logo" href="index.html"><i class="ti ti-diamond"></i><span class="logo-name">Bella Joias</span></a>
+    <div class="nav-actions">
       <button class="btn btn-secondary" onclick="location.href='register.html'">Cadastre-se</button>
       <button class="nav-admin-btn" onclick="location.href='index.html'">Voltar</button>
     </div>
   </header>
 
-  <section class="store-section" style="min-height:calc(100vh - 90px); display:flex; align-items:center; justify-content:center; padding:40px 20px;">
+  <section class="store-section auth-page">
     <article class="card auth-card">
       <div class="login-brand">
         <i class="ti ti-diamond"></i>
@@ -55,7 +41,7 @@
         </div>
         <div class="form-message" id="loginMessage"></div>
       </form>
-      <p style="margin-top:18px; text-align:center;">Não tem conta? <a href="register.html">Cadastre-se</a></p>
+      <p class="auth-footer-text">Não tem conta? <a href="register.html">Cadastre-se</a></p>
     </article>
   </section>
 
