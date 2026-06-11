@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Login</title>
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body class="auth-background">
+  <header class="store-nav">
+    <a class="store-logo" href="index.html"><i class="ti ti-diamond"></i><span class="logo-name">Bella Joias</span></a>
+    <div class="nav-actions">
+      <button class="btn btn-secondary" onclick="location.href='register.html'">Cadastre-se</button>
+      <button class="nav-admin-btn" onclick="location.href='index.html'">Voltar</button>
+    </div>
+  </header>
+
+  <section class="store-section auth-page">
+    <article class="card auth-card">
+      <div class="login-brand">
+        <i class="ti ti-diamond"></i>
+        <span>Bella Joias</span>
+      </div>
+      <h2>Login</h2>
+      <p>Entre com seu e-mail e senha para acessar.</p>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="login-email">E-mail</label>
+          <input id="login-email" type="email" placeholder="email@dominio.com" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input id="login-password" type="password" placeholder="Sua senha" required />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-full">Entrar</button>
+        </div>
+        <div class="form-message" id="loginMessage"></div>
+      </form>
+      <p class="auth-footer-text">Não tem conta? <a href="register.html">Cadastre-se</a></p>
+    </article>
+  </section>
+
+  <script src="js/storage.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Cadastro</title>
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body class="auth-background">
+  <header class="store-nav">
+    <a class="store-logo" href="index.html"><i class="ti ti-diamond"></i><span class="logo-name">Bella Joias</span></a>
+    <div class="nav-actions">
+      <button class="btn btn-secondary" onclick="location.href='login.html'">Entrar</button>
+      <button class="nav-admin-btn" onclick="location.href='index.html'">Voltar</button>
+    </div>
+  </header>
+
+  <section class="store-section auth-page">
+    <article class="card auth-card">
+      <h2>Cadastro</h2>
+      <p>Abra sua conta para gerenciar pedidos e acessar ofertas exclusivas.</p>
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="register-name">Nome completo</label>
+          <input id="register-name" type="text" placeholder="Nome completo" required />
+        </div>
+        <div class="form-group">
+          <label for="register-email">E-mail</label>
+          <input id="register-email" type="email" placeholder="email@dominio.com" required />
+        </div>
+        <div class="form-group">
+          <label for="register-whatsapp">WhatsApp</label>
+          <input id="register-whatsapp" type="tel" placeholder="(11) 99999-9999" required />
+        </div>
+        <div class="form-group">
+          <label for="register-password">Senha</label>
+          <input id="register-password" type="password" placeholder="Senha" required />
+        </div>
+        <div class="form-group">
+          <label for="register-password-confirm">Confirmar senha</label>
+          <input id="register-password-confirm" type="password" placeholder="Repita a senha" required />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-full">Cadastrar</button>
+        </div>
+        <div class="form-message" id="registerMessage"></div>
+      </form>
+      <p class="auth-footer-text">Já tem conta? <a href="login.html">Entre</a></p>
+    </article>
+  </section>
+
+  <script src="js/storage.js"></script>
+  <script src="js/register.js"></script>
+</body>
+</html>

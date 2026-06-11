@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Cadastro de Produto</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body>
+  <div id="app-admin">
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">Bella Joias</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link active" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <h1>Cadastro de produto</h1>
+            <button class="btn btn-secondary" onclick="location.href='admin.html'">Voltar</button>
+          </div>
+          <div class="topbar-right"><span>Olá, Carol</span><button class="btn btn-secondary" onclick="location.href='../public/index.html'">Ver loja</button></div>
+        </header>
+
+        <section class="admin-page show">
+          <div class="page-header">
+            <div>
+              <h2>Novo produto</h2>
+              <p>Preencha os dados e veja a pré-visualização na direita.</p>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin-top:16px;">
+            <form class="card" style="flex:1; min-width:320px; max-width:560px;">
+              <div class="form-group">
+                <label for="nome">Nome do produto</label>
+                <input id="nome" type="text" placeholder="Anel solitário rosê" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="categoria">Categoria</label>
+                  <select id="categoria">
+                    <option>Anéis</option>
+                    <option>Colares</option>
+                    <option>Brincos</option>
+                    <option>Bolsas</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="estoque">Estoque</label>
+                  <input id="estoque" type="number" min="0" placeholder="24" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="preco-varejo">Preço de varejo</label>
+                  <input id="preco-varejo" type="text" placeholder="R$ 89,90" />
+                </div>
+                <div class="form-group">
+                  <label for="preco-atacado">Preço de atacado</label>
+                  <input id="preco-atacado" type="text" placeholder="R$ 59,90" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="descricao">Descrição</label>
+                <textarea id="descricao" placeholder="Descrição do produto"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="imagem">Imagem</label>
+                <input id="imagem" type="file" />
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn-cancel-form" onclick="location.href='admin.html'">Cancelar</button>
+                <button type="submit" class="btn-save-form">Salvar produto</button>
+              </div>
+            </form>
+
+            <aside class="product-preview-card" style="min-width:280px; max-width:340px;">
+              <div class="preview-img"><i class="ti ti-diamond preview-img-icon"></i></div>
+              <div class="preview-info">
+                <div class="preview-name">Anel solitário rosê</div>
+                <div class="preview-desc">Peça delicada com acabamento rosê e brilho intenso. Ideal para looks elegantes.</div>
+                <div class="preview-prices">
+                  <div class="retail-price">R$ 89,90</div>
+                  <div class="wholesale-price">Preço atacado R$ 59,90</div>
+                  <div class="profit-line">Lucro estimado +31%</div>
+                </div>
+                <div class="preview-stock"><i class="ti ti-stack"></i> Estoque disponível: 24 unidades</div>
+                <button class="btn-full" onclick="location.href='admin.html'">Voltar ao painel</button>
+              </div>
+            </aside>
+          </div>
+
+          <div class="page-header" style="margin-top:32px;">
+            <div><h2>Controle de estoque</h2><p>Visualize, edite ou remova produtos do seu catálogo.</p></div>
+          </div>
+
+          <div class="search-bar-admin">
+            <input type="search" placeholder="Buscar produto" />
+            <select><option>Todos os produtos</option><option>Anéis</option><option>Colares</option><option>Brincos</option><option>Bolsas</option></select>
+            <button class="btn btn-secondary">Filtrar</button>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;" id="estoque-grid">
+            <div class="product-preview-card" style="width:calc(50% - 6px);">
+              <div class="preview-img"><i class="ti ti-ring preview-img-icon"></i></div>
+              <div class="preview-info">
+                <div class="preview-name">Anel solitário rosê</div>
+                <div class="preview-desc">Peça delicada com acabamento rosê e brilho intenso. Ideal para looks elegantes.</div>
+                <div class="preview-prices">
+                  <div class="retail-price">R$ 89,90</div>
+                  <div class="wholesale-price">Preço atacado R$ 59,90</div>
+                  <div class="profit-line">Estoque: 24 unidades</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                  <button class="btn-edit" style="flex:1;">Editar</button>
+                  <button class="btn-danger" style="flex:1;">Excluir</button>
+                </div>
+              </div>
+            </div>
+            <div class="product-preview-card" style="width:calc(50% - 6px);">
+              <div class="preview-img"><i class="ti ti-necklace preview-img-icon"></i></div>
+              <div class="preview-info">
+                <div class="preview-name">Colar de coração</div>
+                <div class="preview-desc">Peça delicada em formato de coração com corrente fina. Perfeito para looks minimalistas.</div>
+                <div class="preview-prices">
+                  <div class="retail-price">R$ 69,90</div>
+                  <div class="wholesale-price">Preço atacado R$ 49,90</div>
+                  <div class="profit-line">Estoque: 18 unidades</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                  <button class="btn-edit" style="flex:1;">Editar</button>
+                  <button class="btn-danger" style="flex:1;">Excluir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.getElementById('sidebarToggle');
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+    toggle.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+  </script>
+</body>
+</html>

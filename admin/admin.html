@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Painel Admin</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body>
+  <div id="app-admin">
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">Bella Joias</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link active" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+        </div>
+        <div class="sidebar-footer">
+          <button><i class="ti ti-power"></i>Sair</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Dashboard</h1>
+          <div class="topbar-right"><span>Olá, Carol</span><span class="admin-badge">Admin</span></div>
+        </header>
+
+        <section class="admin-page show">
+          <div class="page-header">
+            <div>
+              <h2>Resumo rápido</h2>
+              <p>Visão geral das vendas, estoque e pedidos em espera.</p>
+            </div>
+            <button class="btn btn-primary" onclick="location.href='cadastro-produto.html'">Novo produto</button>
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card"><div class="s-label">Vendas hoje</div><div class="s-value">R$ 3.480</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +12%</div></div>
+            <div class="stat-card"><div class="s-label">Pedidos</div><div class="s-value">48</div><div class="s-delta neutral"><i class="ti ti-info-circle"></i> Estável</div></div>
+            <div class="stat-card"><div class="s-label">Clientes</div><div class="s-value">1.234</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +8%</div></div>
+            <div class="stat-card"><div class="s-label">Carrinhos abandonados</div><div class="s-value">7</div><div class="s-delta down"><i class="ti ti-trending-down"></i> -4%</div></div>
+          </div>
+
+          <div class="chart-grid-2">
+            <div class="chart-box"><h3>Visitas da semana</h3><div class="map-placeholder"><i class="ti ti-device-mobile"></i><span>Gráfico integrado</span></div></div>
+            <div class="chart-box"><h3>Fluxo de vendas</h3><div class="map-placeholder"><i class="ti ti-chart-pie"></i><span>Dados em tempo real</span></div></div>
+          </div>
+
+          <div class="chart-grid-3">
+            <div class="card">
+              <div class="section-header"><span class="section-title">Top produtos</span></div>
+              <div class="top-item"><span class="top-item-name">Anel solitário rosê</span><div class="top-bar-wrap"><div class="top-bar" style="width:85%"></div></div><span class="top-val">85%</span></div>
+              <div class="top-item"><span class="top-item-name">Colar de coração</span><div class="top-bar-wrap"><div class="top-bar" style="width:72%"></div></div><span class="top-val">72%</span></div>
+              <div class="top-item"><span class="top-item-name">Bolsa mini clutch</span><div class="top-bar-wrap"><div class="top-bar" style="width:61%"></div></div><span class="top-val">61%</span></div>
+            </div>
+            <div class="card">
+              <div class="section-header"><span class="section-title">Carrinhos abandonados</span></div>
+              <div class="ab-card"><div class="ab-user"><div class="ab-avatar">MS</div><div class="ab-info"><strong>Marcela S.</strong><span>3 itens no carrinho</span></div></div><div class="ab-meta"><span class="ab-value">R$ 348</span><button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button></div></div>
+              <div class="ab-card"><div class="ab-user"><div class="ab-avatar">LA</div><div class="ab-info"><strong>Larissa A.</strong><span>2 itens no carrinho</span></div></div><div class="ab-meta"><span class="ab-value">R$ 229</span><button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button></div></div>
+            </div>
+          </div>
+
+          <div class="page-header" style="margin-top:24px;">
+            <div><h2>Controle de produtos</h2><p>Edite, inclua ou remova itens disponíveis na loja.</p></div>
+          </div>
+
+          <div class="search-bar-admin">
+            <input type="search" placeholder="Buscar produto" />
+            <select><option>Todos os produtos</option><option>Anéis</option><option>Colares</option><option>Bolsas</option></select>
+            <button class="btn btn-secondary">Filtrar</button>
+          </div>
+
+          <div class="table-box">
+            <table class="data-table">
+              <thead><tr><th>Produto</th><th>Categoria</th><th>Estoque</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr><td><div class="prod-thumb"><i class="ti ti-ring"></i></div> Anel solitário rosê</td><td>Anéis</td><td>24</td><td>R$ 89,90</td><td><span class="badge badge-pink">Ativo</span></td><td class="action-row"><button class="btn-edit">Editar</button><button class="btn-danger">Excluir</button></td></tr>
+                <tr><td><div class="prod-thumb"><i class="ti ti-necklace"></i></div> Colar de coração</td><td>Colares</td><td>18</td><td>R$ 69,90</td><td><span class="badge badge-green">Ativo</span></td><td class="action-row"><button class="btn-edit">Editar</button><button class="btn-danger">Excluir</button></td></tr>
+                <tr><td><div class="prod-thumb"><i class="ti ti-briefcase"></i></div> Bolsa mini clutch</td><td>Bolsas</td><td>11</td><td>R$ 149,90</td><td><span class="badge badge-amber">Estoque baixo</span></td><td class="action-row"><button class="btn-edit">Editar</button><button class="btn-danger">Excluir</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.getElementById('sidebarToggle');
+    function toggleSidebar() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('show');
+    }
+    toggle.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+  </script>
+</body>
+</html>

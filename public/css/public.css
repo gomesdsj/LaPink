@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════
+   BELLA JOIAS — Public page styles
+═══════════════════════════════════════ */
+
+body.auth-background { background: #FBEAF0; }
+body.auth-background .store-nav { background: transparent; border: none; padding: 18px 20px; }
+
+/* Auth card */
+.auth-card { max-width: 520px; width: 100%; margin: auto; padding: 28px; background: #fff; border: 0.5px solid #F4C0D1; box-shadow: 0 18px 55px rgba(116,34,58,0.08); border-radius: 18px; }
+.auth-card h2 { margin-bottom: 16px; color: #4B1528; }
+.auth-card p { color: #993556; margin-bottom: 20px; }
+.login-brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 0.5px solid #F4C0D1; }
+.login-brand i { color: #D4537E; font-size: 28px; }
+.login-brand span { color: #4B1528; font-size: 20px; font-weight: 700; letter-spacing: 0.08em; }
+.auth-page { min-height: calc(100vh - 90px); display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+.auth-footer-text { margin-top: 18px; text-align: center; }
+
+.product-page { display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 90px); padding-top: 40px; padding-bottom: 40px; }
+.product-preview-card { max-width: 360px; width: 100%; }
+.product-full-width { width: 100%; margin-top: 12px; display: inline-flex; justify-content: center; }
+
+.hero-visual i, .banner-visual i { font-size: 32px; color: var(--pink-500); }
+.hero-visual i { font-size: 40px; color: var(--pink-400); }
+
+body.auth-background .nav-actions { gap: 12px; }
+.nav-user { display: none; }
+.logout-btn { display: none; }
+
+.hidden { display: none !important; }
+.text-center { text-align: center; }
+
+@media (max-width: 900px) {
+  .auth-page, .product-page { padding: 24px 16px; }
+  .store-nav { padding: 0 16px; }
+  .store-nav .nav-actions { flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .product-page { padding-top: 28px; padding-bottom: 28px; }
+}
+
+@media (max-width: 640px) {
+  .auth-page { padding: 20px 14px; }
+  .product-page { padding: 22px 14px; }
+  .auth-card { padding: 22px; }
+  .nav-actions { width: 100%; justify-content: space-between; }
+  .login-brand { flex-direction: column; gap: 8px; }
+}

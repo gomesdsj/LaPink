@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bella Joias — Loja</title>
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body>
+  <div class="announce">
+    <span><i class="ti ti-truck"></i> Frete grátis acima de R$ 199 · Parcele em até 6x sem juros</span>
+  </div>
+  <header class="store-nav">
+    <a class="store-logo" href="index.html"><i class="ti ti-diamond"></i><span class="logo-name">Bella Joias</span></a>
+    <div class="nav-search">
+      <i class="ti ti-search"></i>
+      <input type="search" placeholder="Buscar semijoias, bolsas..." />
+    </div>
+    <nav class="nav-links">
+      <a href="#categorias">Categorias</a>
+      <a href="#mais-vendidos">Mais vendidos</a>
+      <a href="#revenda">Revenda</a>
+      <a href="#depoimentos">Depoimentos</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="nav-icon-btn" aria-label="Favoritos"><i class="ti ti-heart"></i></button>
+      <a href="login.html" class="nav-icon-btn login-link" id="loginLink" aria-label="Entrar">
+        <i class="ti ti-user"></i>
+      </a>
+      <span class="nav-user" id="navUser"></span>
+      <button class="nav-icon-btn logout-btn" id="logoutBtn" aria-label="Sair" title="Sair">
+        <i class="ti ti-power"></i>
+      </button>
+      <button class="nav-icon-btn" aria-label="Carrinho"><i class="ti ti-shopping-bag"></i><span class="cart-badge">3</span></button>
+      <button class="btn btn-secondary" id="loginBtn" onclick="location.href='login.html'">Entrar</button>
+      <button class="btn btn-primary" id="registerBtn" onclick="location.href='register.html'">Cadastro</button>
+      <button class="nav-admin-btn" id="panelBtn" onclick="location.href='../admin/admin.html'">Painel</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-text">
+      <span class="hero-eyebrow">Nova coleção — verão 2025</span>
+      <h1 class="hero-title">Elegância que conta sua história</h1>
+      <p class="hero-sub">Descubra semijoias, bolsas e acessórios escolhidos para realçar seu estilo em qualquer ocasião.</p>
+      <div class="hero-btns">
+        <button class="btn btn-primary">Ver coleção</button>
+        <button class="btn btn-secondary">Promoções</button>
+      </div>
+    </div>
+    <div class="hero-visual"><i class="ti ti-diamond"></i></div>
+  </section>
+
+  <section class="trust-bar">
+    <div class="trust-item"><span class="trust-icon"><i class="ti ti-package"></i></span><div><strong class="trust-label">Entrega rápida</strong><div class="trust-sub">Enviamos em até 24h</div></div></div>
+    <div class="trust-item"><span class="trust-icon"><i class="ti ti-shield-check"></i></span><div><strong class="trust-label">Material de qualidade</strong><div class="trust-sub">Semijoias com banho duradouro</div></div></div>
+    <div class="trust-item"><span class="trust-icon"><i class="ti ti-arrows-exchange"></i></span><div><strong class="trust-label">Troca fácil</strong><div class="trust-sub">Até 30 dias após a compra</div></div></div>
+    <div class="trust-item"><span class="trust-icon"><i class="ti ti-circle-check"></i></span><div><strong class="trust-label">Pagamento seguro</strong><div class="trust-sub">Cartão, PIX e boleto</div></div></div>
+  </section>
+
+  <section id="categorias" class="store-section">
+    <div class="section-header">
+      <span class="section-title">Categorias</span>
+      <a class="section-link" href="#mais-vendidos">Ver todas →</a>
+    </div>
+    <div class="cat-grid">
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-ring"></i></div><div class="cat-name">Anéis</div><div class="cat-qty">56 produtos</div></div>
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-necklace"></i></div><div class="cat-name">Colares</div><div class="cat-qty">42 produtos</div></div>
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-earing"></i></div><div class="cat-name">Brincos</div><div class="cat-qty">38 produtos</div></div>
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-briefcase"></i></div><div class="cat-name">Bolsas</div><div class="cat-qty">24 produtos</div></div>
+    </div>
+  </section>
+
+  <section id="mais-vendidos" class="store-section bg-tint">
+    <div class="section-header">
+      <span class="section-title">Mais vendidos</span>
+      <a class="section-link" href="#newsletter">Ver tudo →</a>
+    </div>
+    <div class="prod-grid">
+      <a class="prod-card" href="produto.html">
+        <div class="prod-img-wrap"><i class="prod-img-icon ti ti-ring"></i><span class="prod-badge">Novo</span><button class="prod-fav"><i class="ti ti-heart"></i></button></div>
+        <div class="prod-info"><div class="prod-name">Anel solitário rosê</div><div class="prod-price-row"><span class="prod-price">R$ 89,90</span></div></div>
+      </a>
+      <a class="prod-card" href="produto.html">
+        <div class="prod-img-wrap"><i class="prod-img-icon ti ti-necklace"></i><span class="prod-badge">-20%</span><button class="prod-fav"><i class="ti ti-heart"></i></button></div>
+        <div class="prod-info"><div class="prod-name">Colar de coração</div><div class="prod-price-row"><span class="prod-price">R$ 69,90</span><span class="prod-old">R$ 87,90</span></div></div>
+      </a>
+      <a class="prod-card" href="produto.html">
+        <div class="prod-img-wrap"><i class="prod-img-icon ti ti-briefcase"></i><button class="prod-fav"><i class="ti ti-heart"></i></button></div>
+        <div class="prod-info"><div class="prod-name">Bolsa mini clutch</div><div class="prod-price-row"><span class="prod-price">R$ 149,90</span></div></div>
+      </a>
+    </div>
+  </section>
+
+  <section id="revenda" class="store-section">
+    <div class="banner-rev">
+      <div>
+        <span class="eyebrow">Para revendedoras</span>
+        <h3>Entre para o clube de revenda e ganhe condições especiais</h3>
+        <p>Tenha acesso a preços exclusivos, lançamentos antecipados e suporte direto com nossa equipe.</p>
+      </div>
+      <div class="banner-visual"><i class="ti ti-building-store"></i></div>
+    </div>
+  </section>
+
+  <section id="depoimentos" class="store-section bg-tint">
+    <div class="section-header"><span class="section-title">Depoimentos</span></div>
+    <div class="rev-grid">
+      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Entrega rápida e produto lindo. Comprei para presente e amei o acabamento."</div><div class="rev-author">Mariana S.</div></div>
+      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Como revendedora, o suporte é excelente e as peças chamam muita atenção."</div><div class="rev-author">Camila R.</div></div>
+      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Os acessórios são muito delicados e a qualidade é ótima pelo preço."</div><div class="rev-author">Sofia L.</div></div>
+    </div>
+  </section>
+
+  <section id="newsletter" class="newsletter">
+    <h3>Receba novidades e ofertas exclusivas</h3>
+    <p>Cadastre seu e-mail e garanta 10% de desconto na primeira compra.</p>
+    <form class="nl-form">
+      <input class="nl-input" type="email" placeholder="Digite seu e-mail" />
+      <button type="submit" class="nl-btn">Quero desconto</button>
+    </form>
+  </section>
+
+  <footer class="store-footer">
+    <div class="footer-col footer-brand">
+      <h4>Bella Joias</h4>
+      <p>Peças que valorizam você: estilo, acabamento e atendimento feitos para encantar.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Ajuda</h4>
+      <a href="#">Trocas e devoluções</a>
+      <a href="#">Rastrear pedido</a>
+      <a href="#">Formas de pagamento</a>
+      <a href="#">Frete e prazo</a>
+    </div>
+    <div class="footer-col">
+      <h4>Rede social</h4>
+      <a href="#">Instagram</a>
+      <a href="#">WhatsApp</a>
+      <a href="#">Pinterest</a>
+      <a href="#">Contato</a>
+    </div>
+  </footer>
+  <div class="footer-bottom"><span>© 2025 Bella Joias · Todos os direitos reservados</span></div>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bella Joias — Homepage v1</title>
+<meta name="theme-color" content="#ff66b2" />
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="css/v1.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body>
+<div class="site">
+  <div class="announce">
+    <span><i class="ti ti-truck"></i> Frete grátis acima de R$ 199 · Parcele em até 6x sem juros</span>
+  </div>
+  <div class="nav">
+    <div class="logo"><i class="ti ti-diamond"></i> Bella Joias</div>
+    <div class="search-bar">
+      <i class="ti ti-search"></i>
+      <input type="text" placeholder="Buscar semijoias, bolsas..."/>
+    </div>
+    <div class="nav-links">
+      <a>Semijoias</a><a>Bolsas</a><a>Acessórios</a><a>Promoções</a>
+    </div>
+    <div class="nav-actions">
+      <i class="ti ti-heart nav-icon"></i>
+      <span class="nav-user" id="navUser"></span>
+      <a href="login.html" class="nav-icon login-link" aria-label="Entrar" id="loginLink">
+        <i class="ti ti-user"></i>
+      </a>
+      <button id="installBtn" class="nav-icon" style="display:none;">Instalar</button>
+      <button class="nav-icon logout-btn" id="logoutBtn" title="Sair">
+        <i class="ti ti-power"></i>
+      </button>
+      <button id="downloadBtn" class="nav-icon" title="Baixar página">Baixar</button>
+      <i class="ti ti-shopping-bag nav-icon"></i>
+    </div>
+  </div>
+  <div class="hero">
+    <div class="hero-text">
+      <div class="hero-eyebrow">Nova coleção — verão 2025</div>
+      <div class="hero-title">Elegância que<br>conta sua história</div>
+      <div class="hero-sub">Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.</div>
+      <div class="hero-btns">
+        <button class="btn-primary">Ver coleção</button>
+        <button class="btn-secondary">Promoções</button>
+      </div>
+    </div>
+    <div class="hero-img"><i class="ti ti-diamond"></i></div>
+  </div>
+  <div class="section bg-white">
+    <div class="section-header">
+      <span class="section-title">Categorias</span>
+      <a class="section-link">Ver todas →</a>
+    </div>
+    <div class="cat-grid">
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-circle"></i></div><div class="cat-name">Anéis</div></div>
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-link"></i></div><div class="cat-name">Colares</div></div>
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-star"></i></div><div class="cat-name">Brincos</div></div>
+      <div class="cat-card"><div class="cat-icon"><i class="ti ti-briefcase"></i></div><div class="cat-name">Bolsas</div></div>
+    </div>
+  </div>
+  <div class="section bg-tint">
+    <div class="section-header">
+      <span class="section-title">Mais vendidos</span>
+      <a class="section-link">Ver tudo →</a>
+    </div>
+    <div class="prod-grid">
+      <div class="prod-card">
+        <div class="prod-img"><i class="ti ti-circle"></i><span class="prod-badge">Novo</span><i class="ti ti-heart prod-fav"></i></div>
+        <div class="prod-info"><div class="prod-name">Anel solitário rose gold</div><div><span class="prod-price">R$ 89,90</span></div><button class="btn-secondary btn-buy" data-product="Anel solitário rose gold">Comprar</button></div>
+      </div>
+      <div class="prod-card">
+        <div class="prod-img"><i class="ti ti-link"></i><span class="prod-badge">-20%</span><i class="ti ti-heart prod-fav"></i></div>
+        <div class="prod-info"><div class="prod-name">Colar coração delicado</div><div><span class="prod-price">R$ 69,90</span><span class="prod-old">R$ 87,90</span></div><button class="btn-secondary btn-buy" data-product="Colar coração delicado">Comprar</button></div>
+      </div>
+      <div class="prod-card">
+        <div class="prod-img"><i class="ti ti-briefcase"></i><i class="ti ti-heart prod-fav"></i></div>
+        <div class="prod-info"><div class="prod-name">Bolsa mini clutch rose</div><div><span class="prod-price">R$ 149,90</span></div><button class="btn-secondary btn-buy" data-product="Bolsa mini clutch rose">Comprar</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="banner">
+    <div class="banner-text">
+      <div class="eyebrow">Para revendedoras</div>
+      <h3>Compre no atacado<br>com preços especiais</h3>
+      <p>Cadastre-se como revendedora e acesse preços exclusivos.</p>
+    </div>
+    <div class="banner-img"><i class="ti ti-building-store"></i></div>
+  </div>
+  <div class="reviews">
+    <div class="section-header"><span class="section-title">O que dizem nossas clientes</span></div>
+    <div class="rev-grid">
+      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Qualidade incrível! Os anéis são lindos e duraram muito mais do que eu esperava."</div><div class="rev-author">Ana P. — São Paulo</div></div>
+      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Entrega rápida e embalagem super caprichada. Presente perfeito para minha mãe!"</div><div class="rev-author">Carla M. — Rio de Janeiro</div></div>
+      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Virei revendedora e as minhas clientes amam! Produtos de altíssima qualidade."</div><div class="rev-author">Juliana R. — Curitiba</div></div>
+    </div>
+  </div>
+  <div class="newsletter">
+    <h3>Receba novidades e ofertas exclusivas</h3>
+    <p>Cadastre seu e-mail e ganhe 10% de desconto na primeira compra</p>
+    <div class="nl-form">
+      <input class="nl-input" type="email" placeholder="seu@email.com"/>
+      <button class="nl-btn">Quero desconto</button>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-col"><h4>Bella Joias</h4><a>Quem somos</a><a>Blog</a><a>Seja revendedora</a><a>Contato</a></div>
+    <div class="footer-col"><h4>Ajuda</h4><a>Trocas e devoluções</a><a>Rastrear pedido</a><a>Formas de pagamento</a><a>Frete e prazo</a></div>
+    <div class="footer-col"><h4>Siga-nos</h4><a>Instagram</a><a>Pinterest</a><a>WhatsApp</a></div>
+  </div>
+  <div class="footer-bottom"><span>© 2025 Bella Joias · Todos os direitos reservados · CNPJ 00.000.000/0001-00</span></div>
+</div>
+<script src="js/storage.js"></script>
+<script src="js/v1.js"></script>
+<script>
+// Registrar service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW registration failed', err));
+}
+
+// Before install prompt
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-block';
+});
+
+installBtn && installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
+});
+
+// Download current page as HTML
+const downloadBtn = document.getElementById('downloadBtn');
+downloadBtn && downloadBtn.addEventListener('click', () => {
+  const html = '<!doctype html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'LaPink-V1.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
