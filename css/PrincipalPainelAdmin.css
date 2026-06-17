@@ -113,6 +113,83 @@
 .btn-save-form { background: var(--pink-400); color: var(--white); border: none; border-radius: var(--radius-md); padding: 10px 28px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .btn-save-form:hover { background: var(--pink-500); }
 
+/* ── Page Tabs ── */
+.page-tabs { display: flex; gap: 0; border-bottom: 1.5px solid var(--gray-200); padding: 0 24px; background: var(--white); position: sticky; top: 0; z-index: 10; box-shadow: var(--shadow-sm); }
+.tab-btn { display: flex; align-items: center; gap: 8px; padding: 14px 22px; font-size: 13px; font-weight: 600; color: var(--gray-400); background: none; border: none; border-bottom: 2.5px solid transparent; margin-bottom: -1.5px; cursor: pointer; transition: all var(--transition); }
+.tab-btn:hover { color: var(--pink-500); }
+.tab-btn.active { color: var(--pink-600); border-bottom-color: var(--pink-500); }
+.tab-btn i { font-size: 16px; }
+
+/* ── Tab content ── */
+.tab-content { display: none; padding: 24px; }
+.tab-content.active { display: block; }
+
+/* ── Sub-section header ── */
+.sub-section-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.sub-badge { flex-shrink: 0; background: var(--pink-500); color: var(--white); font-size: 10px; font-weight: 800; padding: 4px 9px; border-radius: var(--radius-sm); line-height: 1.4; margin-top: 2px; }
+.sub-section-header h2 { font-size: 15px; font-weight: 700; color: var(--gray-800); margin: 0 0 3px; }
+.sub-section-header p  { font-size: 12px; color: var(--gray-400); margin: 0; }
+
+/* ── Unit tag ── */
+.unit-tag { font-size: 9px; font-weight: 700; color: var(--gray-400); background: var(--gray-100); padding: 1px 5px; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
+
+/* ── Calculator card (1.2) ── */
+.calc-card { background: var(--white); border: .5px solid var(--pink-100); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); }
+.calc-inputs { display: flex; gap: 16px; flex-wrap: wrap; }
+.calc-inputs .form-group { flex: 1; min-width: 160px; }
+.calc-result { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; padding-top: 18px; border-top: .5px solid var(--gray-100); }
+.calc-result-item { flex: 1; min-width: 160px; background: var(--gray-50); border-radius: var(--radius-md); padding: 14px 16px; }
+.calc-label { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gray-400); font-weight: 600; margin-bottom: 6px; }
+.calc-value { display: block; font-size: 20px; font-weight: 800; }
+.calc-value.neutral { color: var(--gray-700); }
+.calc-value.green   { color: var(--green-400); }
+.calc-value.blue    { color: var(--blue-400);  }
+
+/* ── Product list (1.3) ── */
+.prod-list { background: var(--white); border: .5px solid var(--gray-200); border-radius: var(--radius-lg); overflow: hidden; margin-top: 16px; }
+.prod-list-header,
+.prod-list-item { display: grid; grid-template-columns: 52px 1fr 130px 80px 120px 88px; align-items: center; gap: 12px; padding: 10px 16px; }
+.prod-list-header { background: var(--gray-50); border-bottom: .5px solid var(--gray-100); font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .05em; }
+.prod-list-item { border-bottom: .5px solid var(--gray-100); transition: background var(--transition); }
+.prod-list-item:last-child { border-bottom: none; }
+.prod-list-item:hover { background: var(--pink-50); }
+.prod-list-thumb { width: 42px; height: 42px; border-radius: var(--radius-sm); background: var(--pink-50); display: flex; align-items: center; justify-content: center; font-size: 19px; color: var(--pink-300); overflow: hidden; flex-shrink: 0; }
+.prod-list-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.prod-list-name { font-size: 13px; font-weight: 600; color: var(--gray-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prod-list-cat-badge { display: inline-block; background: var(--pink-50); color: var(--pink-500); border-radius: var(--radius-sm); padding: 3px 9px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.prod-list-stock { font-size: 12px; color: var(--gray-600); font-weight: 600; }
+.prod-list-stock.low { color: var(--red-400); }
+.prod-list-price { font-size: 13px; font-weight: 700; color: var(--pink-500); }
+.prod-list-actions { display: flex; gap: 6px; }
+.btn-icon-sm { width: 30px; height: 30px; border-radius: var(--radius-sm); border: .5px solid var(--gray-200); background: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all var(--transition); }
+.btn-icon-sm.edit   { color: var(--blue-400); }
+.btn-icon-sm.edit:hover   { background: var(--blue-400); color: var(--white); border-color: var(--blue-400); }
+.btn-icon-sm.danger { color: var(--gray-400); }
+.btn-icon-sm.danger:hover { background: var(--red-400); color: var(--white); border-color: var(--red-400); }
+.prod-list-empty { padding: 48px; text-align: center; color: var(--gray-400); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.prod-list-empty i { font-size: 36px; color: var(--gray-300); }
+.prod-list-empty span { font-size: 13px; }
+
+/* ── Shipping calculator (Aba Envio) ── */
+.frete-result { margin-top: 20px; padding-top: 16px; border-top: .5px solid var(--gray-100); }
+.frete-result-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: .5px solid var(--gray-100); }
+.frete-result-row.media-row { border-bottom: none; background: var(--pink-50); padding: 12px 14px; border-radius: var(--radius-md); margin-top: 6px; }
+.frete-label { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--gray-600); }
+.frete-value { font-size: 16px; font-weight: 800; }
+.frete-value.pac   { color: var(--blue-400); }
+.frete-value.sedex { color: var(--gray-700); }
+.frete-value.media { color: var(--pink-500); }
+.frete-aviso { font-size: 11px; color: var(--gray-400); margin-top: 12px; display: flex; align-items: flex-start; gap: 6px; line-height: 1.6; }
+
+/* ── Shipping reference table ── */
+.shipping-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.shipping-table th { background: var(--pink-50); color: var(--pink-600); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 10px 12px; text-align: left; }
+.shipping-table td { padding: 9px 12px; border-bottom: .5px solid var(--gray-100); color: var(--gray-700); }
+.shipping-table tbody tr:last-child td { border-bottom: none; }
+.shipping-table tbody tr:hover { background: var(--pink-50); }
+.shipping-table tbody tr.row-active { background: var(--pink-100); }
+.shipping-table tbody tr.row-active td { font-weight: 700; color: var(--pink-600); }
+
 /* ── Responsive admin ── */
 @media (max-width: 900px) {
   .sidebar { transform: translateX(-100%); }
@@ -125,8 +202,26 @@
 }
 @media (max-width: 640px) {
   .admin-page { padding: 16px; }
+  .tab-content { padding: 16px; }
   .photo-upload-grid { grid-template-columns: repeat(2, 1fr); }
   .product-preview-card { max-width: 100%; }
   .ab-card { flex-direction: column; align-items: flex-start; }
   .ab-meta { text-align: left; width: 100%; display: flex; align-items: center; justify-content: space-between; }
+
+  /* Product list mobile */
+  .prod-list-header { display: none; }
+  .prod-list-item { grid-template-columns: 44px 1fr auto; grid-template-rows: auto auto; gap: 4px 10px; padding: 12px 14px; }
+  .prod-list-thumb { grid-row: 1 / 3; }
+  .prod-list-name { font-size: 12px; }
+  .prod-list-cat-badge { font-size: 10px; padding: 2px 7px; }
+  .prod-list-stock { display: none; }
+  .prod-list-price { grid-column: 3; grid-row: 1; font-size: 12px; text-align: right; }
+  .prod-list-actions { grid-column: 3; grid-row: 2; justify-content: flex-end; }
+
+  /* Calc mobile */
+  .calc-inputs { flex-direction: column; }
+  .calc-result { flex-direction: column; }
+
+  /* Tab buttons mobile */
+  .tab-btn { padding: 12px 14px; font-size: 12px; }
 }

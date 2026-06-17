@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bella Joias — Cadastro de Produto</title>
+<title>Bella Joias — Produtos</title>
 <link rel="stylesheet" href="../css/Principal.css" />
 <link rel="stylesheet" href="../css/componentes.css" />
 <link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
@@ -12,6 +12,7 @@
 <body>
   <div id="app-admin">
     <div class="admin-layout">
+
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
           <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
@@ -38,140 +39,530 @@
         <header class="admin-topbar">
           <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
           <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-            <h1>Cadastro de produto</h1>
+            <h1>Produtos</h1>
             <button class="btn btn-secondary" onclick="location.href='admin.html'">Voltar</button>
           </div>
-          <div class="topbar-right"><span>Olá, Carol</span><button class="btn btn-secondary" onclick="location.href='../public/index.html'">Ver loja</button></div>
+          <div class="topbar-right">
+            <span>Olá, Carol</span>
+            <button class="btn btn-secondary" onclick="location.href='../public/index.html'">Ver loja</button>
+          </div>
         </header>
 
-        <section class="admin-page show">
-          <div class="page-header">
-            <div>
-              <h2>Novo produto</h2>
-              <p>Preencha os dados e veja a pré-visualização na direita.</p>
-            </div>
+        <section class="admin-page show" style="padding:0;">
+
+          <!-- ── ABAS PRINCIPAIS ── -->
+          <div class="page-tabs">
+            <button class="tab-btn active" data-tab="estoque">
+              <i class="ti ti-box"></i> Estoque
+            </button>
+            <button class="tab-btn" data-tab="envio">
+              <i class="ti ti-truck"></i> Envio
+            </button>
           </div>
 
-          <div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin-top:16px;">
-            <form class="card" style="flex:1; min-width:320px; max-width:560px;">
-              <div class="form-group">
-                <label for="nome">Nome do produto</label>
-                <input id="nome" type="text" placeholder="Anel solitário rosê" />
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="categoria">Categoria</label>
-                  <select id="categoria">
-                    <option>Anéis</option>
-                    <option>Colares</option>
-                    <option>Brincos</option>
-                    <option>Bolsas</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="estoque">Estoque</label>
-                  <input id="estoque" type="number" min="0" placeholder="24" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="preco-varejo">Preço de varejo</label>
-                  <input id="preco-varejo" type="text" placeholder="R$ 89,90" />
-                </div>
-                <div class="form-group">
-                  <label for="preco-atacado">Preço de atacado</label>
-                  <input id="preco-atacado" type="text" placeholder="R$ 59,90" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="descricao">Descrição</label>
-                <textarea id="descricao" placeholder="Descrição do produto"></textarea>
-              </div>
-              <div class="form-group">
-                <label for="imagem">Imagem</label>
-                <input id="imagem" type="file" />
-              </div>
-              <div class="form-actions">
-                <button type="button" class="btn-cancel-form" onclick="location.href='admin.html'">Cancelar</button>
-                <button type="submit" class="btn-save-form">Salvar produto</button>
-              </div>
-            </form>
+          <!-- ════════════════════════════════════════
+               ABA 1 — ESTOQUE
+          ════════════════════════════════════════ -->
+          <div class="tab-content active" id="tab-estoque">
 
-            <aside class="product-preview-card" style="min-width:280px; max-width:340px;">
-              <div class="preview-img"><i class="ti ti-diamond preview-img-icon"></i></div>
-              <div class="preview-info">
-                <div class="preview-name">Anel solitário rosê</div>
-                <div class="preview-desc">Peça delicada com acabamento rosê e brilho intenso. Ideal para looks elegantes.</div>
-                <div class="preview-prices">
-                  <div class="retail-price">R$ 89,90</div>
-                  <div class="wholesale-price">Preço atacado R$ 59,90</div>
-                  <div class="profit-line">Lucro estimado +31%</div>
-                </div>
-                <div class="preview-stock"><i class="ti ti-stack"></i> Estoque disponível: 24 unidades</div>
-                <button class="btn-full" onclick="location.href='admin.html'">Voltar ao painel</button>
-              </div>
-            </aside>
-          </div>
-
-          <div class="page-header" style="margin-top:32px;">
-            <div><h2>Controle de estoque</h2><p>Visualize, edite ou remova produtos do seu catálogo.</p></div>
-          </div>
-
-          <div class="search-bar-admin">
-            <input type="search" placeholder="Buscar produto" />
-            <select><option>Todos os produtos</option><option>Anéis</option><option>Colares</option><option>Brincos</option><option>Bolsas</option></select>
-            <button class="btn btn-secondary">Filtrar</button>
-          </div>
-
-          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;" id="estoque-grid">
-            <div class="product-preview-card" style="width:calc(50% - 6px);">
-              <div class="preview-img"><i class="ti ti-ring preview-img-icon"></i></div>
-              <div class="preview-info">
-                <div class="preview-name">Anel solitário rosê</div>
-                <div class="preview-desc">Peça delicada com acabamento rosê e brilho intenso. Ideal para looks elegantes.</div>
-                <div class="preview-prices">
-                  <div class="retail-price">R$ 89,90</div>
-                  <div class="wholesale-price">Preço atacado R$ 59,90</div>
-                  <div class="profit-line">Estoque: 24 unidades</div>
-                </div>
-                <div style="display:flex;gap:8px;margin-top:12px;">
-                  <button class="btn-edit" style="flex:1;">Editar</button>
-                  <button class="btn-danger" style="flex:1;">Excluir</button>
-                </div>
+            <!-- 1.1 Cadastrar produto -->
+            <div class="sub-section-header">
+              <span class="sub-badge">1.1</span>
+              <div>
+                <h2>Cadastrar produto</h2>
+                <p>Preencha os dados e veja a pré-visualização na direita.</p>
               </div>
             </div>
-            <div class="product-preview-card" style="width:calc(50% - 6px);">
-              <div class="preview-img"><i class="ti ti-necklace preview-img-icon"></i></div>
-              <div class="preview-info">
-                <div class="preview-name">Colar de coração</div>
-                <div class="preview-desc">Peça delicada em formato de coração com corrente fina. Perfeito para looks minimalistas.</div>
-                <div class="preview-prices">
-                  <div class="retail-price">R$ 69,90</div>
-                  <div class="wholesale-price">Preço atacado R$ 49,90</div>
-                  <div class="profit-line">Estoque: 18 unidades</div>
+
+            <div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin-top:16px;">
+              <form class="card" style="flex:1; min-width:320px; max-width:560px;" onsubmit="salvarProduto(event)">
+                <div class="form-group">
+                  <label for="nome">Nome do produto</label>
+                  <input id="nome" type="text" placeholder="Anel solitário rosê" oninput="atualizarPreview()" />
                 </div>
-                <div style="display:flex;gap:8px;margin-top:12px;">
-                  <button class="btn-edit" style="flex:1;">Editar</button>
-                  <button class="btn-danger" style="flex:1;">Excluir</button>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="categoria">Categoria</label>
+                    <select id="categoria" onchange="atualizarPreview()">
+                      <option>Anéis</option>
+                      <option>Colares</option>
+                      <option>Brincos</option>
+                      <option>Bolsas</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="estoque-input">Estoque</label>
+                    <input id="estoque-input" type="number" min="0" placeholder="24" oninput="atualizarPreview()" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="preco-varejo">Preço de varejo</label>
+                    <input id="preco-varejo" type="text" placeholder="R$ 89,90" oninput="atualizarPreview()" />
+                  </div>
+                  <div class="form-group">
+                    <label for="preco-atacado">Preço de atacado</label>
+                    <input id="preco-atacado" type="text" placeholder="R$ 59,90" oninput="atualizarPreview()" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="descricao">Descrição</label>
+                  <textarea id="descricao" placeholder="Descrição do produto" oninput="atualizarPreview()"></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="imagem">Imagem</label>
+                  <input id="imagem" type="file" accept="image/*" onchange="atualizarImagemPreview(this)" />
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn-cancel-form" onclick="limparFormulario()">Cancelar</button>
+                  <button type="submit" class="btn-save-form"><i class="ti ti-device-floppy"></i> Salvar produto</button>
+                </div>
+              </form>
+
+              <aside class="product-preview-card" style="min-width:280px; max-width:340px; align-self:flex-start;">
+                <div class="preview-img" id="preview-img-wrap">
+                  <img id="preview-img-photo" src="" alt="" style="display:none;" />
+                  <i class="ti ti-diamond preview-img-icon" id="preview-img-icon"></i>
+                </div>
+                <div class="preview-info">
+                  <div class="preview-name" id="pv-nome">Nome do produto</div>
+                  <div class="preview-desc" id="pv-desc">Descrição do produto aparecerá aqui.</div>
+                  <div class="preview-prices">
+                    <div class="retail-price" id="pv-varejo">R$ 0,00</div>
+                    <div class="wholesale-price" id="pv-atacado">Preço atacado R$ 0,00</div>
+                    <div class="profit-line" id="pv-lucro">Lucro estimado —</div>
+                  </div>
+                  <div class="preview-stock"><i class="ti ti-stack"></i> Estoque: <span id="pv-estoque">0</span> unidades</div>
+                </div>
+              </aside>
+            </div>
+
+            <!-- 1.2 Calcular valor por peso -->
+            <div class="sub-section-header" style="margin-top:36px;">
+              <span class="sub-badge">1.2</span>
+              <div>
+                <h2>Calcular valor por peso</h2>
+                <p>Informe o peso e o custo por grama para obter o preço sugerido.</p>
+              </div>
+            </div>
+
+            <div class="calc-card">
+              <div class="calc-inputs">
+                <div class="form-group">
+                  <label>Peso do produto <span class="unit-tag">gramas</span></label>
+                  <input id="calc-peso" type="number" min="0" step="0.1" placeholder="300" oninput="calcularPorPeso()" />
+                </div>
+                <div class="form-group">
+                  <label>Custo por grama <span class="unit-tag">R$</span></label>
+                  <input id="calc-custo-g" type="number" min="0" step="0.01" placeholder="0.50" oninput="calcularPorPeso()" />
+                </div>
+                <div class="form-group">
+                  <label>Margem de lucro <span class="unit-tag">%</span></label>
+                  <input id="calc-margem" type="number" min="0" max="500" placeholder="40" oninput="calcularPorPeso()" />
+                </div>
+              </div>
+              <div class="calc-result">
+                <div class="calc-result-item">
+                  <span class="calc-label"><i class="ti ti-coin"></i> Custo total do material</span>
+                  <span class="calc-value neutral" id="res-custo">—</span>
+                </div>
+                <div class="calc-result-item">
+                  <span class="calc-label"><i class="ti ti-tag"></i> Preço varejo sugerido</span>
+                  <span class="calc-value green" id="res-varejo">—</span>
+                </div>
+                <div class="calc-result-item">
+                  <span class="calc-label"><i class="ti ti-building-store"></i> Preço atacado sugerido</span>
+                  <span class="calc-value blue" id="res-atacado">—</span>
                 </div>
               </div>
             </div>
+
+            <!-- 1.3 Lista de estoque com fotos -->
+            <div class="sub-section-header" style="margin-top:36px;">
+              <span class="sub-badge">1.3</span>
+              <div>
+                <h2>Lista de estoque</h2>
+                <p>Visualize, edite ou remova produtos do catálogo.</p>
+              </div>
+            </div>
+
+            <div class="search-bar-admin">
+              <input type="search" placeholder="Buscar produto" id="busca-produto" oninput="filtrarProdutos()" />
+              <select id="filtro-cat" onchange="filtrarProdutos()">
+                <option value="">Todos os produtos</option>
+                <option>Anéis</option>
+                <option>Colares</option>
+                <option>Brincos</option>
+                <option>Bolsas</option>
+              </select>
+              <button class="btn btn-secondary" onclick="filtrarProdutos()">Filtrar</button>
+            </div>
+
+            <div class="prod-list" id="prod-list"></div>
+
           </div>
+          <!-- /tab-estoque -->
+
+
+          <!-- ════════════════════════════════════════
+               ABA 2 — ENVIO
+          ════════════════════════════════════════ -->
+          <div class="tab-content" id="tab-envio">
+
+            <div class="sub-section-header">
+              <span class="sub-badge">2.1</span>
+              <div>
+                <h2>Calculadora de Frete</h2>
+                <p>Estime o valor do envio com base no peso e na tabela dos Correios.</p>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:24px; flex-wrap:wrap; margin-top:16px;">
+
+              <!-- 2.2 Formulário de cálculo -->
+              <div class="card" style="flex:1; min-width:280px; max-width:400px;">
+                <div class="sub-section-header" style="margin-top:0; margin-bottom:20px;">
+                  <span class="sub-badge">2.2</span>
+                  <div>
+                    <h3 style="font-size:14px; font-weight:700; color:var(--gray-800); margin:0 0 2px;">Calcular por peso</h3>
+                    <p style="font-size:12px; color:var(--gray-400); margin:0;">Insira o peso do pacote para ver a estimativa.</p>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Peso do pacote <span class="unit-tag">gramas</span></label>
+                  <input id="frete-peso" type="number" min="0" step="1" placeholder="300" oninput="calcularFrete()" />
+                </div>
+
+                <div class="frete-result" id="frete-result">
+                  <div class="frete-result-row">
+                    <span class="frete-label"><i class="ti ti-package-import"></i> PAC</span>
+                    <span class="frete-value pac" id="res-pac">—</span>
+                  </div>
+                  <div class="frete-result-row">
+                    <span class="frete-label"><i class="ti ti-bolt"></i> SEDEX</span>
+                    <span class="frete-value sedex" id="res-sedex">—</span>
+                  </div>
+                  <div class="frete-result-row media-row">
+                    <span class="frete-label"><i class="ti ti-math-function"></i> Média estimada</span>
+                    <span class="frete-value media" id="res-media">—</span>
+                  </div>
+                  <p class="frete-aviso"><i class="ti ti-info-circle"></i> Valores aproximados. O frete real varia conforme os CEPs de origem e destino.</p>
+                </div>
+              </div>
+
+              <!-- 2.3 Tabela de referência -->
+              <div class="card" style="flex:1.5; min-width:300px;">
+                <div class="sub-section-header" style="margin-top:0; margin-bottom:20px;">
+                  <span class="sub-badge">2.3</span>
+                  <div>
+                    <h3 style="font-size:14px; font-weight:700; color:var(--gray-800); margin:0 0 2px;">Tabela de referência</h3>
+                    <p style="font-size:12px; color:var(--gray-400); margin:0;">Preços médios por faixa de peso — Correios 2024.</p>
+                  </div>
+                </div>
+                <table class="shipping-table">
+                  <thead>
+                    <tr>
+                      <th>Faixa de peso</th>
+                      <th><i class="ti ti-package-import"></i> PAC</th>
+                      <th><i class="ti ti-bolt"></i> SEDEX</th>
+                      <th>Média</th>
+                    </tr>
+                  </thead>
+                  <tbody id="shipping-table-body"></tbody>
+                </table>
+                <p style="font-size:10px; color:var(--gray-400); margin-top:10px; display:flex; align-items:flex-start; gap:5px; line-height:1.5;">
+                  <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
+                  Valores estimados para envios locais/regionais. Consulte o site dos Correios para simulação exata por CEP.
+                </p>
+              </div>
+
+            </div>
+          </div>
+          <!-- /tab-envio -->
+
         </section>
       </main>
     </div>
   </div>
 
   <script>
+    // ─────────────────────────────────────────
+    //  Sidebar
+    // ─────────────────────────────────────────
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
-    const toggle = document.getElementById('sidebarToggle');
+    const toggle  = document.getElementById('sidebarToggle');
     function toggleSidebar() {
       sidebar.classList.toggle('open');
       overlay.classList.toggle('show');
     }
     toggle.addEventListener('click', toggleSidebar);
     overlay.addEventListener('click', toggleSidebar);
+
+    // ─────────────────────────────────────────
+    //  Navegação por abas
+    // ─────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ─────────────────────────────────────────
+    //  Pré-visualização do produto (1.1)
+    // ─────────────────────────────────────────
+    function atualizarPreview() {
+      const nome     = document.getElementById('nome').value || 'Nome do produto';
+      const desc     = document.getElementById('descricao').value || 'Descrição do produto aparecerá aqui.';
+      const varejo   = document.getElementById('preco-varejo').value || 'R$ 0,00';
+      const atacado  = document.getElementById('preco-atacado').value || 'R$ 0,00';
+      const estoque  = document.getElementById('estoque-input').value || '0';
+
+      document.getElementById('pv-nome').textContent    = nome;
+      document.getElementById('pv-desc').textContent    = desc;
+      document.getElementById('pv-varejo').textContent  = varejo;
+      document.getElementById('pv-atacado').textContent = 'Preço atacado ' + atacado;
+      document.getElementById('pv-estoque').textContent = estoque;
+
+      const v = parseFloat(varejo.replace(/[^\d,]/g, '').replace(',', '.'))  || 0;
+      const a = parseFloat(atacado.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      if (v > 0 && a > 0 && v > a) {
+        const lucro = ((v - a) / a * 100).toFixed(0);
+        document.getElementById('pv-lucro').textContent = 'Lucro estimado +' + lucro + '%';
+      } else {
+        document.getElementById('pv-lucro').textContent = 'Lucro estimado —';
+      }
+    }
+
+    function atualizarImagemPreview(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img  = document.getElementById('preview-img-photo');
+        const icon = document.getElementById('preview-img-icon');
+        img.src            = e.target.result;
+        img.style.display  = 'block';
+        icon.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ─────────────────────────────────────────
+    //  Calculadora por peso (1.2)
+    // ─────────────────────────────────────────
+    function formatBRL(v) {
+      return 'R$ ' + v.toFixed(2).replace('.', ',');
+    }
+
+    function calcularPorPeso() {
+      const peso    = parseFloat(document.getElementById('calc-peso').value)    || 0;
+      const custoG  = parseFloat(document.getElementById('calc-custo-g').value) || 0;
+      const margem  = parseFloat(document.getElementById('calc-margem').value)  || 0;
+
+      if (peso <= 0 || custoG <= 0) {
+        document.getElementById('res-custo').textContent   = '—';
+        document.getElementById('res-varejo').textContent  = '—';
+        document.getElementById('res-atacado').textContent = '—';
+        return;
+      }
+
+      const custo   = peso * custoG;
+      const varejo  = custo * (1 + margem / 100);
+      const atacado = custo * (1 + margem / 100 * 0.6);
+
+      document.getElementById('res-custo').textContent   = formatBRL(custo);
+      document.getElementById('res-varejo').textContent  = formatBRL(varejo);
+      document.getElementById('res-atacado').textContent = formatBRL(atacado);
+    }
+
+    // ─────────────────────────────────────────
+    //  Lista de estoque com fotos (1.3)
+    // ─────────────────────────────────────────
+    function getProdutos() {
+      try { return JSON.parse(localStorage.getItem('lapinkProdutos')) || []; } catch { return []; }
+    }
+    function saveProdutos(prods) {
+      localStorage.setItem('lapinkProdutos', JSON.stringify(prods));
+    }
+
+    const produtosExemplo = [
+      { id: 1, nome: 'Anel solitário rosê',  categoria: 'Anéis',   estoque: 24, precoVarejo: 89.90, precoAtacado: 59.90, imagem: null, icone: 'ti-ring'     },
+      { id: 2, nome: 'Colar de coração',      categoria: 'Colares', estoque: 18, precoVarejo: 69.90, precoAtacado: 49.90, imagem: null, icone: 'ti-necklace' },
+      { id: 3, nome: 'Brinco argola dourado', categoria: 'Brincos', estoque: 32, precoVarejo: 44.90, precoAtacado: 29.90, imagem: null, icone: 'ti-circle'   },
+    ];
+
+    if (getProdutos().length === 0) saveProdutos(produtosExemplo);
+
+    function renderProdutos(lista) {
+      const container = document.getElementById('prod-list');
+      container.innerHTML = `
+        <div class="prod-list-header">
+          <span></span>
+          <span>Produto</span>
+          <span>Categoria</span>
+          <span>Estoque</span>
+          <span>Preço varejo</span>
+          <span>Ações</span>
+        </div>`;
+
+      if (lista.length === 0) {
+        container.innerHTML += `
+          <div class="prod-list-empty">
+            <i class="ti ti-mood-empty"></i>
+            <span>Nenhum produto encontrado.</span>
+          </div>`;
+        return;
+      }
+
+      lista.forEach(p => {
+        const low  = p.estoque <= 5 ? 'low' : '';
+        const thumb = p.imagem
+          ? `<img src="${p.imagem}" alt="${p.nome}" />`
+          : `<i class="ti ${p.icone || 'ti-diamond'}"></i>`;
+
+        const div = document.createElement('div');
+        div.className = 'prod-list-item';
+        div.innerHTML = `
+          <div class="prod-list-thumb">${thumb}</div>
+          <span class="prod-list-name">${p.nome}</span>
+          <span class="prod-list-cat-badge">${p.categoria}</span>
+          <span class="prod-list-stock ${low}">${p.estoque} un</span>
+          <span class="prod-list-price">R$ ${p.precoVarejo.toFixed(2).replace('.', ',')}</span>
+          <div class="prod-list-actions">
+            <button class="btn-icon-sm edit"   title="Editar"  onclick="editarProduto(${p.id})"><i class="ti ti-pencil"></i></button>
+            <button class="btn-icon-sm danger" title="Excluir" onclick="excluirProduto(${p.id})"><i class="ti ti-trash"></i></button>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function filtrarProdutos() {
+      const busca = (document.getElementById('busca-produto').value || '').toLowerCase();
+      const cat   = document.getElementById('filtro-cat').value;
+      const todos = getProdutos();
+      const res   = todos.filter(p =>
+        (!busca || p.nome.toLowerCase().includes(busca)) &&
+        (!cat   || p.categoria === cat)
+      );
+      renderProdutos(res);
+    }
+
+    function excluirProduto(id) {
+      if (!confirm('Excluir este produto?')) return;
+      saveProdutos(getProdutos().filter(p => p.id !== id));
+      filtrarProdutos();
+    }
+
+    function editarProduto(id) {
+      const p = getProdutos().find(p => p.id === id);
+      if (!p) return;
+      document.getElementById('nome').value          = p.nome;
+      document.getElementById('categoria').value     = p.categoria;
+      document.getElementById('estoque-input').value = p.estoque;
+      document.getElementById('preco-varejo').value  = 'R$ ' + p.precoVarejo.toFixed(2).replace('.', ',');
+      document.getElementById('preco-atacado').value = 'R$ ' + p.precoAtacado.toFixed(2).replace('.', ',');
+      atualizarPreview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function limparFormulario() {
+      document.getElementById('nome').value          = '';
+      document.getElementById('estoque-input').value = '';
+      document.getElementById('preco-varejo').value  = '';
+      document.getElementById('preco-atacado').value = '';
+      document.getElementById('descricao').value     = '';
+      document.getElementById('imagem').value        = '';
+      document.getElementById('preview-img-photo').style.display = 'none';
+      document.getElementById('preview-img-icon').style.display  = '';
+      atualizarPreview();
+    }
+
+    function salvarProduto(e) {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value.trim();
+      if (!nome) { alert('Preencha o nome do produto.'); return; }
+
+      const parsePreco = v => parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      const imgEl = document.getElementById('preview-img-photo');
+
+      const novo = {
+        id:           Date.now(),
+        nome,
+        categoria:    document.getElementById('categoria').value,
+        estoque:      parseInt(document.getElementById('estoque-input').value) || 0,
+        precoVarejo:  parsePreco(document.getElementById('preco-varejo').value),
+        precoAtacado: parsePreco(document.getElementById('preco-atacado').value),
+        imagem:       (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : null,
+        icone:        'ti-diamond',
+      };
+
+      const todos = getProdutos();
+      todos.push(novo);
+      saveProdutos(todos);
+      filtrarProdutos();
+      limparFormulario();
+      alert('Produto salvo com sucesso!');
+    }
+
+    // ─────────────────────────────────────────
+    //  Tabela dos Correios (2.2 e 2.3)
+    // ─────────────────────────────────────────
+    const freteTabela = [
+      { faixa: 'Até 300g',    maxG: 300,   pac: 18.00,  sedex: 22.50  },
+      { faixa: '301g – 500g', maxG: 500,   pac: 21.50,  sedex: 28.00  },
+      { faixa: '501g – 1kg',  maxG: 1000,  pac: 25.00,  sedex: 35.00  },
+      { faixa: '1kg – 2kg',   maxG: 2000,  pac: 31.50,  sedex: 48.00  },
+      { faixa: '2kg – 5kg',   maxG: 5000,  pac: 45.00,  sedex: 75.00  },
+      { faixa: '5kg – 10kg',  maxG: 10000, pac: 68.00,  sedex: 115.00 },
+      { faixa: '10kg – 20kg', maxG: 20000, pac: 95.00,  sedex: 185.00 },
+      { faixa: '20kg – 30kg', maxG: 30000, pac: 140.00, sedex: 260.00 },
+    ];
+
+    // Preencher tabela de referência
+    const tbody = document.getElementById('shipping-table-body');
+    freteTabela.forEach(row => {
+      const media = ((row.pac + row.sedex) / 2).toFixed(2).replace('.', ',');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.faixa}</td>
+        <td>R$ ${row.pac.toFixed(2).replace('.', ',')}</td>
+        <td>R$ ${row.sedex.toFixed(2).replace('.', ',')}</td>
+        <td><strong>R$ ${media}</strong></td>`;
+      tbody.appendChild(tr);
+    });
+
+    function calcularFrete() {
+      const peso = parseFloat(document.getElementById('frete-peso').value) || 0;
+
+      if (peso <= 0) {
+        document.getElementById('res-pac').textContent   = '—';
+        document.getElementById('res-sedex').textContent = '—';
+        document.getElementById('res-media').textContent = '—';
+        document.querySelectorAll('#shipping-table-body tr').forEach(tr => tr.classList.remove('row-active'));
+        return;
+      }
+
+      const entrada = freteTabela.find(r => peso <= r.maxG) || freteTabela[freteTabela.length - 1];
+      const media   = (entrada.pac + entrada.sedex) / 2;
+
+      document.getElementById('res-pac').textContent   = formatBRL(entrada.pac);
+      document.getElementById('res-sedex').textContent = formatBRL(entrada.sedex);
+      document.getElementById('res-media').textContent = formatBRL(media);
+
+      document.querySelectorAll('#shipping-table-body tr').forEach((tr, i) => {
+        tr.classList.toggle('row-active', freteTabela[i] === entrada);
+      });
+    }
+
+    // ─────────────────────────────────────────
+    //  Init
+    // ─────────────────────────────────────────
+    renderProdutos(getProdutos());
   </script>
 </body>
 </html>
