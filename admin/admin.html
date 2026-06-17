@@ -3,19 +3,50 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bella Joias — Painel Admin</title>
+<title>LaPink — Dashboard</title>
 <link rel="stylesheet" href="../css/Principal.css" />
 <link rel="stylesheet" href="../css/componentes.css" />
 <link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    background: var(--gray-800); color: var(--white);
+    padding: 12px 20px; border-radius: var(--radius-md);
+    font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow-md);
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .25s, transform .25s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: #1ebe5a; }
+  .toast.error   { background: var(--red-400); }
+
+  .empty-state {
+    text-align: center; padding: 48px 24px; color: var(--gray-400);
+  }
+  .empty-state i { font-size: 40px; display: block; margin-bottom: 12px; }
+  .empty-state a { color: var(--pink-500); font-weight: 600; }
+
+  .stock-list { list-style: none; padding: 0; margin: 0; }
+  .stock-list li {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: .5px solid var(--gray-100);
+    font-size: 12px; color: var(--gray-800);
+  }
+  .stock-list li:last-child { border-bottom: none; }
+  .stock-list .s-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 8px; }
+</style>
 </head>
 <body>
   <div id="app-admin">
     <div class="admin-layout">
+
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
           <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
-          <div class="logo-name">Bella Joias</div>
+          <div class="logo-name">LaPink</div>
         </div>
         <div class="sidebar-nav">
           <div class="nav-section-label">Visão geral</div>
@@ -23,12 +54,14 @@
           <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Loja</div>
+          <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
           <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
-          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+          <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
         </div>
         <div class="sidebar-footer">
-          <button><i class="ti ti-power"></i>Sair</button>
+          <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
         </div>
       </aside>
 
@@ -38,79 +71,361 @@
         <header class="admin-topbar">
           <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
           <h1>Dashboard</h1>
-          <div class="topbar-right"><span>Olá, Carol</span><span class="admin-badge">Admin</span></div>
+          <div class="topbar-right"><span id="admin-greeting">Olá, Carol</span><span class="admin-badge">Admin</span></div>
         </header>
 
         <section class="admin-page show">
           <div class="page-header">
             <div>
               <h2>Resumo rápido</h2>
-              <p>Visão geral das vendas, estoque e pedidos em espera.</p>
+              <p>Visão geral do estoque, produtos e clientes cadastrados.</p>
             </div>
-            <button class="btn btn-primary" onclick="location.href='cadastro-produto.html'">Novo produto</button>
+            <button class="btn btn-primary" onclick="location.href='cadastro-produto.html'">
+              <i class="ti ti-plus"></i> Novo produto
+            </button>
           </div>
 
+          <!-- Stats dinâmicos -->
           <div class="stat-grid">
-            <div class="stat-card"><div class="s-label">Vendas hoje</div><div class="s-value">R$ 3.480</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +12%</div></div>
-            <div class="stat-card"><div class="s-label">Pedidos</div><div class="s-value">48</div><div class="s-delta neutral"><i class="ti ti-info-circle"></i> Estável</div></div>
-            <div class="stat-card"><div class="s-label">Clientes</div><div class="s-value">1.234</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +8%</div></div>
-            <div class="stat-card"><div class="s-label">Carrinhos abandonados</div><div class="s-value">7</div><div class="s-delta down"><i class="ti ti-trending-down"></i> -4%</div></div>
+            <a class="stat-card" href="cadastro-produto.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Produtos</div>
+              <div class="s-value" id="stat-produtos">—</div>
+              <div class="s-delta neutral"><i class="ti ti-package"></i> cadastrados</div>
+            </a>
+            <a class="stat-card" href="relatorios.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Valor em estoque</div>
+              <div class="s-value" id="stat-valor">—</div>
+              <div class="s-delta up"><i class="ti ti-trending-up"></i> a preço varejo</div>
+            </a>
+            <a class="stat-card" href="relatorios.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Estoque crítico</div>
+              <div class="s-value" id="stat-critico">—</div>
+              <div class="s-delta down"><i class="ti ti-alert-triangle"></i> ≤ 5 unidades</div>
+            </a>
+            <a class="stat-card" href="clientes.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Clientes</div>
+              <div class="s-value" id="stat-clientes">—</div>
+              <div class="s-delta neutral"><i class="ti ti-users"></i> cadastrados</div>
+            </a>
           </div>
 
+          <!-- Gráficos principais -->
           <div class="chart-grid-2">
-            <div class="chart-box"><h3>Visitas da semana</h3><div class="map-placeholder"><i class="ti ti-device-mobile"></i><span>Gráfico integrado</span></div></div>
-            <div class="chart-box"><h3>Fluxo de vendas</h3><div class="map-placeholder"><i class="ti ti-chart-pie"></i><span>Dados em tempo real</span></div></div>
+            <div class="chart-box">
+              <h3>Receita por categoria</h3>
+              <div id="chart-categoria"></div>
+            </div>
+            <div class="chart-box">
+              <h3>Top produtos por valor</h3>
+              <div id="chart-top-produtos"></div>
+            </div>
           </div>
 
+          <!-- Estoque baixo + Carrinhos abandonados -->
           <div class="chart-grid-3">
             <div class="card">
-              <div class="section-header"><span class="section-title">Top produtos</span></div>
-              <div class="top-item"><span class="top-item-name">Anel solitário rosê</span><div class="top-bar-wrap"><div class="top-bar" style="width:85%"></div></div><span class="top-val">85%</span></div>
-              <div class="top-item"><span class="top-item-name">Colar de coração</span><div class="top-bar-wrap"><div class="top-bar" style="width:72%"></div></div><span class="top-val">72%</span></div>
-              <div class="top-item"><span class="top-item-name">Bolsa mini clutch</span><div class="top-bar-wrap"><div class="top-bar" style="width:61%"></div></div><span class="top-val">61%</span></div>
+              <div class="section-header"><span class="section-title">Estoque baixo</span></div>
+              <ul class="stock-list" id="lista-estoque-baixo">
+                <li><span class="s-name" style="color:var(--gray-400);">Carregando...</span></li>
+              </ul>
             </div>
             <div class="card">
               <div class="section-header"><span class="section-title">Carrinhos abandonados</span></div>
-              <div class="ab-card"><div class="ab-user"><div class="ab-avatar">MS</div><div class="ab-info"><strong>Marcela S.</strong><span>3 itens no carrinho</span></div></div><div class="ab-meta"><span class="ab-value">R$ 348</span><button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button></div></div>
-              <div class="ab-card"><div class="ab-user"><div class="ab-avatar">LA</div><div class="ab-info"><strong>Larissa A.</strong><span>2 itens no carrinho</span></div></div><div class="ab-meta"><span class="ab-value">R$ 229</span><button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button></div></div>
+              <div class="ab-card">
+                <div class="ab-user">
+                  <div class="ab-avatar">MS</div>
+                  <div class="ab-info"><strong>Marcela S.</strong><span>3 itens no carrinho</span></div>
+                </div>
+                <div class="ab-meta">
+                  <span class="ab-value">R$ 348</span>
+                  <button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button>
+                </div>
+              </div>
+              <div class="ab-card">
+                <div class="ab-user">
+                  <div class="ab-avatar">LA</div>
+                  <div class="ab-info"><strong>Larissa A.</strong><span>2 itens no carrinho</span></div>
+                </div>
+                <div class="ab-meta">
+                  <span class="ab-value">R$ 229</span>
+                  <button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button>
+                </div>
+              </div>
             </div>
           </div>
 
+          <!-- Controle de produtos -->
           <div class="page-header" style="margin-top:24px;">
-            <div><h2>Controle de produtos</h2><p>Edite, inclua ou remova itens disponíveis na loja.</p></div>
+            <div>
+              <h2>Controle de produtos</h2>
+              <p>Edite, inclua ou remova itens disponíveis na loja.</p>
+            </div>
           </div>
 
           <div class="search-bar-admin">
-            <input type="search" placeholder="Buscar produto" />
-            <select><option>Todos os produtos</option><option>Anéis</option><option>Colares</option><option>Bolsas</option></select>
-            <button class="btn btn-secondary">Filtrar</button>
+            <input type="search" id="busca-produto" placeholder="Buscar por nome ou categoria…" oninput="renderTabela()" />
           </div>
 
           <div class="table-box">
             <table class="data-table">
-              <thead><tr><th>Produto</th><th>Categoria</th><th>Estoque</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
-              <tbody>
-                <tr><td><div class="prod-thumb"><i class="ti ti-ring"></i></div> Anel solitário rosê</td><td>Anéis</td><td>24</td><td>R$ 89,90</td><td><span class="badge badge-pink">Ativo</span></td><td class="action-row"><button class="btn-edit">Editar</button><button class="btn-danger">Excluir</button></td></tr>
-                <tr><td><div class="prod-thumb"><i class="ti ti-necklace"></i></div> Colar de coração</td><td>Colares</td><td>18</td><td>R$ 69,90</td><td><span class="badge badge-green">Ativo</span></td><td class="action-row"><button class="btn-edit">Editar</button><button class="btn-danger">Excluir</button></td></tr>
-                <tr><td><div class="prod-thumb"><i class="ti ti-briefcase"></i></div> Bolsa mini clutch</td><td>Bolsas</td><td>11</td><td>R$ 149,90</td><td><span class="badge badge-amber">Estoque baixo</span></td><td class="action-row"><button class="btn-edit">Editar</button><button class="btn-danger">Excluir</button></td></tr>
-              </tbody>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Estoque</th>
+                  <th>Preço Varejo</th>
+                  <th>Lucro/un</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-produtos-body"></tbody>
             </table>
           </div>
+
         </section>
       </main>
     </div>
   </div>
 
   <script>
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const toggle = document.getElementById('sidebarToggle');
-    function toggleSidebar() {
+    /* ── Sidebar toggle ── */
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
       sidebar.classList.toggle('open');
       overlay.classList.toggle('show');
+    });
+    overlay.addEventListener('click', function() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+
+    /* ── Helpers ── */
+    function parseBRL(v) {
+      return parseFloat((v || '0').replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
     }
-    toggle.addEventListener('click', toggleSidebar);
-    overlay.addEventListener('click', toggleSidebar);
+    function formatBRL(v) {
+      return 'R$ ' + v.toFixed(2).replace('.', ',');
+    }
+    function showToast(msg, tipo) {
+      var t = document.createElement('div');
+      t.className = 'toast' + (tipo ? ' ' + tipo : '');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { t.classList.add('show'); });
+      });
+      setTimeout(function() {
+        t.classList.remove('show');
+        setTimeout(function() { t.remove(); }, 300);
+      }, 3000);
+    }
+
+    /* ── Dados ── */
+    function getProdutos() {
+      try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
+    }
+    function getClients() {
+      try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }
+    }
+
+    /* ── Stats ── */
+    function renderStats() {
+      var produtos = getProdutos();
+      var clientes = getClients();
+
+      document.getElementById('stat-produtos').textContent = produtos.length;
+      document.getElementById('stat-clientes').textContent = clientes.length;
+
+      var valorTotal = 0;
+      var critico = 0;
+      produtos.forEach(function(p) {
+        var preco = parseBRL(String(p.precoVarejo || 0));
+        var est = parseInt(p.estoque) || 0;
+        valorTotal += preco * est;
+        if (est <= 5) critico++;
+      });
+
+      document.getElementById('stat-valor').textContent = formatBRL(valorTotal);
+      document.getElementById('stat-critico').textContent = critico;
+    }
+
+    /* ── SVG bar chart — receita por categoria ── */
+    function renderChartCategoria() {
+      var produtos = getProdutos();
+      var categorias = {};
+      produtos.forEach(function(p) {
+        var cat = p.categoria || 'Outros';
+        var preco = parseBRL(String(p.precoVarejo || 0));
+        var est = parseInt(p.estoque) || 0;
+        categorias[cat] = (categorias[cat] || 0) + preco * est;
+      });
+
+      var entries = Object.keys(categorias).map(function(k) {
+        return { label: k, value: categorias[k] };
+      }).sort(function(a, b) { return b.value - a.value; }).slice(0, 6);
+
+      var container = document.getElementById('chart-categoria');
+      if (!entries.length) {
+        container.innerHTML = '<div class="map-placeholder"><i class="ti ti-chart-bar"></i><span>Sem dados</span></div>';
+        return;
+      }
+
+      var max = Math.max.apply(null, entries.map(function(e) { return e.value; })) || 1;
+      var w = 400;
+      var h = 160;
+      var barW = Math.floor((w - 40) / entries.length) - 8;
+      var baseY = h - 30;
+
+      var bars = entries.map(function(e, i) {
+        var barH = Math.max(4, Math.round((e.value / max) * (baseY - 20)));
+        var x = 20 + i * (barW + 8);
+        var y = baseY - barH;
+        var label = e.label.length > 7 ? e.label.slice(0, 6) + '…' : e.label;
+        var val = e.value >= 1000
+          ? 'R$' + (e.value / 1000).toFixed(1) + 'k'
+          : 'R$' + e.value.toFixed(0);
+        return (
+          '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" rx="3" fill="var(--pink-300)" />' +
+          '<text x="' + (x + barW / 2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="9" fill="var(--gray-400)">' + val + '</text>' +
+          '<text x="' + (x + barW / 2) + '" y="' + (baseY + 12) + '" text-anchor="middle" font-size="9" fill="var(--gray-400)">' + label + '</text>'
+        );
+      }).join('');
+
+      container.innerHTML = (
+        '<svg width="100%" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMid meet" style="display:block;">' +
+        '<rect width="' + w + '" height="' + h + '" fill="#fff" />' +
+        bars +
+        '</svg>'
+      );
+    }
+
+    /* ── Top 5 produtos por valor ── */
+    function renderTopProdutos() {
+      var produtos = getProdutos();
+      var container = document.getElementById('chart-top-produtos');
+
+      if (!produtos.length) {
+        container.innerHTML = '<div class="map-placeholder"><i class="ti ti-package"></i><span>Sem produtos</span></div>';
+        return;
+      }
+
+      var sorted = produtos.slice().sort(function(a, b) {
+        var va = parseBRL(String(a.precoVarejo || 0)) * (parseInt(a.estoque) || 0);
+        var vb = parseBRL(String(b.precoVarejo || 0)) * (parseInt(b.estoque) || 0);
+        return vb - va;
+      }).slice(0, 5);
+
+      var max = parseBRL(String(sorted[0].precoVarejo || 0)) * (parseInt(sorted[0].estoque) || 0) || 1;
+
+      var html = sorted.map(function(p) {
+        var val = parseBRL(String(p.precoVarejo || 0)) * (parseInt(p.estoque) || 0);
+        var pct = Math.round((val / max) * 100);
+        var nome = (p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto');
+        return (
+          '<div class="top-item">' +
+          '<span class="top-item-name">' + nome + '</span>' +
+          '<div class="top-bar-wrap"><div class="top-bar" style="width:' + pct + '%"></div></div>' +
+          '<span class="top-val">' + formatBRL(val) + '</span>' +
+          '</div>'
+        );
+      }).join('');
+
+      container.innerHTML = html;
+    }
+
+    /* ── Lista estoque baixo ── */
+    function renderEstoqueBaixo() {
+      var produtos = getProdutos();
+      var lista = document.getElementById('lista-estoque-baixo');
+      var baixos = produtos.filter(function(p) { return (parseInt(p.estoque) || 0) <= 10; });
+
+      if (!baixos.length) {
+        lista.innerHTML = '<li><span class="s-name" style="color:var(--gray-400);">Nenhum produto com estoque baixo.</span></li>';
+        return;
+      }
+
+      baixos.sort(function(a, b) { return (parseInt(a.estoque) || 0) - (parseInt(b.estoque) || 0); });
+
+      lista.innerHTML = baixos.map(function(p) {
+        var est = parseInt(p.estoque) || 0;
+        var cor = est <= 5 ? 'var(--red-400)' : 'var(--amber-400, #f59e0b)';
+        var nome = (p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto');
+        return (
+          '<li>' +
+          '<span class="s-name">' + nome + '</span>' +
+          '<span class="badge" style="background:' + cor + ';color:#fff;font-size:10px;padding:2px 8px;border-radius:20px;margin-right:6px;">' + est + ' un</span>' +
+          '<a href="cadastro-produto.html?id=' + p.id + '" style="font-size:10px;font-weight:700;color:var(--pink-500);text-decoration:none;">Repor</a>' +
+          '</li>'
+        );
+      }).join('');
+    }
+
+    /* ── Tabela de produtos ── */
+    function renderTabela() {
+      var produtos = getProdutos();
+      var busca = (document.getElementById('busca-produto').value || '').toLowerCase().trim();
+      var tbody = document.getElementById('tabela-produtos-body');
+
+      var filtrados = busca
+        ? produtos.filter(function(p) {
+            return (p.nome || '').toLowerCase().includes(busca) ||
+                   (p.categoria || '').toLowerCase().includes(busca);
+          })
+        : produtos;
+
+      if (!filtrados.length) {
+        tbody.innerHTML = (
+          '<tr><td colspan="7">' +
+          '<div class="empty-state">' +
+          '<i class="ti ti-package-off"></i>' +
+          (produtos.length
+            ? 'Nenhum produto encontrado para "<strong>' + busca + '</strong>".'
+            : 'Nenhum produto cadastrado ainda. <a href="cadastro-produto.html">Cadastrar agora</a>') +
+          '</div></td></tr>'
+        );
+        return;
+      }
+
+      tbody.innerHTML = filtrados.map(function(p) {
+        var est = parseInt(p.estoque) || 0;
+        var preco = parseBRL(String(p.precoVarejo || 0));
+        var lucro = parseBRL(String(p.lucroUnitario || 0));
+        var icone = p.icone || 'ti-diamond';
+        var statusBadge = est <= 5
+          ? '<span class="badge badge-amber">Estoque baixo</span>'
+          : '<span class="badge badge-green">Ativo</span>';
+
+        return (
+          '<tr>' +
+          '<td style="display:flex;align-items:center;gap:10px;">' +
+          '<div class="prod-thumb"><i class="ti ' + icone + '"></i></div>' +
+          '<span>' + (p.nome || '—') + '</span>' +
+          '</td>' +
+          '<td>' + (p.categoria || '—') + '</td>' +
+          '<td>' + est + '</td>' +
+          '<td>' + (preco ? formatBRL(preco) : '—') + '</td>' +
+          '<td class="profit-cell">' + (lucro ? formatBRL(lucro) : '—') + '</td>' +
+          '<td>' + statusBadge + '</td>' +
+          '<td class="action-row">' +
+          '<button class="btn-edit" onclick="location.href=\'cadastro-produto.html?id=' + p.id + '\'">Editar</button>' +
+          '</td>' +
+          '</tr>'
+        );
+      }).join('');
+    }
+
+    /* ── Init ── */
+    function init() {
+      renderStats();
+      renderChartCategoria();
+      renderTopProdutos();
+      renderEstoqueBaixo();
+      renderTabela();
+    }
+
+    init();
   </script>
 </body>
 </html>

@@ -57,6 +57,36 @@
 .top-bar { height: 8px; border-radius: 10px; background: var(--pink-300); }
 .top-val { font-size: 11px; color: var(--gray-400); min-width: 36px; text-align: right; }
 
+/* ── Form wrap centralizado ── */
+.form-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: 16px auto 0;
+  max-width: 940px;
+}
+.form-cadastro-card {
+  flex: 0 1 560px;
+  min-width: 280px;
+}
+.form-preview-card {
+  flex: 0 0 auto;
+  width: 300px;
+  min-width: 260px;
+  align-self: flex-start;
+}
+
+/* ── Highlight produto recém-adicionado ── */
+@keyframes highlightNew {
+  0%   { background: var(--pink-100); }
+  100% { background: transparent; }
+}
+.prod-list-item--new {
+  animation: highlightNew 2s ease forwards;
+}
+
 /* ── Product form ── */
 .pricing-box { background: var(--pink-50); border: .5px solid var(--pink-100); border-radius: var(--radius-md); padding: 18px; margin-top: 16px; }
 .pricing-box h4 { font-size: 12px; font-weight: 700; color: var(--pink-600); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
@@ -145,10 +175,58 @@
 .calc-value.green   { color: var(--green-400); }
 .calc-value.blue    { color: var(--blue-400);  }
 
+/* ── Seção de custo pelo peso (form 1.1) ── */
+.cost-section {
+  background: var(--pink-50);
+  border: .5px solid var(--pink-100);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.cost-section-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pink-500);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 14px;
+}
+.cost-section .form-group input { background: var(--white); }
+.cost-result-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: .5px solid var(--pink-200);
+}
+.crb-item {
+  flex: 1;
+  min-width: 110px;
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: .5px solid var(--gray-100);
+}
+.crb-item strong { color: var(--gray-800); margin-left: 2px; }
+.crb-item.green strong { color: var(--green-400); }
+.crb-item.blue  strong { color: var(--blue-400);  }
+.crb-item.pink  strong { color: var(--pink-500);  }
+
 /* ── Product list (1.3) ── */
 .prod-list { background: var(--white); border: .5px solid var(--gray-200); border-radius: var(--radius-lg); overflow: hidden; margin-top: 16px; }
 .prod-list-header,
-.prod-list-item { display: grid; grid-template-columns: 52px 1fr 130px 80px 120px 88px; align-items: center; gap: 12px; padding: 10px 16px; }
+.prod-list-item { display: grid; grid-template-columns: 52px 1fr 110px 72px 100px 94px 80px; align-items: center; gap: 12px; padding: 10px 16px; }
+.prod-list-lucro { font-size: 12px; color: var(--gray-300); font-weight: 600; }
+.prod-list-lucro.has-value { color: var(--green-400); }
 .prod-list-header { background: var(--gray-50); border-bottom: .5px solid var(--gray-100); font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .05em; }
 .prod-list-item { border-bottom: .5px solid var(--gray-100); transition: background var(--transition); }
 .prod-list-item:last-child { border-bottom: none; }
@@ -205,18 +283,24 @@
   .tab-content { padding: 16px; }
   .photo-upload-grid { grid-template-columns: repeat(2, 1fr); }
   .product-preview-card { max-width: 100%; }
+  .form-wrap { flex-direction: column; align-items: stretch; }
+  .form-cadastro-card, .form-preview-card { width: 100%; flex: none; min-width: 0; }
   .ab-card { flex-direction: column; align-items: flex-start; }
   .ab-meta { text-align: left; width: 100%; display: flex; align-items: center; justify-content: space-between; }
 
   /* Product list mobile */
   .prod-list-header { display: none; }
-  .prod-list-item { grid-template-columns: 44px 1fr auto; grid-template-rows: auto auto; gap: 4px 10px; padding: 12px 14px; }
-  .prod-list-thumb { grid-row: 1 / 3; }
-  .prod-list-name { font-size: 12px; }
-  .prod-list-cat-badge { font-size: 10px; padding: 2px 7px; }
+  .prod-list-item { grid-template-columns: 44px 1fr auto; grid-template-rows: auto auto auto; gap: 2px 10px; padding: 12px 14px; }
+  .prod-list-thumb { grid-row: 1 / 4; }
+  .prod-list-name { font-size: 12px; grid-column: 2; }
+  .prod-list-cat-badge { font-size: 10px; padding: 2px 7px; grid-column: 2; }
   .prod-list-stock { display: none; }
   .prod-list-price { grid-column: 3; grid-row: 1; font-size: 12px; text-align: right; }
-  .prod-list-actions { grid-column: 3; grid-row: 2; justify-content: flex-end; }
+  .prod-list-lucro { grid-column: 3; grid-row: 2; font-size: 11px; text-align: right; }
+  .prod-list-actions { grid-column: 3; grid-row: 3; justify-content: flex-end; }
+  /* Cost section mobile */
+  .cost-result-bar { flex-direction: column; }
+  .crb-item { min-width: 0; }
 
   /* Calc mobile */
   .calc-inputs { flex-direction: column; }
@@ -224,4 +308,56 @@
 
   /* Tab buttons mobile */
   .tab-btn { padding: 12px 14px; font-size: 12px; }
+}
+
+/* ── Modal: Editar produto ── */
+.modal--edit-produto { width: 640px; }
+.modal-edit-body { display: flex; gap: 20px; margin-top: 16px; }
+.modal-edit-preview {
+  flex: 0 0 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.modal-edit-preview .preview-img {
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-lg);
+  background: var(--pink-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: .5px solid var(--gray-200);
+}
+.modal-edit-preview .preview-img img { width: 100%; height: 100%; object-fit: cover; }
+.modal-edit-preview .preview-img .preview-img-icon { font-size: 36px; color: var(--pink-300); }
+.modal-edit-code-badge {
+  background: var(--gray-100);
+  color: var(--gray-500);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  letter-spacing: .06em;
+  text-align: center;
+  width: 100%;
+}
+.modal-edit-fields { flex: 1; min-width: 0; }
+.prod-list-code {
+  display: block;
+  font-size: 10px;
+  color: var(--gray-400);
+  font-family: monospace;
+  font-weight: 600;
+  margin-top: 1px;
+  letter-spacing: .04em;
+}
+
+@media (max-width: 640px) {
+  .modal--edit-produto { width: 100%; }
+  .modal-edit-body { flex-direction: column; }
+  .modal-edit-preview { flex-direction: row; flex: none; align-self: stretch; }
 }

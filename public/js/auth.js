@@ -1,74 +1,68 @@
-/**
- * auth.js - Gerenciador de autenticação genérico
- * Detecta sessão do usuário e atualiza elementos de navegação
- */
-
-// Salvar página de origem quando clica em login/cadastro
-document.addEventListener('DOMContentLoaded', () => {
-  const loginLink = document.getElementById('loginLink');
-  const loginBtn = document.getElementById('loginBtn');
-  const registerBtn = document.getElementById('registerBtn');
-
-  if (loginLink) {
-    loginLink.addEventListener('click', () => {
-      sessionStorage.setItem('referrerPage', window.location.pathname.split('/').pop() || 'index.html');
-    });
+function showToast(msg) {
+  let el = document.getElementById('_lapink_toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_lapink_toast';
+    el.className = 'toast';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    document.body.appendChild(el);
   }
-  if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-      sessionStorage.setItem('referrerPage', window.location.pathname.split('/').pop() || 'index.html');
-    });
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(function() { el.style.display = 'none'; }, 2800);
+}
+
+function updateAuthUI() {
+  var client = getLoggedClient();
+
+  function show(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = val;
   }
-  if (registerBtn) {
-    registerBtn.addEventListener('click', () => {
-      sessionStorage.setItem('referrerPage', window.location.pathname.split('/').pop() || 'index.html');
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  if (client && client.name) {
+    setText('navUser', 'Olá, ' + client.name.split(' ')[0]);
+    show('loginLink', 'none');
+    show('logoutBtn', 'inline-flex');
+    show('loginBtn', 'none');
+    show('registerBtn', 'none');
+    show('drawerLoginBtn', 'none');
+    show('drawerRegisterBtn', 'none');
+  } else {
+    setText('navUser', '');
+    show('loginLink', 'inline-flex');
+    show('logoutBtn', 'none');
+    show('loginBtn', 'inline-block');
+    show('registerBtn', 'inline-block');
+    show('drawerLoginBtn', '');
+    show('drawerRegisterBtn', '');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var saveReferrer = function() {
+    sessionStorage.setItem('referrerPage', window.location.pathname.split('/').pop() || 'index.html');
+  };
+
+  ['loginLink', 'loginBtn', 'registerBtn'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', saveReferrer);
+  });
+
+  updateAuthUI();
+
+  var logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function() {
+      clearLoggedClient();
+      updateAuthUI();
+      showToast('Você saiu da conta.');
     });
   }
 });
-
-function updateAuthUI() {
-  const client = getLoggedClient();
-  
-  // Elementos de login/logout
-  const loginLink = document.getElementById('loginLink');
-  const navUser = document.getElementById('navUser');
-  const logoutBtn = document.getElementById('logoutBtn');
-  
-  // Botões de ação
-  const loginBtn = document.getElementById('loginBtn');
-  const registerBtn = document.getElementById('registerBtn');
-  const panelBtn = document.getElementById('panelBtn');
-
-  if (client && client.name) {
-    // Usuário logado
-    if (navUser) navUser.textContent = `Olá, ${client.name.split(' ')[0]}`;
-    if (loginLink) loginLink.style.display = 'none';
-    if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-    if (loginBtn) loginBtn.style.display = 'none';
-    if (registerBtn) registerBtn.style.display = 'none';
-  } else {
-    // Usuário não logado
-    if (navUser) navUser.textContent = '';
-    if (loginLink) loginLink.style.display = 'inline-flex';
-    if (logoutBtn) logoutBtn.style.display = 'none';
-    if (loginBtn) loginBtn.style.display = 'inline-block';
-    if (registerBtn) registerBtn.style.display = 'inline-block';
-  }
-}
-
-// Atualizar UI ao carregar
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', updateAuthUI);
-} else {
-  updateAuthUI();
-}
-
-// Listener para logout
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    clearLoggedClient();
-    updateAuthUI();
-    alert('Você saiu da conta.');
-  });
-}

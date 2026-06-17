@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bella Joias — Clientes</title>
+<title>LaPink — Clientes</title>
 <link rel="stylesheet" href="../css/Principal.css" />
 <link rel="stylesheet" href="../css/componentes.css" />
 <link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
@@ -27,7 +27,7 @@
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
           <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
-          <div class="logo-name">Bella Joias</div>
+          <div class="logo-name">LaPink</div>
         </div>
         <div class="sidebar-nav">
           <div class="nav-section-label">Visão geral</div>
@@ -35,12 +35,14 @@
           <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link active" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Loja</div>
+          <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
           <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
-          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+          <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
         </div>
         <div class="sidebar-footer">
-          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
+          <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
         </div>
       </aside>
 
@@ -57,17 +59,40 @@
           <div class="page-header">
             <div>
               <h2>Clientes salvos</h2>
-              <p>Lista de clientes com compras anteriores, e-mail, WhatsApp e senha para acesso.</p>
+              <p>Total: <strong id="clientes-count">0</strong> clientes cadastrados.</p>
             </div>
             <button class="btn btn-primary" onclick="location.href='cadastro-cliente.html'">Novo cliente</button>
           </div>
 
+          <div class="stat-grid" id="clientes-stats" style="margin-bottom:20px;">
+            <div class="stat-card">
+              <div class="s-label">Total de clientes</div>
+              <div class="s-value" id="stat-total">0</div>
+              <div class="s-delta up"><i class="ti ti-users"></i> +2 este mês</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Gasto total</div>
+              <div class="s-value" id="stat-gasto">R$ 0,00</div>
+              <div class="s-delta up"><i class="ti ti-trending-up"></i> acumulado</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Maior comprador</div>
+              <div class="s-value" id="stat-top" style="font-size:1rem;">—</div>
+              <div class="s-delta up"><i class="ti ti-award"></i> destaque</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Ticket médio</div>
+              <div class="s-value" id="stat-ticket">—</div>
+              <div class="s-delta up"><i class="ti ti-receipt"></i> por cliente</div>
+            </div>
+          </div>
+
           <div class="search-bar-admin">
             <input type="search" placeholder="Buscar cliente por nome, e-mail ou WhatsApp" />
-            <select>
-              <option>Todos os clientes</option>
-              <option>Mais recentes</option>
-              <option>Maior gasto</option>
+            <select onchange="renderClients()">
+              <option value="todos">Todos os clientes</option>
+              <option value="recentes">Mais recentes</option>
+              <option value="gasto">Maior gasto</option>
             </select>
             <button class="btn btn-secondary">Filtrar</button>
           </div>
@@ -79,18 +104,24 @@
   </div>
 
   <script>
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const toggle = document.getElementById('sidebarToggle');
-    function toggleSidebar() {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('show');
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    document.getElementById('sidebarToggle').addEventListener('click', function() { sidebar.classList.toggle('open'); overlay.classList.toggle('show'); });
+    overlay.addEventListener('click', function() { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
+
+    function showToast(msg, tipo) {
+      var el = document.getElementById('_toast');
+      if (!el) { el = document.createElement('div'); el.id = '_toast'; el.className = 'toast'; el.setAttribute('role','status'); document.body.appendChild(el); }
+      el.textContent = msg;
+      el.style.background = tipo === 'erro' ? 'var(--red-400)' : 'var(--pink-700)';
+      el.style.display = 'block';
+      clearTimeout(el._t);
+      el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
     }
-    toggle.addEventListener('click', toggleSidebar);
-    overlay.addEventListener('click', toggleSidebar);
-    const STORAGE_KEY = 'lapinkClients';
-    const clientGrid = document.getElementById('clientGrid');
-    const searchInput = document.querySelector('.search-bar-admin input');
+
+    var STORAGE_KEY = 'lapinkClients';
+    var clientGrid = document.getElementById('clientGrid');
+    var searchInput = document.querySelector('.search-bar-admin input');
 
     function getClients() {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -104,80 +135,108 @@
       return password ? '•'.repeat(Math.max(8, password.length)) : 'Senha não definida';
     }
 
+    function formatBRL(value) {
+      return 'R$ ' + value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function updateStats() {
+      var all = getClients();
+      var total = all.length;
+      var totalSpent = all.reduce(function(sum, c) { return sum + (c.totalSpent || 0); }, 0);
+      var top = all.reduce(function(best, c) { return (!best || (c.totalSpent || 0) > (best.totalSpent || 0)) ? c : best; }, null);
+      var ticket = total > 0 ? totalSpent / total : 0;
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-gasto').textContent = formatBRL(totalSpent);
+      document.getElementById('stat-top').textContent = top ? top.name : '—';
+      document.getElementById('stat-ticket').textContent = total > 0 ? formatBRL(ticket) : '—';
+    }
+
     function renderClients() {
-      const query = searchInput.value.trim().toLowerCase();
-      const clients = getClients().filter(client => {
+      var query = searchInput.value.trim().toLowerCase();
+      var sortVal = document.querySelector('.search-bar-admin select').value;
+      var all = getClients();
+
+      var clients = all.filter(function(client) {
         return client.name.toLowerCase().includes(query) ||
           client.email.toLowerCase().includes(query) ||
           client.whatsapp.toLowerCase().includes(query);
       });
+
+      if (sortVal === 'recentes') {
+        clients = clients.slice().reverse();
+      } else if (sortVal === 'gasto') {
+        clients = clients.slice().sort(function(a, b) { return (b.totalSpent || 0) - (a.totalSpent || 0); });
+      }
+
+      document.getElementById('clientes-count').textContent = all.length;
+      updateStats();
 
       if (clients.length === 0) {
         clientGrid.innerHTML = '<div class="card" style="padding:20px;"><p>Nenhum cliente registrado ainda. Use o botão "Novo cliente" para cadastrar.</p></div>';
         return;
       }
 
-      clientGrid.innerHTML = clients.map((client, index) => {
-        const purchases = client.purchases && client.purchases.length > 0
-          ? client.purchases.map(p => `<div class="customer-purchase-item"><span>${p.order}</span><span>${p.items} itens</span></div>`).join('')
+      clientGrid.innerHTML = clients.map(function(client) {
+        var waNumber = '55' + client.whatsapp.replace(/\D/g, '');
+        var purchases = client.purchases && client.purchases.length > 0
+          ? client.purchases.map(function(p) { return '<div class="customer-purchase-item"><span>' + p.order + '</span><span>' + p.items + ' itens</span></div>'; }).join('')
           : '<div class="customer-purchase-item"><span>Nenhuma compra registrada</span><span>0 itens</span></div>';
-        return `
-          <article class="card customer-card" data-email="${client.email}">
-            <div class="customer-meta">
-              <div class="customer-details">
-                <strong>${client.name}</strong>
-                <span>${client.email}</span>
-                <span>WhatsApp: ${client.whatsapp}</span>
-                <span class="password">Senha: ${maskPassword(client.password)}</span>
-              </div>
-              <span class="badge badge-green">R$ ${client.totalSpent.toFixed(2)}</span>
-            </div>
-            <div>
-              <div><strong>Compras anteriores</strong></div>
-              <div class="customer-purchases">
-                ${purchases}
-              </div>
-            </div>
-            <div class="customer-actions">
-              <button type="button" class="btn btn-secondary" onclick="editClient('${encodeURIComponent(client.email)}')">Editar</button>
-              <button type="button" class="btn btn-danger" onclick="deleteClient('${encodeURIComponent(client.email)}')">Excluir</button>
-              <button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)">Redefinir senha</button>
-            </div>
-            <form class="reset-password-form" style="display:none;">
-              <div class="form-group">
-                <label>Nova senha</label>
-                <input name="resetPassword" type="password" placeholder="Digite a nova senha" />
-              </div>
-              <div class="form-group">
-                <label>Confirmar senha</label>
-                <input name="confirmResetPassword" type="password" placeholder="Repita a nova senha" />
-              </div>
-              <div class="customer-actions">
-                <button type="button" class="btn btn-primary" onclick="saveClientPassword(this)">Salvar senha</button>
-                <button type="button" class="btn btn-secondary" onclick="togglePasswordReset(this, true)">Cancelar</button>
-              </div>
-            </form>
-          </article>`;
+        return '<article class="card customer-card" data-email="' + client.email + '">' +
+          '<div class="customer-meta">' +
+            '<div class="customer-details">' +
+              '<strong>' + client.name + '</strong>' +
+              '<span>' + client.email + '</span>' +
+              '<span><a href="https://wa.me/' + waNumber + '" target="_blank" style="color:var(--green-400); font-weight:600; text-decoration:none;"><i class="ti ti-brand-whatsapp"></i> ' + client.whatsapp + '</a></span>' +
+              '<span class="password">Senha: ' + maskPassword(client.password) + '</span>' +
+            '</div>' +
+            '<span class="badge badge-green">R$ ' + (client.totalSpent || 0).toFixed(2) + '</span>' +
+          '</div>' +
+          '<div>' +
+            '<div><strong>Compras anteriores</strong></div>' +
+            '<div class="customer-purchases">' + purchases + '</div>' +
+          '</div>' +
+          '<div class="customer-actions">' +
+            '<button type="button" class="btn btn-secondary" onclick="editClient(\'' + encodeURIComponent(client.email) + '\')">Editar</button>' +
+            '<button type="button" class="btn btn-danger" onclick="deleteClient(\'' + encodeURIComponent(client.email) + '\')">Excluir</button>' +
+            '<button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)">Redefinir senha</button>' +
+            '<button type="button" class="btn btn-secondary" onclick="window.open(\'https://wa.me/' + waNumber + '?text=Ol%C3%A1%20' + encodeURIComponent(client.name) + '!\',\'_blank\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>' +
+          '</div>' +
+          '<form class="reset-password-form" style="display:none;">' +
+            '<div class="form-group">' +
+              '<label>Nova senha</label>' +
+              '<input name="resetPassword" type="password" placeholder="Digite a nova senha" />' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label>Confirmar senha</label>' +
+              '<input name="confirmResetPassword" type="password" placeholder="Repita a nova senha" />' +
+            '</div>' +
+            '<div class="customer-actions">' +
+              '<button type="button" class="btn btn-primary" onclick="saveClientPassword(this)">Salvar senha</button>' +
+              '<button type="button" class="btn btn-secondary" onclick="togglePasswordReset(this, true)">Cancelar</button>' +
+            '</div>' +
+          '</form>' +
+        '</article>';
       }).join('');
     }
 
     function editClient(encodedEmail) {
-      const email = decodeURIComponent(encodedEmail);
-      location.href = `cadastro-cliente.html?email=${encodeURIComponent(email)}`;
+      var email = decodeURIComponent(encodedEmail);
+      location.href = 'cadastro-cliente.html?email=' + encodeURIComponent(email);
     }
 
     function deleteClient(encodedEmail) {
-      const email = decodeURIComponent(encodedEmail);
-      if (!confirm(`Deseja excluir o cliente ${email}?`)) return;
-      const clients = getClients().filter(client => client.email !== email);
+      var email = decodeURIComponent(encodedEmail);
+      if (!confirm('Deseja excluir o cliente ' + email + '?')) return;
+      var clients = getClients().filter(function(client) { return client.email !== email; });
       saveClients(clients);
       renderClients();
     }
 
-    function togglePasswordReset(button, close = false) {
-      const card = button.closest('.customer-card');
-      const form = card.querySelector('.reset-password-form');
-      const toggleBtn = card.querySelector('.reset-password-button');
+    function togglePasswordReset(button, close) {
+      var card = button.closest('.customer-card');
+      var form = card.querySelector('.reset-password-form');
+      var toggleBtn = card.querySelector('.reset-password-button');
       if (close || form.style.display === 'block') {
         form.style.display = 'none';
         if (toggleBtn) toggleBtn.textContent = 'Redefinir senha';
@@ -188,34 +247,34 @@
     }
 
     function saveClientPassword(button) {
-      const card = button.closest('.customer-card');
-      const email = card.dataset.email;
-      const passwordField = card.querySelector('input[name="resetPassword"]');
-      const confirmField = card.querySelector('input[name="confirmResetPassword"]');
-      const password = passwordField.value;
-      const confirm = confirmField.value;
-      if (!password || !confirm) {
-        alert('Preencha os dois campos de senha.');
+      var card = button.closest('.customer-card');
+      var email = card.dataset.email;
+      var passwordField = card.querySelector('input[name="resetPassword"]');
+      var confirmField = card.querySelector('input[name="confirmResetPassword"]');
+      var password = passwordField.value;
+      var confirmVal = confirmField.value;
+      if (!password || !confirmVal) {
+        showToast('Preencha os dois campos de senha.', 'erro');
         return;
       }
-      if (password !== confirm) {
-        alert('As senhas não conferem.');
+      if (password !== confirmVal) {
+        showToast('As senhas não conferem.', 'erro');
         return;
       }
-      const clients = getClients();
-      const index = clients.findIndex(client => client.email === email);
+      var clients = getClients();
+      var index = clients.findIndex(function(client) { return client.email === email; });
       if (index === -1) {
-        alert('Cliente não encontrado.');
+        showToast('Cliente não encontrado.', 'erro');
         return;
       }
       clients[index].password = password;
       saveClients(clients);
-      alert('Senha atualizada com sucesso.');
-      card.querySelector('.password').textContent = `Senha: ${maskPassword(password)}`;
+      showToast('Senha atualizada com sucesso.');
+      card.querySelector('.password').textContent = 'Senha: ' + maskPassword(password);
       togglePasswordReset(button, true);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', function() {
       renderClients();
       if (searchInput) searchInput.addEventListener('input', renderClients);
     });

@@ -3,25 +3,41 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bella Joias — Homepage v1</title>
-<meta name="theme-color" content="#ff66b2" />
+<title>LaPink — Loja</title>
+<meta name="theme-color" content="#D4537E" />
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="css/v1.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+.cat-card { cursor: pointer; transition: transform .18s, box-shadow .18s; }
+.cat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(212,83,126,.18); }
+.cat-card.active { outline: 2.5px solid #D4537E; background: #fff0f5; }
+.cat-back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #D4537E; text-decoration: none; margin-bottom: 12px; cursor: pointer; }
+.cat-back-link:hover { text-decoration: underline; }
+.prod-empty { text-align: center; padding: 48px 20px; color: #aaa; font-size: 14px; }
+.prod-empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+</style>
 </head>
 <body>
 <div class="site">
+
+  <!-- Barra de anúncio -->
   <div class="announce">
-    <span><i class="ti ti-truck"></i> Frete grátis acima de R$ 199 · Parcele em até 6x sem juros</span>
+    <span id="v1-anuncio"><i class="ti ti-truck"></i> Frete grátis acima de R$ 199 · Parcele em até 6x sem juros</span>
   </div>
+
+  <!-- Navbar -->
   <div class="nav">
-    <div class="logo"><i class="ti ti-diamond"></i> Bella Joias</div>
+    <div class="logo"><i class="ti ti-diamond"></i> LaPink</div>
     <div class="search-bar">
       <i class="ti ti-search"></i>
-      <input type="text" placeholder="Buscar semijoias, bolsas..."/>
+      <input type="text" id="v1-search" placeholder="Buscar semijoias, bolsas..." oninput="buscarProdutos(this.value)" />
     </div>
     <div class="nav-links">
-      <a>Semijoias</a><a>Bolsas</a><a>Acessórios</a><a>Promoções</a>
+      <a onclick="filtrarCategoria('Anéis')" style="cursor:pointer;">Semijoias</a>
+      <a onclick="filtrarCategoria('Bolsas')" style="cursor:pointer;">Bolsas</a>
+      <a onclick="filtrarCategoria('Brincos')" style="cursor:pointer;">Acessórios</a>
+      <a onclick="limparFiltro()" style="cursor:pointer;">Promoções</a>
     </div>
     <div class="nav-actions">
       <i class="ti ti-heart nav-icon"></i>
@@ -33,54 +49,67 @@
       <button class="nav-icon logout-btn" id="logoutBtn" title="Sair">
         <i class="ti ti-power"></i>
       </button>
-      <button id="downloadBtn" class="nav-icon" title="Baixar página">Baixar</button>
       <i class="ti ti-shopping-bag nav-icon"></i>
     </div>
   </div>
-  <div class="hero">
+
+  <!-- Hero -->
+  <div class="hero" id="v1-hero-section">
     <div class="hero-text">
-      <div class="hero-eyebrow">Nova coleção — verão 2025</div>
-      <div class="hero-title">Elegância que<br>conta sua história</div>
-      <div class="hero-sub">Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.</div>
+      <div class="hero-eyebrow" id="v1-hero-eyebrow">Nova coleção — verão 2025</div>
+      <div class="hero-title" id="v1-hero-titulo">Elegância que<br>conta sua história</div>
+      <div class="hero-sub" id="v1-hero-sub">Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.</div>
       <div class="hero-btns">
-        <button class="btn-primary">Ver coleção</button>
-        <button class="btn-secondary">Promoções</button>
+        <button class="btn-primary" id="v1-hero-btn1" onclick="limparFiltro()">Ver coleção</button>
+        <button class="btn-secondary" id="v1-hero-btn2">Promoções</button>
       </div>
     </div>
     <div class="hero-img"><i class="ti ti-diamond"></i></div>
   </div>
+
+  <!-- Categorias -->
   <div class="section bg-white">
     <div class="section-header">
       <span class="section-title">Categorias</span>
-      <a class="section-link">Ver todas →</a>
+      <a class="section-link" onclick="limparFiltro()" style="cursor:pointer;">Ver todas →</a>
     </div>
     <div class="cat-grid">
-      <div class="cat-card"><div class="cat-icon"><i class="ti ti-circle"></i></div><div class="cat-name">Anéis</div></div>
-      <div class="cat-card"><div class="cat-icon"><i class="ti ti-link"></i></div><div class="cat-name">Colares</div></div>
-      <div class="cat-card"><div class="cat-icon"><i class="ti ti-star"></i></div><div class="cat-name">Brincos</div></div>
-      <div class="cat-card"><div class="cat-icon"><i class="ti ti-briefcase"></i></div><div class="cat-name">Bolsas</div></div>
+      <div class="cat-card" id="cat-aneis"    onclick="filtrarCategoria('Anéis')">
+        <div class="cat-icon"><i class="ti ti-circle"></i></div>
+        <div class="cat-name">Anéis</div>
+      </div>
+      <div class="cat-card" id="cat-colares"  onclick="filtrarCategoria('Colares')">
+        <div class="cat-icon"><i class="ti ti-link"></i></div>
+        <div class="cat-name">Colares</div>
+      </div>
+      <div class="cat-card" id="cat-brincos"  onclick="filtrarCategoria('Brincos')">
+        <div class="cat-icon"><i class="ti ti-star"></i></div>
+        <div class="cat-name">Brincos</div>
+      </div>
+      <div class="cat-card" id="cat-bolsas"   onclick="filtrarCategoria('Bolsas')">
+        <div class="cat-icon"><i class="ti ti-briefcase"></i></div>
+        <div class="cat-name">Bolsas</div>
+      </div>
     </div>
   </div>
+
+  <!-- Produtos em destaque -->
   <div class="section bg-tint">
     <div class="section-header">
-      <span class="section-title">Mais vendidos</span>
-      <a class="section-link">Ver tudo →</a>
+      <span class="section-title" id="v1-section-title">Mais vendidos</span>
+      <a class="section-link" id="v1-section-link" onclick="limparFiltro()" style="cursor:pointer; display:none;">Ver todos →</a>
     </div>
-    <div class="prod-grid">
-      <div class="prod-card">
-        <div class="prod-img"><i class="ti ti-circle"></i><span class="prod-badge">Novo</span><i class="ti ti-heart prod-fav"></i></div>
-        <div class="prod-info"><div class="prod-name">Anel solitário rose gold</div><div><span class="prod-price">R$ 89,90</span></div><button class="btn-secondary btn-buy" data-product="Anel solitário rose gold">Comprar</button></div>
-      </div>
-      <div class="prod-card">
-        <div class="prod-img"><i class="ti ti-link"></i><span class="prod-badge">-20%</span><i class="ti ti-heart prod-fav"></i></div>
-        <div class="prod-info"><div class="prod-name">Colar coração delicado</div><div><span class="prod-price">R$ 69,90</span><span class="prod-old">R$ 87,90</span></div><button class="btn-secondary btn-buy" data-product="Colar coração delicado">Comprar</button></div>
-      </div>
-      <div class="prod-card">
-        <div class="prod-img"><i class="ti ti-briefcase"></i><i class="ti ti-heart prod-fav"></i></div>
-        <div class="prod-info"><div class="prod-name">Bolsa mini clutch rose</div><div><span class="prod-price">R$ 149,90</span></div><button class="btn-secondary btn-buy" data-product="Bolsa mini clutch rose">Comprar</button></div>
-      </div>
+    <div id="v1-cat-back" style="display:none;">
+      <span class="cat-back-link" onclick="limparFiltro()">
+        <i class="ti ti-arrow-left"></i> Voltar para todos os produtos
+      </span>
+    </div>
+    <div class="prod-grid" id="v1-prod-grid">
+      <!-- renderizado pelo script -->
     </div>
   </div>
+
+  <!-- Banner atacado -->
   <div class="banner">
     <div class="banner-text">
       <div class="eyebrow">Para revendedoras</div>
@@ -89,68 +118,269 @@
     </div>
     <div class="banner-img"><i class="ti ti-building-store"></i></div>
   </div>
+
+  <!-- Depoimentos -->
   <div class="reviews">
     <div class="section-header"><span class="section-title">O que dizem nossas clientes</span></div>
-    <div class="rev-grid">
-      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Qualidade incrível! Os anéis são lindos e duraram muito mais do que eu esperava."</div><div class="rev-author">Ana P. — São Paulo</div></div>
-      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Entrega rápida e embalagem super caprichada. Presente perfeito para minha mãe!"</div><div class="rev-author">Carla M. — Rio de Janeiro</div></div>
-      <div class="rev-card"><div class="rev-stars">★★★★★</div><div class="rev-text">"Virei revendedora e as minhas clientes amam! Produtos de altíssima qualidade."</div><div class="rev-author">Juliana R. — Curitiba</div></div>
+    <div class="rev-grid" id="v1-rev-grid">
+      <!-- renderizado pelo script -->
     </div>
   </div>
+
+  <!-- Newsletter -->
   <div class="newsletter">
-    <h3>Receba novidades e ofertas exclusivas</h3>
-    <p>Cadastre seu e-mail e ganhe 10% de desconto na primeira compra</p>
+    <h3 id="v1-nl-titulo">Receba novidades e ofertas exclusivas</h3>
+    <p id="v1-nl-sub">Cadastre seu e-mail e ganhe 10% de desconto na primeira compra</p>
     <div class="nl-form">
       <input class="nl-input" type="email" placeholder="seu@email.com"/>
-      <button class="nl-btn">Quero desconto</button>
+      <button class="nl-btn" id="v1-nl-btn">Quero desconto</button>
     </div>
   </div>
+
+  <!-- Rodapé -->
   <div class="footer">
-    <div class="footer-col"><h4>Bella Joias</h4><a>Quem somos</a><a>Blog</a><a>Seja revendedora</a><a>Contato</a></div>
+    <div class="footer-col"><h4>LaPink</h4><a>Quem somos</a><a>Blog</a><a>Seja revendedora</a><a>Contato</a></div>
     <div class="footer-col"><h4>Ajuda</h4><a>Trocas e devoluções</a><a>Rastrear pedido</a><a>Formas de pagamento</a><a>Frete e prazo</a></div>
     <div class="footer-col"><h4>Siga-nos</h4><a>Instagram</a><a>Pinterest</a><a>WhatsApp</a></div>
   </div>
-  <div class="footer-bottom"><span>© 2025 Bella Joias · Todos os direitos reservados · CNPJ 00.000.000/0001-00</span></div>
-</div>
+  <div class="footer-bottom"><span>© 2025 LaPink · Todos os direitos reservados · CNPJ 00.000.000/0001-00</span></div>
+
+</div><!-- /site -->
+
+<!-- ═══ Scripts de configuração e renderização ═══ -->
+<script>
+(function() {
+
+  // ── Defaults ──
+  var DEFAULT = {
+    anuncio: 'Frete grátis acima de R$ 199 · Parcele em até 6x sem juros',
+    hero: {
+      eyebrow: 'Nova coleção — verão 2025',
+      titulo:  'Elegância que\nconta sua história',
+      sub:     'Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.',
+      btn1:    'Ver coleção',
+      btn2:    'Promoções'
+    },
+    destaque:     [],
+    depoimentos: [
+      { texto: 'Qualidade incrível! Os anéis são lindos e duraram muito mais do que eu esperava.',  autor: 'Ana P. — São Paulo'        },
+      { texto: 'Entrega rápida e embalagem super caprichada. Presente perfeito para minha mãe!',    autor: 'Carla M. — Rio de Janeiro' },
+      { texto: 'Virei revendedora e as minhas clientes amam! Produtos de altíssima qualidade.',     autor: 'Juliana R. — Curitiba'     }
+    ],
+    newsletter: {
+      titulo: 'Receba novidades e ofertas exclusivas',
+      sub:    'Cadastre seu e-mail e ganhe 10% de desconto na primeira compra',
+      btn:    'Quero desconto'
+    }
+  };
+
+  // ── Lê config e produtos do localStorage ──
+  function getConfig() {
+    try {
+      var c = JSON.parse(localStorage.getItem('lapinkLojaConfig') || 'null');
+      if (!c) return DEFAULT;
+      c.hero       = Object.assign({}, DEFAULT.hero,       c.hero       || {});
+      c.newsletter = Object.assign({}, DEFAULT.newsletter, c.newsletter || {});
+      if (!Array.isArray(c.depoimentos) || !c.depoimentos.length) c.depoimentos = DEFAULT.depoimentos;
+      if (!Array.isArray(c.destaque))   c.destaque = [];
+      return c;
+    } catch { return DEFAULT; }
+  }
+  function getProdutos() {
+    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; } catch { return []; }
+  }
+
+  // ── Renderiza cards de produto ──
+  function renderCards(lista) {
+    if (!lista || !lista.length) {
+      return '<div class="prod-empty"><i class="ti ti-mood-empty"></i>Nenhum produto encontrado.</div>';
+    }
+    return lista.map(function(item) {
+      var p     = item.produto;
+      var badge = item.badge || '';
+      var thumb = p.imagem
+        ? '<img src="' + p.imagem + '" alt="' + p.nome + '" style="width:100%;height:100%;object-fit:cover;border-radius:12px 12px 0 0;" />'
+        : '<i class="ti ' + (p.icone || 'ti-diamond') + '"></i>';
+      var badgeHtml = badge ? '<span class="prod-badge">' + badge + '</span>' : '';
+      var preco = 'R$ ' + p.precoVarejo.toFixed(2).replace('.', ',');
+      return '<div class="prod-card">' +
+        '<div class="prod-img">' + thumb + badgeHtml + '<i class="ti ti-heart prod-fav"></i></div>' +
+        '<div class="prod-info">' +
+          '<div class="prod-name">' + p.nome + '</div>' +
+          '<div><span class="prod-price">' + preco + '</span></div>' +
+          '<button class="btn-secondary btn-buy" data-id="' + p.id + '" data-product="' + p.nome + '">Comprar</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Estado de filtro ──
+  window._v1CatFiltro   = null;  // categoria ativa
+  window._v1BuscaFiltro = '';    // texto de busca
+
+  // ── Aplica filtro de categoria ──
+  window.filtrarCategoria = function(cat) {
+    window._v1CatFiltro   = cat;
+    window._v1BuscaFiltro = '';
+    var searchInput = document.getElementById('v1-search');
+    if (searchInput) searchInput.value = '';
+    atualizarProdutos();
+    document.getElementById('v1-prod-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  window.limparFiltro = function() {
+    window._v1CatFiltro   = null;
+    window._v1BuscaFiltro = '';
+    var searchInput = document.getElementById('v1-search');
+    if (searchInput) searchInput.value = '';
+    atualizarProdutos();
+  };
+  window.buscarProdutos = function(termo) {
+    window._v1BuscaFiltro = termo.toLowerCase();
+    window._v1CatFiltro   = null;
+    atualizarProdutos();
+  };
+
+  function atualizarProdutos() {
+    var config   = getConfig();
+    var produtos = getProdutos();
+    var cat      = window._v1CatFiltro;
+    var busca    = window._v1BuscaFiltro;
+    var prodGrid  = document.getElementById('v1-prod-grid');
+    var titleEl   = document.getElementById('v1-section-title');
+    var linkEl    = document.getElementById('v1-section-link');
+    var backEl    = document.getElementById('v1-cat-back');
+
+    // Destaca categoria ativa
+    document.querySelectorAll('.cat-card').forEach(function(el) { el.classList.remove('active'); });
+    if (cat) {
+      var catMap = { 'Anéis': 'cat-aneis', 'Colares': 'cat-colares', 'Brincos': 'cat-brincos', 'Bolsas': 'cat-bolsas' };
+      var catEl = document.getElementById(catMap[cat]);
+      if (catEl) catEl.classList.add('active');
+    }
+
+    if (cat || busca) {
+      // Modo filtro
+      titleEl.textContent    = cat ? cat : 'Resultados: "' + busca + '"';
+      linkEl.style.display   = '';
+      backEl.style.display   = '';
+
+      var filtrados = produtos.filter(function(p) {
+        var matchCat   = !cat   || p.categoria === cat;
+        var matchBusca = !busca || p.nome.toLowerCase().includes(busca);
+        return matchCat && matchBusca;
+      });
+
+      var lista = filtrados.map(function(p) { return { produto: p, badge: '' }; });
+      prodGrid.innerHTML = renderCards(lista);
+    } else {
+      // Modo destaque (configurado pelo editor)
+      titleEl.textContent  = 'Mais vendidos';
+      linkEl.style.display = 'none';
+      backEl.style.display = 'none';
+
+      var destaqueItems;
+      if (config.destaque && config.destaque.length) {
+        destaqueItems = config.destaque.map(function(d) {
+          var p = produtos.find(function(x) { return x.id === d.id; });
+          return p ? { produto: p, badge: d.badge || '' } : null;
+        }).filter(Boolean);
+      } else {
+        destaqueItems = produtos.slice(0, 3).map(function(p) { return { produto: p, badge: '' }; });
+      }
+      prodGrid.innerHTML = renderCards(destaqueItems);
+    }
+
+    // Reanexar clique em comprar (já que innerHTML foi reescrito)
+    prodGrid.querySelectorAll('.btn-buy').forEach(function(btn) {
+      btn.addEventListener('click', handleBuy);
+    });
+  }
+
+  // ── Inicialização ──
+  var config   = getConfig();
+  var produtos = getProdutos();
+
+  // Anúncio
+  var anuncioEl = document.getElementById('v1-anuncio');
+  if (anuncioEl) anuncioEl.innerHTML = '<i class="ti ti-truck"></i> ' + config.anuncio;
+
+  // Hero
+  var heroTituloEl = document.getElementById('v1-hero-titulo');
+  if (heroTituloEl) heroTituloEl.innerHTML   = config.hero.titulo.replace(/\n/g, '<br>');
+  var heroEyebrowEl = document.getElementById('v1-hero-eyebrow');
+  if (heroEyebrowEl) heroEyebrowEl.textContent = config.hero.eyebrow;
+  var heroSubEl = document.getElementById('v1-hero-sub');
+  if (heroSubEl) heroSubEl.textContent = config.hero.sub;
+  var heroBtn1 = document.getElementById('v1-hero-btn1');
+  if (heroBtn1) heroBtn1.textContent = config.hero.btn1;
+  var heroBtn2 = document.getElementById('v1-hero-btn2');
+  if (heroBtn2) heroBtn2.textContent = config.hero.btn2;
+
+  // Depoimentos
+  var revGrid = document.getElementById('v1-rev-grid');
+  if (revGrid && config.depoimentos && config.depoimentos.length) {
+    revGrid.innerHTML = config.depoimentos.map(function(d) {
+      return '<div class="rev-card">' +
+        '<div class="rev-stars">★★★★★</div>' +
+        '<div class="rev-text">"' + d.texto + '"</div>' +
+        '<div class="rev-author">' + d.autor + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Newsletter
+  var nlTit = document.getElementById('v1-nl-titulo');
+  var nlSub = document.getElementById('v1-nl-sub');
+  var nlBtn = document.getElementById('v1-nl-btn');
+  if (nlTit) nlTit.textContent = config.newsletter.titulo;
+  if (nlSub) nlSub.textContent = config.newsletter.sub;
+  if (nlBtn) nlBtn.textContent = config.newsletter.btn;
+
+  // Renderiza produtos iniciais (destaque)
+  atualizarProdutos();
+
+  // URL param — suporte a ?cat=Anéis (deep link por categoria)
+  var urlParams = new URLSearchParams(window.location.search);
+  var catParam  = urlParams.get('cat');
+  if (catParam) filtrarCategoria(catParam);
+
+})();
+
+// ── handleBuy — abre página do produto ──
+function handleBuy(event) {
+  var btn = event.currentTarget || event.target;
+  var id  = btn.dataset.id;
+  if (id) {
+    location.href = 'produto.html?id=' + id;
+  } else {
+    location.href = 'produto.html?nome=' + encodeURIComponent(btn.dataset.product || '');
+  }
+}
+</script>
+
 <script src="js/storage.js"></script>
 <script src="js/v1.js"></script>
 <script>
-// Registrar service worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW registration failed', err));
+  navigator.serviceWorker.register('/sw.js').catch(function(err) { console.warn('SW registration failed', err); });
 }
 
-// Before install prompt
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-window.addEventListener('beforeinstallprompt', (e) => {
+var deferredPrompt;
+var installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   deferredPrompt = e;
-  installBtn.style.display = 'inline-block';
+  if (installBtn) installBtn.style.display = 'inline-block';
 });
-
-installBtn && installBtn.addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const choice = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  installBtn.style.display = 'none';
-});
-
-// Download current page as HTML
-const downloadBtn = document.getElementById('downloadBtn');
-downloadBtn && downloadBtn.addEventListener('click', () => {
-  const html = '<!doctype html>\n' + document.documentElement.outerHTML;
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'LaPink-V1.html';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
+if (installBtn) {
+  installBtn.addEventListener('click', async function() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+}
 </script>
 </body>
 </html>

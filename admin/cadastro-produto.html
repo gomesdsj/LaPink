@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bella Joias — Produtos</title>
+<title>LaPink — Produtos</title>
 <link rel="stylesheet" href="../css/Principal.css" />
 <link rel="stylesheet" href="../css/componentes.css" />
 <link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
@@ -16,7 +16,7 @@
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
           <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
-          <div class="logo-name">Bella Joias</div>
+          <div class="logo-name">LaPink</div>
         </div>
         <div class="sidebar-nav">
           <div class="nav-section-label">Visão geral</div>
@@ -24,12 +24,14 @@
           <a class="sidebar-link active" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Loja</div>
+          <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
           <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
-          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+          <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
         </div>
         <div class="sidebar-footer">
-          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
+          <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
         </div>
       </aside>
 
@@ -44,7 +46,7 @@
           </div>
           <div class="topbar-right">
             <span>Olá, Carol</span>
-            <button class="btn btn-secondary" onclick="location.href='../public/index.html'">Ver loja</button>
+            <a href="../public/V1.html" target="_blank" class="btn btn-secondary" style="text-decoration:none;">Ver loja <i class="ti ti-external-link"></i></a>
           </div>
         </header>
 
@@ -74,8 +76,8 @@
               </div>
             </div>
 
-            <div style="display:flex; justify-content:center; gap:24px; flex-wrap:wrap; margin-top:16px;">
-              <form class="card" style="flex:1; min-width:320px; max-width:560px;" onsubmit="salvarProduto(event)">
+            <div class="form-wrap" id="form-cadastro">
+              <form class="card form-cadastro-card" onsubmit="salvarProduto(event)">
                 <div class="form-group">
                   <label for="nome">Nome do produto</label>
                   <input id="nome" type="text" placeholder="Anel solitário rosê" oninput="atualizarPreview()" />
@@ -105,6 +107,33 @@
                     <input id="preco-atacado" type="text" placeholder="R$ 59,90" oninput="atualizarPreview()" />
                   </div>
                 </div>
+                <!-- Custo pelo peso do banho -->
+                <div class="cost-section">
+                  <div class="cost-section-label">
+                    <i class="ti ti-scale"></i> Custo pelo peso do banho
+                  </div>
+                  <div class="form-group">
+                    <label for="p-peso">Peso do banho <span class="unit-tag">kg</span></label>
+                    <input id="p-peso" type="text" placeholder="0,300" oninput="formatPesoInput(this); calcularPrecoAutomatico()" />
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="p-custo-g">Custo por grama <span class="unit-tag">R$</span></label>
+                      <input id="p-custo-g" type="text" placeholder="0,50" oninput="calcularPrecoAutomatico()" />
+                    </div>
+                    <div class="form-group">
+                      <label for="p-margem">Margem de lucro <span class="unit-tag">%</span></label>
+                      <input id="p-margem" type="number" min="0" max="500" placeholder="40" oninput="calcularPrecoAutomatico()" />
+                    </div>
+                  </div>
+                  <div class="cost-result-bar" id="cost-result-bar" style="display:none">
+                    <span class="crb-item neutral"><i class="ti ti-coin"></i> Custo: <strong id="crb-custo">—</strong></span>
+                    <span class="crb-item green"><i class="ti ti-trending-up"></i> Varejo: <strong id="crb-varejo">—</strong></span>
+                    <span class="crb-item blue"><i class="ti ti-building-store"></i> Atacado: <strong id="crb-atacado">—</strong></span>
+                    <span class="crb-item pink"><i class="ti ti-moneybag"></i> Lucro/un: <strong id="crb-lucro">—</strong></span>
+                  </div>
+                </div>
+
                 <div class="form-group">
                   <label for="descricao">Descrição</label>
                   <textarea id="descricao" placeholder="Descrição do produto" oninput="atualizarPreview()"></textarea>
@@ -119,7 +148,7 @@
                 </div>
               </form>
 
-              <aside class="product-preview-card" style="min-width:280px; max-width:340px; align-self:flex-start;">
+              <aside class="product-preview-card form-preview-card">
                 <div class="preview-img" id="preview-img-wrap">
                   <img id="preview-img-photo" src="" alt="" style="display:none;" />
                   <i class="ti ti-diamond preview-img-icon" id="preview-img-icon"></i>
@@ -149,8 +178,8 @@
             <div class="calc-card">
               <div class="calc-inputs">
                 <div class="form-group">
-                  <label>Peso do produto <span class="unit-tag">gramas</span></label>
-                  <input id="calc-peso" type="number" min="0" step="0.1" placeholder="300" oninput="calcularPorPeso()" />
+                  <label>Peso do produto <span class="unit-tag">kg</span></label>
+                  <input id="calc-peso" type="text" placeholder="0,300" oninput="formatPesoInput(this); calcularPorPeso()" />
                 </div>
                 <div class="form-group">
                   <label>Custo por grama <span class="unit-tag">R$</span></label>
@@ -286,7 +315,121 @@
     </div>
   </div>
 
+  <!-- ═══ Modal: Editar produto ═══ -->
+  <div class="modal-overlay" id="modal-editar" role="dialog" aria-modal="true" aria-labelledby="modal-edit-title">
+    <div class="modal modal--edit-produto">
+      <button class="modal-close" onclick="fecharModalEditar()" aria-label="Fechar">&times;</button>
+      <h2 id="modal-edit-title">Editar produto</h2>
+      <p class="modal-sub" id="modal-edit-codigo">Código: —</p>
+
+      <div class="modal-edit-body">
+
+        <!-- Prévia + código -->
+        <div class="modal-edit-preview">
+          <div class="preview-img">
+            <img id="modal-preview-img-photo" src="" alt="" style="display:none;" />
+            <i class="ti ti-diamond preview-img-icon" id="modal-preview-img-icon"></i>
+          </div>
+          <div class="modal-edit-code-badge" id="modal-code-badge">—</div>
+        </div>
+
+        <!-- Campos -->
+        <div class="modal-edit-fields">
+          <input type="hidden" id="modal-edit-id" />
+          <div class="form-group">
+            <label for="modal-nome">Nome do produto</label>
+            <input id="modal-nome" type="text" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="modal-categoria">Categoria</label>
+              <select id="modal-categoria">
+                <option>Anéis</option>
+                <option>Colares</option>
+                <option>Brincos</option>
+                <option>Bolsas</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="modal-estoque">Estoque</label>
+              <input id="modal-estoque" type="number" min="0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="modal-varejo">Preço varejo</label>
+              <input id="modal-varejo" type="text" />
+            </div>
+            <div class="form-group">
+              <label for="modal-atacado">Preço atacado</label>
+              <input id="modal-atacado" type="text" />
+            </div>
+          </div>
+
+          <!-- Custo pelo peso -->
+          <div class="cost-section">
+            <div class="cost-section-label"><i class="ti ti-scale"></i> Custo pelo peso do banho</div>
+            <div class="form-group">
+              <label for="modal-peso">Peso do banho <span class="unit-tag">kg</span></label>
+              <input id="modal-peso" type="text" placeholder="0,300" oninput="formatPesoInput(this); calcularModalPreco()" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="modal-custo-g">Custo por grama <span class="unit-tag">R$</span></label>
+                <input id="modal-custo-g" type="text" placeholder="0,50" oninput="calcularModalPreco()" />
+              </div>
+              <div class="form-group">
+                <label for="modal-margem">Margem <span class="unit-tag">%</span></label>
+                <input id="modal-margem" type="number" min="0" max="500" placeholder="40" oninput="calcularModalPreco()" />
+              </div>
+            </div>
+            <div class="cost-result-bar" id="modal-cost-bar" style="display:none">
+              <span class="crb-item neutral"><i class="ti ti-coin"></i> Custo: <strong id="modal-crb-custo">—</strong></span>
+              <span class="crb-item green"><i class="ti ti-trending-up"></i> Varejo: <strong id="modal-crb-varejo">—</strong></span>
+              <span class="crb-item blue"><i class="ti ti-building-store"></i> Atacado: <strong id="modal-crb-atacado">—</strong></span>
+              <span class="crb-item pink"><i class="ti ti-moneybag"></i> Lucro/un: <strong id="modal-crb-lucro">—</strong></span>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:12px;">
+            <label for="modal-descricao">Descrição</label>
+            <textarea id="modal-descricao" rows="3" placeholder="Descrição do produto"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="modal-imagem">Imagem (alterar)</label>
+            <input id="modal-imagem" type="file" accept="image/*" onchange="atualizarImagemModal(this)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top:16px; padding-top:14px; border-top:.5px solid var(--gray-100);">
+        <button type="button" class="btn-cancel-form" onclick="fecharModalEditar()">Cancelar</button>
+        <button type="button" class="btn-save-form" onclick="salvarEdicaoModal()"><i class="ti ti-device-floppy"></i> Salvar alterações</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // ─────────────────────────────────────────
+    //  Toast
+    // ─────────────────────────────────────────
+    function showToast(msg, tipo) {
+      var el = document.getElementById('_admin_toast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = '_admin_toast';
+        el.className = 'toast';
+        el.setAttribute('role', 'status');
+        el.setAttribute('aria-live', 'polite');
+        document.body.appendChild(el);
+      }
+      el.textContent = msg;
+      el.style.background = tipo === 'erro' ? 'var(--red-400)' : 'var(--pink-700)';
+      el.style.display = 'block';
+      clearTimeout(el._t);
+      el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
+    }
+
     // ─────────────────────────────────────────
     //  Sidebar
     // ─────────────────────────────────────────
@@ -359,9 +502,57 @@
       return 'R$ ' + v.toFixed(2).replace('.', ',');
     }
 
+    // ─── Formata o input de peso: digitos → X,XXX (kg com 3 casas decimais) ───
+    function formatPesoInput(input) {
+      var digits = input.value.replace(/\D/g, '');
+      if (!digits) { input.value = ''; return; }
+      while (digits.length < 4) digits = '0' + digits;
+      var intPart = digits.slice(0, digits.length - 3).replace(/^0+/, '') || '0';
+      var decPart = digits.slice(-3);
+      input.value = intPart + ',' + decPart;
+    }
+
+    // Converte "0,300" → 300 (gramas)
+    function parsePesoGramas(value) {
+      if (!value) return 0;
+      return Math.round(parseFloat((value + '').replace(',', '.')) * 1000) || 0;
+    }
+
+    // Custo por grama: aceita vírgula ou ponto
+    function parseCustoG(value) {
+      return parseFloat((value || '0').replace(',', '.')) || 0;
+    }
+
+    // ─── Calculadora integrada no formulário (campo de custo do banho) ───
+    function calcularPrecoAutomatico() {
+      var peso   = parsePesoGramas(document.getElementById('p-peso').value);
+      var custoG = parseCustoG(document.getElementById('p-custo-g').value);
+      var margem = parseFloat(document.getElementById('p-margem').value) || 0;
+      var bar    = document.getElementById('cost-result-bar');
+
+      if (peso <= 0 || custoG <= 0) { bar.style.display = 'none'; return; }
+
+      var custo   = peso * custoG;
+      var varejo  = custo * (1 + margem / 100);
+      var atacado = custo * (1 + margem / 100 * 0.6);
+      var lucroUn = varejo - custo;
+
+      document.getElementById('crb-custo').textContent   = formatBRL(custo);
+      document.getElementById('crb-varejo').textContent  = formatBRL(varejo);
+      document.getElementById('crb-atacado').textContent = formatBRL(atacado);
+      document.getElementById('crb-lucro').textContent   = formatBRL(lucroUn);
+      bar.style.display = 'flex';
+
+      // Auto-preenche os campos de preço e atualiza preview
+      document.getElementById('preco-varejo').value  = formatBRL(varejo);
+      document.getElementById('preco-atacado').value = formatBRL(atacado);
+      atualizarPreview();
+    }
+
+    // ─── Calculator 1.2 (standalone) ───
     function calcularPorPeso() {
-      const peso    = parseFloat(document.getElementById('calc-peso').value)    || 0;
-      const custoG  = parseFloat(document.getElementById('calc-custo-g').value) || 0;
+      const peso    = parsePesoGramas(document.getElementById('calc-peso').value);
+      const custoG  = parseCustoG(document.getElementById('calc-custo-g').value);
       const margem  = parseFloat(document.getElementById('calc-margem').value)  || 0;
 
       if (peso <= 0 || custoG <= 0) {
@@ -407,6 +598,7 @@
           <span>Categoria</span>
           <span>Estoque</span>
           <span>Preço varejo</span>
+          <span>Lucro / un</span>
           <span>Ações</span>
         </div>`;
 
@@ -427,12 +619,15 @@
 
         const div = document.createElement('div');
         div.className = 'prod-list-item';
+        var lucroText  = typeof p.lucroUnitario === 'number' ? formatBRL(p.lucroUnitario) : '—';
+        var lucroClass = typeof p.lucroUnitario === 'number' ? 'prod-list-lucro has-value' : 'prod-list-lucro';
         div.innerHTML = `
           <div class="prod-list-thumb">${thumb}</div>
-          <span class="prod-list-name">${p.nome}</span>
+          <span class="prod-list-name">${p.nome}<small class="prod-list-code">${p.codigoPeca ? '#' + p.codigoPeca : ''}</small></span>
           <span class="prod-list-cat-badge">${p.categoria}</span>
           <span class="prod-list-stock ${low}">${p.estoque} un</span>
           <span class="prod-list-price">R$ ${p.precoVarejo.toFixed(2).replace('.', ',')}</span>
+          <span class="${lucroClass}">${lucroText}</span>
           <div class="prod-list-actions">
             <button class="btn-icon-sm edit"   title="Editar"  onclick="editarProduto(${p.id})"><i class="ti ti-pencil"></i></button>
             <button class="btn-icon-sm danger" title="Excluir" onclick="excluirProduto(${p.id})"><i class="ti ti-trash"></i></button>
@@ -453,21 +648,129 @@
     }
 
     function excluirProduto(id) {
-      if (!confirm('Excluir este produto?')) return;
-      saveProdutos(getProdutos().filter(p => p.id !== id));
+      var p = getProdutos().find(function(x) { return x.id === id; });
+      if (!p) return;
+      if (!window.confirm('Excluir "' + p.nome + '"?')) return;
+      saveProdutos(getProdutos().filter(function(x) { return x.id !== id; }));
       filtrarProdutos();
+      showToast('Produto removido.');
     }
 
     function editarProduto(id) {
-      const p = getProdutos().find(p => p.id === id);
+      var p = getProdutos().find(function(x) { return x.id === id; });
       if (!p) return;
-      document.getElementById('nome').value          = p.nome;
-      document.getElementById('categoria').value     = p.categoria;
-      document.getElementById('estoque-input').value = p.estoque;
-      document.getElementById('preco-varejo').value  = 'R$ ' + p.precoVarejo.toFixed(2).replace('.', ',');
-      document.getElementById('preco-atacado').value = 'R$ ' + p.precoAtacado.toFixed(2).replace('.', ',');
-      atualizarPreview();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      document.getElementById('modal-edit-id').value           = id;
+      document.getElementById('modal-edit-title').textContent  = 'Editar: ' + p.nome;
+      document.getElementById('modal-edit-codigo').textContent = 'Código: #' + (p.codigoPeca || '—');
+      document.getElementById('modal-code-badge').textContent  = p.codigoPeca ? '#' + p.codigoPeca : '—';
+
+      document.getElementById('modal-nome').value      = p.nome;
+      document.getElementById('modal-categoria').value = p.categoria;
+      document.getElementById('modal-estoque').value   = p.estoque;
+      document.getElementById('modal-varejo').value    = 'R$ ' + p.precoVarejo.toFixed(2).replace('.', ',');
+      document.getElementById('modal-atacado').value   = 'R$ ' + p.precoAtacado.toFixed(2).replace('.', ',');
+      document.getElementById('modal-descricao').value = p.descricao || '';
+
+      if (p.pesoGramas) {
+        var kg = (p.pesoGramas / 1000).toFixed(3).replace('.', ',');
+        document.getElementById('modal-peso').value    = kg;
+        document.getElementById('modal-custo-g').value = p.custoGrama ? p.custoGrama.toFixed(2).replace('.', ',') : '';
+        document.getElementById('modal-margem').value  = p.margemLucro || '';
+        calcularModalPreco();
+      } else {
+        document.getElementById('modal-peso').value    = '';
+        document.getElementById('modal-custo-g').value = '';
+        document.getElementById('modal-margem').value  = '';
+        document.getElementById('modal-cost-bar').style.display = 'none';
+      }
+
+      var img  = document.getElementById('modal-preview-img-photo');
+      var icon = document.getElementById('modal-preview-img-icon');
+      if (p.imagem) {
+        img.src = p.imagem; img.style.display = 'block'; icon.style.display = 'none';
+      } else {
+        img.src = ''; img.style.display = 'none'; icon.style.display = '';
+      }
+
+      document.getElementById('modal-editar').classList.add('show');
+      document.getElementById('modal-nome').focus();
+    }
+
+    function fecharModalEditar() {
+      document.getElementById('modal-editar').classList.remove('show');
+    }
+
+    function calcularModalPreco() {
+      var peso   = parsePesoGramas(document.getElementById('modal-peso').value);
+      var custoG = parseCustoG(document.getElementById('modal-custo-g').value);
+      var margem = parseFloat(document.getElementById('modal-margem').value) || 0;
+      var bar    = document.getElementById('modal-cost-bar');
+      if (peso <= 0 || custoG <= 0) { bar.style.display = 'none'; return; }
+      var custo   = peso * custoG;
+      var varejo  = custo * (1 + margem / 100);
+      var atacado = custo * (1 + margem / 100 * 0.6);
+      var lucroUn = varejo - custo;
+      document.getElementById('modal-crb-custo').textContent   = formatBRL(custo);
+      document.getElementById('modal-crb-varejo').textContent  = formatBRL(varejo);
+      document.getElementById('modal-crb-atacado').textContent = formatBRL(atacado);
+      document.getElementById('modal-crb-lucro').textContent   = formatBRL(lucroUn);
+      bar.style.display = 'flex';
+      document.getElementById('modal-varejo').value  = formatBRL(varejo);
+      document.getElementById('modal-atacado').value = formatBRL(atacado);
+    }
+
+    function atualizarImagemModal(input) {
+      var file = input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img  = document.getElementById('modal-preview-img-photo');
+        var icon = document.getElementById('modal-preview-img-icon');
+        img.src = e.target.result; img.style.display = 'block'; icon.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function salvarEdicaoModal() {
+      var id   = parseInt(document.getElementById('modal-edit-id').value);
+      var nome = document.getElementById('modal-nome').value.trim();
+      if (!nome) { showToast('Preencha o nome do produto.', 'erro'); return; }
+
+      function parsePreco(v) {
+        return parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      }
+      var imgEl   = document.getElementById('modal-preview-img-photo');
+      var pesoG   = parsePesoGramas(document.getElementById('modal-peso').value);
+      var custoG  = parseCustoG(document.getElementById('modal-custo-g').value);
+      var margemV = parseFloat(document.getElementById('modal-margem').value) || 0;
+      var custoTot = pesoG > 0 && custoG > 0 ? pesoG * custoG : 0;
+      var precoVar = parsePreco(document.getElementById('modal-varejo').value);
+      var lucroUn  = custoTot > 0 ? precoVar - custoTot : undefined;
+
+      var todos = getProdutos();
+      var idx = todos.findIndex(function(x) { return x.id === id; });
+      if (idx === -1) return;
+      var old = todos[idx];
+      todos[idx] = Object.assign({}, old, {
+        nome:          nome,
+        categoria:     document.getElementById('modal-categoria').value,
+        estoque:       parseInt(document.getElementById('modal-estoque').value) || 0,
+        precoVarejo:   precoVar,
+        precoAtacado:  parsePreco(document.getElementById('modal-atacado').value),
+        descricao:     document.getElementById('modal-descricao').value.trim(),
+        imagem:        (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : old.imagem,
+        pesoGramas:    pesoG   || undefined,
+        custoGrama:    custoG  || undefined,
+        margemLucro:   margemV || undefined,
+        custoTotal:    custoTot || undefined,
+        lucroUnitario: lucroUn,
+      });
+
+      saveProdutos(todos);
+      filtrarProdutos();
+      fecharModalEditar();
+      showToast('✓ "' + nome + '" atualizado!');
     }
 
     function limparFormulario() {
@@ -477,6 +780,10 @@
       document.getElementById('preco-atacado').value = '';
       document.getElementById('descricao').value     = '';
       document.getElementById('imagem').value        = '';
+      document.getElementById('p-peso').value        = '';
+      document.getElementById('p-custo-g').value     = '';
+      document.getElementById('p-margem').value      = '';
+      document.getElementById('cost-result-bar').style.display = 'none';
       document.getElementById('preview-img-photo').style.display = 'none';
       document.getElementById('preview-img-icon').style.display  = '';
       atualizarPreview();
@@ -484,29 +791,61 @@
 
     function salvarProduto(e) {
       e.preventDefault();
-      const nome = document.getElementById('nome').value.trim();
-      if (!nome) { alert('Preencha o nome do produto.'); return; }
+      var nome = document.getElementById('nome').value.trim();
+      if (!nome) { showToast('Preencha o nome do produto.', 'erro'); return; }
 
-      const parsePreco = v => parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-      const imgEl = document.getElementById('preview-img-photo');
+      function parsePreco(v) {
+        return parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      }
+      var imgEl = document.getElementById('preview-img-photo');
 
-      const novo = {
-        id:           Date.now(),
-        nome,
-        categoria:    document.getElementById('categoria').value,
-        estoque:      parseInt(document.getElementById('estoque-input').value) || 0,
-        precoVarejo:  parsePreco(document.getElementById('preco-varejo').value),
-        precoAtacado: parsePreco(document.getElementById('preco-atacado').value),
-        imagem:       (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : null,
-        icone:        'ti-diamond',
+      var pesoG    = parsePesoGramas(document.getElementById('p-peso').value);
+      var custoG   = parseCustoG(document.getElementById('p-custo-g').value);
+      var margemV  = parseFloat(document.getElementById('p-margem').value) || 0;
+      var custoTot = pesoG > 0 && custoG > 0 ? pesoG * custoG : 0;
+      var precoVar = parsePreco(document.getElementById('preco-varejo').value);
+      var lucroUn  = custoTot > 0 ? precoVar - custoTot : undefined;
+
+      var novoId = Date.now();
+      var codigoPeca = String(Math.floor(100000 + Math.random() * 900000));
+      var novo = {
+        id:            novoId,
+        codigoPeca:    codigoPeca,
+        nome:          nome,
+        categoria:     document.getElementById('categoria').value,
+        estoque:       parseInt(document.getElementById('estoque-input').value) || 0,
+        precoVarejo:   precoVar,
+        precoAtacado:  parsePreco(document.getElementById('preco-atacado').value),
+        imagem:        (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : null,
+        icone:         'ti-diamond',
+        pesoGramas:    pesoG   || undefined,
+        custoGrama:    custoG  || undefined,
+        margemLucro:   margemV || undefined,
+        custoTotal:    custoTot || undefined,
+        lucroUnitario: lucroUn,
       };
 
-      const todos = getProdutos();
+      var todos = getProdutos();
       todos.push(novo);
       saveProdutos(todos);
       filtrarProdutos();
       limparFormulario();
-      alert('Produto salvo com sucesso!');
+
+      showToast('✓ "' + nome + '" adicionado ao estoque!');
+
+      // Rola para a lista e destaca o item recém-adicionado
+      var lista = document.getElementById('prod-list');
+      setTimeout(function() {
+        lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function() {
+          var itens = lista.querySelectorAll('.prod-list-item');
+          var ultimo = itens[itens.length - 1];
+          if (ultimo) {
+            ultimo.classList.add('prod-list-item--new');
+            setTimeout(function() { ultimo.classList.remove('prod-list-item--new'); }, 2000);
+          }
+        }, 500);
+      }, 200);
     }
 
     // ─────────────────────────────────────────
@@ -560,9 +899,23 @@
     }
 
     // ─────────────────────────────────────────
-    //  Init
+    //  Init — suporte a ?id=xxx para abrir edição direto
     // ─────────────────────────────────────────
     renderProdutos(getProdutos());
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var idParam = params.get('id');
+      if (idParam) {
+        setTimeout(function() { editarProduto(parseInt(idParam)); }, 300);
+      }
+    })();
+
+    document.getElementById('modal-editar').addEventListener('click', function(e) {
+      if (e.target === this) fecharModalEditar();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') fecharModalEditar();
+    });
   </script>
 </body>
 </html>

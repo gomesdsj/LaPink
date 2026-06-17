@@ -3,115 +3,800 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bella Joias — Relatórios</title>
+<title>LaPink — Relatórios</title>
 <link rel="stylesheet" href="../css/Principal.css" />
 <link rel="stylesheet" href="../css/componentes.css" />
 <link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+.rel-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin: 28px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: .5px solid var(--gray-100);
+  padding-bottom: 8px;
+}
+.rel-section-title:first-child { margin-top: 0; }
+
+.top-item { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:.5px solid var(--gray-100); }
+.top-item:last-child { border-bottom:none; }
+.top-item-name { flex:1; font-size:12px; font-weight:600; color:var(--gray-700); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-bar-wrap { width:80px; height:6px; background:var(--gray-100); border-radius:3px; flex-shrink:0; }
+.top-bar { height:6px; background:var(--pink-300); border-radius:3px; }
+.top-val { font-size:11px; font-weight:700; color:var(--pink-500); min-width:64px; text-align:right; flex-shrink:0; }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.status-pill.pago    { background:var(--green-100,#dcfce7); color:#16a34a; }
+.status-pill.pendente{ background:#fef9c3; color:#92400e; }
+.status-pill.enviado { background:#dbeafe; color:#1d4ed8; }
+.status-pill.cancelado{ background:#fee2e2; color:#b91c1c; }
+.status-pill.novo    { background:var(--pink-50); color:var(--pink-500); }
+
+.chart-box h3 { font-size:12px; font-weight:700; color:var(--gray-600); margin-bottom:10px; }
+
+.estoque-critico {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: .5px solid var(--gray-100);
+}
+.estoque-critico:last-child { border-bottom: none; }
+.estoque-nome { flex: 1; font-size: 12px; font-weight: 600; color: var(--gray-700); }
+.estoque-un { font-size: 12px; font-weight: 700; color: var(--red-400); }
+
+@media print {
+  .sidebar, .admin-topbar, .hamburger, .page-tabs, .btn { display: none !important; }
+  .admin-main { margin-left: 0 !important; }
+  .tab-content { display: block !important; }
+}
+</style>
 </head>
 <body>
-  <div id="app-admin">
-    <div class="admin-layout">
-      <aside class="sidebar" id="sidebar">
-        <div class="sidebar-logo">
-          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
-          <div class="logo-name">Bella Joias</div>
+<div id="app-admin">
+  <div class="admin-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+        <div class="logo-name">LaPink</div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Visão geral</div>
+        <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+        <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+        <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+        <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+        <div class="nav-section-label">Loja</div>
+        <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
+        <div class="nav-section-label">Auxiliar</div>
+        <a class="sidebar-link active" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+        <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+      </div>
+      <div class="sidebar-footer">
+        <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+        <h1>Relatórios</h1>
+        <div class="topbar-right">
+          <button class="btn btn-secondary" onclick="window.print()"><i class="ti ti-printer"></i> Exportar</button>
+          <span class="admin-badge">Admin</span>
         </div>
-        <div class="sidebar-nav">
-          <div class="nav-section-label">Visão geral</div>
-          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
-          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
-          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
-          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-          <div class="nav-section-label">Auxiliar</div>
-          <a class="sidebar-link active" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
-          <a class="sidebar-link" href="#"><i class="ti ti-settings"></i> Configurações</a>
+      </header>
+
+      <section class="admin-page show">
+
+        <div class="page-tabs">
+          <button class="tab-btn active" data-tab="vendas"><i class="ti ti-cash"></i> Vendas</button>
+          <button class="tab-btn" data-tab="produtos"><i class="ti ti-package"></i> Produtos</button>
+          <button class="tab-btn" data-tab="clientes"><i class="ti ti-users"></i> Clientes</button>
+          <button class="tab-btn" data-tab="estoque"><i class="ti ti-stack"></i> Estoque</button>
         </div>
-        <div class="sidebar-footer">
-          <button onclick="location.href='../public/index.html'"><i class="ti ti-arrow-left"></i> Voltar à loja</button>
-        </div>
-      </aside>
 
-      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <!-- ══════════════════════════════
+             TAB VENDAS
+        ══════════════════════════════ -->
+        <div class="tab-content active" id="tab-vendas">
 
-      <main class="admin-main">
-        <header class="admin-topbar">
-          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
-          <h1>Relatórios</h1>
-          <div class="topbar-right"><span>Olá, Carol</span><span class="admin-badge">Admin</span></div>
-        </header>
-
-        <section class="admin-page show">
-          <div class="page-header">
-            <div>
-              <h2>Lucros e desempenho</h2>
-              <p>Relatório completo dos produtos com foco no lucro e margens de venda.</p>
-            </div>
-            <button class="btn btn-primary">Exportar PDF</button>
-          </div>
-
+          <div class="rel-section-title"><i class="ti ti-chart-pie"></i> Resumo de vendas</div>
           <div class="stat-grid">
-            <div class="stat-card"><div class="s-label">Lucro total</div><div class="s-value">R$ 12.480</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +18%</div></div>
-            <div class="stat-card"><div class="s-label">Margem média</div><div class="s-value">42%</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +4%</div></div>
-            <div class="stat-card"><div class="s-label">Produtos mais lucrativos</div><div class="s-value">3</div><div class="s-delta neutral"><i class="ti ti-info-circle"></i> Estável</div></div>
-            <div class="stat-card"><div class="s-label">Vendas brutas</div><div class="s-value">R$ 29.800</div><div class="s-delta up"><i class="ti ti-trending-up"></i> +11%</div></div>
+            <div class="stat-card">
+              <div class="s-label">Total de pedidos</div>
+              <div class="s-value" id="v-total-pedidos">—</div>
+              <div class="s-delta neutral"><i class="ti ti-shopping-cart"></i> registrados</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Receita total</div>
+              <div class="s-value" id="v-receita-total">—</div>
+              <div class="s-delta up"><i class="ti ti-trending-up"></i> pedidos pagos</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Ticket médio</div>
+              <div class="s-value" id="v-ticket-medio">—</div>
+              <div class="s-delta neutral"><i class="ti ti-receipt"></i> por pedido</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Pedidos pendentes</div>
+              <div class="s-value" id="v-pendentes">—</div>
+              <div class="s-delta neutral"><i class="ti ti-clock"></i> aguardando</div>
+            </div>
           </div>
 
-          <div class="chart-grid-2">
-            <div class="chart-box"><h3>Lucro por produto</h3><div class="map-placeholder"><i class="ti ti-chart-pie"></i><span>Gráfico de margens</span></div></div>
-            <div class="chart-box"><h3>Receita x custo</h3><div class="map-placeholder"><i class="ti ti-chart-line"></i><span>Comparativo de desempenho</span></div></div>
+          <div class="chart-grid-2" style="margin-top:4px;">
+            <div class="chart-box">
+              <h3>Receita por status</h3>
+              <div id="chart-status-vendas"></div>
+            </div>
+            <div class="chart-box">
+              <h3>Produtos mais vendidos (qtd)</h3>
+              <div id="chart-top-vendidos"></div>
+            </div>
           </div>
 
-          <div class="page-header" style="margin-top:24px;">
-            <div><h2>Produtos em destaque</h2><p>Foco nos itens que mais trazem lucro para a loja.</p></div>
+          <div class="rel-section-title"><i class="ti ti-list-details"></i> Histórico de pedidos</div>
+          <div class="table-box">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Pedido</th>
+                  <th>Cliente</th>
+                  <th>Itens</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-vendas-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════
+             TAB PRODUTOS
+        ══════════════════════════════ -->
+        <div class="tab-content" id="tab-produtos">
+
+          <div class="rel-section-title"><i class="ti ti-coins"></i> Resumo financeiro dos produtos</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="s-label">Valor total em estoque</div>
+              <div class="s-value" id="p-valor-estoque">—</div>
+              <div class="s-delta neutral"><i class="ti ti-coins"></i> a preço varejo</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Lucro potencial</div>
+              <div class="s-value" id="p-lucro-potencial">—</div>
+              <div class="s-delta up"><i class="ti ti-trending-up"></i> sobre estoque atual</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Margem média</div>
+              <div class="s-value" id="p-margem-media">—</div>
+              <div class="s-delta neutral"><i class="ti ti-percentage"></i> sobre preço varejo</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Total de produtos</div>
+              <div class="s-value" id="p-total-produtos">—</div>
+              <div class="s-delta neutral"><i class="ti ti-package"></i> cadastrados</div>
+            </div>
           </div>
 
+          <div class="chart-grid-2" style="margin-top:4px;">
+            <div class="chart-box">
+              <h3>Valor por produto (top 8)</h3>
+              <div id="chart-valor-produto"></div>
+            </div>
+            <div class="chart-box">
+              <h3>Margem de lucro por produto (top 8)</h3>
+              <div id="chart-margem-produto"></div>
+            </div>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-award"></i> Destaques</div>
           <div class="chart-grid-3">
             <div class="card">
               <div class="section-header"><span class="section-title">Melhor lucro</span></div>
-              <div class="top-item"><span class="top-item-name">Anel solitário rosê</span><div class="top-bar-wrap"><div class="top-bar" style="width:92%"></div></div><span class="top-val">R$ 4.150</span></div>
-              <div class="top-item"><span class="top-item-name">Corrente de ouro</span><div class="top-bar-wrap"><div class="top-bar" style="width:78%"></div></div><span class="top-val">R$ 2.860</span></div>
-              <div class="top-item"><span class="top-item-name">Brincos de pérola</span><div class="top-bar-wrap"><div class="top-bar" style="width:68%"></div></div><span class="top-val">R$ 1.990</span></div>
+              <div id="lista-melhor-lucro"></div>
             </div>
             <div class="card">
               <div class="section-header"><span class="section-title">Maior margem</span></div>
-              <div class="top-item"><span class="top-item-name">Colar de coração</span><div class="top-bar-wrap"><div class="top-bar" style="width:84%"></div></div><span class="top-val">54%</span></div>
-              <div class="top-item"><span class="top-item-name">Anel solitário rosê</span><div class="top-bar-wrap"><div class="top-bar" style="width:72%"></div></div><span class="top-val">47%</span></div>
-              <div class="top-item"><span class="top-item-name">Bolsa mini clutch</span><div class="top-bar-wrap"><div class="top-bar" style="width:60%"></div></div><span class="top-val">32%</span></div>
+              <div id="lista-maior-margem"></div>
+            </div>
+            <div class="card">
+              <div class="section-header"><span class="section-title">Por categoria</span></div>
+              <div id="lista-por-categoria"></div>
             </div>
           </div>
 
-          <div class="page-header" style="margin-top:24px;">
-            <div><h2>Relatório de produtos</h2><p>Visão detalhada de custo, preço e lucro por item.</p></div>
-          </div>
-
+          <div class="rel-section-title"><i class="ti ti-table"></i> Relatório detalhado</div>
           <div class="table-box">
             <table class="data-table">
-              <thead><tr><th>Produto</th><th>Custo</th><th>Preço</th><th>Lucro</th><th>Margem</th><th>Status</th></tr></thead>
-              <tbody>
-                <tr><td>Anel solitário rosê</td><td>R$ 44,90</td><td>R$ 89,90</td><td class="profit-cell">R$ 45,00</td><td>50%</td><td><span class="badge badge-green">Venda forte</span></td></tr>
-                <tr><td>Colar de coração</td><td>R$ 32,90</td><td>R$ 69,90</td><td class="profit-cell">R$ 37,00</td><td>53%</td><td><span class="badge badge-green">Alta margem</span></td></tr>
-                <tr><td>Bolsa mini clutch</td><td>R$ 99,90</td><td>R$ 149,90</td><td class="profit-cell">R$ 50,00</td><td>33%</td><td><span class="badge badge-amber">Estoque baixo</span></td></tr>
-                <tr><td>Brincos de pérola</td><td>R$ 34,90</td><td>R$ 74,90</td><td class="profit-cell">R$ 40,00</td><td>41%</td><td><span class="badge badge-green">Venda regular</span></td></tr>
-                <tr><td>Corrente de ouro</td><td>R$ 74,90</td><td>R$ 129,90</td><td class="profit-cell">R$ 55,00</td><td>42%</td><td><span class="badge badge-pink">Premium</span></td></tr>
-              </tbody>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Custo</th>
+                  <th>Preço Varejo</th>
+                  <th>Preço Atacado</th>
+                  <th>Lucro/un</th>
+                  <th>Margem</th>
+                  <th>Estoque</th>
+                  <th>Valor total</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-produtos-body"></tbody>
             </table>
           </div>
-        </section>
-      </main>
-    </div>
-  </div>
+        </div>
 
-  <script>
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const toggle = document.getElementById('sidebarToggle');
-    function toggleSidebar() {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('show');
+        <!-- ══════════════════════════════
+             TAB CLIENTES
+        ══════════════════════════════ -->
+        <div class="tab-content" id="tab-clientes">
+
+          <div class="rel-section-title"><i class="ti ti-users"></i> Resumo de clientes</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="s-label">Total de clientes</div>
+              <div class="s-value" id="c-total">—</div>
+              <div class="s-delta neutral"><i class="ti ti-users"></i> cadastrados</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Gasto total</div>
+              <div class="s-value" id="c-gasto-total">—</div>
+              <div class="s-delta up"><i class="ti ti-coin"></i> acumulado</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Ticket médio por cliente</div>
+              <div class="s-value" id="c-ticket-medio">—</div>
+              <div class="s-delta neutral"><i class="ti ti-receipt"></i> média</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Maior comprador</div>
+              <div class="s-value" id="c-top-comprador" style="font-size:1rem;">—</div>
+              <div class="s-delta up"><i class="ti ti-award"></i> destaque</div>
+            </div>
+          </div>
+
+          <div class="chart-grid-2" style="margin-top:4px;">
+            <div class="chart-box">
+              <h3>Top clientes por gasto total</h3>
+              <div id="chart-top-clientes"></div>
+            </div>
+            <div class="chart-box">
+              <h3>Top clientes por número de compras</h3>
+              <div id="chart-clientes-compras"></div>
+            </div>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-table"></i> Lista de clientes</div>
+          <div class="table-box">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>WhatsApp</th>
+                  <th>Compras</th>
+                  <th>Gasto total</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-clientes-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════
+             TAB ESTOQUE
+        ══════════════════════════════ -->
+        <div class="tab-content" id="tab-estoque">
+
+          <div class="rel-section-title"><i class="ti ti-stack"></i> Resumo do estoque</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="s-label">Total de unidades</div>
+              <div class="s-value" id="e-total-un">—</div>
+              <div class="s-delta neutral"><i class="ti ti-stack"></i> em estoque</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Produtos ativos</div>
+              <div class="s-value" id="e-ativos">—</div>
+              <div class="s-delta up"><i class="ti ti-circle-check"></i> estoque ok</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Estoque baixo</div>
+              <div class="s-value" id="e-baixo">—</div>
+              <div class="s-delta neutral"><i class="ti ti-alert-triangle"></i> ≤ 10 unidades</div>
+            </div>
+            <div class="stat-card">
+              <div class="s-label">Estoque crítico</div>
+              <div class="s-value" id="e-critico">—</div>
+              <div class="s-delta down" id="e-critico-delta"><i class="ti ti-alert-circle"></i> ≤ 5 unidades</div>
+            </div>
+          </div>
+
+          <div class="chart-grid-2" style="margin-top:4px;">
+            <div class="chart-box">
+              <h3>Estoque por produto (top 8)</h3>
+              <div id="chart-estoque-produto"></div>
+            </div>
+            <div class="chart-box">
+              <h3>Unidades por categoria</h3>
+              <div id="chart-estoque-categoria"></div>
+            </div>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-alert-circle" style="color:var(--red-400);"></i> Estoque crítico (≤ 5 unidades)</div>
+          <div class="card" id="card-criticos">
+            <div style="color:var(--gray-400); font-size:12px; padding:8px 0;">Carregando...</div>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-table"></i> Estoque completo</div>
+          <div class="table-box">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Categoria</th>
+                  <th>Estoque</th>
+                  <th>Preço Varejo</th>
+                  <th>Valor em estoque</th>
+                  <th>Situação</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-estoque-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+/* ── Sidebar ── */
+var sidebar = document.getElementById('sidebar');
+var overlay = document.getElementById('sidebarOverlay');
+document.getElementById('sidebarToggle').addEventListener('click', function() {
+  sidebar.classList.toggle('open'); overlay.classList.toggle('show');
+});
+overlay.addEventListener('click', function() {
+  sidebar.classList.remove('open'); overlay.classList.remove('show');
+});
+
+/* ── Tabs ── */
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ── Helpers ── */
+function parseBRL(v) {
+  return parseFloat((v || '0').replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+}
+function formatBRL(v) {
+  return 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Storage ── */
+function getProdutos() {
+  try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
+}
+function getPedidos() {
+  try { return JSON.parse(localStorage.getItem('lapinkPedidos') || '[]'); } catch(e) { return []; }
+}
+function getClientes() {
+  try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }
+}
+
+/* ── Lucro / margem de produto ── */
+function getLucro(p) {
+  if (p.lucroUnitario !== undefined && p.lucroUnitario !== null && p.lucroUnitario !== '') {
+    return parseBRL(String(p.lucroUnitario));
+  }
+  var varejo = parseBRL(String(p.precoVarejo || 0));
+  var atacado = parseBRL(String(p.precoAtacado || 0));
+  return atacado ? varejo - atacado : 0;
+}
+function getMargem(p) {
+  if (p.margemLucro !== undefined && p.margemLucro !== null && p.margemLucro !== '') {
+    var m = parseBRL(String(p.margemLucro));
+    if (m > 0) return m;
+  }
+  var varejo = parseBRL(String(p.precoVarejo || 0));
+  var atacado = parseBRL(String(p.precoAtacado || 0));
+  return varejo > 0 && atacado > 0 ? ((varejo - atacado) / varejo) * 100 : 0;
+}
+
+/* ── SVG bar chart horizontal genérico ── */
+function renderHBarChart(containerId, items, labelKey, valueKey, formatFn, color) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  if (!items.length) {
+    container.innerHTML = '<div style="padding:24px 0; text-align:center; color:var(--gray-400); font-size:12px;"><i class="ti ti-chart-bar" style="font-size:24px; display:block; margin-bottom:6px;"></i>Sem dados suficientes.</div>';
+    return;
+  }
+  var barColor = color || 'var(--pink-300)';
+  var maxVal = Math.max.apply(null, items.map(function(i) { return i[valueKey]; })) || 1;
+  var rowH = 22;
+  var labelW = 110;
+  var barAreaW = 180;
+  var valW = 80;
+  var totalW = labelW + barAreaW + valW + 20;
+  var totalH = items.length * rowH + 10;
+
+  var rows = items.map(function(item, idx) {
+    var y = idx * rowH + rowH / 2 + 5;
+    var barW = Math.max(4, Math.round((item[valueKey] / maxVal) * barAreaW));
+    var label = String(item[labelKey] || '').length > 14
+      ? String(item[labelKey]).slice(0, 13) + '…'
+      : String(item[labelKey] || '');
+    var val = formatFn ? formatFn(item[valueKey]) : item[valueKey];
+    return (
+      '<text x="' + (labelW - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="9" fill="var(--gray-400)">' + label + '</text>' +
+      '<rect x="' + labelW + '" y="' + (y - 6) + '" width="' + barW + '" height="12" rx="3" fill="' + barColor + '" />' +
+      '<text x="' + (labelW + barW + 4) + '" y="' + (y + 4) + '" font-size="9" fill="var(--gray-500)">' + val + '</text>'
+    );
+  }).join('');
+
+  container.innerHTML = (
+    '<svg width="100%" viewBox="0 0 ' + totalW + ' ' + totalH + '" preserveAspectRatio="xMidYMid meet" style="display:block;">' +
+    '<rect width="' + totalW + '" height="' + totalH + '" fill="#fff" />' +
+    rows +
+    '</svg>'
+  );
+}
+
+/* ── Top lista com barra ── */
+function renderTopLista(containerId, items, valFn, labelFn) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  if (!items.length) {
+    container.innerHTML = '<p style="color:var(--gray-400);font-size:12px;padding:8px 0;">Sem dados suficientes.</p>';
+    return;
+  }
+  var max = valFn(items[0]) || 1;
+  container.innerHTML = items.map(function(p) {
+    var val = valFn(p);
+    var pct = Math.round((val / max) * 100);
+    var nome = (p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto');
+    return (
+      '<div class="top-item">' +
+      '<span class="top-item-name">' + nome + '</span>' +
+      '<div class="top-bar-wrap"><div class="top-bar" style="width:' + pct + '%"></div></div>' +
+      '<span class="top-val">' + labelFn(val) + '</span>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   VENDAS
+════════════════════════════════════════ */
+function renderVendas() {
+  var pedidos = getPedidos();
+
+  var total       = pedidos.length;
+  var receitaTotal = 0;
+  var pendentes   = 0;
+  var contadorStatus = {};
+
+  var contagemProdutos = {};
+
+  pedidos.forEach(function(ped) {
+    var st = (ped.status || 'novo').toLowerCase();
+    contadorStatus[st] = (contadorStatus[st] || 0) + 1;
+    if (st === 'pago' || st === 'enviado') receitaTotal += ped.total || 0;
+    if (st === 'pendente' || st === 'novo') pendentes++;
+
+    if (Array.isArray(ped.itens)) {
+      ped.itens.forEach(function(item) {
+        var nome = item.nome || 'Produto';
+        contagemProdutos[nome] = (contagemProdutos[nome] || 0) + (item.qty || 1);
+      });
     }
-    toggle.addEventListener('click', toggleSidebar);
-    overlay.addEventListener('click', toggleSidebar);
-  </script>
+  });
+
+  var ticketMedio = total > 0 ? receitaTotal / total : 0;
+
+  document.getElementById('v-total-pedidos').textContent  = total;
+  document.getElementById('v-receita-total').textContent  = formatBRL(receitaTotal);
+  document.getElementById('v-ticket-medio').textContent   = total > 0 ? formatBRL(ticketMedio) : '—';
+  document.getElementById('v-pendentes').textContent      = pendentes;
+
+  // Gráfico receita por status
+  var statusLabels = { pago:'Pago', pendente:'Pendente', enviado:'Enviado', cancelado:'Cancelado', novo:'Novo' };
+  var statusColors = { pago:'var(--green-400,#4ade80)', pendente:'#facc15', enviado:'#60a5fa', cancelado:'var(--red-400)', novo:'var(--pink-300)' };
+  var statusItems = Object.keys(contadorStatus).map(function(k) {
+    return { nome: statusLabels[k] || k, qtd: contadorStatus[k], cor: statusColors[k] || 'var(--pink-300)' };
+  }).sort(function(a,b){ return b.qtd - a.qtd; });
+  renderHBarChart('chart-status-vendas', statusItems, 'nome', 'qtd', function(v) { return v + ' pedido' + (v !== 1 ? 's' : ''); });
+
+  // Gráfico top produtos vendidos
+  var topVendidos = Object.keys(contagemProdutos).map(function(k) {
+    return { nome: k, qtd: contagemProdutos[k] };
+  }).sort(function(a,b){ return b.qtd - a.qtd; }).slice(0, 8);
+  renderHBarChart('chart-top-vendidos', topVendidos, 'nome', 'qtd', function(v) { return v + ' un'; }, 'var(--pink-500)');
+
+  // Tabela pedidos
+  var tbody = document.getElementById('tabela-vendas-body');
+  if (!pedidos.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum pedido registrado. <a href="pedidos.html" style="color:var(--pink-500);">Acessar pedidos</a></td></tr>';
+    return;
+  }
+  tbody.innerHTML = pedidos.slice().reverse().map(function(ped) {
+    var st = (ped.status || 'novo').toLowerCase();
+    var stLabel = { pago:'Pago', pendente:'Pendente', enviado:'Enviado', cancelado:'Cancelado', novo:'Novo' }[st] || ped.status;
+    var nItens = Array.isArray(ped.itens) ? ped.itens.length : 0;
+    var data = ped.data ? new Date(ped.data).toLocaleDateString('pt-BR') : '—';
+    return '<tr>' +
+      '<td><strong>#' + (ped.numero || ped.id || '—') + '</strong></td>' +
+      '<td>' + escHtml((ped.cliente && ped.cliente.name) || '—') + '</td>' +
+      '<td>' + nItens + ' item' + (nItens !== 1 ? 'ns' : '') + '</td>' +
+      '<td>' + formatBRL(ped.total || 0) + '</td>' +
+      '<td><span class="status-pill ' + st + '">' + stLabel + '</span></td>' +
+      '<td>' + data + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   PRODUTOS
+════════════════════════════════════════ */
+function renderProdutos() {
+  var produtos = getProdutos();
+
+  var valorEstoque    = 0;
+  var lucroPotencial  = 0;
+  var somaMargens     = 0;
+  var countMargem     = 0;
+  var porCategoria    = {};
+
+  produtos.forEach(function(p) {
+    var varejo = parseBRL(String(p.precoVarejo || 0));
+    var est    = parseInt(p.estoque) || 0;
+    valorEstoque += varejo * est;
+
+    var lucro = getLucro(p);
+    if (lucro > 0) lucroPotencial += lucro * est;
+
+    var margem = getMargem(p);
+    if (margem > 0) { somaMargens += margem; countMargem++; }
+
+    var cat = p.categoria || 'Outros';
+    porCategoria[cat] = (porCategoria[cat] || 0) + 1;
+  });
+
+  document.getElementById('p-total-produtos').textContent   = produtos.length;
+  document.getElementById('p-valor-estoque').textContent    = formatBRL(valorEstoque);
+  document.getElementById('p-lucro-potencial').textContent  = formatBRL(lucroPotencial);
+  document.getElementById('p-margem-media').textContent     = countMargem ? (somaMargens / countMargem).toFixed(1) + '%' : '—';
+
+  // Gráficos
+  var topValor = produtos.slice().sort(function(a,b) {
+    return parseBRL(String(b.precoVarejo||0)) - parseBRL(String(a.precoVarejo||0));
+  }).slice(0,8).map(function(p) { return { nome: p.nome, valor: parseBRL(String(p.precoVarejo||0)) }; });
+  renderHBarChart('chart-valor-produto', topValor, 'nome', 'valor', function(v) {
+    return v >= 1000 ? 'R$' + (v/1000).toFixed(1) + 'k' : 'R$' + v.toFixed(0);
+  });
+
+  var topMargem = produtos.filter(function(p){ return getMargem(p) > 0; }).slice().sort(function(a,b) {
+    return getMargem(b) - getMargem(a);
+  }).slice(0,8).map(function(p) { return { nome: p.nome, margem: getMargem(p) }; });
+  renderHBarChart('chart-margem-produto', topMargem, 'nome', 'margem', function(v) { return v.toFixed(1) + '%'; }, 'var(--pink-500)');
+
+  // Melhor lucro / maior margem
+  var topLucro = produtos.filter(function(p){ return getLucro(p) > 0; }).slice().sort(function(a,b){ return getLucro(b)-getLucro(a); }).slice(0,5);
+  renderTopLista('lista-melhor-lucro', topLucro, function(p){ return getLucro(p); }, formatBRL);
+
+  var topMargemLista = produtos.filter(function(p){ return getMargem(p) > 0; }).slice().sort(function(a,b){ return getMargem(b)-getMargem(a); }).slice(0,5);
+  renderTopLista('lista-maior-margem', topMargemLista, function(p){ return getMargem(p); }, function(v){ return v.toFixed(1)+'%'; });
+
+  // Por categoria
+  var catEl = document.getElementById('lista-por-categoria');
+  if (catEl) {
+    var cats = Object.keys(porCategoria).sort(function(a,b){ return porCategoria[b]-porCategoria[a]; });
+    var maxCat = cats.length ? porCategoria[cats[0]] : 1;
+    catEl.innerHTML = cats.length
+      ? cats.map(function(cat) {
+          var n = porCategoria[cat];
+          var pct = Math.round((n / maxCat) * 100);
+          return '<div class="top-item">' +
+            '<span class="top-item-name">' + cat + '</span>' +
+            '<div class="top-bar-wrap"><div class="top-bar" style="width:' + pct + '%"></div></div>' +
+            '<span class="top-val">' + n + ' prod.</span>' +
+          '</div>';
+        }).join('')
+      : '<p style="color:var(--gray-400);font-size:12px;padding:8px 0;">Sem categorias.</p>';
+  }
+
+  // Tabela
+  var tbody = document.getElementById('tabela-produtos-body');
+  if (!produtos.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum produto cadastrado. <a href="cadastro-produto.html" style="color:var(--pink-500);">Cadastrar agora</a></td></tr>';
+    return;
+  }
+  tbody.innerHTML = produtos.map(function(p) {
+    var varejo  = parseBRL(String(p.precoVarejo||0));
+    var atacado = parseBRL(String(p.precoAtacado||0));
+    var custo   = parseBRL(String(p.custoTotal||0));
+    var lucro   = getLucro(p);
+    var margem  = getMargem(p);
+    var est     = parseInt(p.estoque) || 0;
+    var valorTotal = varejo * est;
+    return '<tr>' +
+      '<td>' + escHtml(p.nome||'—') + '</td>' +
+      '<td>' + escHtml(p.categoria||'—') + '</td>' +
+      '<td>' + (custo   ? formatBRL(custo)  : '—') + '</td>' +
+      '<td>' + (varejo  ? formatBRL(varejo) : '—') + '</td>' +
+      '<td>' + (atacado ? formatBRL(atacado): '—') + '</td>' +
+      '<td>' + (lucro   ? formatBRL(lucro)  : '—') + '</td>' +
+      '<td>' + (margem  ? margem.toFixed(1)+'%' : '—') + '</td>' +
+      '<td>' + est + '</td>' +
+      '<td>' + formatBRL(valorTotal) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   CLIENTES
+════════════════════════════════════════ */
+function renderClientes() {
+  var clientes = getClientes();
+
+  var total       = clientes.length;
+  var gastoTotal  = clientes.reduce(function(s,c){ return s + (c.totalSpent||0); }, 0);
+  var ticketMedio = total > 0 ? gastoTotal / total : 0;
+  var top         = clientes.slice().sort(function(a,b){ return (b.totalSpent||0)-(a.totalSpent||0); })[0];
+
+  document.getElementById('c-total').textContent          = total;
+  document.getElementById('c-gasto-total').textContent    = formatBRL(gastoTotal);
+  document.getElementById('c-ticket-medio').textContent   = total > 0 ? formatBRL(ticketMedio) : '—';
+  document.getElementById('c-top-comprador').textContent  = top ? top.name : '—';
+
+  // Gráfico top por gasto
+  var topGasto = clientes.slice().sort(function(a,b){ return (b.totalSpent||0)-(a.totalSpent||0); }).slice(0,8);
+  var itemsGasto = topGasto.map(function(c){ return { nome: c.name||c.email||'Cliente', gasto: c.totalSpent||0 }; });
+  renderHBarChart('chart-top-clientes', itemsGasto, 'nome', 'gasto', function(v){ return v >= 1000 ? 'R$'+(v/1000).toFixed(1)+'k' : 'R$'+v.toFixed(0); });
+
+  // Gráfico top por nº de compras
+  var topCompras = clientes.slice().sort(function(a,b){ return (b.purchases||[]).length - (a.purchases||[]).length; }).slice(0,8);
+  var itemsCompras = topCompras.map(function(c){ return { nome: c.name||c.email||'Cliente', compras: (c.purchases||[]).length }; });
+  renderHBarChart('chart-clientes-compras', itemsCompras, 'nome', 'compras', function(v){ return v + ' compra' + (v!==1?'s':''); }, 'var(--pink-500)');
+
+  // Tabela
+  var tbody = document.getElementById('tabela-clientes-body');
+  if (!clientes.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum cliente cadastrado. <a href="clientes.html" style="color:var(--pink-500);">Ver clientes</a></td></tr>';
+    return;
+  }
+  tbody.innerHTML = clientes.slice().sort(function(a,b){ return (b.totalSpent||0)-(a.totalSpent||0); }).map(function(c) {
+    var nCompras = (c.purchases||[]).length;
+    return '<tr>' +
+      '<td>' + escHtml(c.name||'—') + '</td>' +
+      '<td>' + escHtml(c.email||'—') + '</td>' +
+      '<td>' + escHtml(c.whatsapp||'—') + '</td>' +
+      '<td>' + nCompras + '</td>' +
+      '<td>' + formatBRL(c.totalSpent||0) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   ESTOQUE
+════════════════════════════════════════ */
+function renderEstoque() {
+  var produtos = getProdutos();
+
+  var totalUn  = 0;
+  var ativos   = 0;
+  var baixo    = 0;
+  var critico  = 0;
+  var porCategoria = {};
+
+  produtos.forEach(function(p) {
+    var est = parseInt(p.estoque) || 0;
+    totalUn += est;
+    if (est > 10) ativos++;
+    else if (est > 5) baixo++;
+    else critico++;
+
+    var cat = p.categoria || 'Outros';
+    porCategoria[cat] = (porCategoria[cat] || 0) + est;
+  });
+
+  document.getElementById('e-total-un').textContent = totalUn;
+  document.getElementById('e-ativos').textContent   = ativos;
+  document.getElementById('e-baixo').textContent    = baixo;
+  document.getElementById('e-critico').textContent  = critico;
+  if (critico > 0) {
+    document.getElementById('e-critico-delta').style.color = 'var(--red-400)';
+  }
+
+  // Gráfico estoque por produto
+  var topEst = produtos.slice().sort(function(a,b){ return (parseInt(b.estoque)||0)-(parseInt(a.estoque)||0); }).slice(0,8);
+  var itemsEst = topEst.map(function(p){ return { nome: p.nome, estoque: parseInt(p.estoque)||0 }; });
+  renderHBarChart('chart-estoque-produto', itemsEst, 'nome', 'estoque', function(v){ return v+' un'; });
+
+  // Gráfico por categoria
+  var cats = Object.keys(porCategoria).map(function(k){ return { cat: k, un: porCategoria[k] }; }).sort(function(a,b){ return b.un-a.un; });
+  renderHBarChart('chart-estoque-categoria', cats, 'cat', 'un', function(v){ return v+' un'; }, 'var(--pink-500)');
+
+  // Lista críticos
+  var cardCrit = document.getElementById('card-criticos');
+  var criticos = produtos.filter(function(p){ return (parseInt(p.estoque)||0) <= 5; }).sort(function(a,b){ return (parseInt(a.estoque)||0)-(parseInt(b.estoque)||0); });
+  if (!criticos.length) {
+    cardCrit.innerHTML = '<div style="color:var(--gray-400); font-size:12px; padding:8px 0; display:flex; align-items:center; gap:6px;"><i class="ti ti-circle-check" style="color:var(--green-400,#4ade80);"></i> Nenhum produto com estoque crítico.</div>';
+  } else {
+    cardCrit.innerHTML = criticos.map(function(p) {
+      var est = parseInt(p.estoque)||0;
+      return '<div class="estoque-critico">' +
+        '<i class="ti ti-alert-circle" style="color:var(--red-400); flex-shrink:0;"></i>' +
+        '<span class="estoque-nome">' + escHtml(p.nome||'Produto') + ' <small style="color:var(--gray-400);">' + escHtml(p.categoria||'') + '</small></span>' +
+        '<span class="estoque-un">' + est + ' un</span>' +
+        '<a href="cadastro-produto.html?id=' + p.id + '" class="btn btn-secondary" style="padding:3px 10px; font-size:11px;">Repor</a>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Tabela completa
+  var tbody = document.getElementById('tabela-estoque-body');
+  if (!produtos.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum produto cadastrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = produtos.slice().sort(function(a,b){ return (parseInt(a.estoque)||0)-(parseInt(b.estoque)||0); }).map(function(p) {
+    var est    = parseInt(p.estoque)||0;
+    var varejo = parseBRL(String(p.precoVarejo||0));
+    var valorTotal = varejo * est;
+    var badge = est <= 5
+      ? '<span class="badge badge-amber"><i class="ti ti-alert-circle"></i> Crítico</span>'
+      : est <= 10
+      ? '<span class="badge badge-amber">Baixo</span>'
+      : '<span class="badge badge-green">Ok</span>';
+    return '<tr>' +
+      '<td>' + escHtml(p.nome||'—') + '</td>' +
+      '<td>' + escHtml(p.categoria||'—') + '</td>' +
+      '<td><strong>' + est + '</strong></td>' +
+      '<td>' + (varejo ? formatBRL(varejo) : '—') + '</td>' +
+      '<td>' + formatBRL(valorTotal) + '</td>' +
+      '<td>' + badge + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+/* ── Init ── */
+renderVendas();
+renderProdutos();
+renderClientes();
+renderEstoque();
+</script>
 </body>
 </html>

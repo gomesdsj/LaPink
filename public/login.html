@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bella Joias — Login</title>
+<meta name="description" content="Entre na sua conta LaPink para acompanhar pedidos e acessar ofertas exclusivas." />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#D4537E" />
+<title>LaPink — Login</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/images/icon-192.png" type="image/png" />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <link rel="stylesheet" href="css/Principal.css" />
 <link rel="stylesheet" href="css/componentes.css" />
 <link rel="stylesheet" href="css/PrincipalPublica.css" />
@@ -11,35 +17,40 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 </head>
 <body class="auth-background">
+  <a class="skip-link" href="#loginForm">Pular para o formulário</a>
+
   <header class="store-nav">
-    <a class="store-logo" href="index.html"><i class="ti ti-diamond"></i><span class="logo-name">Bella Joias</span></a>
+    <a class="store-logo" href="index.html" aria-label="LaPink — início">
+      <i class="ti ti-diamond" aria-hidden="true"></i>
+      <span class="logo-name">LaPink</span>
+    </a>
     <div class="nav-actions">
-      <button class="btn btn-secondary" onclick="location.href='register.html'">Cadastre-se</button>
-      <button class="nav-admin-btn" onclick="location.href='index.html'">Voltar</button>
+      <button class="btn btn-secondary" onclick="location.href='register.html'" type="button">Cadastre-se</button>
+      <button class="nav-admin-btn" onclick="location.href='index.html'" type="button">Voltar</button>
     </div>
   </header>
 
   <section class="store-section auth-page">
     <article class="card auth-card">
       <div class="login-brand">
-        <i class="ti ti-diamond"></i>
-        <span>Bella Joias</span>
+        <i class="ti ti-diamond" aria-hidden="true"></i>
+        <span>LaPink</span>
       </div>
-      <h2>Login</h2>
+      <h1>Login</h1>
       <p>Entre com seu e-mail e senha para acessar.</p>
-      <form id="loginForm">
+      <form id="loginForm" novalidate>
         <div class="form-group">
           <label for="login-email">E-mail</label>
-          <input id="login-email" type="email" placeholder="email@dominio.com" required />
+          <input id="login-email" type="email" placeholder="email@dominio.com" autocomplete="email" required />
         </div>
         <div class="form-group">
           <label for="login-password">Senha</label>
-          <input id="login-password" type="password" placeholder="Sua senha" required />
+          <input id="login-password" type="password" placeholder="Sua senha" autocomplete="current-password" required />
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-full">Entrar</button>
         </div>
-        <div class="form-message" id="loginMessage"></div>
+        <div class="form-message" id="loginMessage" role="alert" aria-live="polite"></div>
       </form>
       <p class="auth-footer-text">Não tem conta? <a href="register.html">Cadastre-se</a></p>
     </article>

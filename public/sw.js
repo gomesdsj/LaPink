@@ -1,36 +1,55 @@
-const CACHE_NAME = 'lapink-cache-v1';
-const ASSETS = [
+var CACHE_NAME = 'lapink-v2';
+var ASSETS = [
   '/',
-  '/V1.html',
   '/index.html',
-  '/css/v1.css',
+  '/login.html',
+  '/register.html',
+  '/produto.html',
   '/css/Principal.css',
-  '/js/v1.js',
-  '/js/storage.js'
+  '/css/componentes.css',
+  '/css/PrincipalPublica.css',
+  '/css/public.css',
+  '/js/storage.js',
+  '/js/auth.js',
+  '/manifest.json'
 ];
 
-self.addEventListener('install', event => {
+self.addEventListener('install', function(event) {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then(function(cache) { return cache.addAll(ASSETS); })
+      .then(function() { return self.skipWaiting(); })
   );
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-    ))
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); })
+      );
+    })
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(res => {
-      return caches.open(CACHE_NAME).then(cache => { cache.put(event.request, res.clone()); return res; });
-    }).catch(() => {
-      // fallback to cache root
-      return caches.match('/');
-    }))
-  );
+self.addEventListener('fetch', function(event) {
+  if (event.request.method !== 'GET') return;
+  if (event.request.url.includes('/api/')) return;
+
+  event.respondWith(async function() {
+    const cached = await caches.match(event.request);
+    if (cached) return cached;
+
+    try {
+      const res = await fetch(event.request);
+      if (res && res.status === 200 && res.type !== 'opaque') {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(event.request, res.clone());
+      }
+      return res;
+    } catch {
+      return caches.match('/index.html');
+    }
+  }());
 });

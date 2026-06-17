@@ -1,40 +1,214 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bella Joias — Produto</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Produto — LaPink</title>
+<meta name="theme-color" content="#D4537E" />
+<link rel="manifest" href="manifest.json" />
 <link rel="stylesheet" href="css/Principal.css" />
 <link rel="stylesheet" href="css/componentes.css" />
 <link rel="stylesheet" href="css/PrincipalPublica.css" />
-<link rel="stylesheet" href="css/public.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+.product-page { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+.product-layout { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
+.product-img-wrap {
+  flex: 0 0 340px;
+  height: 340px;
+  background: var(--pink-50, #fff0f5);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  color: #D4537E;
+  overflow: hidden;
+}
+.product-img-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; }
+.product-info { flex: 1; min-width: 260px; }
+.product-cat {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #D4537E;
+  margin-bottom: 8px;
+}
+.product-name { font-size: 26px; font-weight: 800; color: #1a1a2e; margin-bottom: 10px; line-height: 1.2; }
+.product-code { font-size: 11px; color: #aaa; font-family: monospace; margin-bottom: 16px; }
+.product-desc { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 20px; }
+.product-price-main { font-size: 28px; font-weight: 800; color: #D4537E; margin-bottom: 4px; }
+.product-price-atacado { font-size: 13px; color: #888; margin-bottom: 4px; }
+.product-margem { font-size: 12px; color: #2e7d32; font-weight: 700; margin-bottom: 20px; }
+.product-stock { font-size: 13px; color: #666; margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
+.product-stock.low { color: #c0392b; }
+.btn-buy-full {
+  display: block;
+  width: 100%;
+  background: #D4537E;
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 14px 0;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: .03em;
+  transition: background .18s;
+  margin-bottom: 10px;
+}
+.btn-buy-full:hover { background: #b93d65; }
+.btn-back-loja {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: #fff;
+  color: #D4537E;
+  border: 1.5px solid #D4537E;
+  border-radius: 30px;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .18s;
+}
+.btn-back-loja:hover { background: #fff0f5; }
+.product-not-found {
+  text-align: center;
+  padding: 80px 20px;
+  color: #aaa;
+}
+.product-not-found i { font-size: 60px; display: block; margin-bottom: 16px; }
+.product-not-found a { color: #D4537E; font-weight: 700; }
+</style>
 </head>
 <body>
-  <header class="store-nav">
-    <a class="store-logo" href="index.html"><i class="ti ti-diamond"></i><span class="logo-name">Bella Joias</span></a>
-    <div class="nav-actions">
-      <a class="section-link" href="index.html">Voltar à loja</a>      <button class="btn btn-secondary" onclick="location.href='login.html'">Entrar</button>
-      <button class="btn btn-primary" onclick="location.href='register.html'">Cadastro</button>      <button class="nav-admin-btn" onclick="location.href='../admin/admin.html'">Painel</button>
-    </div>
-  </header>
 
-  <section class="store-section product-page">
-    <article class="product-preview-card">
-      <div class="preview-img"><i class="ti ti-ring preview-img-icon"></i></div>
-      <div class="preview-info">
-        <div class="preview-name">Anel solitário rosê</div>
-        <div class="preview-desc">Anel com banho rosê, design minimalista e acabamento premium. Perfeito para presentes e ocasiões especiais.</div>
-        <div class="preview-prices">
-          <div class="retail-price">R$ 89,90</div>
-          <div class="wholesale-price">Preço atacado R$ 59,90</div>
-          <div class="profit-line">Margem de revenda +31%</div>
-        </div>
-        <div class="preview-stock"><i class="ti ti-stack"></i> 24 unidades em estoque</div>
-        <button class="btn-full">Adicionar ao carrinho</button>
-        <a href="index.html" class="btn btn-secondary product-full-width">Ver mais produtos</a>
-      </div>
-    </article>
-  </section>
+<header class="store-nav">
+  <a class="store-logo" href="V1.html" aria-label="LaPink — início">
+    <i class="ti ti-diamond" aria-hidden="true"></i>
+    <span class="logo-name">LaPink</span>
+  </a>
+  <div class="nav-actions">
+    <a class="section-link" href="V1.html">
+      <i class="ti ti-arrow-left"></i> Voltar à loja
+    </a>
+    <button class="btn btn-secondary nav-text-btn" onclick="location.href='login.html'" type="button">Entrar</button>
+    <button class="nav-admin-btn nav-text-btn" onclick="location.href='../admin/admin.html'" type="button" style="display:none" id="panelBtn">Painel</button>
+  </div>
+</header>
+
+<div class="product-page" id="product-page">
+  <div class="product-not-found" id="not-found" style="display:none;">
+    <i class="ti ti-mood-empty"></i>
+    Produto não encontrado.<br>
+    <a href="V1.html">Ver todos os produtos</a>
+  </div>
+  <div class="product-layout" id="product-layout" style="display:none;">
+    <div class="product-img-wrap" id="prod-img-wrap">
+      <i class="ti ti-diamond" id="prod-icon"></i>
+      <img id="prod-img" src="" alt="" style="display:none;" />
+    </div>
+    <div class="product-info">
+      <div class="product-cat" id="prod-cat">—</div>
+      <h1 class="product-name" id="prod-name">—</h1>
+      <div class="product-code" id="prod-code"></div>
+      <p class="product-desc" id="prod-desc"></p>
+      <div class="product-price-main" id="prod-price">—</div>
+      <div class="product-price-atacado" id="prod-atacado"></div>
+      <div class="product-margem" id="prod-margem"></div>
+      <div class="product-stock" id="prod-stock"><i class="ti ti-stack"></i> <span id="prod-stock-txt">—</span></div>
+      <button class="btn-buy-full" id="btn-comprar" type="button">
+        <i class="ti ti-shopping-cart"></i> Adicionar ao carrinho
+      </button>
+      <a href="V1.html" class="btn-back-loja">Ver mais produtos</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  function getProdutos() {
+    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
+  }
+
+  var params  = new URLSearchParams(window.location.search);
+  var idParam = params.get('id');
+  var nomePar = params.get('nome');
+
+  var produtos = getProdutos();
+  var produto  = null;
+
+  if (idParam) {
+    produto = produtos.find(function(p) { return String(p.id) === String(idParam); });
+  }
+  if (!produto && nomePar) {
+    var nLower = nomePar.toLowerCase();
+    produto = produtos.find(function(p) { return (p.nome||'').toLowerCase() === nLower; });
+  }
+
+  if (!produto) {
+    document.getElementById('not-found').style.display = '';
+    return;
+  }
+
+  // Atualiza metadados
+  document.title = produto.nome + ' — LaPink';
+
+  // Imagem
+  if (produto.imagem) {
+    document.getElementById('prod-img').src = produto.imagem;
+    document.getElementById('prod-img').alt = produto.nome;
+    document.getElementById('prod-img').style.display = 'block';
+    document.getElementById('prod-icon').style.display = 'none';
+  } else {
+    document.getElementById('prod-icon').className = 'ti ' + (produto.icone || 'ti-diamond');
+  }
+
+  // Texto
+  document.getElementById('prod-cat').textContent   = produto.categoria || '';
+  document.getElementById('prod-name').textContent  = produto.nome || '';
+  document.getElementById('prod-code').textContent  = produto.codigoPeca ? 'Cód. #' + produto.codigoPeca : '';
+  document.getElementById('prod-desc').textContent  = produto.descricao || '';
+
+  var varejo  = Number(produto.precoVarejo)  || 0;
+  var atacado = Number(produto.precoAtacado) || 0;
+  var est     = parseInt(produto.estoque)    || 0;
+
+  document.getElementById('prod-price').textContent   = 'R$ ' + varejo.toFixed(2).replace('.', ',');
+  if (atacado) {
+    document.getElementById('prod-atacado').textContent = 'Preço atacado R$ ' + atacado.toFixed(2).replace('.', ',');
+  }
+  if (varejo && atacado && varejo > atacado) {
+    var margem = ((varejo - atacado) / varejo * 100).toFixed(0);
+    document.getElementById('prod-margem').textContent = 'Margem de revenda +' + margem + '%';
+  }
+
+  var stockEl = document.getElementById('prod-stock');
+  var stockTx = document.getElementById('prod-stock-txt');
+  if (est <= 0) {
+    stockTx.textContent = 'Fora de estoque';
+    stockEl.classList.add('low');
+    document.getElementById('btn-comprar').disabled = true;
+    document.getElementById('btn-comprar').textContent = 'Fora de estoque';
+  } else if (est <= 5) {
+    stockTx.textContent = 'Últimas ' + est + ' unidades!';
+    stockEl.classList.add('low');
+  } else {
+    stockTx.textContent = est + ' unidades disponíveis';
+  }
+
+  document.getElementById('product-layout').style.display = 'flex';
+
+  // Botão comprar
+  document.getElementById('btn-comprar').addEventListener('click', function() {
+    alert('Produto adicionado ao carrinho: ' + produto.nome + '\n(Integração com carrinho em breve)');
+  });
+})();
+</script>
+
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>

@@ -1,12 +1,15 @@
 {
-  "name": "LaPink - Bella Joias",
+  "name": "LaPink",
   "short_name": "LaPink",
-  "start_url": "/V1.html",
+  "description": "Semijoias, bolsas e acessórios com entrega rápida e qualidade premium.",
+  "start_url": "/index.html",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#ff66b2",
+  "theme_color": "#D4537E",
   "icons": [
-    { "src": "/assets/images/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/assets/images/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/assets/images/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/assets/images/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
