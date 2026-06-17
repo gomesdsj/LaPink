@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Configurações</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+/* ── Toggle switch ───────────────────────────────────────── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: .5px solid var(--gray-100); }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: 13px; color: var(--gray-800); }
+.toggle-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--gray-200); border-radius: 24px; cursor: pointer; transition: .2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.toggle-switch input:checked + .toggle-slider { background: var(--pink-500); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+/* ── Storage ─────────────────────────────────────────────── */
+.storage-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: .5px solid var(--gray-100); }
+.storage-item:last-child { border-bottom: none; }
+.storage-info { flex: 1; }
+.storage-info strong { font-size: 13px; color: var(--gray-800); display: block; }
+.storage-info span { font-size: 11px; color: var(--gray-400); }
+
+/* ── Abas de config ──────────────────────────────────────── */
+.config-tabs { display: flex; gap: 4px; border-bottom: .5px solid var(--gray-200); margin-bottom: 24px; flex-wrap: wrap; }
+.config-tab { background: none; border: none; padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--gray-500); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; margin-bottom: -1px; }
+.config-tab.active { color: var(--pink-700); border-bottom-color: var(--pink-500); }
+.config-panel { display: none; }
+.config-panel.active { display: block; }
+
+/* ── Misc ─────────────────────────────────────────────────── */
+.section-card { background: var(--white); border: .5px solid var(--gray-200); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+.section-card h3 { font-size: 14px; font-weight: 700; color: var(--gray-800); margin: 0 0 4px; }
+.section-card p { font-size: 12px; color: var(--gray-400); margin: 0 0 18px; }
+.storage-bar-wrap { background: var(--gray-100); border-radius: 8px; height: 8px; overflow: hidden; margin: 8px 0 4px; }
+.storage-bar { height: 100%; background: var(--pink-500); border-radius: 8px; transition: width .4s; }
+.storage-label { font-size: 11px; color: var(--gray-400); }
+.btn-danger { background: #fee2e2; color: #b91c1c; border: .5px solid #fca5a5; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-danger:hover { background: #fca5a5; color: #fff; }
+.color-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--gray-50); border: .5px solid var(--gray-200); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--gray-600); }
+.color-dot { width: 14px; height: 14px; border-radius: 50%; background: #D4537E; flex-shrink: 0; }
+</style>
+</head>
+<body>
+  <div id="app-admin">
+    <div class="admin-layout">
+
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">LaPink</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Loja</div>
+          <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link active" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Configurações</h1>
+          <div class="topbar-right">
+            <span>Olá, Carol</span>
+          </div>
+        </header>
+
+        <section class="admin-page show">
+          <div class="page-header">
+            <div>
+              <h2>Configurações do painel</h2>
+              <p>Gerencie a loja, sua conta, notificações e dados armazenados.</p>
+            </div>
+          </div>
+
+          <!-- Abas -->
+          <div class="config-tabs">
+            <button class="config-tab active" onclick="mudarAba('loja', this)"><i class="ti ti-building-store"></i> Loja</button>
+            <button class="config-tab" onclick="mudarAba('conta', this)"><i class="ti ti-user-circle"></i> Conta</button>
+            <button class="config-tab" onclick="mudarAba('notificacoes', this)"><i class="ti ti-bell"></i> Notificações</button>
+            <button class="config-tab" onclick="mudarAba('armazenamento', this)"><i class="ti ti-database"></i> Armazenamento</button>
+          </div>
+
+          <!-- ── ABA: LOJA ── -->
+          <div class="config-panel active" id="panel-loja">
+            <div class="section-card">
+              <h3>Informações da loja</h3>
+              <p>Dados gerais exibidos no painel e usados nas comunicações.</p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome da loja</label>
+                  <input type="text" id="cfg-nome-loja" placeholder="LaPink" />
+                </div>
+                <div class="form-group">
+                  <label>CNPJ</label>
+                  <input type="text" id="cfg-cnpj" placeholder="00.000.000/0001-00" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>WhatsApp de contato</label>
+                  <input type="tel" id="cfg-whatsapp" placeholder="11999999999" />
+                </div>
+                <div class="form-group">
+                  <label>E-mail de contato</label>
+                  <input type="email" id="cfg-email-loja" placeholder="contato@lapink.com" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Endereço</label>
+                <input type="text" id="cfg-endereco" placeholder="Rua das Rosas, 123 — São Paulo, SP" />
+              </div>
+              <div class="form-group">
+                <label>Tema de cores</label>
+                <div class="color-pill"><span class="color-dot"></span> Tema atual: Rosa (#D4537E)</div>
+              </div>
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarLoja()"><i class="ti ti-device-floppy"></i> Salvar configurações da loja</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── ABA: CONTA ── -->
+          <div class="config-panel" id="panel-conta">
+            <div class="section-card">
+              <h3>Dados de exibição</h3>
+              <p>Informações usadas no painel administrativo.</p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome de exibição</label>
+                  <input type="text" id="cfg-admin-nome" placeholder="Carol" />
+                </div>
+                <div class="form-group">
+                  <label>E-mail admin</label>
+                  <input type="email" id="cfg-admin-email" placeholder="admin@lapink.com" />
+                </div>
+              </div>
+            </div>
+            <div class="section-card">
+              <h3>Alterar senha</h3>
+              <p>Deixe em branco para manter a senha atual.</p>
+              <div class="form-group">
+                <label>Senha atual</label>
+                <input type="password" id="cfg-senha-atual" placeholder="••••••••" autocomplete="current-password" />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nova senha</label>
+                  <input type="password" id="cfg-senha-nova" placeholder="••••••••" autocomplete="new-password" />
+                </div>
+                <div class="form-group">
+                  <label>Confirmar nova senha</label>
+                  <input type="password" id="cfg-senha-conf" placeholder="••••••••" autocomplete="new-password" />
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarConta()"><i class="ti ti-user-check"></i> Atualizar conta</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── ABA: NOTIFICAÇÕES ── -->
+          <div class="config-panel" id="panel-notificacoes">
+            <div class="section-card">
+              <h3>Preferências de notificação</h3>
+              <p>Escolha quais alertas você deseja receber no painel.</p>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Pedido novo</div>
+                  <div class="toggle-sub">Notificar ao receber um novo pedido</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notif-pedido" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Estoque crítico</div>
+                  <div class="toggle-sub">Alertar quando um produto tiver 5 ou menos unidades</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notif-estoque" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Novo cliente</div>
+                  <div class="toggle-sub">Notificar quando um novo cliente se cadastrar</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notif-cliente" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="form-actions" style="margin-top:16px;">
+                <button class="btn-save-form" type="button" onclick="salvarNotificacoes()"><i class="ti ti-bell-check"></i> Salvar preferências</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── ABA: ARMAZENAMENTO ── -->
+          <div class="config-panel" id="panel-armazenamento">
+            <div class="section-card">
+              <h3>Uso do armazenamento</h3>
+              <p>Estimativa do espaço ocupado pelos dados do localStorage.</p>
+              <div id="storage-uso-label" class="storage-label" style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;"></div>
+              <div class="storage-bar-wrap"><div class="storage-bar" id="storage-bar" style="width:0%"></div></div>
+              <div class="storage-label">Limite estimado do localStorage: ~5 MB</div>
+            </div>
+
+            <div class="section-card">
+              <h3>Gerenciar dados</h3>
+              <p>Limpe conjuntos de dados individualmente ou resete tudo.</p>
+
+              <div class="storage-item">
+                <div class="storage-info">
+                  <strong><i class="ti ti-package" style="font-size:12px"></i> Produtos</strong>
+                  <span id="info-produtos">Carregando…</span>
+                </div>
+                <button class="btn-danger" type="button" onclick="limparDados('lapinkProdutos', 'Produtos', 'info-produtos')">
+                  <i class="ti ti-trash"></i> Limpar
+                </button>
+              </div>
+
+              <div class="storage-item">
+                <div class="storage-info">
+                  <strong><i class="ti ti-users" style="font-size:12px"></i> Clientes</strong>
+                  <span id="info-clientes">Carregando…</span>
+                </div>
+                <button class="btn-danger" type="button" onclick="limparDados('lapinkClients', 'Clientes', 'info-clientes')">
+                  <i class="ti ti-trash"></i> Limpar
+                </button>
+              </div>
+
+              <div class="storage-item">
+                <div class="storage-info">
+                  <strong><i class="ti ti-shopping-cart" style="font-size:12px"></i> Pedidos</strong>
+                  <span id="info-pedidos">Carregando…</span>
+                </div>
+                <button class="btn-danger" type="button" onclick="limparDados('lapinkPedidos', 'Pedidos', 'info-pedidos')">
+                  <i class="ti ti-trash"></i> Limpar
+                </button>
+              </div>
+            </div>
+
+            <div class="section-card" style="border-color:#fca5a5;">
+              <h3 style="color:#b91c1c;"><i class="ti ti-alert-triangle"></i> Zona de perigo</h3>
+              <p>Esta ação remove <strong>todos</strong> os dados armazenados, incluindo produtos, clientes, pedidos e configurações. Essa ação é irreversível.</p>
+              <button class="btn-danger" type="button" onclick="resetarTudo()" style="width:100%;justify-content:center;padding:12px;">
+                <i class="ti ti-database-x"></i> Resetar tudo
+              </button>
+            </div>
+          </div>
+
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+  // ─── Toast ────────────────────────────────────────────────
+  function showToast(msg, tipo) {
+    var el = document.getElementById('_toast');
+    if (!el) { el = document.createElement('div'); el.id = '_toast'; el.className = 'toast'; el.setAttribute('role','status'); document.body.appendChild(el); }
+    el.textContent = msg;
+    el.style.background = tipo === 'erro' ? '#f87171' : 'var(--pink-700)';
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
+  }
+
+  // ─── Abas ─────────────────────────────────────────────────
+  function mudarAba(aba, btn) {
+    document.querySelectorAll('.config-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.config-tab').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('panel-' + aba).classList.add('active');
+    btn.classList.add('active');
+    if (aba === 'armazenamento') renderArmazenamento();
+  }
+
+  // ─── Helpers localStorage ─────────────────────────────────
+  function getArr(key) {
+    var raw = localStorage.getItem(key);
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch(e) { return []; }
+  }
+
+  function getObj(key) {
+    var raw = localStorage.getItem(key);
+    if (!raw) return {};
+    try { return JSON.parse(raw); } catch(e) { return {}; }
+  }
+
+  // ─── ABA LOJA ─────────────────────────────────────────────
+  function carregarLoja() {
+    var cfg = getObj('lapinkStoreConfig');
+    document.getElementById('cfg-nome-loja').value = cfg.nomeLoja || 'LaPink';
+    document.getElementById('cfg-cnpj').value = cfg.cnpj || '00.000.000/0001-00';
+    document.getElementById('cfg-whatsapp').value = cfg.whatsapp || '';
+    document.getElementById('cfg-email-loja').value = cfg.email || '';
+    document.getElementById('cfg-endereco').value = cfg.endereco || '';
+  }
+
+  function salvarLoja() {
+    var cfg = {
+      nomeLoja: document.getElementById('cfg-nome-loja').value.trim() || 'LaPink',
+      cnpj: document.getElementById('cfg-cnpj').value.trim(),
+      whatsapp: document.getElementById('cfg-whatsapp').value.trim(),
+      email: document.getElementById('cfg-email-loja').value.trim(),
+      endereco: document.getElementById('cfg-endereco').value.trim()
+    };
+    localStorage.setItem('lapinkStoreConfig', JSON.stringify(cfg));
+    showToast('Configurações da loja salvas!');
+  }
+
+  // ─── ABA CONTA ────────────────────────────────────────────
+  function carregarConta() {
+    var cfg = getObj('lapinkAdminConfig');
+    document.getElementById('cfg-admin-nome').value = cfg.nome || 'Carol';
+    document.getElementById('cfg-admin-email').value = cfg.email || '';
+    document.getElementById('cfg-senha-atual').value = '';
+    document.getElementById('cfg-senha-nova').value = '';
+    document.getElementById('cfg-senha-conf').value = '';
+  }
+
+  function salvarConta() {
+    var cfg = getObj('lapinkAdminConfig');
+    var nome = document.getElementById('cfg-admin-nome').value.trim();
+    var email = document.getElementById('cfg-admin-email').value.trim();
+    var senhaAtual = document.getElementById('cfg-senha-atual').value;
+    var senhaNova = document.getElementById('cfg-senha-nova').value;
+    var senhaConf = document.getElementById('cfg-senha-conf').value;
+
+    if (!nome) { showToast('Informe o nome de exibição.', 'erro'); return; }
+
+    // Troca de senha
+    if (senhaNova || senhaConf) {
+      if (cfg.senha && senhaAtual !== cfg.senha) { showToast('Senha atual incorreta.', 'erro'); return; }
+      if (senhaNova !== senhaConf) { showToast('As senhas não conferem.', 'erro'); return; }
+      if (senhaNova.length < 4) { showToast('A nova senha deve ter pelo menos 4 caracteres.', 'erro'); return; }
+      cfg.senha = senhaNova;
+    }
+
+    cfg.nome = nome;
+    cfg.email = email;
+    localStorage.setItem('lapinkAdminConfig', JSON.stringify(cfg));
+    document.getElementById('cfg-senha-atual').value = '';
+    document.getElementById('cfg-senha-nova').value = '';
+    document.getElementById('cfg-senha-conf').value = '';
+    showToast('Conta atualizada!');
+  }
+
+  // ─── ABA NOTIFICAÇÕES ─────────────────────────────────────
+  function carregarNotificacoes() {
+    var cfg = getObj('lapinkNotifConfig');
+    document.getElementById('notif-pedido').checked = cfg.pedidoNovo !== false;
+    document.getElementById('notif-estoque').checked = cfg.estoqueCritico !== false;
+    document.getElementById('notif-cliente').checked = cfg.novoCliente !== false;
+  }
+
+  function salvarNotificacoes() {
+    var cfg = {
+      pedidoNovo: document.getElementById('notif-pedido').checked,
+      estoqueCritico: document.getElementById('notif-estoque').checked,
+      novoCliente: document.getElementById('notif-cliente').checked
+    };
+    localStorage.setItem('lapinkNotifConfig', JSON.stringify(cfg));
+    showToast('Preferências de notificação salvas!');
+  }
+
+  // ─── ABA ARMAZENAMENTO ───────────────────────────────────
+  function calcStorageSize() {
+    var total = 0;
+    for (var k in localStorage) {
+      if (!localStorage.hasOwnProperty(k)) continue;
+      total += (localStorage.getItem(k) || '').length + k.length;
+    }
+    return total; // bytes (aproximado: cada char ~1 byte em UTF-16 pode ser 2, mas estimativa simples)
+  }
+
+  function fmtBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+    return (b / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function contarItens(key) {
+    var raw = localStorage.getItem(key);
+    if (!raw) return 0;
+    try { var arr = JSON.parse(raw); return Array.isArray(arr) ? arr.length : 0; } catch(e) { return 0; }
+  }
+
+  function renderArmazenamento() {
+    var size = calcStorageSize();
+    var limite = 5 * 1024 * 1024; // 5 MB em bytes (2 chars por char UTF-16)
+    var pct = Math.min(100, (size * 2 / limite) * 100).toFixed(1);
+
+    document.getElementById('storage-uso-label').textContent = fmtBytes(size * 2) + ' utilizados de ~5 MB';
+    document.getElementById('storage-bar').style.width = pct + '%';
+
+    var nProd = contarItens('lapinkProdutos');
+    var nCli = contarItens('lapinkClients');
+    var nPed = contarItens('lapinkPedidos');
+
+    document.getElementById('info-produtos').textContent = nProd + ' produto' + (nProd !== 1 ? 's' : '') + ' armazenado' + (nProd !== 1 ? 's' : '');
+    document.getElementById('info-clientes').textContent = nCli + ' cliente' + (nCli !== 1 ? 's' : '') + ' armazenado' + (nCli !== 1 ? 's' : '');
+    document.getElementById('info-pedidos').textContent = nPed + ' pedido' + (nPed !== 1 ? 's' : '') + ' armazenado' + (nPed !== 1 ? 's' : '');
+  }
+
+  function limparDados(key, label, infoId) {
+    if (!confirm('Limpar todos os ' + label + '? Essa ação não pode ser desfeita.')) return;
+    localStorage.removeItem(key);
+    renderArmazenamento();
+    showToast(label + ' removido' + (label === 'Produtos' || label === 'Pedidos' ? 's' : 's') + '.');
+  }
+
+  function resetarTudo() {
+    var confirmacao = prompt('Para confirmar o reset completo, digite RESETAR:');
+    if (confirmacao !== 'RESETAR') {
+      if (confirmacao !== null) showToast('Confirmação inválida. Nenhum dado foi removido.', 'erro');
+      return;
+    }
+    localStorage.clear();
+    renderArmazenamento();
+    showToast('Todos os dados foram removidos.');
+  }
+
+  // ─── Sidebar ──────────────────────────────────────────────
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebarOverlay');
+  document.getElementById('sidebarToggle').addEventListener('click', function() { sidebar.classList.toggle('open'); overlay.classList.toggle('show'); });
+  overlay.addEventListener('click', function() { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
+
+  // ─── Init ─────────────────────────────────────────────────
+  carregarLoja();
+  carregarConta();
+  carregarNotificacoes();
+  </script>
+</body>
+</html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Editor da Loja V1</title>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+.v1-editor-wrap {
+  padding: 0 24px 100px;
+}
+.v1-publish-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--white);
+  border-top: .5px solid var(--gray-200);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 10;
+}
+
+/* ── Product selector ── */
+.prod-selector { display: flex; gap: 14px; margin-top: 16px; }
+.prod-selector-col { flex: 1; min-width: 0; }
+.prod-selector-col h4 {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.prod-selector-list {
+  background: var(--white);
+  border: .5px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 80px;
+  max-height: 460px;
+  overflow-y: auto;
+}
+.prod-sel-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: .5px solid var(--gray-100);
+  transition: background var(--transition);
+}
+.prod-sel-item:last-child { border-bottom: none; }
+.prod-sel-item:hover { background: var(--pink-50); }
+.prod-sel-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--pink-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--pink-300);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.prod-sel-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.prod-sel-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-800);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prod-sel-price { font-size: 11px; color: var(--pink-500); font-weight: 700; flex-shrink: 0; }
+.btn-add-dest {
+  background: var(--pink-50);
+  border: .5px solid var(--pink-200);
+  color: var(--pink-500);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn-add-dest:hover:not(:disabled) { background: var(--pink-200); }
+.btn-add-dest:disabled { opacity: .4; cursor: default; }
+
+/* ── Botão câmera ── */
+.btn-upload-foto {
+  cursor: pointer;
+  background: var(--gray-100);
+  border: .5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--gray-500);
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.btn-upload-foto:hover { background: var(--pink-50); color: var(--pink-500); border-color: var(--pink-200); }
+
+/* ── Destaque list ── */
+.dest-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: .5px solid var(--gray-100);
+}
+.dest-item:last-child { border-bottom: none; }
+.dest-order { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.dest-order button {
+  background: var(--gray-100);
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition);
+}
+.dest-order button:hover:not(:disabled) { background: var(--pink-100); color: var(--pink-500); }
+.dest-order button:disabled { opacity: .3; cursor: default; }
+.dest-badge-input {
+  width: 70px;
+  flex-shrink: 0;
+  border: .5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 4px 7px;
+  font-size: 11px;
+  color: var(--gray-700);
+  background: var(--white);
+}
+.dest-badge-input:focus { outline: none; border-color: var(--pink-300); }
+.btn-remove-dest {
+  background: none;
+  border: none;
+  color: var(--gray-300);
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition);
+}
+.btn-remove-dest:hover { color: var(--red-400); }
+.sel-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--gray-400);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ── Depoimentos editor ── */
+.depo-card-edit {
+  background: var(--white);
+  border: .5px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.depo-card-edit .depo-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--pink-400);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.depo-stars { color: var(--pink-300); letter-spacing: 2px; }
+.save-status { font-size: 11px; color: var(--gray-400); font-style: italic; }
+
+@media (max-width: 960px) {
+  .prod-selector { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div id="app-admin">
+  <div class="admin-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+        <div class="logo-name">LaPink Admin</div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Visão geral</div>
+        <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+        <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+        <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+        <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+        <div class="nav-section-label">Loja</div>
+        <a class="sidebar-link active" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
+        <div class="nav-section-label">Auxiliar</div>
+        <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+        <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+      </div>
+      <div class="sidebar-footer">
+        <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+          <h1>Editor da Loja V1</h1>
+          <button class="btn btn-secondary" onclick="location.href='admin.html'">Voltar</button>
+        </div>
+        <div class="topbar-right">
+          <span>Olá, Carol</span>
+          <a href="../public/V1.html" target="_blank" class="btn btn-secondary" style="text-decoration:none;">Ver loja <i class="ti ti-external-link"></i></a>
+        </div>
+      </header>
+
+      <section class="admin-page show">
+
+        <div class="page-tabs" style="margin-bottom:0;">
+          <button class="tab-btn active" data-tab="catalogo"><i class="ti ti-package"></i> Catálogo</button>
+          <button class="tab-btn" data-tab="geral"><i class="ti ti-adjustments-horizontal"></i> Geral</button>
+          <button class="tab-btn" data-tab="hero"><i class="ti ti-star"></i> Hero</button>
+          <button class="tab-btn" data-tab="depoimentos"><i class="ti ti-message-circle"></i> Depoimentos</button>
+          <button class="tab-btn" data-tab="newsletter"><i class="ti ti-mail"></i> Newsletter</button>
+        </div>
+
+        <div class="v1-editor-wrap">
+
+          <!-- ─── TAB CATÁLOGO ─── -->
+          <div class="tab-content active" id="tab-catalogo">
+            <div class="sub-section-header">
+              <span class="sub-badge">1</span>
+              <div>
+                <h2>Catálogo da loja</h2>
+                <p>Escolha quais produtos aparecem em destaque. Altere a foto clicando em <i class="ti ti-camera"></i>. Clientes filtram por categoria diretamente na loja.</p>
+              </div>
+            </div>
+            <div class="prod-selector">
+              <div class="prod-selector-col">
+                <h4><i class="ti ti-package"></i> Todos os produtos <span id="cat-count" style="font-weight:400; color:var(--gray-400);"></span></h4>
+                <div class="prod-selector-list" id="catalogo-list">
+                  <div class="sel-empty">Carregando...</div>
+                </div>
+              </div>
+              <div class="prod-selector-col">
+                <h4><i class="ti ti-star"></i> Em destaque na loja</h4>
+                <div class="prod-selector-list" id="destaque-list">
+                  <div class="sel-empty">Nenhum produto selecionado.<br>Clique em "+ Exibir" ao lado de um produto.</div>
+                </div>
+              </div>
+            </div>
+            <p style="font-size:11px; color:var(--gray-400); margin-top:10px; display:flex; align-items:flex-start; gap:5px;">
+              <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
+              Badge aceita qualquer texto (ex: Novo, -20%, Oferta). Deixe vazio para não exibir etiqueta.
+            </p>
+          </div>
+
+          <!-- ─── TAB GERAL ─── -->
+          <div class="tab-content" id="tab-geral">
+            <div class="sub-section-header">
+              <span class="sub-badge">2</span>
+              <div>
+                <h2>Barra de anúncio</h2>
+                <p>Texto exibido no topo da loja para todos os visitantes.</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-anuncio">Texto do anúncio</label>
+                <input id="cfg-anuncio" type="text" placeholder="Frete grátis acima de R$ 199 · Parcele em até 6x sem juros" />
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB HERO ─── -->
+          <div class="tab-content" id="tab-hero">
+            <div class="sub-section-header">
+              <span class="sub-badge">3</span>
+              <div>
+                <h2>Seção Hero</h2>
+                <p>Primeira coisa que o cliente vê ao entrar na loja.</p>
+              </div>
+            </div>
+            <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-hero-eyebrow">Texto pequeno (eyebrow)</label>
+                <input id="cfg-hero-eyebrow" type="text" placeholder="Nova coleção — verão 2025" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-hero-titulo">Título principal</label>
+                <textarea id="cfg-hero-titulo" rows="2" placeholder="Elegância que&#10;conta sua história" style="resize:vertical;"></textarea>
+                <small style="display:block; margin-top:4px; color:var(--gray-400); font-size:11px;"><i class="ti ti-info-circle"></i> Use quebra de linha para dividir o título em duas linhas.</small>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-hero-sub">Subtítulo</label>
+                <textarea id="cfg-hero-sub" rows="2" style="resize:vertical;"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="cfg-hero-btn1">Botão primário</label>
+                  <input id="cfg-hero-btn1" type="text" placeholder="Ver coleção" />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="cfg-hero-btn2">Botão secundário</label>
+                  <input id="cfg-hero-btn2" type="text" placeholder="Promoções" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── TAB DEPOIMENTOS ─── -->
+          <div class="tab-content" id="tab-depoimentos">
+            <div class="sub-section-header">
+              <span class="sub-badge">4</span>
+              <div>
+                <h2>Depoimentos de clientes</h2>
+                <p>Avaliações exibidas na seção de depoimentos da loja.</p>
+              </div>
+            </div>
+            <div id="depoimentos-editor"></div>
+            <div style="display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="adicionarDepoimento()"><i class="ti ti-plus"></i> Adicionar depoimento</button>
+              <button class="btn btn-secondary" id="btn-remover-depo" onclick="removerUltimoDepoimento()" style="color:var(--red-400); display:none;"><i class="ti ti-trash"></i> Remover último</button>
+            </div>
+          </div>
+
+          <!-- ─── TAB NEWSLETTER ─── -->
+          <div class="tab-content" id="tab-newsletter">
+            <div class="sub-section-header">
+              <span class="sub-badge">5</span>
+              <div>
+                <h2>Seção Newsletter</h2>
+                <p>Bloco de captação de e-mails exibido na página da loja.</p>
+              </div>
+            </div>
+            <div class="card" style="display:flex; flex-direction:column; gap:16px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-nl-titulo">Título</label>
+                <input id="cfg-nl-titulo" type="text" placeholder="Receba novidades e ofertas exclusivas" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-nl-sub">Subtítulo</label>
+                <input id="cfg-nl-sub" type="text" placeholder="Cadastre seu e-mail e ganhe 10% de desconto na primeira compra" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-nl-btn">Texto do botão</label>
+                <input id="cfg-nl-btn" type="text" placeholder="Quero desconto" />
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /v1-editor-wrap -->
+
+        <!-- Barra publicar (sticky) -->
+        <div class="v1-publish-bar">
+          <span class="save-status" id="save-status"></span>
+          <button class="btn btn-primary" onclick="publicarAlteracoes()">
+            <i class="ti ti-world-upload"></i> Publicar alterações
+          </button>
+        </div>
+
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+function showToast(msg, tipo) {
+  var el = document.getElementById('_admin_toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_admin_toast';
+    el.className = 'toast';
+    el.setAttribute('role', 'status');
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = tipo === 'erro' ? 'var(--red-400)' : 'var(--pink-700)';
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
+}
+
+var sidebar = document.getElementById('sidebar');
+var overlay = document.getElementById('sidebarOverlay');
+document.getElementById('sidebarToggle').addEventListener('click', function() {
+  sidebar.classList.toggle('open'); overlay.classList.toggle('show');
+});
+overlay.addEventListener('click', function() {
+  sidebar.classList.remove('open'); overlay.classList.remove('show');
+});
+
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+var DEFAULT_CONFIG = {
+  anuncio: 'Frete grátis acima de R$ 199 · Parcele em até 6x sem juros',
+  hero: {
+    eyebrow: 'Nova coleção — verão 2025',
+    titulo:  'Elegância que\nconta sua história',
+    sub:     'Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.',
+    btn1:    'Ver coleção',
+    btn2:    'Promoções'
+  },
+  destaque: [],
+  depoimentos: [
+    { texto: 'Qualidade incrível! Os anéis são lindos e duraram muito mais do que eu esperava.', autor: 'Ana P. — São Paulo' },
+    { texto: 'Entrega rápida e embalagem super caprichada. Presente perfeito para minha mãe!',   autor: 'Carla M. — Rio de Janeiro' },
+    { texto: 'Virei revendedora e as minhas clientes amam! Produtos de altíssima qualidade.',      autor: 'Juliana R. — Curitiba' }
+  ],
+  newsletter: {
+    titulo: 'Receba novidades e ofertas exclusivas',
+    sub:    'Cadastre seu e-mail e ganhe 10% de desconto na primeira compra',
+    btn:    'Quero desconto'
+  }
+};
+
+function getProdutos() {
+  try { return JSON.parse(localStorage.getItem('lapinkProdutos')) || []; } catch(e) { return []; }
+}
+function getConfig() {
+  try {
+    var raw = localStorage.getItem('lapinkLojaConfig');
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    var c = JSON.parse(raw);
+    c.hero        = Object.assign({}, DEFAULT_CONFIG.hero,       c.hero       || {});
+    c.newsletter  = Object.assign({}, DEFAULT_CONFIG.newsletter, c.newsletter || {});
+    if (!Array.isArray(c.depoimentos) || !c.depoimentos.length) c.depoimentos = DEFAULT_CONFIG.depoimentos.map(function(d) { return Object.assign({}, d); });
+    if (!Array.isArray(c.destaque)) c.destaque = [];
+    return c;
+  } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
+}
+
+function thumbHtml(p) {
+  return p.imagem
+    ? '<img src="' + p.imagem + '" alt="' + escHtml(p.nome) + '" />'
+    : '<i class="ti ' + (p.icone || 'ti-diamond') + '"></i>';
+}
+function precoFmt(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function atualizarFotoProduto(id, input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var produtos = getProdutos();
+    var idx = produtos.findIndex(function(p) { return p.id === id; });
+    if (idx === -1) { showToast('Produto não encontrado.', 'erro'); return; }
+    produtos[idx].imagem = e.target.result;
+    localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
+    renderCatalogo();
+    renderDestaque();
+    showToast('Foto de "' + produtos[idx].nome + '" atualizada!');
+  };
+  reader.readAsDataURL(file);
+}
+
+var destaqueList = [];
+
+function renderCatalogo() {
+  var produtos  = getProdutos();
+  var container = document.getElementById('catalogo-list');
+  var countEl   = document.getElementById('cat-count');
+  var selIds    = destaqueList.map(function(d) { return d.id; });
+
+  if (countEl) countEl.textContent = '(' + produtos.length + ')';
+
+  if (!produtos.length) {
+    container.innerHTML = '<div class="sel-empty">Nenhum produto cadastrado.<br><a href="cadastro-produto.html" style="color:var(--pink-500); font-weight:600;">Cadastrar produtos</a></div>';
+    return;
+  }
+
+  container.innerHTML = produtos.map(function(p) {
+    var sel = selIds.indexOf(p.id) !== -1;
+    return '<div class="prod-sel-item">' +
+      '<div class="prod-sel-thumb">' + thumbHtml(p) + '</div>' +
+      '<span class="prod-sel-name" title="' + escHtml(p.nome) + '">' + escHtml(p.nome) + '</span>' +
+      '<span class="prod-sel-price">' + precoFmt(p.precoVarejo) + '</span>' +
+      '<label class="btn-upload-foto" title="Alterar foto do produto">' +
+        '<i class="ti ti-camera"></i>' +
+        '<input type="file" accept="image/*" style="display:none" onchange="atualizarFotoProduto(' + p.id + ', this)" />' +
+      '</label>' +
+      '<button class="btn-add-dest" onclick="adicionarDestaque(' + p.id + ')" ' + (sel ? 'disabled' : '') + '>' +
+        (sel ? '<i class="ti ti-check"></i>' : '+ Exibir') +
+      '</button>' +
+    '</div>';
+  }).join('');
+}
+
+function renderDestaque() {
+  var produtos  = getProdutos();
+  var container = document.getElementById('destaque-list');
+  var total     = destaqueList.length;
+
+  if (!total) {
+    container.innerHTML = '<div class="sel-empty">Nenhum produto selecionado.<br>Clique em "+ Exibir" ao lado de um produto.</div>';
+    return;
+  }
+
+  container.innerHTML = destaqueList.map(function(d, idx) {
+    var p = produtos.find(function(x) { return x.id === d.id; });
+    if (!p) return '';
+    return '<div class="dest-item">' +
+      '<div class="dest-order">' +
+        '<button onclick="moverDestaque(' + idx + ',-1)" title="Subir" ' + (idx === 0 ? 'disabled' : '') + '><i class="ti ti-chevron-up"></i></button>' +
+        '<button onclick="moverDestaque(' + idx + ',1)"  title="Descer" ' + (idx === total - 1 ? 'disabled' : '') + '><i class="ti ti-chevron-down"></i></button>' +
+      '</div>' +
+      '<div class="prod-sel-thumb">' + thumbHtml(p) + '</div>' +
+      '<span class="prod-sel-name" title="' + escHtml(p.nome) + '">' + escHtml(p.nome) + '</span>' +
+      '<label class="btn-upload-foto" title="Alterar foto do produto">' +
+        '<i class="ti ti-camera"></i>' +
+        '<input type="file" accept="image/*" style="display:none" onchange="atualizarFotoProduto(' + d.id + ', this)" />' +
+      '</label>' +
+      '<input class="dest-badge-input" type="text" value="' + escHtml(d.badge || '') + '" placeholder="Badge" title="Ex: Novo, -20%" oninput="atualizarBadge(' + d.id + ',this.value)" />' +
+      '<button class="btn-remove-dest" onclick="removerDestaque(' + d.id + ')" title="Remover da vitrine"><i class="ti ti-x"></i></button>' +
+    '</div>';
+  }).filter(Boolean).join('');
+}
+
+function adicionarDestaque(id) {
+  if (destaqueList.find(function(d) { return d.id === id; })) return;
+  destaqueList.push({ id: id, badge: '' });
+  renderCatalogo();
+  renderDestaque();
+}
+function removerDestaque(id) {
+  destaqueList = destaqueList.filter(function(d) { return d.id !== id; });
+  renderCatalogo();
+  renderDestaque();
+}
+function moverDestaque(idx, dir) {
+  var ni = idx + dir;
+  if (ni < 0 || ni >= destaqueList.length) return;
+  var tmp = destaqueList[idx]; destaqueList[idx] = destaqueList[ni]; destaqueList[ni] = tmp;
+  renderDestaque();
+}
+function atualizarBadge(id, val) {
+  var d = destaqueList.find(function(x) { return x.id === id; });
+  if (d) d.badge = val;
+}
+
+var depoimentosData = [];
+
+function renderDepoimentos() {
+  var container = document.getElementById('depoimentos-editor');
+  var btnRem    = document.getElementById('btn-remover-depo');
+  btnRem.style.display = depoimentosData.length > 1 ? '' : 'none';
+
+  container.innerHTML = depoimentosData.map(function(d, i) {
+    return '<div class="depo-card-edit">' +
+      '<div class="depo-label"><span>Depoimento ' + (i + 1) + '</span><span class="depo-stars">★★★★★</span></div>' +
+      '<div class="form-group" style="margin-bottom:10px;">' +
+        '<label>Texto do depoimento</label>' +
+        '<textarea rows="3" style="resize:vertical;" oninput="depoimentosData[' + i + '].texto = this.value">' + escHtml(d.texto) + '</textarea>' +
+      '</div>' +
+      '<div class="form-group" style="margin-bottom:0;">' +
+        '<label>Autora / Cidade</label>' +
+        '<input type="text" value="' + escHtml(d.autor) + '" placeholder="Nome — Cidade" oninput="depoimentosData[' + i + '].autor = this.value" />' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function adicionarDepoimento() {
+  depoimentosData.push({ texto: '', autor: '' });
+  renderDepoimentos();
+}
+function removerUltimoDepoimento() {
+  if (depoimentosData.length <= 1) return;
+  depoimentosData.pop();
+  renderDepoimentos();
+}
+
+function coletarConfig() {
+  return {
+    anuncio: document.getElementById('cfg-anuncio').value.trim()       || DEFAULT_CONFIG.anuncio,
+    hero: {
+      eyebrow: document.getElementById('cfg-hero-eyebrow').value.trim() || DEFAULT_CONFIG.hero.eyebrow,
+      titulo:  document.getElementById('cfg-hero-titulo').value.trim()  || DEFAULT_CONFIG.hero.titulo,
+      sub:     document.getElementById('cfg-hero-sub').value.trim()     || DEFAULT_CONFIG.hero.sub,
+      btn1:    document.getElementById('cfg-hero-btn1').value.trim()    || DEFAULT_CONFIG.hero.btn1,
+      btn2:    document.getElementById('cfg-hero-btn2').value.trim()    || DEFAULT_CONFIG.hero.btn2,
+    },
+    destaque: destaqueList.map(function(d) { return { id: d.id, badge: d.badge || '' }; }),
+    depoimentos: depoimentosData.filter(function(d) { return d.texto || d.autor; }),
+    newsletter: {
+      titulo: document.getElementById('cfg-nl-titulo').value.trim() || DEFAULT_CONFIG.newsletter.titulo,
+      sub:    document.getElementById('cfg-nl-sub').value.trim()    || DEFAULT_CONFIG.newsletter.sub,
+      btn:    document.getElementById('cfg-nl-btn').value.trim()    || DEFAULT_CONFIG.newsletter.btn,
+    }
+  };
+}
+
+function publicarAlteracoes() {
+  var config = coletarConfig();
+  try {
+    localStorage.setItem('lapinkLojaConfig', JSON.stringify(config));
+    var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('save-status').textContent = 'Publicado às ' + hora;
+    showToast('Alterações publicadas na loja!');
+  } catch(e) {
+    showToast('Erro ao salvar — armazenamento cheio.', 'erro');
+  }
+}
+
+(function init() {
+  var cfg = getConfig();
+
+  document.getElementById('cfg-anuncio').value      = cfg.anuncio;
+  document.getElementById('cfg-hero-eyebrow').value = cfg.hero.eyebrow;
+  document.getElementById('cfg-hero-titulo').value  = cfg.hero.titulo;
+  document.getElementById('cfg-hero-sub').value     = cfg.hero.sub;
+  document.getElementById('cfg-hero-btn1').value    = cfg.hero.btn1;
+  document.getElementById('cfg-hero-btn2').value    = cfg.hero.btn2;
+  document.getElementById('cfg-nl-titulo').value    = cfg.newsletter.titulo;
+  document.getElementById('cfg-nl-sub').value       = cfg.newsletter.sub;
+  document.getElementById('cfg-nl-btn').value       = cfg.newsletter.btn;
+
+  destaqueList = cfg.destaque.map(function(d) { return { id: d.id, badge: d.badge || '' }; });
+  renderCatalogo();
+  renderDestaque();
+
+  depoimentosData = cfg.depoimentos.map(function(d) { return { texto: d.texto, autor: d.autor }; });
+  renderDepoimentos();
+})();
+</script>
+</body>
+</html>
