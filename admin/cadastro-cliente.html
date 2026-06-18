@@ -101,7 +101,7 @@
                   <input id="confirm-nova-senha" type="password" placeholder="Repita a nova senha" />
                 </div>
                 <div class="form-actions" style="justify-content:flex-end;">
-                  <button type="button" class="btn btn-primary">Redefinir senha</button>
+                  <button type="button" class="btn btn-primary" onclick="redefinirSenha()">Redefinir senha</button>
                 </div>
               </div>
             </form>
@@ -112,19 +112,10 @@
   </div>
 
   <script>
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const toggle = document.getElementById('sidebarToggle');
     const forgotSection = document.getElementById('forgotPasswordSection');
-    function toggleSidebar() {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('show');
-    }
     function toggleForgotPassword() {
       forgotSection.classList.toggle('active');
     }
-    toggle.addEventListener('click', toggleSidebar);
-    overlay.addEventListener('click', toggleSidebar);
     const STORAGE_KEY = 'lapinkClients';
     const clientForm = document.getElementById('clientForm');
     const formMessage = document.getElementById('formMessage');
@@ -223,6 +214,36 @@
       setTimeout(() => location.href = 'clientes.html', 1200);
     }
 
+    function redefinirSenha() {
+      var novaSenha = document.getElementById('nova-senha').value;
+      var confirmSenha = document.getElementById('confirm-nova-senha').value;
+      if (!novaSenha || !confirmSenha) {
+        setMessage('Preencha os campos de nova senha.', 'error');
+        return;
+      }
+      if (novaSenha !== confirmSenha) {
+        setMessage('As senhas não conferem.', 'error');
+        return;
+      }
+      var targetEmail = editEmail ? decodeURIComponent(editEmail) : document.getElementById('cliente-email').value.trim().toLowerCase();
+      if (!targetEmail) {
+        setMessage('E-mail do cliente não identificado.', 'error');
+        return;
+      }
+      var clients = getClients();
+      var idx = clients.findIndex(function(c) { return c.email === targetEmail; });
+      if (idx === -1) {
+        setMessage('Cliente não encontrado.', 'error');
+        return;
+      }
+      clients[idx].password = novaSenha;
+      saveClients(clients);
+      setMessage('Senha redefinida com sucesso!', 'success');
+      document.getElementById('forgotPasswordSection').classList.remove('active');
+      document.getElementById('nova-senha').value = '';
+      document.getElementById('confirm-nova-senha').value = '';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       if (editEmail) {
         const client = loadClient(decodeURIComponent(editEmail));
@@ -231,5 +252,7 @@
       clientForm.addEventListener('submit', handleFormSubmit);
     });
   </script>
+  <script src="../js/sidebar.js"></script>
+  <script src="../js/utils.js"></script>
 </body>
 </html>

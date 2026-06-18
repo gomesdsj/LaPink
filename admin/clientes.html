@@ -88,13 +88,13 @@
           </div>
 
           <div class="search-bar-admin">
-            <input type="search" placeholder="Buscar cliente por nome, e-mail ou WhatsApp" />
-            <select onchange="renderClients()">
+            <input id="busca-cliente" type="search" placeholder="Buscar cliente por nome, e-mail ou WhatsApp" />
+            <select id="sort-clientes" onchange="renderClients()">
               <option value="todos">Todos os clientes</option>
               <option value="recentes">Mais recentes</option>
               <option value="gasto">Maior gasto</option>
             </select>
-            <button class="btn btn-secondary">Filtrar</button>
+            <button class="btn btn-secondary" onclick="renderClients()">Filtrar</button>
           </div>
 
           <div id="clientGrid" class="order-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:20px; margin-top:24px;"></div>
@@ -104,11 +104,6 @@
   </div>
 
   <script>
-    var sidebar = document.getElementById('sidebar');
-    var overlay = document.getElementById('sidebarOverlay');
-    document.getElementById('sidebarToggle').addEventListener('click', function() { sidebar.classList.toggle('open'); overlay.classList.toggle('show'); });
-    overlay.addEventListener('click', function() { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
-
     function showToast(msg, tipo) {
       var el = document.getElementById('_toast');
       if (!el) { el = document.createElement('div'); el.id = '_toast'; el.className = 'toast'; el.setAttribute('role','status'); document.body.appendChild(el); }
@@ -124,7 +119,7 @@
     var searchInput = document.querySelector('.search-bar-admin input');
 
     function getClients() {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
     }
 
     function saveClients(clients) {
@@ -153,21 +148,26 @@
     }
 
     function renderClients() {
-      var query = searchInput.value.trim().toLowerCase();
-      var sortVal = document.querySelector('.search-bar-admin select').value;
-      var all = getClients();
+      var clients = getClients();
 
-      var clients = all.filter(function(client) {
-        return client.name.toLowerCase().includes(query) ||
-          client.email.toLowerCase().includes(query) ||
-          client.whatsapp.toLowerCase().includes(query);
-      });
-
-      if (sortVal === 'recentes') {
-        clients = clients.slice().reverse();
-      } else if (sortVal === 'gasto') {
-        clients = clients.slice().sort(function(a, b) { return (b.totalSpent || 0) - (a.totalSpent || 0); });
+      // Filtro por busca
+      var busca = (document.getElementById('busca-cliente') ? document.getElementById('busca-cliente').value : '').toLowerCase().trim();
+      if (busca) {
+        clients = clients.filter(function(c) {
+          return (c.name||c.nome||'').toLowerCase().includes(busca) ||
+                 (c.email||'').toLowerCase().includes(busca) ||
+                 (c.whatsapp||'').toLowerCase().includes(busca);
+        });
       }
+      // Ordenação
+      var sort = document.getElementById('sort-clientes') ? document.getElementById('sort-clientes').value : 'todos';
+      if (sort === 'gasto') {
+        clients = clients.slice().sort(function(a,b) { return (b.totalSpent||0) - (a.totalSpent||0); });
+      } else if (sort === 'recentes') {
+        clients = clients.slice().reverse();
+      }
+
+      var all = getClients();
 
       document.getElementById('clientes-count').textContent = all.length;
       updateStats();
@@ -276,8 +276,13 @@
 
     window.addEventListener('DOMContentLoaded', function() {
       renderClients();
-      if (searchInput) searchInput.addEventListener('input', renderClients);
+      var buscaEl = document.getElementById('busca-cliente');
+      if (buscaEl) {
+        buscaEl.addEventListener('input', function() { renderClients(); });
+      }
     });
   </script>
+  <script src="../js/sidebar.js"></script>
+  <script src="../js/utils.js"></script>
 </body>
 </html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Carrinho — LaPink</title>
+<meta name="description" content="Finalize seu pedido LaPink — Semijoias e acessórios banhados a ouro." />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#D4537E" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+* { box-sizing: border-box; }
+body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; color: #1a1a2e; }
+
+/* Header */
+.co-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: #fff; border-bottom: 1.5px solid #F4C0D1; }
+.co-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #D4537E; font-size: 22px; font-weight: 900; letter-spacing: -.01em; }
+.co-logo i { font-size: 24px; }
+.co-back { font-size: 13px; font-weight: 700; color: #993556; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+.co-back:hover { text-decoration: underline; }
+
+/* Layout */
+.co-page { max-width: 860px; margin: 32px auto; padding: 0 20px; display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.co-left  { flex: 1; min-width: 300px; }
+.co-right { flex: 0 0 300px; }
+
+/* Títulos de seção */
+.co-section-title { font-size: 18px; font-weight: 800; color: #1a1a2e; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+.co-section-title i { color: #D4537E; }
+
+/* Card */
+.co-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(212,83,126,.08); margin-bottom: 20px; }
+
+/* Items */
+.cart-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f7e0e9; }
+.cart-item:last-child { border-bottom: none; }
+.cart-item-img { width: 56px; height: 56px; border-radius: 10px; background: #fff0f5; display: flex; align-items: center; justify-content: center; color: #D4537E; font-size: 24px; overflow: hidden; flex-shrink: 0; }
+.cart-item-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+.cart-item-info { flex: 1; }
+.cart-item-name { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
+.cart-item-price { font-size: 13px; color: #D4537E; font-weight: 700; }
+.cart-item-sub { font-size: 12px; color: #888; }
+.cart-item-controls { display: flex; align-items: center; gap: 8px; }
+.qty-btn { width: 28px; height: 28px; border: 1.5px solid #F4C0D1; border-radius: 6px; background: #fff; color: #993556; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: background .15s; }
+.qty-btn:hover { background: #fff0f5; }
+.qty-val { font-size: 14px; font-weight: 800; min-width: 20px; text-align: center; color: #1a1a2e; }
+.cart-item-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 18px; padding: 4px; line-height: 1; transition: color .15s; }
+.cart-item-remove:hover { color: #e74c3c; }
+
+/* Empty cart */
+.co-empty { text-align: center; padding: 48px 24px; color: #bbb; }
+.co-empty i { font-size: 56px; display: block; margin-bottom: 14px; color: #F4C0D1; }
+.co-empty p { font-size: 15px; margin-bottom: 20px; }
+.co-empty a { display: inline-block; background: #D4537E; color: #fff; border-radius: 30px; padding: 12px 28px; font-size: 14px; font-weight: 700; text-decoration: none; }
+.co-empty a:hover { background: #b93d65; }
+
+/* Formulário */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 12px; font-weight: 700; color: #666; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .06em; }
+.form-group input { width: 100%; padding: 11px 14px; border: 1.5px solid #F4C0D1; border-radius: 10px; font-size: 14px; color: #1a1a2e; background: #fdf5f8; outline: none; transition: border-color .18s; }
+.form-group input:focus { border-color: #D4537E; background: #fff; }
+
+/* Resumo */
+.co-summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #555; margin-bottom: 10px; }
+.co-summary-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; color: #1a1a2e; border-top: 2px solid #F4C0D1; padding-top: 14px; margin-top: 6px; }
+.co-summary-total span:last-child { color: #D4537E; }
+
+/* Botão confirmar */
+.btn-confirm { display: block; width: 100%; background: #25D366; color: #fff; border: none; border-radius: 30px; padding: 15px 0; font-size: 16px; font-weight: 800; cursor: pointer; letter-spacing: .02em; transition: background .18s; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-confirm:hover { background: #1ebc59; }
+.btn-confirm:disabled { background: #ccc; cursor: not-allowed; }
+
+/* Tela de confirmação */
+.co-success { display: none; text-align: center; padding: 40px 24px; }
+.co-success-icon { font-size: 64px; color: #2E8B5A; margin-bottom: 16px; }
+.co-success h2 { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 8px; }
+.co-success p { font-size: 14px; color: #666; margin-bottom: 24px; line-height: 1.6; }
+.co-success a { display: inline-block; background: #D4537E; color: #fff; border-radius: 30px; padding: 12px 28px; font-size: 14px; font-weight: 700; text-decoration: none; }
+.co-success a:hover { background: #b93d65; }
+
+/* Mobile */
+@media (max-width: 640px) {
+  .co-page { gap: 0; }
+  .co-right { flex: 1 1 100%; }
+}
+</style>
+</head>
+<body>
+
+<header class="co-header">
+  <a class="co-logo" href="V1.html" aria-label="LaPink — início">
+    <i class="ti ti-diamond" aria-hidden="true"></i>
+    LaPink
+  </a>
+  <a class="co-back" href="V1.html">
+    <i class="ti ti-arrow-left"></i> Voltar à loja
+  </a>
+</header>
+
+<div class="co-page" id="co-page">
+
+  <!-- Coluna esquerda: carrinho + formulário -->
+  <div class="co-left">
+
+    <!-- Carrinho vazio -->
+    <div class="co-card co-empty" id="co-empty" style="display:none;">
+      <i class="ti ti-shopping-cart"></i>
+      <p>Seu carrinho está vazio.</p>
+      <a href="V1.html"><i class="ti ti-arrow-left"></i> Ver produtos</a>
+    </div>
+
+    <!-- Lista de itens -->
+    <div class="co-card" id="co-cart-section" style="display:none;">
+      <h2 class="co-section-title"><i class="ti ti-shopping-cart"></i> Seu carrinho</h2>
+      <div id="co-items-list"></div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="co-card" id="co-form-section" style="display:none;">
+      <h2 class="co-section-title"><i class="ti ti-user"></i> Seus dados</h2>
+      <form id="co-form" novalidate>
+        <div class="form-group">
+          <label for="co-nome">Nome completo</label>
+          <input type="text" id="co-nome" placeholder="Digite seu nome completo" autocomplete="name" required />
+        </div>
+        <div class="form-group">
+          <label for="co-whatsapp">WhatsApp</label>
+          <input type="tel" id="co-whatsapp" placeholder="(11) 99999-9999" autocomplete="tel" required />
+        </div>
+      </form>
+    </div>
+
+    <!-- Tela de sucesso -->
+    <div class="co-card co-success" id="co-success">
+      <div class="co-success-icon"><i class="ti ti-circle-check"></i></div>
+      <h2>Pedido enviado!</h2>
+      <p>Seu pedido foi registrado e a mensagem foi aberta no WhatsApp.<br>Nossa equipe entrará em contato para confirmar.</p>
+      <a href="V1.html"><i class="ti ti-arrow-left"></i> Continuar comprando</a>
+    </div>
+
+  </div>
+
+  <!-- Coluna direita: resumo + botão -->
+  <div class="co-right">
+    <div class="co-card" id="co-summary-section" style="display:none;">
+      <h2 class="co-section-title"><i class="ti ti-receipt"></i> Resumo</h2>
+      <div class="co-summary-row">
+        <span id="co-count-label">Itens</span>
+        <span id="co-subtotal">R$ 0,00</span>
+      </div>
+      <div class="co-summary-row">
+        <span>Frete</span>
+        <span style="color:#2E8B5A;font-weight:700;">A combinar</span>
+      </div>
+      <div class="co-summary-total">
+        <span>Total</span>
+        <span id="co-total">R$ 0,00</span>
+      </div>
+      <button class="btn-confirm" id="co-btn-confirm" type="button">
+        <i class="ti ti-brand-whatsapp"></i> Confirmar pedido pelo WhatsApp
+      </button>
+    </div>
+  </div>
+
+</div><!-- /co-page -->
+
+<script src="js/cart.js"></script>
+<script src="js/storage.js"></script>
+<script>
+(function() {
+
+  function fmtMoeda(v) {
+    return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+  }
+
+  function render() {
+    var cart = getCart();
+    var emptyEl    = document.getElementById('co-empty');
+    var cartSec    = document.getElementById('co-cart-section');
+    var formSec    = document.getElementById('co-form-section');
+    var summarySec = document.getElementById('co-summary-section');
+    var successEl  = document.getElementById('co-success');
+    var itemsList  = document.getElementById('co-items-list');
+
+    if (cart.length === 0) {
+      emptyEl.style.display    = '';
+      cartSec.style.display    = 'none';
+      formSec.style.display    = 'none';
+      summarySec.style.display = 'none';
+      successEl.style.display  = 'none';
+      return;
+    }
+
+    emptyEl.style.display    = 'none';
+    cartSec.style.display    = '';
+    formSec.style.display    = '';
+    summarySec.style.display = '';
+
+    // Renderiza itens
+    itemsList.innerHTML = cart.map(function(item) {
+      var imgHtml = item.imagem
+        ? '<img src="' + item.imagem + '" alt="' + item.nome + '" />'
+        : '<i class="ti ti-diamond"></i>';
+      return '<div class="cart-item" data-id="' + item.id + '">' +
+        '<div class="cart-item-img">' + imgHtml + '</div>' +
+        '<div class="cart-item-info">' +
+          '<div class="cart-item-name">' + item.nome + '</div>' +
+          '<div class="cart-item-price">' + fmtMoeda(item.preco) + '</div>' +
+          '<div class="cart-item-sub">Subtotal: ' + fmtMoeda(item.preco * item.qty) + '</div>' +
+        '</div>' +
+        '<div class="cart-item-controls">' +
+          '<button class="qty-btn" data-action="dec" data-id="' + item.id + '" aria-label="Diminuir quantidade">−</button>' +
+          '<span class="qty-val">' + item.qty + '</span>' +
+          '<button class="qty-btn" data-action="inc" data-id="' + item.id + '" aria-label="Aumentar quantidade">+</button>' +
+        '</div>' +
+        '<button class="cart-item-remove" data-action="remove" data-id="' + item.id + '" aria-label="Remover item"><i class="ti ti-trash"></i></button>' +
+      '</div>';
+    }).join('');
+
+    // Atualiza resumo
+    var total = getCartTotal();
+    var count = getCartCount();
+    document.getElementById('co-count-label').textContent = count + (count === 1 ? ' item' : ' itens');
+    document.getElementById('co-subtotal').textContent    = fmtMoeda(total);
+    document.getElementById('co-total').textContent       = fmtMoeda(total);
+
+    // Eventos dos botões de quantidade e remoção
+    document.querySelectorAll('[data-action]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var id     = btn.dataset.id;
+        var action = btn.dataset.action;
+        var cart2  = getCart();
+        var idx    = cart2.findIndex(function(i) { return String(i.id) === String(id); });
+        if (action === 'inc' && idx >= 0) {
+          cart2[idx].qty += 1;
+          saveCart(cart2);
+        } else if (action === 'dec' && idx >= 0) {
+          if (cart2[idx].qty > 1) { cart2[idx].qty -= 1; saveCart(cart2); }
+          else { removeFromCart(id); }
+        } else if (action === 'remove') {
+          removeFromCart(id);
+        }
+        render();
+      });
+    });
+  }
+
+  // Confirmar pedido
+  document.getElementById('co-btn-confirm').addEventListener('click', function() {
+    var nome     = document.getElementById('co-nome').value.trim();
+    var whatsapp = document.getElementById('co-whatsapp').value.trim();
+
+    if (!nome) {
+      document.getElementById('co-nome').focus();
+      document.getElementById('co-nome').style.borderColor = '#e74c3c';
+      return;
+    }
+    if (!whatsapp) {
+      document.getElementById('co-whatsapp').focus();
+      document.getElementById('co-whatsapp').style.borderColor = '#e74c3c';
+      return;
+    }
+
+    var cart  = getCart();
+    var total = getCartTotal();
+
+    // Numero do pedido
+    var numPedido = 'LP' + String(Math.floor(Math.random() * 9000) + 1000);
+
+    // Salva pedido em lapinkPedidos
+    var pedido = {
+      id:      Date.now(),
+      numero:  numPedido,
+      cliente: { name: nome, email: '', whatsapp: whatsapp },
+      itens:   cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
+      total:   total,
+      status:  'aguardando',
+      data:    new Date().toISOString(),
+      obs:     ''
+    };
+
+    try {
+      var pedidos = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]');
+      pedidos.unshift(pedido);
+      localStorage.setItem('lapinkPedidos', JSON.stringify(pedidos));
+    } catch(e) {}
+
+    // Monta mensagem WhatsApp
+    var itensMsg = cart.map(function(i) {
+      return '- ' + i.nome + ' x' + i.qty + ' — ' + fmtMoeda(i.preco) + ' cada';
+    }).join('\n');
+
+    var msg =
+      '*Novo Pedido LaPink* 🛍\n' +
+      '*Nº:* ' + numPedido + '\n' +
+      '*Nome:* ' + nome + '\n\n' +
+      '*Itens:*\n' + itensMsg + '\n\n' +
+      '*Total:* ' + fmtMoeda(total) + '\n\n' +
+      'Aguardando confirmação.';
+
+    // Número WhatsApp da loja
+    var wpp = '5511999999999';
+    try {
+      var cfg = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}');
+      if (cfg.whatsapp) wpp = cfg.whatsapp;
+    } catch(e) {}
+
+    // Limpa carrinho e mostra sucesso
+    clearCart();
+
+    document.getElementById('co-cart-section').style.display    = 'none';
+    document.getElementById('co-form-section').style.display    = 'none';
+    document.getElementById('co-summary-section').style.display = 'none';
+    document.getElementById('co-empty').style.display           = 'none';
+    document.getElementById('co-success').style.display         = '';
+
+    // Abre WhatsApp
+    var waUrl = 'https://wa.me/' + wpp.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
+    setTimeout(function() { window.open(waUrl, '_blank'); }, 300);
+  });
+
+  // Inicializa
+  render();
+
+})();
+</script>
+</body>
+</html>

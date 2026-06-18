@@ -189,19 +189,10 @@
   </div>
 
   <script>
-    /* ── Sidebar toggle ── */
-    var sidebar = document.getElementById('sidebar');
-    var overlay = document.getElementById('sidebarOverlay');
-    document.getElementById('sidebarToggle').addEventListener('click', function() {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('show');
-    });
-    overlay.addEventListener('click', function() {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('show');
-    });
-
     /* ── Helpers ── */
+    function escHtml(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
     function parseBRL(v) {
       return parseFloat((v || '0').replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
     }
@@ -282,7 +273,7 @@
         var barH = Math.max(4, Math.round((e.value / max) * (baseY - 20)));
         var x = 20 + i * (barW + 8);
         var y = baseY - barH;
-        var label = e.label.length > 7 ? e.label.slice(0, 6) + '…' : e.label;
+        var label = escHtml(e.label.length > 7 ? e.label.slice(0, 6) + '…' : e.label);
         var val = e.value >= 1000
           ? 'R$' + (e.value / 1000).toFixed(1) + 'k'
           : 'R$' + e.value.toFixed(0);
@@ -322,7 +313,7 @@
       var html = sorted.map(function(p) {
         var val = parseBRL(String(p.precoVarejo || 0)) * (parseInt(p.estoque) || 0);
         var pct = Math.round((val / max) * 100);
-        var nome = (p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto');
+        var nome = escHtml((p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto'));
         return (
           '<div class="top-item">' +
           '<span class="top-item-name">' + nome + '</span>' +
@@ -351,12 +342,12 @@
       lista.innerHTML = baixos.map(function(p) {
         var est = parseInt(p.estoque) || 0;
         var cor = est <= 5 ? 'var(--red-400)' : 'var(--amber-400, #f59e0b)';
-        var nome = (p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto');
+        var nome = escHtml((p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto'));
         return (
           '<li>' +
           '<span class="s-name">' + nome + '</span>' +
           '<span class="badge" style="background:' + cor + ';color:#fff;font-size:10px;padding:2px 8px;border-radius:20px;margin-right:6px;">' + est + ' un</span>' +
-          '<a href="cadastro-produto.html?id=' + p.id + '" style="font-size:10px;font-weight:700;color:var(--pink-500);text-decoration:none;">Repor</a>' +
+          '<a href="cadastro-produto.html?id=' + escHtml(p.id) + '" style="font-size:10px;font-weight:700;color:var(--pink-500);text-decoration:none;">Repor</a>' +
           '</li>'
         );
       }).join('');
@@ -381,7 +372,7 @@
           '<div class="empty-state">' +
           '<i class="ti ti-package-off"></i>' +
           (produtos.length
-            ? 'Nenhum produto encontrado para "<strong>' + busca + '</strong>".'
+            ? 'Nenhum produto encontrado para "<strong>' + escHtml(busca) + '</strong>".'
             : 'Nenhum produto cadastrado ainda. <a href="cadastro-produto.html">Cadastrar agora</a>') +
           '</div></td></tr>'
         );
@@ -392,7 +383,7 @@
         var est = parseInt(p.estoque) || 0;
         var preco = parseBRL(String(p.precoVarejo || 0));
         var lucro = parseBRL(String(p.lucroUnitario || 0));
-        var icone = p.icone || 'ti-diamond';
+        var icone = escHtml(p.icone || 'ti-diamond');
         var statusBadge = est <= 5
           ? '<span class="badge badge-amber">Estoque baixo</span>'
           : '<span class="badge badge-green">Ativo</span>';
@@ -401,15 +392,15 @@
           '<tr>' +
           '<td style="display:flex;align-items:center;gap:10px;">' +
           '<div class="prod-thumb"><i class="ti ' + icone + '"></i></div>' +
-          '<span>' + (p.nome || '—') + '</span>' +
+          '<span>' + escHtml(p.nome || '—') + '</span>' +
           '</td>' +
-          '<td>' + (p.categoria || '—') + '</td>' +
+          '<td>' + escHtml(p.categoria || '—') + '</td>' +
           '<td>' + est + '</td>' +
           '<td>' + (preco ? formatBRL(preco) : '—') + '</td>' +
           '<td class="profit-cell">' + (lucro ? formatBRL(lucro) : '—') + '</td>' +
           '<td>' + statusBadge + '</td>' +
           '<td class="action-row">' +
-          '<button class="btn-edit" onclick="location.href=\'cadastro-produto.html?id=' + p.id + '\'">Editar</button>' +
+          '<button class="btn-edit" onclick="location.href=\'cadastro-produto.html?id=' + escHtml(p.id) + '\'">Editar</button>' +
           '</td>' +
           '</tr>'
         );
@@ -427,5 +418,7 @@
 
     init();
   </script>
+  <script src="../js/sidebar.js"></script>
+  <script src="../js/utils.js"></script>
 </body>
 </html>

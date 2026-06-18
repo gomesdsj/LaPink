@@ -1,6 +1,13 @@
 var STORAGE_CLIENTS_KEY = 'lapinkClients';
 var STORAGE_LOGGED_KEY = 'lapinkLoggedClient';
 
+async function hashPassword(password) {
+  var encoder = new TextEncoder();
+  var data = encoder.encode(String(password));
+  var hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
 function getClients() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_CLIENTS_KEY) || '[]');

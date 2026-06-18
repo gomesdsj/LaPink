@@ -17,7 +17,9 @@
   --gray-200: #E0DDD6;
   --gray-300: #C8C4BC;
   --gray-400: #A09890;
+  --gray-500: #847E78;
   --gray-600: #6B6560;
+  --gray-700: #453F3A;
   --gray-800: #2C2A28;
 
   --blue-50:   #E6F1FB;
@@ -43,6 +45,13 @@
 
   --sidebar-w: 220px;
   --topbar-h: 56px;
+
+  --z-dropdown: 10;
+  --z-topbar: 100;
+  --z-sidebar-overlay: 199;
+  --z-sidebar: 200;
+  --z-modal: 1000;
+  --z-toast: 9999;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

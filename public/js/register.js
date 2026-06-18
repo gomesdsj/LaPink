@@ -8,7 +8,7 @@ function setRegisterMessage(text, success = false) {
 }
 
 if (registerForm) {
-  registerForm.addEventListener('submit', event => {
+  registerForm.addEventListener('submit', async event => {
     event.preventDefault();
 
     const name = document.getElementById('register-name').value.trim();
@@ -37,7 +37,7 @@ if (registerForm) {
       name,
       email,
       whatsapp,
-      password,
+      password: await hashPassword(password),
       totalSpent: 0,
       purchases: [],
     });

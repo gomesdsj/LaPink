@@ -4,6 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>LaPink — Loja</title>
+<meta name="description" content="LaPink — Semijoias banhadas a ouro. Anéis, colares, brincos e bolsas com qualidade e preço justo." />
+<meta property="og:title" content="LaPink — Semijoias" />
+<meta property="og:description" content="Compre semijoias banhadas a ouro com qualidade e elegância." />
+<meta property="og:type" content="website" />
 <meta name="theme-color" content="#D4537E" />
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="css/v1.css" />
@@ -16,6 +20,50 @@
 .cat-back-link:hover { text-decoration: underline; }
 .prod-empty { text-align: center; padding: 48px 20px; color: #aaa; font-size: 14px; }
 .prod-empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+.prod-empty a { color: #D4537E; font-weight: 700; text-decoration: none; }
+.prod-empty a:hover { text-decoration: underline; }
+.prod-empty .btn-limpar-busca { margin-top: 12px; display: inline-block; background: #fff0f5; color: #D4537E; border: 1.5px solid #D4537E; border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 700; cursor: pointer; }
+/* Badges de estoque */
+.prod-badge--estoque-baixo { background: #e67e22 !important; }
+.prod-badge--esgotado { background: #aaa !important; }
+/* Card esgotado */
+.prod-card--esgotado { opacity: .7; }
+.prod-card--esgotado .prod-img { filter: grayscale(60%); }
+.btn-esgotado { opacity: .5; cursor: not-allowed !important; }
+.prod-price--esgotado { text-decoration: line-through; color: #aaa !important; }
+/* Contagem de resultados */
+.search-result-bar { font-size: 12px; color: #aaa; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.search-result-bar strong { color: #D4537E; }
+.search-result-bar .btn-limpar { background: none; border: none; color: #D4537E; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0; }
+/* Newsletter feedback */
+.nl-msg { margin-top: 10px; font-size: 13px; font-weight: 600; min-height: 20px; }
+.nl-msg.ok { color: #2E8B5A; }
+.nl-msg.err { color: #E05555; }
+/* Catálogo por categoria */
+.cat-group { margin-bottom: 36px; }
+.cat-group-title {
+  font-size: 13px; font-weight: 800; color: #453F3A;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  padding-bottom: 8px; border-bottom: 2px solid #fce4ed;
+}
+.cat-group-count {
+  font-size: 11px; font-weight: 600; color: #D4537E;
+  background: #fff0f5; padding: 2px 8px; border-radius: 20px;
+}
+.btn-catalogo-toggle {
+  display: block;
+  margin: 18px auto 0;
+  background: #fff0f5;
+  color: #D4537E;
+  border: 1.5px solid #D4537E;
+  border-radius: 24px;
+  padding: 10px 28px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s;
+}
+.btn-catalogo-toggle:hover { background: #fce4ed; }
 </style>
 </head>
 <body>
@@ -31,7 +79,7 @@
     <div class="logo"><i class="ti ti-diamond"></i> LaPink</div>
     <div class="search-bar">
       <i class="ti ti-search"></i>
-      <input type="text" id="v1-search" placeholder="Buscar semijoias, bolsas..." oninput="buscarProdutos(this.value)" />
+      <input type="text" id="v1-search" placeholder="Buscar semijoias, bolsas..." />
     </div>
     <div class="nav-links">
       <a onclick="filtrarCategoria('Anéis')" style="cursor:pointer;">Semijoias</a>
@@ -40,6 +88,10 @@
       <a onclick="limparFiltro()" style="cursor:pointer;">Promoções</a>
     </div>
     <div class="nav-actions">
+      <a class="cart-nav-btn" href="checkout.html" title="Carrinho" style="position:relative;display:inline-flex;align-items:center;gap:4px;color:var(--pink-500,#993556);font-weight:700;text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--pink-200,#F4C0D1);">
+        <i class="ti ti-shopping-cart"></i>
+        <span class="cart-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#D4537E;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;">0</span>
+      </a>
       <i class="ti ti-heart nav-icon"></i>
       <span class="nav-user" id="navUser"></span>
       <a href="login.html" class="nav-icon login-link" aria-label="Entrar" id="loginLink">
@@ -119,6 +171,15 @@
     <div class="banner-img"><i class="ti ti-building-store"></i></div>
   </div>
 
+  <!-- Catálogo completo por categoria -->
+  <div class="section" id="secao-catalogo" style="display:none;">
+    <div class="section-header">
+      <span class="section-title">Catálogo completo</span>
+      <span style="font-size:12px; color:#aaa;" id="catalogo-count"></span>
+    </div>
+    <div id="catalogo-por-cat"></div>
+  </div>
+
   <!-- Depoimentos -->
   <div class="reviews">
     <div class="section-header"><span class="section-title">O que dizem nossas clientes</span></div>
@@ -132,9 +193,10 @@
     <h3 id="v1-nl-titulo">Receba novidades e ofertas exclusivas</h3>
     <p id="v1-nl-sub">Cadastre seu e-mail e ganhe 10% de desconto na primeira compra</p>
     <div class="nl-form">
-      <input class="nl-input" type="email" placeholder="seu@email.com"/>
-      <button class="nl-btn" id="v1-nl-btn">Quero desconto</button>
+      <input class="nl-input" type="email" id="nl-email-input" placeholder="seu@email.com"/>
+      <button class="nl-btn" id="v1-nl-btn" onclick="assinarNewsletter()">Quero desconto</button>
     </div>
+    <div class="nl-msg" id="nl-msg"></div>
   </div>
 
   <!-- Rodapé -->
@@ -190,25 +252,49 @@
     try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; } catch { return []; }
   }
 
+  // ── Escape helper ──
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   // ── Renderiza cards de produto ──
-  function renderCards(lista) {
+  function renderCards(lista, emptyMsg) {
     if (!lista || !lista.length) {
-      return '<div class="prod-empty"><i class="ti ti-mood-empty"></i>Nenhum produto encontrado.</div>';
+      var msg = emptyMsg || 'Nenhum produto encontrado.';
+      return '<div class="prod-empty"><i class="ti ti-mood-empty"></i>' + msg + '</div>';
     }
     return lista.map(function(item) {
-      var p     = item.produto;
-      var badge = item.badge || '';
+      var p          = item.produto;
+      var badge      = item.badge || '';
+      var est        = parseInt(p.estoque) || 0;
+      var esgotado   = est <= 0;
+      var baixo      = est > 0 && est <= 5;
+
       var thumb = p.imagem
-        ? '<img src="' + p.imagem + '" alt="' + p.nome + '" style="width:100%;height:100%;object-fit:cover;border-radius:12px 12px 0 0;" />'
-        : '<i class="ti ' + (p.icone || 'ti-diamond') + '"></i>';
-      var badgeHtml = badge ? '<span class="prod-badge">' + badge + '</span>' : '';
-      var preco = 'R$ ' + p.precoVarejo.toFixed(2).replace('.', ',');
-      return '<div class="prod-card">' +
-        '<div class="prod-img">' + thumb + badgeHtml + '<i class="ti ti-heart prod-fav"></i></div>' +
+        ? '<img src="' + p.imagem + '" alt="' + esc(p.nome) + '" style="width:100%;height:100%;object-fit:cover;border-radius:12px 12px 0 0;" />'
+        : '<i class="ti ' + esc(p.icone || 'ti-diamond') + '"></i>';
+
+      var badgeHtml = '';
+      if (esgotado) {
+        badgeHtml = '<span class="prod-badge prod-badge--esgotado">Esgotado</span>';
+      } else if (baixo) {
+        badgeHtml = '<span class="prod-badge prod-badge--estoque-baixo">Últimas ' + est + ' unid.</span>';
+      } else if (badge) {
+        badgeHtml = '<span class="prod-badge">' + esc(badge) + '</span>';
+      }
+
+      var preco    = 'R$ ' + Number(p.precoVarejo || 0).toFixed(2).replace('.', ',');
+      var favHtml  = esgotado ? '' : '<i class="ti ti-heart prod-fav"></i>';
+      var btnHtml  = esgotado
+        ? '<button class="btn-secondary btn-buy btn-esgotado" disabled>Fora de estoque</button>'
+        : '<button class="btn-secondary btn-buy" data-id="' + esc(p.id) + '" data-product="' + esc(p.nome) + '">Comprar</button>';
+
+      return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '">' +
+        '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
-          '<div class="prod-name">' + p.nome + '</div>' +
-          '<div><span class="prod-price">' + preco + '</span></div>' +
-          '<button class="btn-secondary btn-buy" data-id="' + p.id + '" data-product="' + p.nome + '">Comprar</button>' +
+          '<div class="prod-name">' + esc(p.nome) + '</div>' +
+          '<div><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span></div>' +
+          btnHtml +
         '</div>' +
       '</div>';
     }).join('');
@@ -260,23 +346,45 @@
 
     if (cat || busca) {
       // Modo filtro
-      titleEl.textContent    = cat ? cat : 'Resultados: "' + busca + '"';
+      titleEl.textContent    = cat ? cat : 'Busca: "' + busca + '"';
       linkEl.style.display   = '';
       backEl.style.display   = '';
 
       var filtrados = produtos.filter(function(p) {
         var matchCat   = !cat   || p.categoria === cat;
-        var matchBusca = !busca || p.nome.toLowerCase().includes(busca);
+        var matchBusca = !busca || (p.nome||'').toLowerCase().includes(busca) ||
+                                   (p.categoria||'').toLowerCase().includes(busca) ||
+                                   (p.descricao||'').toLowerCase().includes(busca);
         return matchCat && matchBusca;
       });
 
+      // Barra de resultado de busca/filtro
+      var barId = 'v1-result-bar';
+      var barExist = document.getElementById(barId);
+      if (barExist) barExist.remove();
+      var bar = document.createElement('div');
+      bar.id = barId;
+      bar.className = 'search-result-bar';
+      bar.innerHTML = '<strong>' + filtrados.length + '</strong> produto' + (filtrados.length !== 1 ? 's' : '') +
+        (busca ? ' para "' + esc(busca) + '"' : ' em ' + esc(cat)) +
+        ' <button class="btn-limpar" onclick="limparFiltro()">✕ Limpar</button>';
+      prodGrid.parentNode.insertBefore(bar, prodGrid);
+
+      var emptyMsg = busca
+        ? 'Nenhum resultado para "<strong>' + esc(busca) + '</strong>".<br><button class="btn-limpar-busca" onclick="limparFiltro()">Ver todos os produtos</button>'
+        : 'Nenhum produto na categoria <strong>' + esc(cat) + '</strong>.<br><button class="btn-limpar-busca" onclick="limparFiltro()">Ver todos</button>';
+
       var lista = filtrados.map(function(p) { return { produto: p, badge: '' }; });
-      prodGrid.innerHTML = renderCards(lista);
+      prodGrid.innerHTML = renderCards(lista, emptyMsg);
     } else {
       // Modo destaque (configurado pelo editor)
       titleEl.textContent  = 'Mais vendidos';
       linkEl.style.display = 'none';
       backEl.style.display = 'none';
+
+      // Remover barra de resultado se existir
+      var barExist2 = document.getElementById('v1-result-bar');
+      if (barExist2) barExist2.remove();
 
       var destaqueItems;
       if (config.destaque && config.destaque.length) {
@@ -285,9 +393,15 @@
           return p ? { produto: p, badge: d.badge || '' } : null;
         }).filter(Boolean);
       } else {
-        destaqueItems = produtos.slice(0, 3).map(function(p) { return { produto: p, badge: '' }; });
+        destaqueItems = produtos.slice(0, 15).map(function(p) { return { produto: p, badge: '' }; });
       }
-      prodGrid.innerHTML = renderCards(destaqueItems);
+
+      var semProdutos = !produtos.length;
+      var emptyDestaqueMsg = semProdutos
+        ? 'Nenhum produto cadastrado ainda.<br><a href="../admin/cadastro-produto.html">Cadastre produtos no painel</a>'
+        : 'Configure os produtos em destaque no <a href="../admin/loja-v1.html">editor da loja</a>.';
+
+      prodGrid.innerHTML = renderCards(destaqueItems, emptyDestaqueMsg);
     }
 
     // Reanexar clique em comprar (já que innerHTML foi reescrito)
@@ -322,8 +436,8 @@
     revGrid.innerHTML = config.depoimentos.map(function(d) {
       return '<div class="rev-card">' +
         '<div class="rev-stars">★★★★★</div>' +
-        '<div class="rev-text">"' + d.texto + '"</div>' +
-        '<div class="rev-author">' + d.autor + '</div>' +
+        '<div class="rev-text">"' + esc(d.texto) + '"</div>' +
+        '<div class="rev-author">' + esc(d.autor) + '</div>' +
       '</div>';
     }).join('');
   }
@@ -336,8 +450,43 @@
   if (nlSub) nlSub.textContent = config.newsletter.sub;
   if (nlBtn) nlBtn.textContent = config.newsletter.btn;
 
-  // Renderiza produtos iniciais (destaque)
+  // ── Catálogo completo por categoria ──
+  function renderCatalogoCompleto() {
+    var secao     = document.getElementById('secao-catalogo');
+    var container = document.getElementById('catalogo-por-cat');
+    var countEl   = document.getElementById('catalogo-count');
+    if (!secao || !container) return;
+
+    var produtos = getProdutos();
+    if (!produtos.length) return;
+
+    // Agrupa por categoria
+    var cats = {};
+    produtos.forEach(function(p) {
+      var c = (p.categoria || 'Outros').trim();
+      if (!cats[c]) cats[c] = [];
+      cats[c].push(p);
+    });
+
+    if (countEl) countEl.textContent = produtos.length + ' produtos';
+
+    container.innerHTML = Object.keys(cats).sort().map(function(cat) {
+      var items = cats[cat].map(function(p) { return { produto: p, badge: '' }; });
+      return '<div class="cat-group">' +
+        '<h3 class="cat-group-title">' +
+          '<i class="ti ti-tag" style="color:#D4537E;"></i> ' + esc(cat) +
+          ' <span class="cat-group-count">' + items.length + '</span>' +
+        '</h3>' +
+        '<div class="prod-grid">' + renderCards(items) + '</div>' +
+      '</div>';
+    }).join('');
+
+    secao.style.display = '';
+  }
+
+  // Renderiza produtos iniciais (destaque) + catálogo completo por categoria
   atualizarProdutos();
+  renderCatalogComplete();
 
   // URL param — suporte a ?cat=Anéis (deep link por categoria)
   var urlParams = new URLSearchParams(window.location.search);
@@ -345,6 +494,27 @@
   if (catParam) filtrarCategoria(catParam);
 
 })();
+
+// ── Newsletter ──
+function assinarNewsletter() {
+  var input = document.getElementById('nl-email-input');
+  var msg   = document.getElementById('nl-msg');
+  var email = (input ? input.value : '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msg.textContent = 'Digite um e-mail válido.';
+    msg.className   = 'nl-msg err';
+    return;
+  }
+  try {
+    var lista = JSON.parse(localStorage.getItem('lapinkNewsletter') || '[]');
+    if (lista.indexOf(email) === -1) lista.push(email);
+    localStorage.setItem('lapinkNewsletter', JSON.stringify(lista));
+  } catch(e) {}
+  if (input) input.value = '';
+  msg.textContent = '✓ Inscrição confirmada! Fique de olho no seu e-mail.';
+  msg.className   = 'nl-msg ok';
+  setTimeout(function() { msg.textContent = ''; msg.className = 'nl-msg'; }, 5000);
+}
 
 // ── handleBuy — abre página do produto ──
 function handleBuy(event) {
@@ -358,8 +528,25 @@ function handleBuy(event) {
 }
 </script>
 
+<script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/v1.js"></script>
+<script>
+// Busca com debounce
+(function() {
+  var searchTimer;
+  var v1SearchInput = document.getElementById('v1-search');
+  if (v1SearchInput) {
+    v1SearchInput.addEventListener('input', function() {
+      clearTimeout(searchTimer);
+      var val = v1SearchInput.value;
+      searchTimer = setTimeout(function() {
+        buscarProdutos(val);
+      }, 300);
+    });
+  }
+})();
+</script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(function(err) { console.warn('SW registration failed', err); });

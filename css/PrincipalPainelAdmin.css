@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════
-   BELLA JOIAS — Admin Panel Styles
+   LAPINK — Admin Panel Styles
 ═══════════════════════════════════════ */
 
 /* ── Layout ── */
@@ -194,6 +194,16 @@
   letter-spacing: .06em;
   margin-bottom: 14px;
 }
+.cost-sub-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--gray-400);
+  margin: 10px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: .5px solid var(--pink-100);
+}
 .cost-section .form-group input { background: var(--white); }
 .cost-result-bar {
   display: flex;
@@ -360,4 +370,77 @@
   .modal--edit-produto { width: 100%; }
   .modal-edit-body { flex-direction: column; }
   .modal-edit-preview { flex-direction: row; flex: none; align-self: stretch; }
+}
+
+/* ── Empty states ── */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--gray-400);
+}
+.empty-state i {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: .6;
+}
+.empty-state p {
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ── Estados de formulário ── */
+.form-group.error input,
+.form-group.error select,
+.form-group.error textarea {
+  border-color: var(--red-400);
+  box-shadow: 0 0 0 3px rgba(224,85,85,.1);
+}
+.field-error {
+  display: block;
+  color: var(--red-400);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.form-group.success input,
+.form-group.success select,
+.form-group.success textarea {
+  border-color: var(--green-400);
+}
+
+/* ── Skeleton loading ── */
+.skeleton {
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-50) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-load 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-load {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Scroll horizontal em tabelas mobile ── */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Touch targets mobile ── */
+@media (max-width: 640px) {
+  .btn-icon-sm {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .sidebar-link {
+    padding: 11px 16px;
+  }
+}
+
+/* ── Preferência de movimento reduzido ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

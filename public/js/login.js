@@ -9,13 +9,26 @@ function setLoginMessage(text, success = false) {
 }
 
 if (loginForm) {
-  loginForm.addEventListener('submit', event => {
+  loginForm.addEventListener('submit', async event => {
     event.preventDefault();
 
     const email = document.getElementById('login-email').value.trim().toLowerCase();
-    const password = document.getElementById('login-password').value;
+    const loginPassword = document.getElementById('login-password').value;
+    const hashedInput = await hashPassword(loginPassword);
     const clients = getClients();
-    const client = clients.find(user => user.email === email && user.password === password);
+
+    // Tenta com hash primeiro
+    var client = clients.find(function(c) { return c.email === email && c.password === hashedInput; });
+
+    // Fallback: texto puro (contas antigas) — migra para hash
+    if (!client) {
+      var plainClient = clients.find(function(c) { return c.email === email && c.password === loginPassword; });
+      if (plainClient) {
+        plainClient.password = hashedInput;
+        saveClients(clients);
+        client = plainClient;
+      }
+    }
 
     if (!client) {
       setLoginMessage('E-mail ou senha incorretos.', false);

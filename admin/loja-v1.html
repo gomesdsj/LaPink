@@ -197,6 +197,110 @@
 .depo-stars { color: var(--pink-300); letter-spacing: 2px; }
 .save-status { font-size: 11px; color: var(--gray-400); font-style: italic; }
 
+/* ── Preview ao vivo ── */
+.v1-preview-section { margin-top: 28px; }
+.v1-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  background: var(--gray-50);
+  border: .5px solid var(--gray-200);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-600);
+}
+.v1-preview-header a {
+  font-size: 11px;
+  color: var(--pink-500);
+  text-decoration: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.v1-preview-header a:hover { text-decoration: underline; }
+.v1-preview-body {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  border: .5px solid var(--gray-200);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--white);
+  min-height: 80px;
+}
+.v1-mini-card {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  border: .5px solid var(--gray-200);
+  box-shadow: 0 2px 6px rgba(0,0,0,.05);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.v1-mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(212,83,126,.12); }
+.v1-mini-thumb {
+  height: 90px;
+  background: var(--pink-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--pink-300);
+  position: relative;
+  overflow: hidden;
+}
+.v1-mini-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.v1-mini-badge {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: var(--pink-500);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+  letter-spacing: .03em;
+}
+.v1-mini-info { padding: 8px 9px 0; }
+.v1-mini-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.v1-mini-price { font-size: 11px; font-weight: 800; color: var(--pink-500); }
+.v1-mini-btn {
+  display: block;
+  width: calc(100% - 18px);
+  margin: 8px 9px;
+  background: var(--pink-500);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 5px 0;
+  cursor: default;
+  opacity: .6;
+  text-align: center;
+}
+.v1-preview-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--gray-400);
+  font-size: 11px;
+  line-height: 1.7;
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 960px) {
   .prod-selector { flex-direction: column; }
 }
@@ -282,6 +386,17 @@
               <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
               Badge aceita qualquer texto (ex: Novo, -20%, Oferta). Deixe vazio para não exibir etiqueta.
             </p>
+
+            <!-- Pré-visualização ao vivo -->
+            <div class="v1-preview-section">
+              <div class="v1-preview-header">
+                <span><i class="ti ti-device-mobile" style="margin-right:5px;"></i>Pré-visualização — como o cliente vai ver</span>
+                <a href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Abrir loja</a>
+              </div>
+              <div class="v1-preview-body" id="v1-preview-body">
+                <div class="v1-preview-empty"><i class="ti ti-eye" style="font-size:26px; display:block; margin-bottom:8px; color:var(--gray-300);"></i>Nenhum produto em destaque.<br>Adicione produtos usando "+ Exibir".</div>
+              </div>
+            </div>
           </div>
 
           <!-- ─── TAB GERAL ─── -->
@@ -410,15 +525,6 @@ function showToast(msg, tipo) {
   el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
 }
 
-var sidebar = document.getElementById('sidebar');
-var overlay = document.getElementById('sidebarOverlay');
-document.getElementById('sidebarToggle').addEventListener('click', function() {
-  sidebar.classList.toggle('open'); overlay.classList.toggle('show');
-});
-overlay.addEventListener('click', function() {
-  sidebar.classList.remove('open'); overlay.classList.remove('show');
-});
-
 document.querySelectorAll('.tab-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -488,6 +594,7 @@ function atualizarFotoProduto(id, input) {
     localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
     renderCatalogo();
     renderDestaque();
+    atualizarPreviewCatalogo();
     showToast('Foto de "' + produtos[idx].nome + '" atualizada!');
   };
   reader.readAsDataURL(file);
@@ -555,26 +662,59 @@ function renderDestaque() {
   }).filter(Boolean).join('');
 }
 
+// ── Preview ao vivo ──
+function atualizarPreviewCatalogo() {
+  var container = document.getElementById('v1-preview-body');
+  if (!container) return;
+  var produtos = getProdutos();
+
+  if (!destaqueList.length) {
+    container.innerHTML = '<div class="v1-preview-empty"><i class="ti ti-eye" style="font-size:26px; display:block; margin-bottom:8px; color:var(--gray-300);"></i>Nenhum produto em destaque.<br>Adicione produtos usando "+ Exibir".</div>';
+    return;
+  }
+
+  container.innerHTML = destaqueList.map(function(d) {
+    var p = produtos.find(function(x) { return x.id === d.id; });
+    if (!p) return '';
+    var badge    = d.badge || '';
+    var thumb    = p.imagem
+      ? '<img src="' + p.imagem + '" alt="' + escHtml(p.nome) + '" />'
+      : '<i class="ti ' + (p.icone || 'ti-diamond') + '"></i>';
+    var badgeHtml = badge ? '<span class="v1-mini-badge">' + escHtml(badge) + '</span>' : '';
+    return '<div class="v1-mini-card">' +
+      '<div class="v1-mini-thumb">' + thumb + badgeHtml + '</div>' +
+      '<div class="v1-mini-info">' +
+        '<div class="v1-mini-name" title="' + escHtml(p.nome) + '">' + escHtml(p.nome) + '</div>' +
+        '<div class="v1-mini-price">' + precoFmt(p.precoVarejo) + '</div>' +
+      '</div>' +
+      '<div class="v1-mini-btn">Comprar</div>' +
+    '</div>';
+  }).filter(Boolean).join('');
+}
+
 function adicionarDestaque(id) {
   if (destaqueList.find(function(d) { return d.id === id; })) return;
   destaqueList.push({ id: id, badge: '' });
   renderCatalogo();
   renderDestaque();
+  atualizarPreviewCatalogo();
 }
 function removerDestaque(id) {
   destaqueList = destaqueList.filter(function(d) { return d.id !== id; });
   renderCatalogo();
   renderDestaque();
+  atualizarPreviewCatalogo();
 }
 function moverDestaque(idx, dir) {
   var ni = idx + dir;
   if (ni < 0 || ni >= destaqueList.length) return;
   var tmp = destaqueList[idx]; destaqueList[idx] = destaqueList[ni]; destaqueList[ni] = tmp;
   renderDestaque();
+  atualizarPreviewCatalogo();
 }
 function atualizarBadge(id, val) {
   var d = destaqueList.find(function(x) { return x.id === id; });
-  if (d) d.badge = val;
+  if (d) { d.badge = val; atualizarPreviewCatalogo(); }
 }
 
 var depoimentosData = [];
@@ -657,10 +797,13 @@ function publicarAlteracoes() {
   destaqueList = cfg.destaque.map(function(d) { return { id: d.id, badge: d.badge || '' }; });
   renderCatalogo();
   renderDestaque();
+  atualizarPreviewCatalogo();
 
   depoimentosData = cfg.depoimentos.map(function(d) { return { texto: d.texto, autor: d.autor }; });
   renderDepoimentos();
 })();
 </script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/utils.js"></script>
 </body>
 </html>

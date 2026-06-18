@@ -197,9 +197,7 @@
 
   // ─── localStorage helpers ─────────────────────────────────
   function getPedidos() {
-    var raw = localStorage.getItem('lapinkPedidos');
-    if (!raw) return null;
-    try { return JSON.parse(raw); } catch(e) { return null; }
+    try { return JSON.parse(localStorage.getItem('lapinkPedidos') || '[]'); } catch(e) { return []; }
   }
 
   function setPedidos(arr) {
@@ -207,14 +205,12 @@
   }
 
   function getProdutos() {
-    var raw = localStorage.getItem('lapinkProdutos');
-    if (!raw) return [];
-    try { return JSON.parse(raw); } catch(e) { return []; }
+    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
   }
 
   function carregarPedidos() {
     var pedidos = getPedidos();
-    if (!pedidos || pedidos.length === 0) {
+    if (pedidos.length === 0) {
       setPedidos(SEEDS);
     }
   }
@@ -482,22 +478,45 @@
 
     pedidos.push(novo);
     setPedidos(pedidos);
+
+    // Decrementar estoque dos produtos
+    var produtos = getProdutos();
+    novo.itens.forEach(function(item) {
+      var idx = produtos.findIndex(function(p) { return p.nome === item.nome; });
+      if (idx >= 0) {
+        produtos[idx].estoque = Math.max(0, (parseInt(produtos[idx].estoque) || 0) - item.qty);
+      }
+    });
+    localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
+
+    // Atualizar dados do cliente
+    try {
+      var clients = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
+      var wppLimpo = (novo.cliente.whatsapp || '').replace(/\D/g, '');
+      var cidx = clients.findIndex(function(c) {
+        return (c.whatsapp || '').replace(/\D/g, '') === wppLimpo ||
+               (c.email && c.email === novo.cliente.email);
+      });
+      if (cidx >= 0) {
+        if (!Array.isArray(clients[cidx].purchases)) clients[cidx].purchases = [];
+        clients[cidx].purchases.push({ pedidoId: novo.id, total: novo.total, data: novo.data });
+        clients[cidx].totalSpent = (clients[cidx].totalSpent || 0) + novo.total;
+        localStorage.setItem('lapinkClients', JSON.stringify(clients));
+      }
+    } catch(e) {}
+
     fecharModalDireto();
     renderStats();
     renderPedidos();
     showToast('Pedido #' + novo.numero + ' criado!');
   }
 
-  // ─── Sidebar ──────────────────────────────────────────────
-  var sidebar = document.getElementById('sidebar');
-  var overlay = document.getElementById('sidebarOverlay');
-  document.getElementById('sidebarToggle').addEventListener('click', function() { sidebar.classList.toggle('open'); overlay.classList.toggle('show'); });
-  overlay.addEventListener('click', function() { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
-
   // ─── Init ─────────────────────────────────────────────────
   carregarPedidos();
   renderStats();
   renderPedidos();
   </script>
+  <script src="../js/sidebar.js"></script>
+  <script src="../js/utils.js"></script>
 </body>
 </html>

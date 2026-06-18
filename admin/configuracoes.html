@@ -451,16 +451,12 @@
     showToast('Todos os dados foram removidos.');
   }
 
-  // ─── Sidebar ──────────────────────────────────────────────
-  var sidebar = document.getElementById('sidebar');
-  var overlay = document.getElementById('sidebarOverlay');
-  document.getElementById('sidebarToggle').addEventListener('click', function() { sidebar.classList.toggle('open'); overlay.classList.toggle('show'); });
-  overlay.addEventListener('click', function() { sidebar.classList.remove('open'); overlay.classList.remove('show'); });
-
   // ─── Init ─────────────────────────────────────────────────
   carregarLoja();
   carregarConta();
   carregarNotificacoes();
   </script>
+  <script src="../js/sidebar.js"></script>
+  <script src="../js/utils.js"></script>
 </body>
 </html>
