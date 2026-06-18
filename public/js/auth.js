@@ -27,21 +27,26 @@ function updateAuthUI() {
   }
 
   if (client && client.name) {
-    setText('navUser', 'Olá, ' + client.name.split(' ')[0]);
-    show('loginLink', 'none');
-    show('logoutBtn', 'inline-flex');
-    show('loginBtn', 'none');
-    show('registerBtn', 'none');
-    show('drawerLoginBtn', 'none');
-    show('drawerRegisterBtn', 'none');
+    var firstName = client.name.split(' ')[0];
+    setText('navUser', 'Olá, ' + firstName);
+    show('loginLink',        'none');
+    show('logoutBtn',        'inline-flex');
+    show('loginBtn',         'none');
+    show('registerBtn',      'none');
+    show('drawerLoginBtn',   'none');
+    show('drawerRegisterBtn','none');
+    // Botão "Painel" visível para admin e superadmin
+    var isAdmin = client.role === 'admin' || client.role === 'superadmin';
+    show('panelBtn', isAdmin ? 'inline-block' : 'none');
   } else {
     setText('navUser', '');
-    show('loginLink', 'inline-flex');
-    show('logoutBtn', 'none');
-    show('loginBtn', 'inline-block');
-    show('registerBtn', 'inline-block');
-    show('drawerLoginBtn', '');
-    show('drawerRegisterBtn', '');
+    show('loginLink',        'inline-flex');
+    show('logoutBtn',        'none');
+    show('loginBtn',         'inline-block');
+    show('registerBtn',      'inline-block');
+    show('drawerLoginBtn',   '');
+    show('drawerRegisterBtn','');
+    show('panelBtn',         'none');
   }
 }
 
@@ -64,5 +69,13 @@ document.addEventListener('DOMContentLoaded', function() {
       updateAuthUI();
       showToast('Você saiu da conta.');
     });
+  }
+
+  // Compatibilidade com o botão de logout do V1 (inline onclick="logout()")
+  if (typeof window.logout === 'undefined') {
+    window.logout = function() {
+      clearLoggedClient();
+      window.location.replace('../admin/login.html');
+    };
   }
 });

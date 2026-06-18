@@ -25,6 +25,12 @@ function saveClients(clients) {
 }
 
 function getLoggedClient() {
+  // Tenta lapinkSession (novo sistema) primeiro
+  try {
+    var session = JSON.parse(localStorage.getItem('lapinkSession') || 'null');
+    if (session && session.name) return session;
+  } catch (e) {}
+  // Fallback: chave legada lapinkLoggedClient
   try {
     return JSON.parse(localStorage.getItem(STORAGE_LOGGED_KEY) || 'null');
   } catch (e) {
@@ -35,6 +41,12 @@ function getLoggedClient() {
 function setLoggedClient(client) {
   try {
     localStorage.setItem(STORAGE_LOGGED_KEY, JSON.stringify(client));
+    // Sincroniza com o novo sistema de sessão
+    localStorage.setItem('lapinkSession', JSON.stringify({
+      email: client.email || '',
+      role:  client.role  || 'client',
+      name:  client.name  || client.email || ''
+    }));
   } catch (e) {
     console.warn('LaPink: localStorage indisponível ou cheio.');
   }
@@ -43,5 +55,6 @@ function setLoggedClient(client) {
 function clearLoggedClient() {
   try {
     localStorage.removeItem(STORAGE_LOGGED_KEY);
+    localStorage.removeItem('lapinkSession');
   } catch (e) {}
 }

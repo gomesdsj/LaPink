@@ -22,46 +22,21 @@ function updateNav() {
   }
 }
 
-function forceLogoutOnV1() {
-  clearLoggedClient();
-}
-
-function handleBuy(event) {
-  const client = getLoggedClient();
-  const product = event.target.dataset.product;
-  if (!client) {
-    alert('Você precisa estar logada para comprar. Redirecionando para login...');
-    location.href = 'login.html';
-    return;
-  }
-  alert(`Compra autorizada para ${client.name}!\nProduto: ${product}`);
-}
-
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    forceLogoutOnV1();
-    document.querySelectorAll('.btn-buy').forEach(button => {
-      button.addEventListener('click', handleBuy);
-    });
+  document.addEventListener('DOMContentLoaded', function() {
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
+      logoutBtn.addEventListener('click', function() {
         clearLoggedClient();
         updateNav();
-        alert('Você saiu da conta.');
       });
     }
     updateNav();
   });
 } else {
-  forceLogoutOnV1();
-  document.querySelectorAll('.btn-buy').forEach(button => {
-    button.addEventListener('click', handleBuy);
-  });
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', function() {
       clearLoggedClient();
       updateNav();
-      alert('Você saiu da conta.');
     });
   }
   updateNav();
