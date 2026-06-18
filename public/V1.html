@@ -64,6 +64,111 @@
   transition: background .18s;
 }
 .btn-catalogo-toggle:hover { background: #fce4ed; }
+
+/* ── Carrossel ─────────────────────────────────────────── */
+.carousel { position: relative; overflow: hidden; width: 100%; user-select: none; }
+.carousel-track { display: flex; transition: transform .52s cubic-bezier(.4,0,.2,1); will-change: transform; }
+.carousel-slide {
+  flex: 0 0 100%;
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  padding: 52px 64px;
+  gap: 48px;
+  overflow: hidden;
+  position: relative;
+}
+.carousel-slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  z-index: 0;
+}
+.carousel-slide--pink  { background: linear-gradient(135deg,#fff0f5 0%,#fce4ed 55%,#f9b8cc 100%); }
+.carousel-slide--gold  { background: linear-gradient(135deg,#fffbf0 0%,#fff0d0 55%,#ffe0a0 100%); }
+.carousel-slide--dark  { background: linear-gradient(135deg,#3d1a2b 0%,#5e2040 55%,#993556 100%); }
+.carousel-slide--mint  { background: linear-gradient(135deg,#f0fdfb 0%,#d0f5ee 55%,#a8ead8 100%); }
+.carousel-slide--rose  { background: linear-gradient(135deg,#fff5f8 0%,#ffe0eb 55%,#ffb8ce 100%); }
+
+.carousel-content { flex: 1; z-index: 2; }
+.carousel-eyebrow {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px;
+  color: #D4537E; margin-bottom: 10px;
+}
+.carousel-slide--dark .carousel-eyebrow { color: #f9b8cc; }
+.carousel-slide--gold .carousel-eyebrow { color: #b87a00; }
+.carousel-slide--mint .carousel-eyebrow { color: #2e8b6e; }
+
+.carousel-title {
+  font-size: 34px; font-weight: 800; line-height: 1.18; color: #3d1a2b; margin-bottom: 12px;
+}
+.carousel-slide--dark .carousel-title { color: #fff; }
+.carousel-slide--gold .carousel-title { color: #4a3000; }
+.carousel-slide--mint .carousel-title { color: #1a4a40; }
+
+.carousel-sub { font-size: 14px; color: #7a5060; margin-bottom: 24px; max-width: 400px; line-height: 1.6; }
+.carousel-slide--dark .carousel-sub { color: #f0c8d4; }
+.carousel-slide--gold .carousel-sub { color: #7a5a20; }
+.carousel-slide--mint .carousel-sub { color: #2e6055; }
+
+.carousel-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.carousel-media {
+  flex: 0 0 240px; height: 220px;
+  display: flex; align-items: center; justify-content: center; z-index: 2;
+}
+.carousel-media img {
+  width: 100%; height: 100%; object-fit: cover;
+  border-radius: 18px; box-shadow: 0 14px 48px rgba(212,83,126,.22);
+}
+.carousel-media-icon { font-size: 110px; line-height: 1; color: rgba(212,83,126,.18); }
+.carousel-slide--dark .carousel-media-icon { color: rgba(255,255,255,.12); }
+.carousel-slide--gold .carousel-media-icon { color: rgba(180,120,0,.15); }
+.carousel-slide--mint .carousel-media-icon { color: rgba(0,150,120,.12); }
+
+/* Setas */
+.carousel-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.88); backdrop-filter: blur(4px);
+  border: none; border-radius: 50%;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 20px; color: #D4537E;
+  box-shadow: 0 2px 16px rgba(0,0,0,.13); z-index: 10;
+  transition: background .18s, transform .18s;
+}
+.carousel-arrow:hover { background: #fff; transform: translateY(-50%) scale(1.1); }
+.carousel-arrow--prev { left: 16px; }
+.carousel-arrow--next { right: 16px; }
+
+/* Dots */
+.carousel-dots {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 7px; z-index: 10;
+}
+.carousel-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(212,83,126,.3); border: none; cursor: pointer;
+  transition: background .25s, width .25s; padding: 0;
+}
+.carousel-dot.active { background: #D4537E; width: 24px; border-radius: 4px; }
+
+@media (max-width: 768px) {
+  .carousel-slide { flex-direction: column-reverse; padding: 28px 20px 48px; min-height: 0; text-align: center; gap: 20px; }
+  .carousel-media { flex: none; height: 110px; width: 110px; }
+  .carousel-media-icon { font-size: 72px; }
+  .carousel-title { font-size: 22px; }
+  .carousel-sub { font-size: 13px; max-width: 100%; margin-bottom: 16px; }
+  .carousel-btns { justify-content: center; }
+  .carousel-arrow { width: 34px; height: 34px; font-size: 16px; }
+  .carousel-arrow--prev { left: 6px; }
+  .carousel-arrow--next { right: 6px; }
+}
+@media (max-width: 480px) {
+  .carousel-title { font-size: 19px; }
+  .carousel-eyebrow { font-size: 10px; }
+}
 </style>
 </head>
 <body>
@@ -108,18 +213,16 @@
     </div>
   </div>
 
-  <!-- Hero -->
-  <div class="hero" id="v1-hero-section">
-    <div class="hero-text">
-      <div class="hero-eyebrow" id="v1-hero-eyebrow">Nova coleção — verão 2025</div>
-      <div class="hero-title" id="v1-hero-titulo">Elegância que<br>conta sua história</div>
-      <div class="hero-sub" id="v1-hero-sub">Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.</div>
-      <div class="hero-btns">
-        <button class="btn-primary" id="v1-hero-btn1" onclick="limparFiltro()">Ver coleção</button>
-        <button class="btn-secondary" id="v1-hero-btn2">Promoções</button>
-      </div>
-    </div>
-    <div class="hero-img"><i class="ti ti-diamond"></i></div>
+  <!-- Carrossel -->
+  <div class="carousel" id="hero-carousel" aria-label="Destaques e promoções">
+    <div class="carousel-track" id="carouselTrack"></div>
+    <button class="carousel-arrow carousel-arrow--prev" id="carouselPrev" aria-label="Slide anterior">
+      <i class="ti ti-chevron-left"></i>
+    </button>
+    <button class="carousel-arrow carousel-arrow--next" id="carouselNext" aria-label="Próximo slide">
+      <i class="ti ti-chevron-right"></i>
+    </button>
+    <div class="carousel-dots" id="carouselDots"></div>
   </div>
 
   <!-- Categorias -->
@@ -578,6 +681,158 @@ if (installBtn) {
     installBtn.style.display = 'none';
   });
 }
+</script>
+
+<script>
+// ── Carrossel ────────────────────────────────────────────
+(function() {
+  var DEFAULTS = [
+    {
+      eyebrow: 'Nova coleção — Verão 2025',
+      titulo: 'Elegância que\nconta sua história',
+      subtitulo: 'Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.',
+      btn1Txt: 'Ver coleção', btn1Acao: 'colecao',
+      btn2Txt: 'Ver promoções', btn2Acao: 'limpar',
+      imagem: '', icone: 'ti-diamond', cor: 'pink'
+    },
+    {
+      eyebrow: 'Destaque da semana',
+      titulo: 'Brincos que\nencantam',
+      subtitulo: 'Mais de 20 modelos exclusivos em prata e banho de ouro 18k.',
+      btn1Txt: 'Ver brincos', btn1Acao: 'brincos',
+      btn2Txt: '', btn2Acao: '',
+      imagem: '', icone: 'ti-star', cor: 'gold'
+    },
+    {
+      eyebrow: 'Para revendedoras',
+      titulo: 'Compre no atacado\ncom preços especiais',
+      subtitulo: 'Cadastre-se como revendedora e acesse condições exclusivas de preço.',
+      btn1Txt: 'Saiba mais', btn1Acao: '',
+      btn2Txt: '', btn2Acao: '',
+      imagem: '', icone: 'ti-building-store', cor: 'dark'
+    },
+    {
+      eyebrow: 'Anéis exclusivos',
+      titulo: 'O anel perfeito\npara cada momento',
+      subtitulo: 'Clássicos, modernos ou delicados — encontre o seu.',
+      btn1Txt: 'Ver anéis', btn1Acao: 'aneis',
+      btn2Txt: '', btn2Acao: '',
+      imagem: '', icone: 'ti-circle', cor: 'rose'
+    }
+  ];
+
+  var slides, cur = 0, timer;
+  var track = document.getElementById('carouselTrack');
+  var dotsEl = document.getElementById('carouselDots');
+  var container = document.getElementById('hero-carousel');
+
+  function getSlides() {
+    try {
+      var s = JSON.parse(localStorage.getItem('lapinkCarrossel') || 'null');
+      return (s && s.length) ? s : DEFAULTS;
+    } catch(e) { return DEFAULTS; }
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderSlide(s) {
+    var media = '';
+    if (s.imagem) {
+      media = '<div class="carousel-media"><img src="' + esc(s.imagem) + '" alt="' + esc(s.titulo) + '" loading="lazy"></div>';
+    } else if (s.icone) {
+      media = '<div class="carousel-media"><i class="ti ' + esc(s.icone) + ' carousel-media-icon"></i></div>';
+    }
+    var b1 = s.btn1Txt ? '<button class="btn-primary" onclick="carouselAcao(\'' + esc(s.btn1Acao) + '\')">' + esc(s.btn1Txt) + '</button>' : '';
+    var b2 = s.btn2Txt ? '<button class="btn-secondary" onclick="carouselAcao(\'' + esc(s.btn2Acao) + '\')">' + esc(s.btn2Txt) + '</button>' : '';
+    var titulo = esc(s.titulo).replace(/\n/g, '<br>');
+    return '<div class="carousel-slide carousel-slide--' + esc(s.cor || 'pink') + '" role="group" aria-label="' + esc(s.titulo.replace(/\n/,'')) + '">' +
+      '<div class="carousel-content">' +
+        (s.eyebrow ? '<div class="carousel-eyebrow">' + esc(s.eyebrow) + '</div>' : '') +
+        '<div class="carousel-title">' + titulo + '</div>' +
+        (s.subtitulo ? '<div class="carousel-sub">' + esc(s.subtitulo) + '</div>' : '') +
+        (b1 || b2 ? '<div class="carousel-btns">' + b1 + b2 + '</div>' : '') +
+      '</div>' +
+      media +
+    '</div>';
+  }
+
+  function goTo(idx) {
+    cur = (idx + slides.length) % slides.length;
+    track.style.transform = 'translateX(-' + (cur * 100) + '%)';
+    document.querySelectorAll('.carousel-dot').forEach(function(d, i) {
+      d.classList.toggle('active', i === cur);
+    });
+    container.setAttribute('aria-label', 'Slide ' + (cur + 1) + ' de ' + slides.length);
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(function() { goTo(cur + 1); }, 5000);
+  }
+
+  function init() {
+    if (!container || !track) return;
+    slides = getSlides();
+
+    track.innerHTML = slides.map(renderSlide).join('');
+
+    dotsEl.innerHTML = slides.map(function(_, i) {
+      return '<button class="carousel-dot' + (i === 0 ? ' active' : '') + '" onclick="carouselGoTo(' + i + ')" aria-label="Slide ' + (i + 1) + '"></button>';
+    }).join('');
+
+    document.getElementById('carouselPrev').onclick = function() { goTo(cur - 1); startTimer(); };
+    document.getElementById('carouselNext').onclick = function() { goTo(cur + 1); startTimer(); };
+
+    // Teclado
+    container.setAttribute('tabindex', '0');
+    container.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowLeft')  { goTo(cur - 1); startTimer(); }
+      if (e.key === 'ArrowRight') { goTo(cur + 1); startTimer(); }
+    });
+
+    // Swipe mobile
+    var sx = 0;
+    container.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, { passive: true });
+    container.addEventListener('touchend',   function(e) {
+      var diff = sx - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 44) { goTo(diff > 0 ? cur + 1 : cur - 1); startTimer(); }
+    }, { passive: true });
+
+    // Pausa ao hover
+    container.addEventListener('mouseenter', function() { clearInterval(timer); });
+    container.addEventListener('mouseleave', startTimer);
+
+    startTimer();
+  }
+
+  // API global (usada pelos dots e pelos botões dos slides)
+  window.carouselGoTo  = function(i) { goTo(i); startTimer(); };
+  window.carouselAcao  = function(acao) {
+    var map = { colecao: limparFiltro, limpar: limparFiltro,
+                brincos: function() { filtrarCategoria('Brincos'); },
+                aneis:   function() { filtrarCategoria('Anéis'); },
+                colares: function() { filtrarCategoria('Colares'); },
+                bolsas:  function() { filtrarCategoria('Bolsas'); } };
+    if (map[acao]) map[acao]();
+  };
+  // Recarrega slides caso o admin edite via lapinkCarrossel
+  window.reloadCarrossel = function() {
+    slides = getSlides();
+    track.innerHTML = slides.map(renderSlide).join('');
+    dotsEl.innerHTML = slides.map(function(_, i) {
+      return '<button class="carousel-dot' + (i === 0 ? ' active' : '') + '" onclick="carouselGoTo(' + i + ')" aria-label="Slide ' + (i + 1) + '"></button>';
+    }).join('');
+    goTo(0); startTimer();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
 </script>
 </body>
 </html>
