@@ -1,46 +1,42 @@
 const express = require('express');
-const path = require('path');
-const os = require('os');
+const path    = require('path');
+const os      = require('os');
 
-const app = express();
-const PORT = 3000;
+const app  = express();
+const PORT = process.env.PORT || Math.floor(Math.random() * 6000) + 3000;
+const ROOT = __dirname;
 
-// Servir arquivos estáticos da pasta public
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve a raiz inteira: /admin, /public, /data, /css, /assets, etc.
+app.use(express.static(ROOT, { dotfiles: 'ignore' }));
 
-// Rota raiz
+// Rota raiz → loja V1
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
+  res.redirect('/public/V1.html');
 });
 
-app.listen(PORT, () => {
-  const interfaces = os.networkInterfaces();
-  let localIP = 'localhost';
-
-  // Encontrar IP local
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        localIP = iface.address;
-        break;
-      }
+function getLocalIP() {
+  for (const ifaces of Object.values(os.networkInterfaces())) {
+    for (const i of ifaces) {
+      if (i.family === 'IPv4' && !i.internal) return i.address;
     }
   }
+  return 'localhost';
+}
 
+app.listen(PORT, '0.0.0.0', () => {
+  const ip = getLocalIP();
   console.log(`
-╔═══════════════════════════════════════════════════╗
-║        LaPink - Servidor de Desenvolvimento       ║
-╚═══════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════╗
+║         LaPink — Servidor de Desenvolvimento         ║
+╚══════════════════════════════════════════════════════╝
 
-🌐 Servidor rodando em:
-   Local:    http://localhost:${PORT}
-   Rede:     http://${localIP}:${PORT}
+  Local :  http://localhost:${PORT}
+  Rede  :  http://${ip}:${PORT}
 
-📱 Para acessar no celular:
-   1. Certifique-se de que o celular está na mesma rede WiFi
-   2. Abra o navegador no celular
-   3. Acesse: http://${localIP}:${PORT}
+  Loja  :  http://${ip}:${PORT}/public/V1.html
+  Admin :  http://${ip}:${PORT}/admin/login.html
 
-Pressione CTRL+C para parar o servidor.
-  `);
+  Celular: conecte ao mesmo Wi-Fi e acesse a URL de Rede.
+  CTRL+C para parar.
+`);
 });
