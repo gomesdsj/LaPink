@@ -276,7 +276,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 24px 24px;
+  margin: 28px 24px 24px;
   gap: 16px;
 }
 .banner-text .eyebrow {
