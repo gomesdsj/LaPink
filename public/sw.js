@@ -1,55 +1,96 @@
-var CACHE_NAME = 'lapink-v2';
-var ASSETS = [
-  '/',
-  '/index.html',
-  '/login.html',
-  '/register.html',
-  '/produto.html',
-  '/css/Principal.css',
-  '/css/componentes.css',
-  '/css/PrincipalPublica.css',
-  '/css/public.css',
-  '/js/storage.js',
-  '/js/auth.js',
-  '/manifest.json'
+/* LaPink — Service Worker v4 */
+var CACHE = 'lapink-v4';
+
+/* Arquivos essenciais pré-cacheados na instalação */
+var PRECACHE = [
+  './V1.html',
+  './manifest.json',
+  './css/v1.css',
+  './js/storage.js',
+  './js/auth.js',
+  './js/cart.js',
+  './js/v1.js',
+  './assets/icon.svg'
 ];
 
-self.addEventListener('install', function(event) {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) { return cache.addAll(ASSETS); })
+/* ── Instalação: pré-cache do shell ── */
+self.addEventListener('install', function(e) {
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(function(c) {
+        return Promise.allSettled(
+          PRECACHE.map(function(url) {
+            return c.add(url).catch(function() {
+              /* ignora falhas individuais para não bloquear a instalação */
+            });
+          })
+        );
+      })
       .then(function() { return self.skipWaiting(); })
   );
 });
 
-self.addEventListener('activate', function(event) {
-  event.waitUntil(
+/* ── Ativação: remove caches antigos ── */
+self.addEventListener('activate', function(e) {
+  e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); })
+        keys.filter(function(k) { return k !== CACHE; })
+            .map(function(k)   { return caches.delete(k); })
       );
-    })
+    }).then(function() { return self.clients.claim(); })
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', function(event) {
-  if (event.request.method !== 'GET') return;
-  if (event.request.url.includes('/api/')) return;
+/* ── Fetch: cache-first para shell, network-first para dados ── */
+self.addEventListener('fetch', function(e) {
+  if (e.request.method !== 'GET') return;
 
-  event.respondWith(async function() {
-    const cached = await caches.match(event.request);
-    if (cached) return cached;
+  var url = e.request.url;
 
-    try {
-      const res = await fetch(event.request);
-      if (res && res.status === 200 && res.type !== 'opaque') {
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(event.request, res.clone());
+  /* Ignora requisições de outras origens (CDN, APIs externas) */
+  if (!url.startsWith(self.location.origin)) return;
+
+  /* Dados dinâmicos (JSON, admin): network-first */
+  if (url.includes('/data/') || url.includes('/admin/')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(function(res) {
+          if (res && res.ok) {
+            var clone = res.clone();
+            caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
+          }
+          return res;
+        })
+        .catch(function() { return caches.match(e.request); })
+    );
+    return;
+  }
+
+  /* Assets estáticos: cache-first, depois network */
+  e.respondWith(
+    caches.match(e.request).then(function(cached) {
+      if (cached) {
+        /* Atualiza em background sem bloquear */
+        fetch(e.request).then(function(res) {
+          if (res && res.ok) {
+            caches.open(CACHE).then(function(c) { c.put(e.request, res); });
+          }
+        }).catch(function() {});
+        return cached;
       }
-      return res;
-    } catch {
-      return caches.match('/index.html');
-    }
-  }());
+      return fetch(e.request).then(function(res) {
+        if (res && res.ok) {
+          var clone = res.clone();
+          caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
+        }
+        return res;
+      }).catch(function() {
+        /* Offline fallback: retorna V1.html para navegações */
+        if (e.request.mode === 'navigate') {
+          return caches.match('./V1.html');
+        }
+      });
+    })
+  );
 });

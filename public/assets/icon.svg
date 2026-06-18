@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fundo arredondado rosa vibrante -->
+  <rect width="512" height="512" rx="115" fill="#F04A86"/>
+  <!-- Brilho sutil no topo -->
+  <ellipse cx="256" cy="160" rx="200" ry="120" fill="rgba(255,255,255,0.10)"/>
+
+  <!-- Gema (diamante) -->
+  <!-- Coroa: topo da gema -->
+  <polygon points="256,98 170,210 342,210" fill="rgba(255,255,255,0.95)"/>
+  <!-- Faceta esquerda da coroa -->
+  <polygon points="256,98 170,210 218,210" fill="rgba(255,255,255,0.70)"/>
+  <!-- Faceta central da coroa (mais brilhante) -->
+  <polygon points="256,98 218,210 294,210" fill="rgba(255,255,255,0.90)"/>
+  <!-- Faceta direita da coroa -->
+  <polygon points="256,98 294,210 342,210" fill="rgba(255,255,255,0.78)"/>
+
+  <!-- Pavilhão: corpo inferior -->
+  <!-- Faceta esquerda -->
+  <polygon points="118,210 170,210 256,414" fill="rgba(255,255,255,0.60)"/>
+  <!-- Faceta centro-esquerda -->
+  <polygon points="170,210 218,210 256,414" fill="rgba(255,255,255,0.78)"/>
+  <!-- Faceta centro-direita -->
+  <polygon points="218,210 294,210 256,414" fill="rgba(255,255,255,0.88)"/>
+  <!-- Faceta direita -->
+  <polygon points="294,210 342,210 256,414" fill="rgba(255,255,255,0.68)"/>
+  <!-- Faceta extrema direita -->
+  <polygon points="342,210 394,210 256,414" fill="rgba(255,255,255,0.55)"/>
+
+  <!-- Linha de cintura (girdle) -->
+  <line x1="118" y1="210" x2="394" y2="210" stroke="rgba(255,255,255,0.30)" stroke-width="1.5"/>
+</svg>

@@ -4,15 +4,15 @@
 
 /* ── Tokens de cor ──────────────────── */
 :root {
-  --pk-50:    #FEF8FA;   /* fundo quase branco com leve rosa */
-  --pk-100:   #FCF0F5;   /* seções com tint */
-  --pk-200:   #F5D5E4;   /* bordas, divisores */
-  --pk-300:   #EAA8C5;   /* ícones secundários, preço riscado */
-  --pk-400:   #DE7FA8;   /* hover, ícones nav */
-  --pk-500:   #D4537E;   /* accent principal */
-  --pk-600:   #B8416A;   /* hover CTA */
+  --pk-50:    #FFF5FA;   /* quase branco, toque de rosa */
+  --pk-100:   #FFEBF4;   /* seções tintadas */
+  --pk-200:   #FFD0E8;   /* bordas, divisores */
+  --pk-300:   #FFB0D4;   /* ícones secundários, preço riscado */
+  --pk-400:   #F574B2;   /* ícones nav, hover suave */
+  --pk-500:   #F04A86;   /* accent principal — rosa vibrante */
+  --pk-600:   #D43070;   /* hover CTA */
   --pk-dark:  #2A1520;   /* títulos */
-  --pk-mid:   #7A4F68;   /* corpo de texto, links */
+  --pk-mid:   #7A4068;   /* corpo de texto, links */
   --pk-soft:  #B08898;   /* metadata, captions */
   --white:    #FFFFFF;
   --r-sm:     10px;

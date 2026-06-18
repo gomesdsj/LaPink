@@ -8,8 +8,9 @@
 <meta property="og:title" content="LaPink — Semijoias" />
 <meta property="og:description" content="Compre semijoias banhadas a ouro com qualidade e elegância." />
 <meta property="og:type" content="website" />
-<meta name="theme-color" content="#D4537E" />
-<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#F04A86" />
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon.svg">
 <link rel="stylesheet" href="css/v1.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 <style>
@@ -56,19 +57,19 @@
   overflow:hidden;position:relative;
 }
 
-/* Temas de slide — paleta clara e harmoniosa */
-.carousel-slide--pink { background:linear-gradient(135deg,#fff 0%,#FEF4F8 50%,#FCE8F2 100%); }
-.carousel-slide--rose { background:linear-gradient(135deg,#fff 0%,#FEF0F5 50%,#FDDAEB 100%); }
+/* Temas de slide */
+.carousel-slide--pink { background:linear-gradient(135deg,#fff 0%,#FFF0F7 50%,#FFD8EC 100%); }
+.carousel-slide--rose { background:linear-gradient(135deg,#fff 0%,#FFEAF4 50%,#FFC8E0 100%); }
 .carousel-slide--gold { background:linear-gradient(135deg,#fffcf5 0%,#FFF4DE 50%,#FFE8B8 100%); }
 .carousel-slide--mint { background:linear-gradient(135deg,#f5fffe 0%,#E8FAF5 50%,#C8F0E4 100%); }
-.carousel-slide--dark { background:linear-gradient(135deg,#2A1520 0%,#5a2040 50%,#D4537E 100%); }
+.carousel-slide--dark { background:linear-gradient(135deg,#2A1520 0%,#5a1840 50%,#F04A86 100%); }
 
 .carousel-content { flex:1;z-index:2; }
 .carousel-eyebrow {
   font-size:11px;font-weight:700;text-transform:uppercase;
-  letter-spacing:1.4px;color:#D4537E;margin-bottom:10px;
+  letter-spacing:1.4px;color:#F04A86;margin-bottom:10px;
 }
-.carousel-slide--dark .carousel-eyebrow { color:#FCEDF4; }
+.carousel-slide--dark .carousel-eyebrow { color:#FFD0EC; }
 .carousel-slide--gold .carousel-eyebrow { color:#9A6500; }
 .carousel-slide--mint .carousel-eyebrow { color:#1D7A60; }
 
@@ -80,7 +81,7 @@
 .carousel-slide--gold .carousel-title { color:#3A2500; }
 .carousel-slide--mint .carousel-title { color:#12423A; }
 
-.carousel-sub { font-size:14px;color:#7A4F68;margin-bottom:24px;max-width:400px;line-height:1.6; }
+.carousel-sub { font-size:14px;color:#7A4068;margin-bottom:24px;max-width:400px;line-height:1.6; }
 .carousel-slide--dark .carousel-sub { color:rgba(255,255,255,.82); }
 .carousel-slide--gold .carousel-sub { color:#6A4A10; }
 .carousel-slide--mint .carousel-sub { color:#1E5A4A; }
@@ -95,7 +96,7 @@
   width:100%;height:100%;object-fit:cover;
   border-radius:18px;box-shadow:0 12px 40px rgba(212,83,126,.18);
 }
-.carousel-media-icon { font-size:100px;line-height:1;color:rgba(212,83,126,.14); }
+.carousel-media-icon { font-size:100px;line-height:1;color:rgba(240,74,134,.15); }
 .carousel-slide--dark .carousel-media-icon { color:rgba(255,255,255,.10); }
 .carousel-slide--gold .carousel-media-icon { color:rgba(160,100,0,.12); }
 .carousel-slide--mint .carousel-media-icon { color:rgba(0,140,100,.10); }
@@ -103,15 +104,15 @@
 /* Setas */
 .carousel-arrow {
   position:absolute;top:50%;transform:translateY(-50%);
-  background:rgba(255,255,255,.90);backdrop-filter:blur(6px);
-  border:1px solid rgba(212,83,126,.15);border-radius:50%;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+  border:1px solid rgba(240,74,134,.18);border-radius:50%;
   width:42px;height:42px;
   display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:19px;color:#D4537E;
+  cursor:pointer;font-size:19px;color:#F04A86;
   box-shadow:0 2px 12px rgba(0,0,0,.10);z-index:10;
   transition:background .18s,transform .18s,box-shadow .18s;
 }
-.carousel-arrow:hover { background:#fff;transform:translateY(-50%) scale(1.1);box-shadow:0 4px 20px rgba(212,83,126,.22); }
+.carousel-arrow:hover { background:#fff;transform:translateY(-50%) scale(1.1);box-shadow:0 4px 20px rgba(240,74,134,.25); }
 .carousel-arrow--prev { left:16px; }
 .carousel-arrow--next { right:16px; }
 
@@ -122,10 +123,10 @@
 }
 .carousel-dot {
   width:8px;height:8px;border-radius:50%;
-  background:rgba(212,83,126,.25);border:none;cursor:pointer;
+  background:rgba(240,74,134,.28);border:none;cursor:pointer;
   transition:background .25s,width .25s;padding:0;
 }
-.carousel-dot.active { background:#D4537E;width:24px;border-radius:4px; }
+.carousel-dot.active { background:#F04A86;width:24px;border-radius:4px; }
 
 @media (max-width:768px) {
   .carousel-slide { flex-direction:column-reverse;padding:28px 20px 48px;min-height:0;text-align:center;gap:18px; }
@@ -635,7 +636,7 @@ function handleBuy(event) {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(function(err) { console.warn('SW registration failed', err); });
+  navigator.serviceWorker.register('./sw.js').catch(function(err) { console.warn('SW:', err); });
 }
 
 var deferredPrompt;
