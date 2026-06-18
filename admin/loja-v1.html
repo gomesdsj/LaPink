@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Editor da Loja V1</title>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
 <link rel="stylesheet" href="../css/Principal.css" />
 <link rel="stylesheet" href="../css/componentes.css" />
 <link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
@@ -307,6 +309,7 @@
 </style>
 </head>
 <body>
+<script>checkAuth(['superadmin', 'admin']);</script>
 <div id="app-admin">
   <div class="admin-layout">
 
@@ -326,9 +329,12 @@
         <div class="nav-section-label">Auxiliar</div>
         <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
         <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+          <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
+          <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
       </div>
       <div class="sidebar-footer">
         <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+          <button onclick="logout()" style="margin-top:6px;"><i class="ti ti-logout"></i> Sair</button>
       </div>
     </aside>
 
@@ -803,7 +809,8 @@ function publicarAlteracoes() {
   renderDepoimentos();
 })();
 </script>
-<script src="../js/sidebar.js"></script>
-<script src="../js/utils.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>

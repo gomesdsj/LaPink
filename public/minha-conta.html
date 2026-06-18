@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Minha Conta</title>
+<script src="../admin/js/auth.js"></script>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  body { background: var(--gray-50); min-height: 100vh; }
+
+  .conta-topbar {
+    background: var(--white); border-bottom: .5px solid var(--gray-200);
+    padding: 0 24px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .conta-brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .conta-brand .logo-bubble { width:32px; height:32px; background:var(--pink-400); }
+  .conta-brand span { font-size:15px; font-weight:800; color:var(--pink-600); }
+  .conta-topbar-actions { display:flex; align-items:center; gap:12px; }
+  .conta-topbar-actions a { font-size:12px; color:var(--gray-400); text-decoration:none; }
+  .conta-topbar-actions a:hover { color:var(--pink-500); }
+
+  .conta-main { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+
+  .conta-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+    background: var(--white); border: .5px solid var(--gray-200);
+    border-radius: var(--radius-xl); padding: 20px 24px;
+    box-shadow: var(--shadow-sm);
+  }
+  .conta-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--pink-100); display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--pink-500); flex-shrink: 0;
+  }
+  .conta-header-info h2 { font-size: 18px; font-weight: 800; color: var(--gray-800); }
+  .conta-header-info p  { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+  .conta-section-title {
+    font-size: 13px; font-weight: 700; color: var(--gray-600);
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 12px; margin-top: 24px;
+  }
+
+  .pedido-card {
+    background: var(--white); border: .5px solid var(--gray-200);
+    border-radius: var(--radius-lg); padding: 16px 20px;
+    margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .pedido-card .p-info { flex: 1; }
+  .pedido-card .p-id   { font-size: 11px; color: var(--gray-400); }
+  .pedido-card .p-date { font-size: 12px; font-weight: 600; color: var(--gray-800); }
+  .pedido-card .p-total { font-size: 16px; font-weight: 800; color: var(--pink-500); }
+
+  .empty-pedidos {
+    text-align: center; padding: 40px 20px;
+    background: var(--white); border: .5px solid var(--gray-200);
+    border-radius: var(--radius-lg); color: var(--gray-400);
+  }
+  .empty-pedidos i { font-size: 36px; display: block; margin-bottom: 10px; }
+
+  .btn-logout {
+    background: var(--red-50); color: var(--red-400);
+    border: .5px solid #FCC; border-radius: var(--radius-full);
+    padding: 9px 22px; font-size: 12px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background var(--transition);
+  }
+  .btn-logout:hover { background: #fee2e2; }
+</style>
+</head>
+<body>
+<script>checkAuth(['client']);</script>
+
+<!-- Topbar -->
+<header class="conta-topbar">
+  <a href="V1.html" class="conta-brand">
+    <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:15px"></i></div>
+    <span>LaPink</span>
+  </a>
+  <div class="conta-topbar-actions">
+    <a href="V1.html"><i class="ti ti-shopping-bag"></i> Loja</a>
+    <button class="btn-logout" onclick="logout()"><i class="ti ti-logout"></i> Sair</button>
+  </div>
+</header>
+
+<main class="conta-main">
+
+  <!-- Header com nome do cliente -->
+  <div class="conta-header">
+    <div class="conta-avatar"><i class="ti ti-user"></i></div>
+    <div class="conta-header-info">
+      <h2 id="nome-cliente">Carregando…</h2>
+      <p id="email-cliente"></p>
+    </div>
+  </div>
+
+  <!-- Seção: Meus Pedidos -->
+  <div class="conta-section-title"><i class="ti ti-shopping-cart"></i> Meus pedidos</div>
+  <div id="lista-pedidos">
+    <div class="empty-pedidos">
+      <i class="ti ti-package-off"></i>
+      <p>Nenhum pedido encontrado.</p>
+    </div>
+  </div>
+
+  <!-- Seção: Alterar Endereço -->
+  <div class="conta-section-title"><i class="ti ti-map-pin"></i> Endereço de entrega</div>
+  <div class="card">
+    <div class="form-group">
+      <label>Endereço completo</label>
+      <textarea id="campo-endereco" rows="3" placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="salvarEndereco()">
+      <i class="ti ti-check"></i> Salvar endereço
+    </button>
+  </div>
+
+  <!-- Seção: Alterar Senha -->
+  <div class="conta-section-title"><i class="ti ti-lock"></i> Alterar senha</div>
+  <div class="card">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nova senha</label>
+        <input type="password" id="nova-senha" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div class="form-group">
+        <label>Confirmar nova senha</label>
+        <input type="password" id="confirmar-senha" placeholder="Repita a nova senha" />
+      </div>
+    </div>
+    <div id="senha-erro" style="color:var(--red-400);font-size:12px;margin-bottom:10px;display:none;"></div>
+    <button class="btn btn-secondary btn-sm" onclick="salvarSenha()">
+      <i class="ti ti-key"></i> Alterar senha
+    </button>
+  </div>
+
+</main>
+
+<script>
+  var _session = getSession();
+
+  // Preenche dados da sessão
+  document.getElementById('nome-cliente').textContent = _session ? _session.name : '';
+  document.getElementById('email-cliente').textContent = _session ? _session.email : '';
+
+  // Carrega endereço salvo
+  (function carregarEndereco() {
+    var users = typeof getAllUsers === 'function' ? getAllUsers() : [];
+    var user = users.find(function(u) { return _session && u.email.toLowerCase() === _session.email.toLowerCase(); });
+    if (user && user.address) {
+      document.getElementById('campo-endereco').value = user.address;
+    }
+  })();
+
+  // Lista pedidos do cliente
+  function renderPedidos() {
+    var todos = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]');
+    var meus = todos.filter(function(p) {
+      return _session && (p.clienteEmail || '').toLowerCase() === _session.email.toLowerCase();
+    });
+    var cont = document.getElementById('lista-pedidos');
+    if (!meus.length) {
+      cont.innerHTML = '<div class="empty-pedidos"><i class="ti ti-package-off"></i><p>Nenhum pedido encontrado.</p></div>';
+      return;
+    }
+    cont.innerHTML = meus.map(function(p) {
+      var status = p.status || 'Em processamento';
+      var badge = status === 'Entregue' ? 'badge-green' : status === 'Cancelado' ? 'badge-red' : 'badge-amber';
+      var total = p.total ? 'R$ ' + Number(p.total).toFixed(2).replace('.', ',') : '—';
+      var data  = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
+      return '<div class="pedido-card">' +
+        '<div class="p-info">' +
+          '<div class="p-id">Pedido #' + (p.id || '—') + '</div>' +
+          '<div class="p-date">' + data + '</div>' +
+        '</div>' +
+        '<span class="badge ' + badge + '">' + status + '</span>' +
+        '<div class="p-total">' + total + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  renderPedidos();
+
+  function salvarEndereco() {
+    var addr = document.getElementById('campo-endereco').value.trim();
+    var r = updateAddress(_session.email, addr);
+    alert(r.ok ? 'Endereço salvo!' : (r.error || 'Erro ao salvar.'));
+  }
+
+  function salvarSenha() {
+    var errEl = document.getElementById('senha-erro');
+    errEl.style.display = 'none';
+    var nova = document.getElementById('nova-senha').value;
+    var conf = document.getElementById('confirmar-senha').value;
+    if (!nova || nova.length < 6) { errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
+    if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
+    var r = updatePassword(_session.email, nova);
+    if (r.ok) {
+      document.getElementById('nova-senha').value = '';
+      document.getElementById('confirmar-senha').value = '';
+      alert('Senha alterada com sucesso!');
+    } else {
+      errEl.textContent = r.error || 'Erro ao alterar senha.';
+      errEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

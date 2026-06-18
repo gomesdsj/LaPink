@@ -488,6 +488,12 @@
   atualizarProdutos();
   renderCatalogComplete();
 
+  // Atualiza vitrine quando o JSON da pasta data/ carregar (seed v3 assíncrono)
+  document.addEventListener('lapinkProdutosAtualizados', function() {
+    atualizarProdutos();
+    renderCatalogComplete();
+  });
+
   // URL param — suporte a ?cat=Anéis (deep link por categoria)
   var urlParams = new URLSearchParams(window.location.search);
   var catParam  = urlParams.get('cat');

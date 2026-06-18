@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Entrar</title>
+<script src="js/auth.js"></script>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  body { background: var(--gray-50); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+
+  .login-wrapper {
+    width: 100%; max-width: 860px;
+    display: flex; flex-direction: column; align-items: center; gap: 32px;
+  }
+
+  .login-brand {
+    display: flex; align-items: center; gap: 12px;
+    text-decoration: none;
+  }
+  .login-brand .logo-bubble { width: 44px; height: 44px; background: var(--pink-400); }
+  .login-brand .brand-name { font-size: 22px; font-weight: 800; color: var(--pink-600); }
+
+  .login-tabs {
+    display: flex; gap: 0;
+    background: var(--gray-100); border-radius: var(--radius-full);
+    padding: 4px;
+  }
+  .login-tab {
+    padding: 9px 28px; border-radius: var(--radius-full);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: none; background: none; color: var(--gray-500);
+    transition: all var(--transition);
+  }
+  .login-tab.active { background: var(--white); color: var(--pink-600); box-shadow: var(--shadow-sm); }
+
+  .login-card {
+    width: 100%; max-width: 420px;
+    background: var(--white); border: .5px solid var(--gray-200);
+    border-radius: var(--radius-xl); padding: 36px 32px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .login-card-icon {
+    width: 52px; height: 52px; border-radius: var(--radius-lg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 20px;
+  }
+  .login-card-icon.admin  { background: var(--pink-50);  color: var(--pink-500); }
+  .login-card-icon.client { background: var(--blue-50);  color: var(--blue-400); }
+
+  .login-card h2  { font-size: 20px; font-weight: 800; color: var(--gray-800); margin-bottom: 4px; }
+  .login-card p   { font-size: 12px; color: var(--gray-400); margin-bottom: 24px; }
+
+  .login-error {
+    background: var(--red-50); color: var(--red-400);
+    border: .5px solid #FCC; border-radius: var(--radius-md);
+    padding: 10px 14px; font-size: 12px; font-weight: 600;
+    margin-bottom: 16px; display: none;
+  }
+  .login-error.show { display: block; }
+
+  .input-icon-wrap { position: relative; }
+  .input-icon-wrap input { padding-left: 40px !important; }
+  .input-icon-wrap .inp-icon {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--gray-400); pointer-events: none;
+  }
+  .input-icon-wrap .toggle-pw {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--gray-400); background: none; border: none;
+    cursor: pointer; padding: 2px;
+  }
+
+  .login-footer-link { text-align: center; margin-top: 18px; font-size: 12px; color: var(--gray-400); }
+  .login-footer-link a { color: var(--pink-500); font-weight: 600; }
+
+  .pane { display: none; }
+  .pane.active { display: block; }
+</style>
+</head>
+<body>
+<div class="login-wrapper">
+
+  <!-- Marca -->
+  <a href="../public/V1.html" class="login-brand">
+    <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:20px"></i></div>
+    <span class="brand-name">LaPink</span>
+  </a>
+
+  <!-- Tabs -->
+  <div class="login-tabs">
+    <button class="login-tab active" onclick="switchTab('admin')">
+      <i class="ti ti-shield-lock"></i> Painel Admin
+    </button>
+    <button class="login-tab" onclick="switchTab('client')">
+      <i class="ti ti-user"></i> Minha Conta
+    </button>
+  </div>
+
+  <!-- ── Card Admin ── -->
+  <div class="login-card pane active" id="pane-admin">
+    <div class="login-card-icon admin"><i class="ti ti-shield-lock"></i></div>
+    <h2>Painel Administrativo</h2>
+    <p>Acesso restrito a administradores autorizados.</p>
+
+    <div class="login-error" id="err-admin"></div>
+
+    <form onsubmit="doLogin(event,'admin')">
+      <div class="form-group">
+        <label>E-mail</label>
+        <div class="input-icon-wrap">
+          <i class="ti ti-mail inp-icon"></i>
+          <input type="email" id="admin-email" placeholder="carol@bellajoias.com" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <div class="input-icon-wrap">
+          <i class="ti ti-lock inp-icon"></i>
+          <input type="password" id="admin-pw" placeholder="••••••••" required />
+          <button type="button" class="toggle-pw" onclick="togglePw('admin-pw',this)"><i class="ti ti-eye"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn-full">Entrar no painel</button>
+    </form>
+  </div>
+
+  <!-- ── Card Cliente ── -->
+  <div class="login-card pane" id="pane-client">
+    <div class="login-card-icon client"><i class="ti ti-user-circle"></i></div>
+    <h2>Minha Conta</h2>
+    <p>Acesse seus pedidos e informações de entrega.</p>
+
+    <div class="login-error" id="err-client"></div>
+
+    <form onsubmit="doLogin(event,'client')">
+      <div class="form-group">
+        <label>E-mail</label>
+        <div class="input-icon-wrap">
+          <i class="ti ti-mail inp-icon"></i>
+          <input type="email" id="client-email" placeholder="seu@email.com" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <div class="input-icon-wrap">
+          <i class="ti ti-lock inp-icon"></i>
+          <input type="password" id="client-pw" placeholder="••••••••" required />
+          <button type="button" class="toggle-pw" onclick="togglePw('client-pw',this)"><i class="ti ti-eye"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn-full" style="background:var(--blue-400)">Entrar na minha conta</button>
+    </form>
+
+    <p class="login-footer-link">Não tem conta? <a href="mailto:carol@bellajoias.com">Fale com a loja</a></p>
+  </div>
+
+</div>
+
+<script>
+  // Se já logado, redireciona direto
+  (function() {
+    var s = getSession();
+    if (!s) return;
+    if (s.role === 'superadmin' || s.role === 'admin') {
+      window.location.replace('admin.html');
+    } else {
+      window.location.replace('../public/minha-conta.html');
+    }
+  })();
+
+  function switchTab(tab) {
+    document.querySelectorAll('.login-tab').forEach(function(b, i) {
+      b.classList.toggle('active', (i === 0 && tab === 'admin') || (i === 1 && tab === 'client'));
+    });
+    document.getElementById('pane-admin').classList.toggle('active', tab === 'admin');
+    document.getElementById('pane-client').classList.toggle('active', tab === 'client');
+  }
+
+  function togglePw(inputId, btn) {
+    var inp = document.getElementById(inputId);
+    var isText = inp.type === 'text';
+    inp.type = isText ? 'password' : 'text';
+    btn.querySelector('i').className = isText ? 'ti ti-eye' : 'ti ti-eye-off';
+  }
+
+  function doLogin(e, type) {
+    e.preventDefault();
+    var errEl = document.getElementById('err-' + type);
+    errEl.classList.remove('show');
+
+    var email, pw, roles, redirect;
+    if (type === 'admin') {
+      email = document.getElementById('admin-email').value;
+      pw    = document.getElementById('admin-pw').value;
+      roles = ['superadmin', 'admin'];
+      redirect = 'admin.html';
+    } else {
+      email = document.getElementById('client-email').value;
+      pw    = document.getElementById('client-pw').value;
+      roles = ['client'];
+      redirect = '../public/minha-conta.html';
+    }
+
+    var result = login(email, pw, roles);
+    if (!result.ok) {
+      errEl.textContent = result.error;
+      errEl.classList.add('show');
+      return;
+    }
+    window.location.replace(redirect);
+  }
+</script>
+</body>
+</html>

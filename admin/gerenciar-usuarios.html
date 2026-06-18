@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Gerenciar Usuários</title>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<link rel="stylesheet" href="../css/Principal.css" />
+<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="../css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .role-badge-superadmin { background:#fdf4e3;color:#b45309;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px; }
+  .role-badge-admin       { background:var(--pink-50);color:var(--pink-500);font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px; }
+  .role-badge-client      { background:var(--blue-50);color:var(--blue-400);font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px; }
+  .action-group { display:flex;gap:6px;flex-wrap:wrap; }
+  .modal-form-grid { display:grid;gap:14px; }
+</style>
+</head>
+<body>
+<script>checkAuth(['superadmin']);</script>
+
+<div id="app-admin">
+  <div class="admin-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+        <div class="logo-name">LaPink</div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Visão geral</div>
+        <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+        <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+        <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+        <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+        <div class="nav-section-label">Loja</div>
+        <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
+        <div class="nav-section-label">Auxiliar</div>
+        <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+        <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+        <div class="nav-section-label">Sistema</div>
+        <a class="sidebar-link active" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios"><i class="ti ti-shield-lock"></i> Usuários</a>
+      </div>
+      <div class="sidebar-footer">
+        <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+        <button onclick="logout()" style="margin-top:6px;"><i class="ti ti-logout"></i> Sair</button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+        <h1>Gerenciar Usuários</h1>
+        <div class="topbar-right">
+          <span id="admin-greeting">Olá</span>
+          <span class="admin-badge">Super Admin</span>
+        </div>
+      </header>
+
+      <section class="admin-page show" style="padding:24px;">
+
+        <div class="page-header">
+          <div>
+            <h2>Usuários do sistema</h2>
+            <p>Gerencie admins e clientes. Apenas o Super Admin pode acessar esta página.</p>
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalNovoUsuario()">
+            <i class="ti ti-user-plus"></i> Novo usuário
+          </button>
+        </div>
+
+        <!-- Filtro -->
+        <div class="search-bar-admin" style="margin-bottom:16px;">
+          <input type="text" id="busca-usuario" placeholder="Buscar por nome ou e-mail…" oninput="renderTabela()" />
+          <select id="filtro-role" onchange="renderTabela()">
+            <option value="">Todos os perfis</option>
+            <option value="superadmin">Super Admin</option>
+            <option value="admin">Admin</option>
+            <option value="client">Cliente</option>
+          </select>
+        </div>
+
+        <!-- Tabela -->
+        <div class="table-box">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Perfil</th>
+                <th>Cadastro</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-body"></tbody>
+          </table>
+        </div>
+
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- Modal — Novo Usuário -->
+<div class="modal-overlay" id="modal-novo">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" onclick="fecharModal()">×</button>
+    <h2>Novo usuário</h2>
+    <p class="modal-sub">Crie uma conta de Admin ou Cliente.</p>
+    <div class="modal-form-grid">
+      <div class="form-group">
+        <label>Nome</label>
+        <input type="text" id="nu-nome" placeholder="Nome completo" />
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="nu-email" placeholder="email@exemplo.com" />
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="nu-senha" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div class="form-group">
+        <label>Perfil</label>
+        <select id="nu-role">
+          <option value="client">Cliente</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div id="nu-error" style="color:var(--red-400);font-size:12px;display:none;"></div>
+      <button class="btn-full" onclick="criarUsuario()">Criar usuário</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function renderTabela() {
+    var busca = (document.getElementById('busca-usuario').value || '').toLowerCase();
+    var roleFiltro = document.getElementById('filtro-role').value;
+    var users = getAllUsers().filter(function(u) {
+      var matchBusca = !busca || u.name.toLowerCase().includes(busca) || u.email.toLowerCase().includes(busca);
+      var matchRole  = !roleFiltro || u.role === roleFiltro;
+      return matchBusca && matchRole;
+    });
+
+    var roleLabel = { superadmin: 'Super Admin', admin: 'Admin', client: 'Cliente' };
+    var tbody = document.getElementById('tabela-body');
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:32px;">Nenhum usuário encontrado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = users.map(function(u) {
+      var date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : '—';
+      var actions = '';
+      if (u.role === 'superadmin') {
+        actions = '<span style="font-size:11px;color:var(--gray-400);">Não editável</span>';
+      } else {
+        if (u.role === 'client') {
+          actions += '<button class="btn-edit btn-sm" onclick="promover(\'' + escHtml(u.email) + '\')"><i class="ti ti-arrow-up"></i> Tornar Admin</button>';
+        } else if (u.role === 'admin') {
+          actions += '<button class="btn btn-secondary btn-sm" onclick="revogar(\'' + escHtml(u.email) + '\')"><i class="ti ti-arrow-down"></i> Revogar Admin</button>';
+        }
+        actions += ' <button class="btn-danger btn-sm" onclick="excluir(\'' + escHtml(u.email) + '\',' + '\'' + escHtml(u.name) + '\')"><i class="ti ti-trash"></i> Excluir</button>';
+      }
+      return '<tr>' +
+        '<td><strong>' + escHtml(u.name) + '</strong></td>' +
+        '<td>' + escHtml(u.email) + '</td>' +
+        '<td><span class="role-badge-' + u.role + '">' + (roleLabel[u.role] || u.role) + '</span></td>' +
+        '<td>' + date + '</td>' +
+        '<td><div class="action-group">' + actions + '</div></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function promover(email) {
+    if (!confirm('Tornar este usuário Administrador?')) return;
+    var r = promoteToAdmin(email);
+    showToast(r.ok ? 'Usuário promovido a Admin.' : r.error, r.ok ? '' : 'erro');
+    if (r.ok) renderTabela();
+  }
+
+  function revogar(email) {
+    if (!confirm('Revogar as permissões de Admin deste usuário?')) return;
+    var r = revokeAdmin(email);
+    showToast(r.ok ? 'Permissões revogadas.' : r.error, r.ok ? '' : 'erro');
+    if (r.ok) renderTabela();
+  }
+
+  function excluir(email, nome) {
+    if (!confirm('Excluir o usuário "' + nome + '"? Esta ação não pode ser desfeita.')) return;
+    var r = deleteUser(email);
+    showToast(r.ok ? 'Usuário excluído.' : r.error, r.ok ? '' : 'erro');
+    if (r.ok) renderTabela();
+  }
+
+  function abrirModalNovoUsuario() {
+    document.getElementById('nu-nome').value = '';
+    document.getElementById('nu-email').value = '';
+    document.getElementById('nu-senha').value = '';
+    document.getElementById('nu-role').value = 'client';
+    document.getElementById('nu-error').style.display = 'none';
+    document.getElementById('modal-novo').classList.add('show');
+  }
+
+  function fecharModal() {
+    document.getElementById('modal-novo').classList.remove('show');
+  }
+
+  function criarUsuario() {
+    var errEl = document.getElementById('nu-error');
+    var nome  = document.getElementById('nu-nome').value.trim();
+    var email = document.getElementById('nu-email').value.trim();
+    var senha = document.getElementById('nu-senha').value;
+    var role  = document.getElementById('nu-role').value;
+
+    if (!nome || !email || !senha) {
+      errEl.textContent = 'Preencha todos os campos.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (senha.length < 6) {
+      errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    var r = addUser({ name: nome, email: email, password: senha, role: role });
+    if (!r.ok) {
+      errEl.textContent = r.error;
+      errEl.style.display = 'block';
+      return;
+    }
+    fecharModal();
+    showToast('Usuário criado com sucesso!');
+    renderTabela();
+  }
+
+  function showToast(msg, tipo) {
+    var t = document.createElement('div');
+    t.className = 'toast' + (tipo === 'erro' ? '' : '');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:' +
+      (tipo === 'erro' ? 'var(--red-400)' : 'var(--green-400)') +
+      ';color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);';
+    document.body.appendChild(t);
+    setTimeout(function() { t.remove(); }, 3000);
+  }
+
+  renderTabela();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

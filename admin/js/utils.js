@@ -59,117 +59,102 @@ function parseCustoG(v) {
   return parseFloat(String(v || '0').replace(',', '.')) || 0;
 }
 
-// ─── Seed inicial — popula lapinkProdutos se ainda estiver vazio ───
-(function seedProdutosLaPink() {
-  try {
-    var atual = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]');
-    if (atual.length > 0) return; // já tem dados, não sobrescreve
-  } catch(e) {}
+// ─── Seed v3 — carrega de data/produtos.json (pasta como servidor) ───
+window.lapinkReady = (function() {
+  if (localStorage.getItem('lapinkSeedV') === '3') return Promise.resolve();
 
-  var IC = {
-    'Anel': 'ti-circle', 'Brinco': 'ti-star', 'Berloque': 'ti-bookmark',
-    'Chocker': 'ti-circle-dashed', 'Colar': 'ti-diamond', 'Conjunto': 'ti-package',
-    'Piercing Pressão': 'ti-circle-dot', 'Pulseira': 'ti-bracelet', 'Bolsa': 'ti-shopping-bag'
-  };
-
-  var BASE = 1700000000000;
-  var produtos = [
-    { nome: 'PIERCING DE PRESSÃO CRAVEJADO',          cat: 'Piercing Pressão', peca: 1.50, banho: 0.95, vr: 15.90 },
-    { nome: 'PIERCING PRESSÃO CORRENTE DOURADO',       cat: 'Piercing Pressão', peca: 0.95, banho: 0,    vr: 15.90 },
-    { nome: 'ESCAPULÁRIO "FOCO, FORÇA E FÉ"',         cat: 'Colar',            peca: 0.70, banho: 0,    vr: 9.90  },
-    { nome: 'PULSEIRA AMOR DE MÃE',                   cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 12.90 },
-    { nome: 'PIERCING LISO DOURADO',                  cat: 'Piercing Pressão', peca: 0.70, banho: 0,    vr: 9.99  },
-    { nome: 'PULSEIRA MEDALHA MUNDO',                 cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'COLAR COROA',                            cat: 'Colar',            peca: 0.70, banho: 0,    vr: 19.90 },
-    { nome: 'BRINCO PRAIANA CONCHA',                  cat: 'Brinco',           peca: 0.70, banho: 0,    vr: 19.90 },
-    { nome: 'CONJUNTO CORAÇÃO DIAMANTADO',            cat: 'Conjunto',         peca: 0.70, banho: 0,    vr: 21.90 },
-    { nome: 'BRINCO MÃO DE FÁTIMA',                  cat: 'Brinco',           peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA PÉROLA',                        cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'ANEL TREVINHO DIAMANTADO AJUSTÁVEL',     cat: 'Anel',             peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'ANEL BORBOLETA DIAMANTADA AJUSTÁVEL',    cat: 'Anel',             peca: 0.70, banho: 0,    vr: 16.90 },
-    { nome: 'PULSEIRA PAI NOSSO ZIRCÔNIA',            cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 39.90 },
-    { nome: 'ANEL AJUSTÁVEL ESTRELA CRAVEJADA',       cat: 'Anel',             peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'COLAR TREVO 4 FOLHAS',                   cat: 'Colar',            peca: 0.70, banho: 0,    vr: 16.90 },
-    { nome: 'COLAR CORAÇÃO DIAMANTADO',               cat: 'Colar',            peca: 0.70, banho: 0,    vr: 16.90 },
-    { nome: 'COLAR MARGARIDA',                        cat: 'Colar',            peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'COLAR I LOVE YOU',                       cat: 'Colar',            peca: 0.70, banho: 0,    vr: 13.90 },
-    { nome: 'ANEL CRAVEJADO PREGO TAM 16',            cat: 'Anel',             peca: 0.70, banho: 0,    vr: 19.90 },
-    { nome: 'ANEL AJUSTÁVEL LISO',                    cat: 'Anel',             peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'ANEL TREVO CRAVEJADO ×2',                cat: 'Anel',             peca: 0.70, banho: 0,    vr: 19.90 },
-    { nome: 'ANEL TRIÂNGULO ZIRCÔNIA',                cat: 'Anel',             peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'ANEL NÃO AJUSTÁVEL',                     cat: 'Anel',             peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'ANEL FLOR AJUSTÁVEL',                    cat: 'Anel',             peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'ANEL AJUSTÁVEL LUA',                     cat: 'Anel',             peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'ANEL AJUSTÁVEL OLHO',                    cat: 'Anel',             peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'ANEL SOLITÁRIO AJUSTÁVEL',               cat: 'Anel',             peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'ANEL CORAÇÃO AJUSTÁVEL DIAMANTADO',      cat: 'Anel',             peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'COLAR ELOS CARTIER + CORAÇÃO ZIRCÔNIA',  cat: 'Colar',            peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'CHOCKER ENROLADA DIAMANTADA',            cat: 'Chocker',          peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'CHOCKER CORDÃO BAHIANO',                 cat: 'Chocker',          peca: 0.70, banho: 0,    vr: 16.90 },
-    { nome: 'CHOCKER FITA LAMINADA 2mm',              cat: 'Chocker',          peca: 0.70, banho: 0,    vr: 16.90 },
-    { nome: 'PULSEIRA BLUE',                          cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA CORAÇÃO ×2',                   cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA TREVO',                         cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'PULSEIRA ZIRCÔNIA ×2',                  cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA ESCAMA VAZADA',                 cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA PREMICIA DIAMANTADA',           cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 16.90 },
-    { nome: 'PULSEIRA ZIRCÔNIA ROSA',                 cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA OLHO GREGO',                    cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA TRIO MINIMALISTA',              cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'PULSEIRA CORDÃO BAHIANO',                cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 16.90 },
-    { nome: 'PULSEIRA CORAÇÃO + PONTOS ROSA',         cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PULSEIRA FITA LAMINADA 2mm',             cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'BRINCO QUADRADINHO ×2',                 cat: 'Brinco',           peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'BRINCO V DIAMANTADO',                    cat: 'Brinco',           peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'BERLOQUE FLOCO DE NEVE',                 cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'BERLOQUE OLHO',                          cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'BERLOQUE LOVE ROSA',                     cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 15.90 },
-    { nome: 'SEPARADOR BERLOQUE FLOR',                cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'BERLOQUE BELIEVE "ACREDITAR"',           cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'BERLOQUE SEPARADOR CORAÇÃO ROSA',        cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'BERLOQUE ESTETOSCÓPIO CORAÇÃO',          cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'BERLOQUE CHOCOLATE',                     cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'BERLOQUE ALOHA',                         cat: 'Berloque',         peca: 0.70, banho: 0,    vr: 17.90 },
-    { nome: 'PULSEIRA P/ BERLOQUES FECHO CORAÇÃO',   cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 29.90 },
-    { nome: 'PULSEIRA P/ BERLOQUES FECHO TRAD.',     cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 29.90 },
-    { nome: 'PULSEIRA P/ BERLOQUES FECHO TRAD. II',  cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 29.90 },
-    { nome: 'PULSEIRA P/ BERLOQUES FECHO TRAD. III', cat: 'Pulseira',         peca: 0.70, banho: 0,    vr: 29.90 },
-    { nome: 'BRINCO MADRE PÉROLA',                   cat: 'Brinco',           peca: 0.70, banho: 0,    vr: 14.90 },
-    { nome: 'PIERCING PRESSÃO',                       cat: 'Piercing Pressão', peca: 0.70, banho: 0,    vr: 9.90  },
-    { nome: 'PIERCING PRESSÃO II',                    cat: 'Piercing Pressão', peca: 0.70, banho: 0,    vr: 9.90  },
-    { nome: 'PIERCING PRESSÃO III',                   cat: 'Piercing Pressão', peca: 0.70, banho: 0,    vr: 9.90  },
-    { nome: 'BERLOQUE AVIÃO',                         cat: 'Berloque',         peca: 0,    banho: 0,    vr: 17.90 }
-  ];
-
-  var lista = produtos.map(function(p, i) {
-    var custo = p.peca + p.banho;
-    var mar   = custo > 0 ? Math.round((p.vr - custo) / custo * 100) : 0;
-    return {
-      id:               BASE + i,
-      codigoPeca:       String(100001 + i),
-      nome:             p.nome,
-      categoria:        p.cat,
-      icone:            IC[p.cat] || 'ti-diamond',
-      imagem:           null,
-      estoque:          0,
-      precoVarejo:      p.vr,
-      precoAtacado:     Math.round(p.vr * 0.8 * 100) / 100,
-      custoPecaDireto:  p.peca || undefined,
-      custoBanhoDireto: p.banho || undefined,
-      custoTotal:       custo || undefined,
-      margemLucro:      mar   || undefined
-    };
-  });
-
-  try {
-    localStorage.setItem('lapinkProdutos', JSON.stringify(lista));
-
-    // Configura os 15 primeiros como destaque se ainda não houver configuração
+  function _aplicarLista(lista) {
+    saveProdutos(lista);
     var cfg = {};
-    try { cfg = JSON.parse(localStorage.getItem('lapinkLojaConfig')) || {}; } catch(e2) {}
+    try { cfg = JSON.parse(localStorage.getItem('lapinkLojaConfig')) || {}; } catch(e) {}
     if (!Array.isArray(cfg.destaque) || cfg.destaque.length < 5) {
       cfg.destaque = lista.slice(0, 15).map(function(p) { return { id: p.id, badge: '' }; });
       localStorage.setItem('lapinkLojaConfig', JSON.stringify(cfg));
     }
-  } catch(e) {}
+    localStorage.setItem('lapinkSeedV', '3');
+    document.dispatchEvent(new CustomEvent('lapinkProdutosAtualizados'));
+  }
+
+  return fetch('../data/produtos.json')
+    .then(function(r) { return r.json(); })
+    .then(function(lista) { _aplicarLista(lista); })
+    .catch(function() {
+      // fallback caso o arquivo não esteja acessível via HTTP
+      var IC = {
+        'Anel':'ti-circle','Brinco':'ti-star','Berloque':'ti-bookmark',
+        'Chocker':'ti-circle-dashed','Colar':'ti-diamond','Conjunto':'ti-package',
+        'Piercing Pressão':'ti-circle-dot','Pulseira':'ti-bracelet','Bolsa':'ti-shopping-bag'
+      };
+      var fb = [
+        {n:'PIERCING DE PRESSÃO CRAVEJADO',c:'Piercing Pressão',p:1.50,b:0.95,v:15.90},
+        {n:'PIERCING PRESSÃO CORRENTE DOURADO',c:'Piercing Pressão',p:0.95,b:0,v:15.90},
+        {n:'ESCAPULÁRIO "FOCO, FORÇA E FÉ"',c:'Colar',p:0.70,b:0,v:9.90},
+        {n:'PULSEIRA AMOR DE MÃE',c:'Pulseira',p:0.70,b:0,v:12.90},
+        {n:'PIERCING LISO DOURADO',c:'Piercing Pressão',p:0.70,b:0,v:9.99},
+        {n:'PULSEIRA MEDALHA MUNDO',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'COLAR COROA',c:'Colar',p:0.70,b:0,v:19.90},
+        {n:'BRINCO PRAIANA CONCHA',c:'Brinco',p:0.70,b:0,v:19.90},
+        {n:'CONJUNTO CORAÇÃO DIAMANTADO',c:'Conjunto',p:0.70,b:0,v:21.90},
+        {n:'BRINCO MÃO DE FÁTIMA',c:'Brinco',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA PÉROLA',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'ANEL TREVINHO DIAMANTADO AJUSTÁVEL',c:'Anel',p:0.70,b:0,v:15.90},
+        {n:'ANEL BORBOLETA DIAMANTADA AJUSTÁVEL',c:'Anel',p:0.70,b:0,v:16.90},
+        {n:'PULSEIRA PAI NOSSO ZIRCÔNIA',c:'Pulseira',p:0.70,b:0,v:39.90},
+        {n:'ANEL AJUSTÁVEL ESTRELA CRAVEJADA',c:'Anel',p:0.70,b:0,v:15.90},
+        {n:'COLAR TREVO 4 FOLHAS',c:'Colar',p:0.70,b:0,v:16.90},
+        {n:'COLAR CORAÇÃO DIAMANTADO',c:'Colar',p:0.70,b:0,v:16.90},
+        {n:'COLAR MARGARIDA',c:'Colar',p:0.70,b:0,v:15.90},
+        {n:'COLAR I LOVE YOU',c:'Colar',p:0.70,b:0,v:13.90},
+        {n:'ANEL CRAVEJADO PREGO TAM 16',c:'Anel',p:0.70,b:0,v:19.90},
+        {n:'ANEL AJUSTÁVEL LISO',c:'Anel',p:0.70,b:0,v:14.90},
+        {n:'ANEL TREVO CRAVEJADO',c:'Anel',p:0.70,b:0,v:19.90},
+        {n:'ANEL TRIÂNGULO ZIRCÔNIA',c:'Anel',p:0.70,b:0,v:15.90},
+        {n:'ANEL NÃO AJUSTÁVEL',c:'Anel',p:0.70,b:0,v:14.90},
+        {n:'ANEL FLOR AJUSTÁVEL',c:'Anel',p:0.70,b:0,v:14.90},
+        {n:'ANEL AJUSTÁVEL LUA',c:'Anel',p:0.70,b:0,v:14.90},
+        {n:'ANEL AJUSTÁVEL OLHO',c:'Anel',p:0.70,b:0,v:14.90},
+        {n:'ANEL SOLITÁRIO AJUSTÁVEL',c:'Anel',p:0.70,b:0,v:14.90},
+        {n:'ANEL CORAÇÃO AJUSTÁVEL DIAMANTADO',c:'Anel',p:0.70,b:0,v:14.90},
+        {n:'COLAR ELOS CARTIER + CORAÇÃO ZIRCÔNIA',c:'Colar',p:0.70,b:0,v:17.90},
+        {n:'CHOCKER ENROLADA DIAMANTADA',c:'Chocker',p:0.70,b:0,v:15.90},
+        {n:'CHOCKER CORDÃO BAHIANO',c:'Chocker',p:0.70,b:0,v:16.90},
+        {n:'CHOCKER FITA LAMINADA 2mm',c:'Chocker',p:0.70,b:0,v:16.90},
+        {n:'PULSEIRA BLUE',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA CORAÇÃO',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA TREVO',c:'Pulseira',p:0.70,b:0,v:15.90},
+        {n:'PULSEIRA ZIRCÔNIA',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA ESCAMA VAZADA',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA PREMICIA DIAMANTADA',c:'Pulseira',p:0.70,b:0,v:16.90},
+        {n:'PULSEIRA ZIRCÔNIA ROSA',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA OLHO GREGO',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA TRIO MINIMALISTA',c:'Pulseira',p:0.70,b:0,v:17.90},
+        {n:'PULSEIRA CORDÃO BAHIANO',c:'Pulseira',p:0.70,b:0,v:16.90},
+        {n:'PULSEIRA CORAÇÃO + PONTOS ROSA',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'PULSEIRA FITA LAMINADA 2mm',c:'Pulseira',p:0.70,b:0,v:14.90},
+        {n:'BRINCO QUADRADINHO',c:'Brinco',p:0.70,b:0,v:14.90},
+        {n:'BRINCO V DIAMANTADO',c:'Brinco',p:0.70,b:0,v:15.90},
+        {n:'BERLOQUE FLOCO DE NEVE',c:'Berloque',p:0.70,b:0,v:17.90},
+        {n:'BERLOQUE OLHO',c:'Berloque',p:0.70,b:0,v:15.90},
+        {n:'BERLOQUE LOVE ROSA',c:'Berloque',p:0.70,b:0,v:15.90},
+        {n:'SEPARADOR BERLOQUE FLOR',c:'Berloque',p:0.70,b:0,v:17.90},
+        {n:'BERLOQUE BELIEVE "ACREDITAR"',c:'Berloque',p:0.70,b:0,v:17.90},
+        {n:'BERLOQUE SEPARADOR CORAÇÃO ROSA',c:'Berloque',p:0.70,b:0,v:17.90},
+        {n:'BERLOQUE ESTETOSCÓPIO CORAÇÃO',c:'Berloque',p:0.70,b:0,v:17.90},
+        {n:'BERLOQUE CHOCOLATE',c:'Berloque',p:0.70,b:0,v:17.90},
+        {n:'BERLOQUE ALOHA',c:'Berloque',p:0.70,b:0,v:17.90},
+        {n:'PULSEIRA PARA BERLOQUES FECHO CORAÇÃO',c:'Pulseira',p:0.70,b:0,v:29.90},
+        {n:'PULSEIRA PARA BERLOQUES FECHO TRADICIONAL',c:'Pulseira',p:0.70,b:0,v:29.90},
+        {n:'BRINCO MADRE PÉROLA',c:'Brinco',p:0.70,b:0,v:14.90},
+        {n:'PIERCING PRESSÃO',c:'Piercing Pressão',p:0.70,b:0,v:9.90},
+        {n:'BERLOQUE AVIÃO',c:'Berloque',p:0,b:0,v:17.90}
+      ].map(function(x,i){
+        var custo=x.p+x.b;
+        return {id:1700000000001+i,codigoPeca:String(100001+i),nome:x.n,categoria:x.c,
+          icone:IC[x.c]||'ti-diamond',imagem:null,estoque:0,precoVarejo:x.v,
+          precoAtacado:Math.round(x.v*0.8*100)/100,
+          custoPecaDireto:x.p||undefined,custoBanhoDireto:x.b||undefined,
+          custoTotal:custo||undefined,margemLucro:custo>0?Math.round((x.v-custo)/custo*100):undefined};
+      });
+      _aplicarLista(fb);
+    });
 })();
