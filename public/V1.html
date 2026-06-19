@@ -260,6 +260,9 @@
     <div class="prod-grid" id="v1-prod-grid">
       <!-- renderizado pelo script -->
     </div>
+    <button class="btn-catalogo-toggle" id="btn-ver-catalogo" onclick="toggleCatalogo()">
+      <i class="ti ti-grid-dots"></i> Ver catálogo completo
+    </button>
   </div>
 
   <!-- Banner atacado -->
@@ -596,14 +599,29 @@
     secao.style.display = '';
   }
 
-  // Renderiza produtos iniciais (destaque) + catálogo completo por categoria
+  // Renderiza produtos em destaque
   atualizarProdutos();
-  renderCatalogComplete();
+
+  // Toggle do catálogo completo por categoria
+  window.toggleCatalogo = function() {
+    var secao = document.getElementById('secao-catalogo');
+    var btn   = document.getElementById('btn-ver-catalogo');
+    if (!secao) return;
+    if (secao.style.display === 'none') {
+      renderCatalogoCompleto(); // renderiza e faz display=''
+      if (btn) btn.innerHTML = '<i class="ti ti-chevron-up"></i> Fechar catálogo';
+      setTimeout(function() { secao.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+    } else {
+      secao.style.display = 'none';
+      if (btn) btn.innerHTML = '<i class="ti ti-grid-dots"></i> Ver catálogo completo';
+    }
+  };
 
   // Atualiza vitrine quando o JSON da pasta data/ carregar (seed v3 assíncrono)
   document.addEventListener('lapinkProdutosAtualizados', function() {
     atualizarProdutos();
-    renderCatalogComplete();
+    var secao = document.getElementById('secao-catalogo');
+    if (secao && secao._renderizado) renderCatalogoCompleto();
   });
 
   // URL param — suporte a ?cat=Anéis (deep link por categoria)
