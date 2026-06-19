@@ -15,6 +15,29 @@
 <link rel="stylesheet" href="css/PrincipalPublica.css" />
 <link rel="stylesheet" href="css/public.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .auth-card-icon {
+    width: 52px; height: 52px; border-radius: var(--radius-lg);
+    background: var(--pink-50); color: var(--pink-500);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin: 0 auto 20px;
+  }
+  .auth-card h1 { text-align: center; font-size: 22px; font-weight: 800; color: var(--gray-800); margin-bottom: 4px; }
+  .auth-card > p { text-align: center; }
+
+  .input-icon-wrap { position: relative; }
+  .input-icon-wrap input { padding-left: 40px !important; }
+  .input-icon-wrap .inp-icon {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--gray-400); pointer-events: none;
+  }
+  .input-icon-wrap .toggle-pw {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--gray-400); background: none; border: none;
+    cursor: pointer; padding: 2px; line-height: 1;
+  }
+  .input-icon-wrap .toggle-pw:hover { color: var(--pink-500); }
+</style>
 </head>
 <body class="auth-background">
   <a class="skip-link" href="#loginForm">Pular para o formulário</a>
@@ -25,37 +48,61 @@
       <span class="logo-name">LaPink</span>
     </a>
     <div class="nav-actions">
-      <button class="nav-admin-btn" onclick="location.href='index.html'" type="button"><i class="ti ti-arrow-left"></i> Voltar</button>
+      <button class="nav-admin-btn" onclick="location.href='index.html'" type="button">
+        <i class="ti ti-arrow-left"></i> Voltar
+      </button>
     </div>
   </header>
 
   <section class="store-section auth-page">
     <article class="card auth-card">
-      <div class="login-brand">
-        <i class="ti ti-diamond" aria-hidden="true"></i>
-        <span>LaPink</span>
+      <div class="auth-card-icon" aria-hidden="true">
+        <i class="ti ti-user-circle"></i>
       </div>
-      <h1>Login</h1>
-      <p>Entre com seu e-mail e senha para acessar.</p>
+      <h1>Entrar</h1>
+      <p>Acesse seus pedidos e informações da conta.</p>
+
       <form id="loginForm" novalidate>
         <div class="form-group">
           <label for="login-email">E-mail</label>
-          <input id="login-email" type="email" placeholder="email@dominio.com" autocomplete="email" required />
+          <div class="input-icon-wrap">
+            <i class="ti ti-mail inp-icon" aria-hidden="true"></i>
+            <input id="login-email" type="email" placeholder="email@dominio.com"
+                   autocomplete="email" required />
+          </div>
         </div>
         <div class="form-group">
           <label for="login-password">Senha</label>
-          <input id="login-password" type="password" placeholder="Sua senha" autocomplete="current-password" required />
+          <div class="input-icon-wrap">
+            <i class="ti ti-lock inp-icon" aria-hidden="true"></i>
+            <input id="login-password" type="password" placeholder="••••••••"
+                   autocomplete="current-password" required />
+            <button type="button" class="toggle-pw" onclick="togglePw()"
+                    aria-label="Mostrar ou ocultar senha">
+              <i class="ti ti-eye"></i>
+            </button>
+          </div>
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-full">Entrar</button>
         </div>
         <div class="form-message" id="loginMessage" role="alert" aria-live="polite"></div>
       </form>
+
       <p class="auth-footer-text">Não tem conta? <a href="register.html">Cadastre-se</a></p>
     </article>
   </section>
 
   <script src="js/storage.js"></script>
   <script src="js/login.js"></script>
+  <script>
+    function togglePw() {
+      var inp = document.getElementById('login-password');
+      var icon = document.querySelector('.toggle-pw i');
+      var isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      icon.className = isText ? 'ti ti-eye' : 'ti ti-eye-off';
+    }
+  </script>
 </body>
 </html>

@@ -15,6 +15,29 @@
 <link rel="stylesheet" href="css/PrincipalPublica.css" />
 <link rel="stylesheet" href="css/public.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .auth-card-icon {
+    width: 52px; height: 52px; border-radius: var(--radius-lg);
+    background: var(--pink-50); color: var(--pink-500);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin: 0 auto 20px;
+  }
+  .auth-card h1 { text-align: center; font-size: 22px; font-weight: 800; color: var(--gray-800); margin-bottom: 4px; }
+  .auth-card > p { text-align: center; }
+
+  .input-icon-wrap { position: relative; }
+  .input-icon-wrap input { padding-left: 40px !important; }
+  .input-icon-wrap .inp-icon {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--gray-400); pointer-events: none;
+  }
+  .input-icon-wrap .toggle-pw {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--gray-400); background: none; border: none;
+    cursor: pointer; padding: 2px; line-height: 1;
+  }
+  .input-icon-wrap .toggle-pw:hover { color: var(--pink-500); }
+</style>
 </head>
 <body class="auth-background">
   <a class="skip-link" href="#registerForm">Pular para o formulário</a>
@@ -25,45 +48,89 @@
       <span class="logo-name">LaPink</span>
     </a>
     <div class="nav-actions">
-      <button class="nav-admin-btn" onclick="location.href='index.html'" type="button"><i class="ti ti-arrow-left"></i> Voltar</button>
+      <button class="nav-admin-btn" onclick="location.href='index.html'" type="button">
+        <i class="ti ti-arrow-left"></i> Voltar
+      </button>
     </div>
   </header>
 
   <section class="store-section auth-page">
     <article class="card auth-card">
+      <div class="auth-card-icon" aria-hidden="true">
+        <i class="ti ti-user-plus"></i>
+      </div>
       <h1>Cadastro</h1>
       <p>Abra sua conta para gerenciar pedidos e acessar ofertas exclusivas.</p>
+
       <form id="registerForm" novalidate>
         <div class="form-group">
           <label for="register-name">Nome completo</label>
-          <input id="register-name" type="text" placeholder="Nome completo" autocomplete="name" required />
+          <div class="input-icon-wrap">
+            <i class="ti ti-user inp-icon" aria-hidden="true"></i>
+            <input id="register-name" type="text" placeholder="Nome completo"
+                   autocomplete="name" required />
+          </div>
         </div>
         <div class="form-group">
           <label for="register-email">E-mail</label>
-          <input id="register-email" type="email" placeholder="email@dominio.com" autocomplete="email" required />
+          <div class="input-icon-wrap">
+            <i class="ti ti-mail inp-icon" aria-hidden="true"></i>
+            <input id="register-email" type="email" placeholder="email@dominio.com"
+                   autocomplete="email" required />
+          </div>
         </div>
         <div class="form-group">
           <label for="register-whatsapp">WhatsApp</label>
-          <input id="register-whatsapp" type="tel" placeholder="(11) 99999-9999" autocomplete="tel" required />
+          <div class="input-icon-wrap">
+            <i class="ti ti-brand-whatsapp inp-icon" aria-hidden="true"></i>
+            <input id="register-whatsapp" type="tel" placeholder="(11) 99999-9999"
+                   autocomplete="tel" required />
+          </div>
         </div>
         <div class="form-group">
           <label for="register-password">Senha</label>
-          <input id="register-password" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6" />
+          <div class="input-icon-wrap">
+            <i class="ti ti-lock inp-icon" aria-hidden="true"></i>
+            <input id="register-password" type="password" placeholder="Mínimo 6 caracteres"
+                   autocomplete="new-password" required minlength="6" />
+            <button type="button" class="toggle-pw" onclick="togglePw('register-password', this)"
+                    aria-label="Mostrar ou ocultar senha">
+              <i class="ti ti-eye"></i>
+            </button>
+          </div>
         </div>
         <div class="form-group">
           <label for="register-password-confirm">Confirmar senha</label>
-          <input id="register-password-confirm" type="password" placeholder="Repita a senha" autocomplete="new-password" required />
+          <div class="input-icon-wrap">
+            <i class="ti ti-lock-check inp-icon" aria-hidden="true"></i>
+            <input id="register-password-confirm" type="password" placeholder="Repita a senha"
+                   autocomplete="new-password" required />
+            <button type="button" class="toggle-pw" onclick="togglePw('register-password-confirm', this)"
+                    aria-label="Mostrar ou ocultar confirmação de senha">
+              <i class="ti ti-eye"></i>
+            </button>
+          </div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-full">Cadastrar</button>
+          <button type="submit" class="btn-full">Criar conta</button>
         </div>
         <div class="form-message" id="registerMessage" role="alert" aria-live="polite"></div>
       </form>
-      <p class="auth-footer-text">Já tem conta? <a href="login.html">Entre</a></p>
+
+      <p class="auth-footer-text">Já tem conta? <a href="login.html">Entrar</a></p>
     </article>
   </section>
 
   <script src="js/storage.js"></script>
   <script src="js/register.js"></script>
+  <script>
+    function togglePw(inputId, btn) {
+      var inp = document.getElementById(inputId);
+      var icon = btn.querySelector('i');
+      var isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      icon.className = isText ? 'ti ti-eye' : 'ti ti-eye-off';
+    }
+  </script>
 </body>
 </html>
