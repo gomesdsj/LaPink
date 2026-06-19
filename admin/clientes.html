@@ -124,20 +124,8 @@
     var clientGrid = document.getElementById('clientGrid');
     var searchInput = document.querySelector('.search-bar-admin input');
 
-    function getClients() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
-    }
-
-    function saveClients(clients) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
-    }
-
     function maskPassword(password) {
       return password ? '•'.repeat(Math.max(8, password.length)) : 'Senha não definida';
-    }
-
-    function formatBRL(value) {
-      return 'R$ ' + value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
     function updateStats() {

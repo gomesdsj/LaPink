@@ -207,10 +207,6 @@
     localStorage.setItem('lapinkPedidos', JSON.stringify(arr));
   }
 
-  function getProdutos() {
-    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
-  }
-
   function carregarPedidos() {
     var pedidos = getPedidos();
     if (pedidos.length === 0) {
@@ -241,11 +237,6 @@
     var map = { aguardando: 'badge-pink', preparando: 'badge-amber', enviado: 'badge-blue', concluido: 'badge-green', cancelado: 'badge-red' };
     var labels = { aguardando: 'Aguardando', preparando: 'Em preparo', enviado: 'Enviado', concluido: 'Concluído', cancelado: 'Cancelado' };
     return '<span class="badge ' + (map[status] || 'badge') + '">' + (labels[status] || status) + '</span>';
-  }
-
-  function escHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   // ─── Toast ────────────────────────────────────────────────

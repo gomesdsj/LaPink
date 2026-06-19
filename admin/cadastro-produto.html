@@ -658,10 +658,6 @@
     // ─────────────────────────────────────────
     //  Calculadora por peso (1.2)
     // ─────────────────────────────────────────
-    function formatBRL(v) {
-      return 'R$ ' + v.toFixed(2).replace('.', ',');
-    }
-
     // ─── Formata o input de peso: digitos → X,XXX (kg com 3 casas decimais) ───
     function formatPesoInput(input) {
       var digits = input.value.replace(/\D/g, '');
@@ -764,14 +760,6 @@
     // ─────────────────────────────────────────
     //  Lista de estoque com fotos (1.3)
     // ─────────────────────────────────────────
-    function getProdutos() {
-      try { return JSON.parse(localStorage.getItem('lapinkProdutos')) || []; } catch { return []; }
-    }
-    function saveProdutos(prods) {
-      localStorage.setItem('lapinkProdutos', JSON.stringify(prods));
-    }
-
-
     function renderProdutos(lista) {
       const container = document.getElementById('prod-list');
       container.innerHTML = `

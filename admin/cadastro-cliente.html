@@ -111,132 +111,113 @@
     </div>
   </div>
 
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script>checkAuth(['superadmin', 'admin']);</script>
   <script>
-    const forgotSection = document.getElementById('forgotPasswordSection');
+    var forgotSection = document.getElementById('forgotPasswordSection');
     function toggleForgotPassword() {
       forgotSection.classList.toggle('active');
     }
-    const STORAGE_KEY = 'lapinkClients';
-    const clientForm = document.getElementById('clientForm');
-    const formMessage = document.getElementById('formMessage');
-    const editEmail = new URLSearchParams(window.location.search).get('email');
 
-    function getClients() {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    var clientForm  = document.getElementById('clientForm');
+    var formMessage = document.getElementById('formMessage');
+    var editEmail   = new URLSearchParams(window.location.search).get('email');
+
+    async function hashSenha(str) {
+      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
     }
 
-    function saveClients(clients) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
-    }
-
-    function setMessage(message, type = 'success') {
+    function setMessage(message, type) {
       formMessage.textContent = message;
-      formMessage.style.color = type === 'success' ? '#1e7e34' : '#c82333';
+      formMessage.style.color = (type === 'error') ? '#c82333' : '#1e7e34';
     }
 
     function loadClient(email) {
-      const clients = getClients();
-      return clients.find(client => client.email === email);
+      return getClients().find(function(c) { return c.email === email; });
     }
 
     function populateForm(client) {
-      document.getElementById('cliente-nome').value = client.name;
-      document.getElementById('cliente-email').value = client.email;
-      document.getElementById('cliente-whatsapp').value = client.whatsapp;
-      document.getElementById('cliente-senha').value = client.password;
-      document.getElementById('cliente-senha-confirm').value = client.password;
+      document.getElementById('cliente-nome').value     = client.name     || '';
+      document.getElementById('cliente-email').value    = client.email    || '';
+      document.getElementById('cliente-whatsapp').value = client.whatsapp || '';
+      // Não preenche campos de senha ao editar
       document.querySelector('.page-header h2').textContent = 'Editar cliente';
-      document.querySelector('.page-header p').textContent = 'Atualize os dados do cliente cadastrado.';
+      document.querySelector('.page-header p').textContent  = 'Deixe a senha em branco para mantê-la.';
     }
 
-    function validateForm(name, email, whatsapp, password, confirm) {
-      if (!name || !email || !whatsapp || !password || !confirm) {
-        setMessage('Preencha todos os campos.', 'error');
+    function validateForm(name, email, whatsapp, password, confirm, isEditing) {
+      if (!name || !email || !whatsapp) {
+        setMessage('Preencha nome, e-mail e WhatsApp.', 'error');
         return false;
       }
-      if (password !== confirm) {
+      if (!isEditing && !password) {
+        setMessage('Informe uma senha para o cliente.', 'error');
+        return false;
+      }
+      if (password && password !== confirm) {
         setMessage('As senhas não conferem.', 'error');
         return false;
       }
       return true;
     }
 
-    function handleFormSubmit(event) {
+    async function handleFormSubmit(event) {
       event.preventDefault();
-      const name = document.getElementById('cliente-nome').value.trim();
-      const email = document.getElementById('cliente-email').value.trim().toLowerCase();
-      const whatsapp = document.getElementById('cliente-whatsapp').value.trim();
-      const password = document.getElementById('cliente-senha').value;
-      const confirm = document.getElementById('cliente-senha-confirm').value;
-      if (!validateForm(name, email, whatsapp, password, confirm)) return;
+      var name     = document.getElementById('cliente-nome').value.trim();
+      var email    = document.getElementById('cliente-email').value.trim().toLowerCase();
+      var whatsapp = document.getElementById('cliente-whatsapp').value.trim();
+      var password = document.getElementById('cliente-senha').value;
+      var confirm  = document.getElementById('cliente-senha-confirm').value;
+      var isEditing = !!editEmail;
+      var currentEmail = editEmail ? decodeURIComponent(editEmail) : null;
 
-      const clients = getClients();
-      const existingEmail = clients.find(client => client.email === email);
-      const isEditing = !!editEmail;
-      const currentEmail = editEmail ? decodeURIComponent(editEmail) : null;
+      if (!validateForm(name, email, whatsapp, password, confirm, isEditing)) return;
+
+      var hashedSenha = password ? await hashSenha(password) : null;
+      var clients = getClients();
 
       if (isEditing) {
-        const index = clients.findIndex(client => client.email === currentEmail);
-        if (index === -1) {
-          setMessage('Cliente não encontrado.', 'error');
-          return;
-        }
-        if (existingEmail && existingEmail.email !== currentEmail) {
-          setMessage('Este e-mail já está em uso.', 'error');
-          return;
-        }
-        clients[index] = {
-          ...clients[index],
-          name,
-          email,
-          whatsapp,
-          password,
-        };
+        var index = clients.findIndex(function(c) { return c.email === currentEmail; });
+        if (index === -1) { setMessage('Cliente não encontrado.', 'error'); return; }
+        var conflito = clients.find(function(c) { return c.email === email; });
+        if (conflito && conflito.email !== currentEmail) { setMessage('Este e-mail já está em uso.', 'error'); return; }
+        clients[index].name     = name;
+        clients[index].email    = email;
+        clients[index].whatsapp = whatsapp;
+        if (hashedSenha) clients[index].password = hashedSenha;
         saveClients(clients);
         setMessage('Cliente atualizado com sucesso. Redirecionando...', 'success');
       } else {
-        if (existingEmail) {
-          setMessage('Este e-mail já está cadastrado.', 'error');
-          return;
+        if (clients.find(function(c) { return c.email === email; })) {
+          setMessage('Este e-mail já está cadastrado.', 'error'); return;
         }
-        clients.push({
-          name,
-          email,
-          whatsapp,
-          password,
-          totalSpent: 0,
-          purchases: [],
-        });
+        clients.push({ name: name, email: email, whatsapp: whatsapp, password: hashedSenha, totalSpent: 0, purchases: [] });
         saveClients(clients);
         setMessage('Cliente cadastrado com sucesso. Redirecionando...', 'success');
       }
 
-      setTimeout(() => location.href = 'clientes.html', 1200);
+      setTimeout(function() { location.href = 'clientes.html'; }, 1200);
     }
 
-    function redefinirSenha() {
-      var novaSenha = document.getElementById('nova-senha').value;
+    async function redefinirSenha() {
+      var novaSenha   = document.getElementById('nova-senha').value;
       var confirmSenha = document.getElementById('confirm-nova-senha').value;
-      if (!novaSenha || !confirmSenha) {
-        setMessage('Preencha os campos de nova senha.', 'error');
-        return;
-      }
-      if (novaSenha !== confirmSenha) {
-        setMessage('As senhas não conferem.', 'error');
-        return;
-      }
-      var targetEmail = editEmail ? decodeURIComponent(editEmail) : document.getElementById('cliente-email').value.trim().toLowerCase();
-      if (!targetEmail) {
-        setMessage('E-mail do cliente não identificado.', 'error');
-        return;
-      }
+      if (!novaSenha || !confirmSenha) { setMessage('Preencha os campos de nova senha.', 'error'); return; }
+      if (novaSenha !== confirmSenha)  { setMessage('As senhas não conferem.', 'error'); return; }
+      if (novaSenha.length < 6)        { setMessage('A senha deve ter no mínimo 6 caracteres.', 'error'); return; }
+
+      var targetEmail = editEmail
+        ? decodeURIComponent(editEmail)
+        : document.getElementById('cliente-email').value.trim().toLowerCase();
+      if (!targetEmail) { setMessage('E-mail do cliente não identificado.', 'error'); return; }
+
       var clients = getClients();
       var idx = clients.findIndex(function(c) { return c.email === targetEmail; });
-      if (idx === -1) {
-        setMessage('Cliente não encontrado.', 'error');
-        return;
-      }
-      clients[idx].password = novaSenha;
+      if (idx === -1) { setMessage('Cliente não encontrado.', 'error'); return; }
+
+      clients[idx].password = await hashSenha(novaSenha);
       saveClients(clients);
       setMessage('Senha redefinida com sucesso!', 'success');
       document.getElementById('forgotPasswordSection').classList.remove('active');
@@ -244,15 +225,14 @@
       document.getElementById('confirm-nova-senha').value = '';
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', function() {
       if (editEmail) {
-        const client = loadClient(decodeURIComponent(editEmail));
+        var client = loadClient(decodeURIComponent(editEmail));
         if (client) populateForm(client);
       }
       clientForm.addEventListener('submit', handleFormSubmit);
     });
   </script>
   <script src="js/sidebar.js"></script>
-  <script src="js/utils.js"></script>
 </body>
 </html>

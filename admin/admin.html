@@ -196,16 +196,7 @@
   </div>
 
   <script>
-    /* ── Helpers ── */
-    function escHtml(s) {
-      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-    function parseBRL(v) {
-      return parseFloat((v || '0').replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
-    }
-    function formatBRL(v) {
-      return 'R$ ' + v.toFixed(2).replace('.', ',');
-    }
+    /* ── Helpers (escHtml, parseBRL, formatBRL → utils.js) ── */
     function showToast(msg, tipo) {
       var t = document.createElement('div');
       t.className = 'toast' + (tipo ? ' ' + tipo : '');
@@ -220,13 +211,7 @@
       }, 3000);
     }
 
-    /* ── Dados ── */
-    function getProdutos() {
-      try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
-    }
-    function getClients() {
-      try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }
-    }
+    /* ── Dados (getProdutos, getClients → utils.js) ── */
 
     /* ── Stats ── */
     function renderStats() {

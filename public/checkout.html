@@ -289,6 +289,18 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
       localStorage.setItem('lapinkPedidos', JSON.stringify(pedidos));
     } catch(e) {}
 
+    // Decrementa estoque dos produtos vendidos
+    try {
+      var prods = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]');
+      cart.forEach(function(item) {
+        var idx = prods.findIndex(function(p) { return String(p.id) === String(item.id); });
+        if (idx >= 0) {
+          prods[idx].estoque = Math.max(0, (Number(prods[idx].estoque) || 0) - item.qty);
+        }
+      });
+      localStorage.setItem('lapinkProdutos', JSON.stringify(prods));
+    } catch(e) {}
+
     // Monta mensagem WhatsApp
     var itensMsg = cart.map(function(i) {
       return '- ' + i.nome + ' x' + i.qty + ' — ' + fmtMoeda(i.preco) + ' cada';

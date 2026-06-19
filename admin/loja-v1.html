@@ -556,9 +556,6 @@ var DEFAULT_CONFIG = {
   }
 };
 
-function getProdutos() {
-  try { return JSON.parse(localStorage.getItem('lapinkProdutos')) || []; } catch(e) { return []; }
-}
 function getConfig() {
   try {
     var raw = localStorage.getItem('lapinkLojaConfig');
@@ -578,9 +575,6 @@ function thumbHtml(p) {
     : '<i class="ti ' + (p.icone || 'ti-diamond') + '"></i>';
 }
 function precoFmt(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
 
 function atualizarFotoProduto(id, input) {
   var file = input.files[0];

@@ -385,23 +385,9 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
   });
 });
 
-/* ── Helpers ── */
+/* ── Helpers/Storage (escHtml, formatBRL, parseBRL, getProdutos, getPedidos → utils.js) ── */
 function parseBRL(v) {
   return parseFloat((v || '0').replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
-}
-function formatBRL(v) {
-  return 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-/* ── Storage ── */
-function getProdutos() {
-  try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
-}
-function getPedidos() {
-  try { return JSON.parse(localStorage.getItem('lapinkPedidos') || '[]'); } catch(e) { return []; }
 }
 function getClientes() {
   try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }

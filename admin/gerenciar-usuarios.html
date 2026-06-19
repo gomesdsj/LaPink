@@ -173,10 +173,6 @@
     }).join('');
   }
 
-  function escHtml(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-
   function promover(email) {
     if (!confirm('Tornar este usuário Administrador?')) return;
     var r = promoteToAdmin(email);
