@@ -26,6 +26,7 @@
 | ✅ | Conectar campo de busca e botão "Filtrar" em clientes.html |
 | ✅ | Incluir `<script src="../js/utils.js">` e `<script src="../js/sidebar.js">` em todas as 8 páginas admin |
 | ✅ | Remover código inline de sidebar (addEventListener duplicados) de todas as 8 páginas admin |
+| ✅ | Remover funções locais duplicadas de 7 páginas admin (escHtml, formatBRL, getProdutos, getClients, saveProdutos, getPedidos) |
 
 ---
 
@@ -65,6 +66,9 @@
 | ✅ | Corrigir XSS em loja-v1.html (escHtml aplicado em thumbHtml, nome, badge, depoimentos) |
 | ✅ | Painel de pré-visualização ao vivo em loja-v1.html: mini-cards com foto, badge e preço, atualiza em tempo real ao adicionar/remover/reordenar/trocar badge/trocar foto |
 | ✅ | Login unificado: login.js verifica lapinkClients (SHA-256) e lapinkUsers (btoa) — usuários do admin passam a logar na loja pública |
+| ✅ | Hash SHA-256 em cadastro-cliente.html: handleFormSubmit e redefinirSenha async via Web Crypto API |
+| ✅ | Página cadastro-cliente.html protegida com checkAuth(['superadmin','admin']) |
+| ✅ | populateForm não exibe senha ao editar; senha opcional ao editar cliente existente |
 | ⏳ | Adicionar validação de formato de e-mail em register.js e login.js |
 | ⏳ | Adicionar validação de WhatsApp (apenas dígitos, 10-11 caracteres) |
 | ⏳ | Limitar tamanho de imagem base64 antes de salvar (máx ~500KB) |
@@ -108,6 +112,7 @@
 |--------|--------|
 | ✅ | Atualizar `purchases[]` e `totalSpent` do cliente ao criar pedido (pedidos.html) |
 | ✅ | Decrementar estoque ao criar pedido no admin |
+| ✅ | Decrementar estoque ao confirmar pedido pelo checkout público (checkout.html) |
 | ✅ | Criar `admin/importar-planilha.html` — importa 67 produtos da planilha LaPink, sem duplicatas, configura 15 primeiros como destaque |
 | ⏳ | Criar função `migrarSchema(versao)` com controle via `lapinkSchemaVersion` |
 | ⏳ | Limitar tamanho de imagens base64 no localStorage (campo imagem) |
@@ -224,6 +229,7 @@
 | ✅ | Bug: busca em V1.html sem função → corrigido |
 | ✅ | Bug: botão "Comprar" em produto.html não adicionava ao carrinho → corrigido |
 | ✅ | Bug: estoque não decrementava ao criar pedido → corrigido |
+| ✅ | Bug: estoque não decrementava ao confirmar pedido via checkout.html público → corrigido |
 | ✅ | Bug: login mobile não funcionava — usuários do admin (lapinkUsers/btoa) não eram encontrados em login.js → corrigido com fallback |
 | ✅ | Bug: menu hambúrguer centralizado no mobile e abrindo da direita → corrigido: fixado no canto esquerdo, drawer desliza da esquerda para direita |
 | ⏳ | Bug: estoque não decrementa quando pedido público (checkout.html) é confirmado |
@@ -385,10 +391,10 @@
 ## PRÓXIMAS AÇÕES PRIORITÁRIAS
 
 ### 🔴 Imediato
-1. Incluir `utils.js` e `sidebar.js` em todas as páginas admin e remover funções locais duplicadas *(Ana Lima + Rodrigo Nunes)*
-2. Decrementar estoque quando checkout público é confirmado *(Pedro Alves + Thiago Lima)*
-3. Hash de senha no admin ao criar/editar cliente *(Beatriz Santos)*
-4. XSS em pedidos.html (renderização de itens em innerHTML) *(Beatriz Santos)*
+1. ~~Incluir utils.js + remover duplicatas~~ ✅ *concluído 2026-06-18*
+2. ~~Decrementar estoque no checkout público~~ ✅ *concluído 2026-06-18*
+3. ~~Hash de senha ao criar/editar cliente admin~~ ✅ *concluído 2026-06-18*
+4. XSS em pedidos.html (renderização de itens e nomes em innerHTML) *(Beatriz Santos)*
 
 ### 🟠 Esta semana
 5. Schema.org Product em produto.html *(Lucas Rocha)*
