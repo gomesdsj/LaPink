@@ -33,18 +33,21 @@ if (registerForm) {
       return;
     }
 
-    clients.push({
-      name,
-      email,
-      whatsapp,
-      password: await hashPassword(password),
-      totalSpent: 0,
-      purchases: [],
-    });
-
-    saveClients(clients);
-    setRegisterMessage('Cadastro realizado com sucesso! Redirecionando para login...', true);
-    sessionStorage.setItem('referrerPage', 'minha-conta.html');
-    setTimeout(() => location.href = 'login.html', 1200);
+    try {
+      clients.push({
+        name,
+        email,
+        whatsapp,
+        password: await hashPassword(password),
+        totalSpent: 0,
+        purchases: [],
+      });
+      saveClients(clients);
+      setRegisterMessage('Cadastro realizado com sucesso! Redirecionando para login...', true);
+      sessionStorage.setItem('referrerPage', 'minha-conta.html');
+      setTimeout(() => location.href = 'login.html', 1200);
+    } catch(err) {
+      setRegisterMessage('Erro ao cadastrar. Tente novamente.', false);
+    }
   });
 }

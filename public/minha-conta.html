@@ -35,8 +35,7 @@
   }
   async function updatePassword(email, nova) {
     try {
-      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(nova));
-      var hash = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+      var hash = await hashPassword(nova);
       var users = getAllUsers();
       var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
       if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' };

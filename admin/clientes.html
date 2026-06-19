@@ -264,9 +264,7 @@
         showToast('Cliente não encontrado.', 'erro');
         return;
       }
-      // Salva com SHA-256 para manter consistência com o login público
-      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
-      var hash = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+      var hash = await _hashPassword(password);
       clients[index].password = hash;
       saveClients(clients);
       showToast('Senha atualizada com sucesso.');
