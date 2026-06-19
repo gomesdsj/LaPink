@@ -162,12 +162,8 @@
                   </div>
                   <div class="form-row">
                     <div class="form-group">
-                      <label for="p-banho-g">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
-                      <input id="p-banho-g" type="text" placeholder="0,50" oninput="calcularPrecoAutomatico()" />
-                    </div>
-                    <div class="form-group">
-                      <label for="p-peso-apos-banho">Peso após o banho <span class="unit-tag">g</span></label>
-                      <input id="p-peso-apos-banho" type="number" min="0" step="0.01" placeholder="8,30" oninput="calcularPrecoAutomatico()" />
+                      <label for="p-valor-banho">Valor do banho por peça <span class="unit-tag">R$</span></label>
+                      <input id="p-valor-banho" type="text" placeholder="2,50" oninput="calcularPrecoAutomatico()" />
                     </div>
                   </div>
                   <div class="form-group">
@@ -513,12 +509,8 @@
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="modal-banho-g">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
-                <input id="modal-banho-g" type="text" placeholder="0,50" oninput="calcularModalPreco()" />
-              </div>
-              <div class="form-group">
-                <label for="modal-peso-apos-banho">Peso após o banho <span class="unit-tag">g</span></label>
-                <input id="modal-peso-apos-banho" type="number" min="0" step="0.01" placeholder="8,30" oninput="calcularModalPreco()" />
+                <label for="modal-valor-banho">Valor do banho por peça <span class="unit-tag">R$</span></label>
+                <input id="modal-valor-banho" type="text" placeholder="2,50" oninput="calcularModalPreco()" />
               </div>
             </div>
             <div class="form-group">
@@ -657,13 +649,11 @@
     //          varejo = custo_total × (1 + %)
     function calcularPrecoAutomatico() {
       var bar          = document.getElementById('cost-result-bar');
-      var precoBruto   = parseCustoG(document.getElementById('p-preco-bruto').value);
-      var banhoG       = parseCustoG(document.getElementById('p-banho-g').value);
-      var pesoApos     = parseFloat(document.getElementById('p-peso-apos-banho').value) || 0;
-      var margem       = parseFloat(document.getElementById('p-margem').value) || 0;
+      var precoBruto  = parseCustoG(document.getElementById('p-preco-bruto').value);
+      var valorBanho  = parseCustoG(document.getElementById('p-valor-banho').value);
+      var margem      = parseFloat(document.getElementById('p-margem').value) || 0;
 
-      var custoBanho = (banhoG > 0 && pesoApos > 0) ? banhoG * pesoApos : 0;
-      var custoTotal = precoBruto + custoBanho;
+      var custoTotal = precoBruto + valorBanho;
 
       if (custoTotal <= 0) { bar.style.display = 'none'; return; }
 
@@ -672,7 +662,7 @@
       var lucroUn = varejo - custoTotal;
 
       document.getElementById('crb-bruto').textContent   = precoBruto > 0 ? formatBRL(precoBruto) : '—';
-      document.getElementById('crb-banho').textContent   = custoBanho > 0 ? formatBRL(custoBanho) : '—';
+      document.getElementById('crb-banho').textContent   = valorBanho > 0 ? formatBRL(valorBanho) : '—';
       document.getElementById('crb-custo').textContent   = formatBRL(custoTotal);
       document.getElementById('crb-varejo').textContent  = formatBRL(varejo);
       document.getElementById('crb-atacado').textContent = formatBRL(atacado);
@@ -812,12 +802,11 @@
       document.getElementById('modal-atacado').value   = 'R$ ' + p.precoAtacado.toFixed(2).replace('.', ',');
       document.getElementById('modal-descricao').value = p.descricao || '';
 
-      document.getElementById('modal-preco-bruto').value     = p.precoBruto      ? p.precoBruto.toFixed(2).replace('.', ',')     : '';
-      document.getElementById('modal-peso-bruto-g').value    = p.pesoBrutoGramas ? String(p.pesoBrutoGramas)                        : '';
-      document.getElementById('modal-banho-g').value         = p.custoGrama      ? p.custoGrama.toFixed(2).replace('.', ',')        : '';
-      document.getElementById('modal-peso-apos-banho').value = p.pesoAposBanho   ? String(p.pesoAposBanho)                         : '';
-      document.getElementById('modal-margem').value          = p.margemLucro     || '';
-      if (p.precoBruto || p.pesoAposBanho) {
+      document.getElementById('modal-preco-bruto').value  = p.precoBruto     ? p.precoBruto.toFixed(2).replace('.', ',')  : '';
+      document.getElementById('modal-peso-bruto-g').value = p.pesoBrutoGramas ? String(p.pesoBrutoGramas)                  : '';
+      document.getElementById('modal-valor-banho').value  = p.valorBanho     ? p.valorBanho.toFixed(2).replace('.', ',')  : '';
+      document.getElementById('modal-margem').value       = p.margemLucro    || '';
+      if (p.precoBruto || p.valorBanho) {
         calcularModalPreco();
       } else {
         document.getElementById('modal-cost-bar').style.display = 'none';
@@ -841,14 +830,11 @@
 
     function calcularModalPreco() {
       var precoBruto = parseCustoG(document.getElementById('modal-preco-bruto').value);
-      var banhoG     = parseCustoG(document.getElementById('modal-banho-g').value);
-      var pesoApos   = parseFloat(document.getElementById('modal-peso-apos-banho').value) || 0;
+      var valorBanho = parseCustoG(document.getElementById('modal-valor-banho').value);
       var margem     = parseFloat(document.getElementById('modal-margem').value) || 0;
       var bar        = document.getElementById('modal-cost-bar');
 
-      var custoBruto = precoBruto;
-      var custoBanho = (banhoG > 0 && pesoApos > 0) ? banhoG * pesoApos : 0;
-      var custoTotal = custoBruto + custoBanho;
+      var custoTotal = precoBruto + valorBanho;
 
       if (custoTotal <= 0) { bar.style.display = 'none'; return; }
 
@@ -856,8 +842,8 @@
       var atacado = custoTotal * (1 + margem / 100 * 0.6);
       var lucroUn = varejo - custoTotal;
 
-      document.getElementById('modal-crb-bruto').textContent   = custoBruto > 0 ? formatBRL(custoBruto) : '—';
-      document.getElementById('modal-crb-banho').textContent   = custoBanho > 0 ? formatBRL(custoBanho) : '—';
+      document.getElementById('modal-crb-bruto').textContent   = precoBruto > 0 ? formatBRL(precoBruto) : '—';
+      document.getElementById('modal-crb-banho').textContent   = valorBanho > 0 ? formatBRL(valorBanho) : '—';
       document.getElementById('modal-crb-custo').textContent   = formatBRL(custoTotal);
       document.getElementById('modal-crb-varejo').textContent  = formatBRL(varejo);
       document.getElementById('modal-crb-atacado').textContent = formatBRL(atacado);
@@ -887,14 +873,12 @@
       function parsePreco(v) {
         return parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
       }
-      var imgEl         = document.getElementById('modal-preview-img-photo');
-      var precoBruto    = parseCustoG(document.getElementById('modal-preco-bruto').value);
-      var pesoBrutoG    = parseFloat(document.getElementById('modal-peso-bruto-g').value)    || 0;
-      var banhoG        = parseCustoG(document.getElementById('modal-banho-g').value);
-      var pesoAposBanho = parseFloat(document.getElementById('modal-peso-apos-banho').value) || 0;
-      var margemV       = parseFloat(document.getElementById('modal-margem').value) || 0;
-      var custoBanho    = banhoG > 0 && pesoAposBanho > 0 ? banhoG * pesoAposBanho : 0;
-      var custoTot      = precoBruto + custoBanho;
+      var imgEl      = document.getElementById('modal-preview-img-photo');
+      var precoBruto = parseCustoG(document.getElementById('modal-preco-bruto').value);
+      var pesoBrutoG = parseFloat(document.getElementById('modal-peso-bruto-g').value) || 0;
+      var valorBanho = parseCustoG(document.getElementById('modal-valor-banho').value);
+      var margemV    = parseFloat(document.getElementById('modal-margem').value) || 0;
+      var custoTot   = precoBruto + valorBanho;
       var precoVar      = parsePreco(document.getElementById('modal-varejo').value);
       var lucroUn       = custoTot > 0 ? precoVar - custoTot : undefined;
 
@@ -910,13 +894,12 @@
         precoAtacado:  parsePreco(document.getElementById('modal-atacado').value),
         descricao:     document.getElementById('modal-descricao').value.trim(),
         imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : old.imagem,
-        precoBruto:       precoBruto     || undefined,
-        pesoBrutoGramas:  pesoBrutoG     || undefined,
-        custoGrama:       banhoG         || undefined,
-        pesoAposBanho:    pesoAposBanho  || undefined,
-        margemLucro:      margemV        || undefined,
-        custoTotal:       custoTot       || undefined,
-        lucroUnitario:    lucroUn,
+        precoBruto:      precoBruto  || undefined,
+        pesoBrutoGramas: pesoBrutoG  || undefined,
+        valorBanho:      valorBanho  || undefined,
+        margemLucro:     margemV     || undefined,
+        custoTotal:      custoTot    || undefined,
+        lucroUnitario:   lucroUn,
       });
 
       saveProdutos(todos);
@@ -932,11 +915,10 @@
       document.getElementById('preco-atacado').value = '';
       document.getElementById('descricao').value     = '';
       document.getElementById('imagem').value        = '';
-      document.getElementById('p-preco-bruto').value     = '';
-      document.getElementById('p-peso-bruto-g').value    = '';
-      document.getElementById('p-banho-g').value         = '';
-      document.getElementById('p-peso-apos-banho').value = '';
-      document.getElementById('p-margem').value          = '';
+      document.getElementById('p-preco-bruto').value  = '';
+      document.getElementById('p-peso-bruto-g').value = '';
+      document.getElementById('p-valor-banho').value  = '';
+      document.getElementById('p-margem').value       = '';
       document.getElementById('cost-result-bar').style.display = 'none';
       document.getElementById('preview-img-photo').style.display = 'none';
       document.getElementById('preview-img-icon').style.display  = '';
@@ -953,13 +935,11 @@
       }
       var imgEl = document.getElementById('preview-img-photo');
 
-      var precoBruto    = parseCustoG(document.getElementById('p-preco-bruto').value);
-      var pesoBrutoG    = parseFloat(document.getElementById('p-peso-bruto-g').value)    || 0;
-      var banhoG        = parseCustoG(document.getElementById('p-banho-g').value);
-      var pesoAposBanho = parseFloat(document.getElementById('p-peso-apos-banho').value) || 0;
-      var margemV       = parseFloat(document.getElementById('p-margem').value) || 0;
-      var custoBanho    = banhoG > 0 && pesoAposBanho > 0 ? banhoG * pesoAposBanho : 0;
-      var custoTot      = precoBruto + custoBanho;
+      var precoBruto = parseCustoG(document.getElementById('p-preco-bruto').value);
+      var pesoBrutoG = parseFloat(document.getElementById('p-peso-bruto-g').value) || 0;
+      var valorBanho = parseCustoG(document.getElementById('p-valor-banho').value);
+      var margemV    = parseFloat(document.getElementById('p-margem').value) || 0;
+      var custoTot   = precoBruto + valorBanho;
       var precoVar = parsePreco(document.getElementById('preco-varejo').value);
       var lucroUn  = custoTot > 0 ? precoVar - custoTot : undefined;
 
@@ -975,11 +955,10 @@
         precoAtacado:    parsePreco(document.getElementById('preco-atacado').value),
         imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : null,
         icone:           'ti-diamond',
-        precoBruto:       precoBruto        || undefined,
-        pesoBrutoGramas:  pesoBrutoG        || undefined,
-        custoGrama:       banhoG            || undefined,
-        pesoAposBanho:    pesoAposBanho     || undefined,
-        margemLucro:      margemV           || undefined,
+        precoBruto:      precoBruto  || undefined,
+        pesoBrutoGramas: pesoBrutoG  || undefined,
+        valorBanho:      valorBanho  || undefined,
+        margemLucro:     margemV     || undefined,
         custoTotal:       custoTot          || undefined,
         lucroUnitario:    lucroUn,
       };
