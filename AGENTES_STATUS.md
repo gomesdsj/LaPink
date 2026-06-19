@@ -2,7 +2,7 @@
 ## Equipe TechCorp · Ativa até o fim do projeto
 
 > Este arquivo é o painel de comando vivo da equipe. Atualizado a cada sessão.  
-> Última atualização: 2026-06-17
+> Última atualização: 2026-06-18
 
 ---
 
@@ -43,6 +43,9 @@
 | ✅ | Newsletter com validação de e-mail e feedback visual (ok/erro) em V1.html |
 | ✅ | XSS corrigido: `esc()` aplicado em p.nome, badge, depoimentos (texto e autor) |
 | ✅ | Seção "Catálogo completo" em V1.html — grid por categoria (Anel, Brinco, Pulseira…), 15+ produtos no fallback |
+| ✅ | Carrossel hero com 4 slides em V1.html (títulos, subtítulo, cor de fundo, botões de ação) |
+| ✅ | Paleta harmonizada: rosa vibrante (#F04A86) + fundo branco com tokens CSS em v1.css |
+| ✅ | Header admin simplificado: somente hamburger + nome da página (saudação só no dashboard) |
 | ⏳ | Aplicar `.form-group.error` + `.field-error` nas validações dos formulários |
 | ⏳ | Remover seção "Carrinhos abandonados" hardcoded do admin.html ou implementar real |
 | ⏳ | Adicionar paginação em tabelas de relatórios (primeiros 20 + "Ver mais") |
@@ -61,6 +64,7 @@
 | ⏳ | Corrigir XSS em pedidos.html (renderização de itens e nomes de clientes em innerHTML) |
 | ✅ | Corrigir XSS em loja-v1.html (escHtml aplicado em thumbHtml, nome, badge, depoimentos) |
 | ✅ | Painel de pré-visualização ao vivo em loja-v1.html: mini-cards com foto, badge e preço, atualiza em tempo real ao adicionar/remover/reordenar/trocar badge/trocar foto |
+| ✅ | Login unificado: login.js verifica lapinkClients (SHA-256) e lapinkUsers (btoa) — usuários do admin passam a logar na loja pública |
 | ⏳ | Adicionar validação de formato de e-mail em register.js e login.js |
 | ⏳ | Adicionar validação de WhatsApp (apenas dígitos, 10-11 caracteres) |
 | ⏳ | Limitar tamanho de imagem base64 antes de salvar (máx ~500KB) |
@@ -88,10 +92,11 @@
 
 | Status | Tarefa |
 |--------|--------|
-| ⏳ | Criar `public/sw.js` com cache de assets estáticos (CSS, JS, ícones) |
-| ⏳ | Verificar e completar `public/manifest.json` (icons 192+512, start_url, display standalone) |
-| ⏳ | Registrar Service Worker em todas as páginas públicas |
-| ⏳ | Adicionar cache de imagens no SW para offline |
+| ✅ | Criar `public/sw.js` — cache-first para assets, network-first para /data/ e /admin/, fallback offline para V1.html |
+| ✅ | Criar `public/manifest.json` — icons SVG, start_url `./V1.html`, display standalone, theme_color #F04A86, shortcuts |
+| ✅ | Criar `public/assets/icon.svg` — diamante facetado rosa sobre fundo arredondado |
+| ✅ | Registrar Service Worker em V1.html com botão de instalação PWA |
+| ⏳ | Adicionar cache de imagens base64 no SW para offline |
 | ⏳ | Auditar com Lighthouse → meta: PWA score > 90 |
 
 ---
@@ -199,8 +204,9 @@
 
 | Status | Tarefa |
 |--------|--------|
-| ⏳ | Configurar deploy automático no Netlify ou GitHub Pages |
-| ⏳ | Criar `.github/workflows/deploy.yml` para deploy em merge no main |
+| ✅ | Configurar deploy automático no GitHub Pages (`public/` → `gomesdsj.github.io/LaPink/`) |
+| ✅ | Criar `.github/workflows/deploy.yml` — deploy automático em push na main via peaceiris/actions-gh-pages |
+| ✅ | Criar `dev-server.js` (Express) — serve raiz completa do projeto com URL de rede para testes mobile |
 | ⏳ | Configurar branch protection em `main` (exigir PR + revisão) |
 | ⏳ | Criar `.github/workflows/check-links.yml` para verificar links quebrados |
 | ⏳ | Verificar `.gitignore` — garantir que não versiona dados de localStorage ou arquivos temp |
@@ -218,6 +224,8 @@
 | ✅ | Bug: busca em V1.html sem função → corrigido |
 | ✅ | Bug: botão "Comprar" em produto.html não adicionava ao carrinho → corrigido |
 | ✅ | Bug: estoque não decrementava ao criar pedido → corrigido |
+| ✅ | Bug: login mobile não funcionava — usuários do admin (lapinkUsers/btoa) não eram encontrados em login.js → corrigido com fallback |
+| ✅ | Bug: menu hambúrguer centralizado no mobile e abrindo da direita → corrigido: fixado no canto esquerdo, drawer desliza da esquerda para direita |
 | ⏳ | Bug: estoque não decrementa quando pedido público (checkout.html) é confirmado |
 | ⏳ | Bug: formatBRL inconsistente entre páginas → precisa incluir utils.js em todas |
 | ⏳ | Criar smoke tests documentados para os 5 fluxos críticos |
@@ -283,6 +291,9 @@
 |--------|--------|
 | ✅ | Aumentar touch targets mínimos para 40px (`.btn-icon-sm`) |
 | ✅ | Adicionar `.table-scroll` com overflow-x auto |
+| ✅ | Hambúrguer no canto superior esquerdo da nav mobile (V1.html) |
+| ✅ | Drawer lateral esquerdo com overlay, animação left→0, fecha com overlay/X/Escape |
+| ✅ | Nav mobile: [≡ hambúrguer] [logo] [ícones de ação] — sem justify-content:center |
 | ⏳ | Modal com `max-height: 90svh` e overflow-y auto |
 | ⏳ | `padding-bottom: env(safe-area-inset-bottom)` no footer e sidebar (notch iPhone) |
 | ⏳ | `.form-row` deve colapsar em 1 coluna em telas < 400px |
@@ -309,9 +320,9 @@
 
 | Fase | Status | Descrição |
 |------|--------|-----------|
-| Fase 1 — Fundação | 🔄 75% | utils.js ✅, sidebar.js ✅, segurança ✅, 6 bugs ✅ — falta: incluir utils.js nas páginas e remover duplicatas |
-| Fase 2 — Features | ⏳ 30% | Carrinho ✅, Checkout ✅ — falta: decrementar estoque público, deploy |
-| Fase 3 — Qualidade | ⏳ 0% | Testes E2E, PWA, integração pagamento |
+| Fase 1 — Fundação | 🔄 85% | utils.js ✅, sidebar.js ✅, segurança ✅, 8 bugs ✅ — falta: incluir utils.js nas páginas e remover duplicatas |
+| Fase 2 — Features | 🔄 55% | Carrinho ✅, Checkout ✅, Carrossel ✅, PWA ✅, Deploy ✅ — falta: decrementar estoque público |
+| Fase 3 — Qualidade | ⏳ 5% | Testes E2E, Lighthouse PWA, integração pagamento |
 
 | Status | Tarefa Técnica |
 |--------|--------|
@@ -356,16 +367,18 @@
 | Dimensão | Nota Inicial | Nota Atual | Meta |
 |----------|-------------|------------|------|
 | Estrutura HTML | 9/10 | 9/10 | 10/10 |
-| Design Visual | 8/10 | 8/10 | 9/10 |
+| Design Visual | 8/10 | 9/10 | 9/10 |
 | Funcionalidade Admin | 7/10 | 8.5/10 | 9/10 |
-| Funcionalidade Loja | 4/10 | 7/10 | 9/10 |
-| Segurança | 3/10 | 7/10 | 9/10 |
+| Funcionalidade Loja | 4/10 | 7.5/10 | 9/10 |
+| Segurança | 3/10 | 7.5/10 | 9/10 |
 | Performance | 6/10 | 6/10 | 8/10 |
 | Acessibilidade | 5/10 | 6/10 | 8/10 |
 | SEO | 2/10 | 5/10 | 8/10 |
 | Arquitetura JS | 4/10 | 6/10 | 8/10 |
-| Experiência do Cliente | 3/10 | 7/10 | 9/10 |
-| **MÉDIA** | **5.1/10** | **6.9/10** | **8.7/10** |
+| Experiência do Cliente | 3/10 | 7.5/10 | 9/10 |
+| PWA & Mobile | 1/10 | 7/10 | 9/10 |
+| DevOps / Deploy | 1/10 | 8/10 | 9/10 |
+| **MÉDIA** | **4.8/10** | **7.2/10** | **8.8/10** |
 
 ---
 
@@ -375,19 +388,21 @@
 1. Incluir `utils.js` e `sidebar.js` em todas as páginas admin e remover funções locais duplicadas *(Ana Lima + Rodrigo Nunes)*
 2. Decrementar estoque quando checkout público é confirmado *(Pedro Alves + Thiago Lima)*
 3. Hash de senha no admin ao criar/editar cliente *(Beatriz Santos)*
+4. XSS em pedidos.html (renderização de itens em innerHTML) *(Beatriz Santos)*
 
 ### 🟠 Esta semana
-4. Deploy no Netlify *(Carla Barbosa)*
 5. Schema.org Product em produto.html *(Lucas Rocha)*
 6. Focus trap em modais *(Amanda Costa)*
-7. Comprimir imagens antes de salvar *(Rafael Torres)*
+7. Comprimir imagens antes de salvar via `<canvas>` *(Rafael Torres)*
+8. Modal com `max-height: 90svh` + notch iOS safe-area *(Gabriel Martins)*
 
 ### 🟡 Próximo mês
-8. Service Worker e manifest completo *(Diego Ferreira)*
-9. Filtros de período em relatórios *(Mariana Souza)*
-10. Página "Meu pedido" para cliente *(Vanessa Ribeiro)*
-11. Integração Mercado Pago *(Felipe Cardoso)*
+9. Auditar Lighthouse PWA → meta score > 90 *(Diego Ferreira)*
+10. Filtros de período em relatórios *(Mariana Souza)*
+11. Página "Meu pedido" para cliente *(Vanessa Ribeiro)*
+12. Integração Mercado Pago *(Felipe Cardoso)*
+13. Integrar ViaCEP no checkout *(Felipe Cardoso)*
 
 ---
 
-*Equipe TechCorp — 20 agentes ativos · LaPink · Atualizado: 2026-06-17*
+*Equipe TechCorp — 20 agentes ativos · LaPink · Atualizado: 2026-06-18*
