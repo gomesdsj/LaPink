@@ -28,24 +28,29 @@ function updateAuthUI() {
 
   if (client && client.name) {
     var firstName = client.name.split(' ')[0];
-    setText('navUser', 'Olá, ' + firstName);
+    setText('navUser',    'Olá, ' + firstName);
+    setText('drawerUser', 'Olá, ' + firstName);
     show('loginLink',        'none');
     show('logoutBtn',        'inline-flex');
     show('loginBtn',         'none');
     show('registerBtn',      'none');
     show('drawerLoginBtn',   'none');
     show('drawerRegisterBtn','none');
-    // Botão "Painel" visível para admin e superadmin
+    show('drawerUser',       'block');
+    show('drawerLogoutBtn',  'flex');
     var isAdmin = client.role === 'admin' || client.role === 'superadmin';
     show('panelBtn', isAdmin ? 'inline-block' : 'none');
   } else {
-    setText('navUser', '');
+    setText('navUser',    '');
+    setText('drawerUser', '');
     show('loginLink',        'inline-flex');
     show('logoutBtn',        'none');
     show('loginBtn',         'inline-block');
     show('registerBtn',      'inline-block');
-    show('drawerLoginBtn',   '');
-    show('drawerRegisterBtn','');
+    show('drawerLoginBtn',   'flex');
+    show('drawerRegisterBtn','none');
+    show('drawerUser',       'none');
+    show('drawerLogoutBtn',  'none');
     show('panelBtn',         'none');
   }
 }

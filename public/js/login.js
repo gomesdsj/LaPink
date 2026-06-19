@@ -30,6 +30,19 @@ if (loginForm) {
       }
     }
 
+    // Fallback: usuários criados pelo painel admin (lapinkUsers, senha btoa)
+    if (!client) {
+      try {
+        var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
+        var found = users.find(function(u) {
+          return u.email === email && u.password === btoa(loginPassword);
+        });
+        if (found) {
+          client = { email: found.email, name: found.name, role: found.role || 'client' };
+        }
+      } catch(e) {}
+    }
+
     if (!client) {
       setLoginMessage('E-mail ou senha incorretos.', false);
       return;

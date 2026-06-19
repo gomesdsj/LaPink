@@ -153,8 +153,29 @@
     <span id="v1-anuncio"><i class="ti ti-truck"></i> Frete grátis acima de R$ 199 · Parcele em até 6x sem juros</span>
   </div>
 
+  <!-- Overlay + Drawer lateral esquerdo (mobile) -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="nav-drawer" id="navDrawer" role="dialog" aria-label="Menu">
+    <div class="drawer-header">
+      <div class="logo"><i class="ti ti-diamond"></i> LaPink</div>
+      <button class="drawer-close" id="drawerClose" aria-label="Fechar menu"><i class="ti ti-x"></i></button>
+    </div>
+    <nav class="drawer-links">
+      <a onclick="drawerNav(function(){filtrarCategoria('Anéis')})"><i class="ti ti-circle"></i> Semijoias</a>
+      <a onclick="drawerNav(function(){filtrarCategoria('Bolsas')})"><i class="ti ti-briefcase"></i> Bolsas</a>
+      <a onclick="drawerNav(function(){filtrarCategoria('Brincos')})"><i class="ti ti-star"></i> Acessórios</a>
+      <a onclick="drawerNav(limparFiltro)"><i class="ti ti-tag"></i> Promoções</a>
+    </nav>
+    <div class="drawer-footer">
+      <span class="drawer-user" id="drawerUser"></span>
+      <a href="login.html" class="drawer-btn drawer-btn-in" id="drawerLoginBtn"><i class="ti ti-user"></i> Entrar / Cadastrar</a>
+      <button class="drawer-btn drawer-btn-out" id="drawerLogoutBtn" onclick="clearLoggedClient();updateAuthUI();closeDrawer();"><i class="ti ti-power"></i> Sair da conta</button>
+    </div>
+  </div>
+
   <!-- Navbar -->
   <div class="nav">
+    <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
     <div class="logo"><i class="ti ti-diamond"></i> LaPink</div>
     <div class="search-bar">
       <i class="ti ti-search"></i>
@@ -806,6 +827,35 @@ if (installBtn) {
   } else {
     init();
   }
+})();
+</script>
+
+<script>
+// ── Drawer / Hamburger ───────────────────────────────────
+(function() {
+  var hamburger = document.getElementById('navHamburger');
+  var drawer    = document.getElementById('navDrawer');
+  var overlay   = document.getElementById('drawerOverlay');
+  var closeBtn  = document.getElementById('drawerClose');
+
+  function openDrawer() {
+    if (!drawer) return;
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  window.closeDrawer = function() {
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  window.drawerNav = function(fn) { closeDrawer(); if (typeof fn === 'function') fn(); };
+
+  if (hamburger) hamburger.addEventListener('click', openDrawer);
+  if (overlay)   overlay.addEventListener('click', closeDrawer);
+  if (closeBtn)  closeBtn.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
 })();
 </script>
 </body>
