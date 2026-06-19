@@ -101,6 +101,7 @@
             <button class="config-tab" onclick="mudarAba('conta', this)"><i class="ti ti-user-circle"></i> Conta</button>
             <button class="config-tab" onclick="mudarAba('notificacoes', this)"><i class="ti ti-bell"></i> Notificações</button>
             <button class="config-tab" onclick="mudarAba('armazenamento', this)"><i class="ti ti-database"></i> Armazenamento</button>
+            <button class="config-tab" onclick="mudarAba('integracoes', this)"><i class="ti ti-plug"></i> Integrações</button>
           </div>
 
           <!-- ── ABA: LOJA ── -->
@@ -280,6 +281,95 @@
             </div>
           </div>
 
+          <!-- ── ABA: INTEGRAÇÕES ── -->
+          <div class="config-panel" id="panel-integracoes">
+
+            <!-- Mercado Pago -->
+            <div class="section-card">
+              <h3><i class="ti ti-credit-card"></i> Mercado Pago</h3>
+              <p>Integração de pagamento. Obtenha as chaves em <strong>mercadopago.com.br → Credenciais</strong>.</p>
+              <div class="form-group">
+                <label>Public Key <small style="color:var(--gray-400)">(prefixo APP_USR-…)</small></label>
+                <input type="text" id="int-mp-pk" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label>Access Token <small style="color:var(--gray-400)">(prefixo APP_USR-… ou TEST-…)</small></label>
+                <input type="password" id="int-mp-at" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+              </div>
+              <div class="form-row" style="align-items:center;">
+                <div class="form-group" style="flex:0 0 auto;">
+                  <label>Modo</label>
+                  <select id="int-mp-modo">
+                    <option value="sandbox">Sandbox (testes)</option>
+                    <option value="producao">Produção</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Número WhatsApp para notificações de pagamento</label>
+                  <input type="tel" id="int-mp-wpp" placeholder="5511999999999" />
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar configurações de pagamento</button>
+              </div>
+            </div>
+
+            <!-- DNS / Domínio -->
+            <div class="section-card">
+              <h3><i class="ti ti-world"></i> DNS & Domínio</h3>
+              <p>Configure o domínio customizado onde a loja está publicada. Usado em links de compartilhamento e notificações.</p>
+              <div class="form-group">
+                <label>URL pública da loja</label>
+                <input type="url" id="int-dns-url" placeholder="https://www.lapink.com.br" />
+              </div>
+              <div class="form-group">
+                <label>Subdomínio do painel admin (opcional)</label>
+                <input type="url" id="int-dns-admin" placeholder="https://admin.lapink.com.br" />
+              </div>
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar DNS</button>
+              </div>
+            </div>
+
+            <!-- Google Analytics -->
+            <div class="section-card">
+              <h3><i class="ti ti-chart-line"></i> Google Analytics 4</h3>
+              <p>Coloque o ID de medição do GA4 para rastrear visitas à loja pública.</p>
+              <div class="form-group">
+                <label>Measurement ID <small style="color:var(--gray-400)">(ex.: G-XXXXXXXXXX)</small></label>
+                <input type="text" id="int-ga-id" placeholder="G-XXXXXXXXXX" autocomplete="off" />
+              </div>
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar Analytics</button>
+              </div>
+            </div>
+
+            <!-- WhatsApp Business API -->
+            <div class="section-card">
+              <h3><i class="ti ti-brand-whatsapp"></i> WhatsApp Business API</h3>
+              <p>Para notificações automáticas de status de pedido via WhatsApp Business Cloud API (Meta).</p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Phone Number ID</label>
+                  <input type="text" id="int-wba-phone-id" placeholder="1234567890" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label>Access Token (Bearer)</label>
+                  <input type="password" id="int-wba-token" placeholder="EAAxxxxxxxxxx…" autocomplete="off" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>ID da conta comercial (Business Account ID)</label>
+                <input type="text" id="int-wba-biz-id" placeholder="1234567890" autocomplete="off" />
+              </div>
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar WhatsApp Business</button>
+              </div>
+            </div>
+
+          </div>
+          <!-- /panel-integracoes -->
+
         </section>
       </main>
     </div>
@@ -453,10 +543,43 @@
     showToast('Todos os dados foram removidos.');
   }
 
+  // ─── ABA INTEGRAÇÕES ──────────────────────────────────────
+  function carregarIntegracoes() {
+    var cfg = getObj('lapinkApiConfig');
+    document.getElementById('int-mp-pk').value       = cfg.mpPublicKey   || '';
+    document.getElementById('int-mp-at').value       = cfg.mpAccessToken || '';
+    document.getElementById('int-mp-modo').value     = cfg.mpModo        || 'sandbox';
+    document.getElementById('int-mp-wpp').value      = cfg.mpWhatsapp    || '';
+    document.getElementById('int-dns-url').value     = cfg.dnsUrl        || '';
+    document.getElementById('int-dns-admin').value   = cfg.dnsAdmin      || '';
+    document.getElementById('int-ga-id').value       = cfg.gaId          || '';
+    document.getElementById('int-wba-phone-id').value= cfg.wbaPhoneId    || '';
+    document.getElementById('int-wba-token').value   = cfg.wbaToken      || '';
+    document.getElementById('int-wba-biz-id').value  = cfg.wbaBizId      || '';
+  }
+
+  function salvarIntegracoes() {
+    var cfg = {
+      mpPublicKey:   document.getElementById('int-mp-pk').value.trim(),
+      mpAccessToken: document.getElementById('int-mp-at').value.trim(),
+      mpModo:        document.getElementById('int-mp-modo').value,
+      mpWhatsapp:    document.getElementById('int-mp-wpp').value.trim(),
+      dnsUrl:        document.getElementById('int-dns-url').value.trim(),
+      dnsAdmin:      document.getElementById('int-dns-admin').value.trim(),
+      gaId:          document.getElementById('int-ga-id').value.trim(),
+      wbaPhoneId:    document.getElementById('int-wba-phone-id').value.trim(),
+      wbaToken:      document.getElementById('int-wba-token').value.trim(),
+      wbaBizId:      document.getElementById('int-wba-biz-id').value.trim()
+    };
+    localStorage.setItem('lapinkApiConfig', JSON.stringify(cfg));
+    showToast('Integrações salvas com sucesso!');
+  }
+
   // ─── Init ─────────────────────────────────────────────────
   carregarLoja();
   carregarConta();
   carregarNotificacoes();
+  carregarIntegracoes();
   </script>
   <script src="js/sidebar.js"></script>
   <script src="js/utils.js"></script>

@@ -119,15 +119,15 @@
                   <div class="form-group">
                     <label for="categoria">Categoria</label>
                     <select id="categoria" onchange="atualizarPreview()">
-                      <option>Anel</option>
-                      <option>Brinco</option>
-                      <option>Berloque</option>
-                      <option>Chocker</option>
-                      <option>Colar</option>
-                      <option>Conjunto</option>
+                      <option>Anéis</option>
+                      <option>Brincos</option>
+                      <option>Berloques</option>
+                      <option>Chokers</option>
+                      <option>Colares</option>
+                      <option>Conjuntos</option>
                       <option>Piercing Pressão</option>
-                      <option>Pulseira</option>
-                      <option>Bolsa</option>
+                      <option>Pulseiras</option>
+                      <option>Bolsas</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -299,9 +299,14 @@
               <select id="filtro-cat" onchange="filtrarProdutos()">
                 <option value="">Todos os produtos</option>
                 <option>Anéis</option>
-                <option>Colares</option>
                 <option>Brincos</option>
+                <option>Colares</option>
                 <option>Bolsas</option>
+                <option>Pulseiras</option>
+                <option>Conjuntos</option>
+                <option>Berloques</option>
+                <option>Chokers</option>
+                <option>Piercing Pressão</option>
               </select>
               <button class="btn btn-secondary" onclick="filtrarProdutos()">Filtrar</button>
               <button class="btn btn-secondary" onclick="abrirModalImport()" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
@@ -494,15 +499,15 @@
             <div class="form-group">
               <label for="modal-categoria">Categoria</label>
               <select id="modal-categoria">
-                <option>Anel</option>
-                <option>Brinco</option>
-                <option>Berloque</option>
-                <option>Chocker</option>
-                <option>Colar</option>
-                <option>Conjunto</option>
+                <option>Anéis</option>
+                <option>Brincos</option>
+                <option>Berloques</option>
+                <option>Chokers</option>
+                <option>Colares</option>
+                <option>Conjuntos</option>
                 <option>Piercing Pressão</option>
-                <option>Pulseira</option>
-                <option>Bolsa</option>
+                <option>Pulseiras</option>
+                <option>Bolsas</option>
               </select>
             </div>
             <div class="form-group">
@@ -800,11 +805,31 @@
           <span class="prod-list-price">R$ ${p.precoVarejo.toFixed(2).replace('.', ',')}</span>
           <span class="${lucroClass}">${lucroText}</span>
           <div class="prod-list-actions">
+            <button class="btn-icon-sm" title="Trocar foto" onclick="document.getElementById('foto-inp-${p.id}').click()"><i class="ti ti-camera"></i></button>
+            <input type="file" id="foto-inp-${p.id}" accept="image/*" style="display:none" onchange="trocarFotoProduto(${p.id}, this)" />
             <button class="btn-icon-sm edit"   title="Editar"  onclick="editarProduto(${p.id})"><i class="ti ti-pencil"></i></button>
             <button class="btn-icon-sm danger" title="Excluir" onclick="excluirProduto(${p.id})"><i class="ti ti-trash"></i></button>
           </div>`;
         container.appendChild(div);
       });
+    }
+
+    function trocarFotoProduto(id, input) {
+      var file = input.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { showToast('Selecione uma imagem válida.', 'erro'); return; }
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var lista = getProdutos();
+        var idx = lista.findIndex(function(p) { return p.id === id; });
+        if (idx >= 0) {
+          lista[idx].imagem = e.target.result;
+          saveProdutos(lista);
+          filtrarProdutos();
+          showToast('Foto atualizada!');
+        }
+      };
+      reader.readAsDataURL(file);
     }
 
     function filtrarProdutos() {

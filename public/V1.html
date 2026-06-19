@@ -451,8 +451,19 @@
       linkEl.style.display   = '';
       backEl.style.display   = '';
 
+      // Mapeamento plural→singular (retrocompatibilidade com produtos salvos antes da padronização)
+      var CAT_ALIAS = {
+        'Anéis':     ['Anéis','Anel'],
+        'Brincos':   ['Brincos','Brinco'],
+        'Colares':   ['Colares','Colar'],
+        'Bolsas':    ['Bolsas','Bolsa'],
+        'Pulseiras': ['Pulseiras','Pulseira'],
+        'Conjuntos': ['Conjuntos','Conjunto'],
+        'Berloques': ['Berloques','Berloque'],
+        'Chokers':   ['Chokers','Chocker']
+      };
       var filtrados = produtos.filter(function(p) {
-        var matchCat   = !cat   || p.categoria === cat;
+        var matchCat   = !cat || (CAT_ALIAS[cat] || [cat]).indexOf(p.categoria) >= 0;
         var matchBusca = !busca || (p.nome||'').toLowerCase().includes(busca) ||
                                    (p.categoria||'').toLowerCase().includes(busca) ||
                                    (p.descricao||'').toLowerCase().includes(busca);
