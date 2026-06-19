@@ -151,7 +151,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Nome de exibição</label>
-                  <input type="text" id="cfg-admin-nome" placeholder="Carol" />
+                  <input type="text" id="cfg-admin-nome" placeholder="Alexandre" />
                 </div>
                 <div class="form-group">
                   <label>E-mail admin</label>
@@ -434,7 +434,7 @@
   // ─── ABA CONTA ────────────────────────────────────────────
   function carregarConta() {
     var cfg = getObj('lapinkAdminConfig');
-    document.getElementById('cfg-admin-nome').value = cfg.nome || 'Carol';
+    document.getElementById('cfg-admin-nome').value = cfg.nome || '';
     document.getElementById('cfg-admin-email').value = cfg.email || '';
     document.getElementById('cfg-senha-atual').value = '';
     document.getElementById('cfg-senha-nova').value = '';

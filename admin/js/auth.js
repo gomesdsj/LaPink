@@ -6,8 +6,7 @@ var _SESSION_KEY = 'lapinkSession';
 // ── Seed dos Super Admins fixos ───────────────────────────
 (function _seedSuperAdmins() {
   var FIXED = [
-    { email: 'carol@bellajoias.com',      password: btoa('Bella@2025'),   name: 'Carol',     role: 'superadmin' },
-    { email: 'alexandrej529@hotmail.com', password: btoa('123456'),       name: 'Alexandre', role: 'superadmin' }
+    { email: 'alexandrej529@hotmail.com', password: btoa('123456'), name: 'Alexandre', role: 'superadmin' }
   ];
   var users = _getUsers();
   var changed = false;

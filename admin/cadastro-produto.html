@@ -150,56 +150,28 @@
                   <div class="cost-section-label">
                     <i class="ti ti-scale"></i> Custo da peça
                   </div>
-
-                  <!-- Modo de custo -->
-                  <div style="display:flex; gap:6px; margin-bottom:12px; background:var(--gray-50); border-radius:var(--radius-sm); padding:4px;">
-                    <button type="button" id="btn-modo-grama"  onclick="setModoCusto('grama')"  style="flex:1; padding:5px; font-size:11px; font-weight:700; border:none; border-radius:5px; cursor:pointer; background:var(--pink-500); color:#fff; transition:all .15s;">Por grama</button>
-                    <button type="button" id="btn-modo-direto" onclick="setModoCusto('direto')" style="flex:1; padding:5px; font-size:11px; font-weight:700; border:none; border-radius:5px; cursor:pointer; background:transparent; color:var(--gray-500); transition:all .15s;">Valor direto (R$)</button>
-                  </div>
-
-                  <!-- Modo por grama -->
-                  <div id="modo-grama-section">
-                    <div class="cost-sub-label">Peça bruta (metal sem banho)</div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label for="p-peso-bruto">Peso da peça bruta <span class="unit-tag">kg</span></label>
-                        <input id="p-peso-bruto" type="text" placeholder="0,005" oninput="formatPesoInput(this); calcularPrecoAutomatico()" />
-                      </div>
-                      <div class="form-group">
-                        <label for="p-custo-bruto">Custo/grama do metal <span class="unit-tag">R$</span></label>
-                        <input id="p-custo-bruto" type="text" placeholder="0,80" oninput="calcularPrecoAutomatico()" />
-                      </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="p-preco-bruto">Preço da peça bruta <span class="unit-tag">R$</span></label>
+                      <input id="p-preco-bruto" type="text" placeholder="5,70" oninput="calcularPrecoAutomatico()" />
                     </div>
-                    <div class="cost-sub-label">Banho</div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label for="p-peso">Peso do banho <span class="unit-tag">kg</span></label>
-                        <input id="p-peso" type="text" placeholder="0,300" oninput="formatPesoInput(this); calcularPrecoAutomatico()" />
-                      </div>
-                      <div class="form-group">
-                        <label for="p-custo-g">Custo/grama do banho <span class="unit-tag">R$</span></label>
-                        <input id="p-custo-g" type="text" placeholder="0,50" oninput="calcularPrecoAutomatico()" />
-                      </div>
+                    <div class="form-group">
+                      <label for="p-peso-bruto-g">Peso da peça bruta <span class="unit-tag">g</span></label>
+                      <input id="p-peso-bruto-g" type="number" min="0" step="0.01" placeholder="8" oninput="calcularPrecoAutomatico()" />
                     </div>
                   </div>
-
-                  <!-- Modo valor direto (planilha) -->
-                  <div id="modo-direto-section" style="display:none;">
-                    <div class="cost-sub-label">Custo da peça (valor total, ex: R$ 0,70)</div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label for="p-custo-direto-peca">Custo da peça bruta <span class="unit-tag">R$</span></label>
-                        <input id="p-custo-direto-peca" type="text" placeholder="0,70" oninput="calcularPrecoAutomatico()" />
-                      </div>
-                      <div class="form-group">
-                        <label for="p-custo-direto-banho">Custo do banho <span class="unit-tag">R$</span></label>
-                        <input id="p-custo-direto-banho" type="text" placeholder="0,25" oninput="calcularPrecoAutomatico()" />
-                      </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="p-banho-g">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
+                      <input id="p-banho-g" type="text" placeholder="0,50" oninput="calcularPrecoAutomatico()" />
+                    </div>
+                    <div class="form-group">
+                      <label for="p-peso-apos-banho">Peso após o banho <span class="unit-tag">g</span></label>
+                      <input id="p-peso-apos-banho" type="number" min="0" step="0.01" placeholder="8,30" oninput="calcularPrecoAutomatico()" />
                     </div>
                   </div>
-
                   <div class="form-group">
-                    <label for="p-margem">Margem de lucro <span class="unit-tag">%</span></label>
+                    <label for="p-margem">Porcentagem de lucro <span class="unit-tag">%</span></label>
                     <input id="p-margem" type="number" min="0" max="500" placeholder="40" oninput="calcularPrecoAutomatico()" />
                   </div>
 
@@ -529,33 +501,28 @@
           <!-- Custo da peça -->
           <div class="cost-section">
             <div class="cost-section-label"><i class="ti ti-scale"></i> Custo da peça</div>
-
-            <div class="cost-sub-label">Peça bruta (metal sem banho)</div>
             <div class="form-row">
               <div class="form-group">
-                <label for="modal-peso-bruto">Peso da peça bruta <span class="unit-tag">kg</span></label>
-                <input id="modal-peso-bruto" type="text" placeholder="0,005" oninput="formatPesoInput(this); calcularModalPreco()" />
+                <label for="modal-preco-bruto">Preço da peça bruta <span class="unit-tag">R$</span></label>
+                <input id="modal-preco-bruto" type="text" placeholder="5,70" oninput="calcularModalPreco()" />
               </div>
               <div class="form-group">
-                <label for="modal-custo-bruto">Custo/grama do metal <span class="unit-tag">R$</span></label>
-                <input id="modal-custo-bruto" type="text" placeholder="0,80" oninput="calcularModalPreco()" />
+                <label for="modal-peso-bruto-g">Peso da peça bruta <span class="unit-tag">g</span></label>
+                <input id="modal-peso-bruto-g" type="number" min="0" step="0.01" placeholder="8" oninput="calcularModalPreco()" />
               </div>
             </div>
-
-            <div class="cost-sub-label">Banho</div>
             <div class="form-row">
               <div class="form-group">
-                <label for="modal-peso">Peso do banho <span class="unit-tag">kg</span></label>
-                <input id="modal-peso" type="text" placeholder="0,300" oninput="formatPesoInput(this); calcularModalPreco()" />
+                <label for="modal-banho-g">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
+                <input id="modal-banho-g" type="text" placeholder="0,50" oninput="calcularModalPreco()" />
               </div>
               <div class="form-group">
-                <label for="modal-custo-g">Custo/grama do banho <span class="unit-tag">R$</span></label>
-                <input id="modal-custo-g" type="text" placeholder="0,50" oninput="calcularModalPreco()" />
+                <label for="modal-peso-apos-banho">Peso após o banho <span class="unit-tag">g</span></label>
+                <input id="modal-peso-apos-banho" type="number" min="0" step="0.01" placeholder="8,30" oninput="calcularModalPreco()" />
               </div>
             </div>
-
             <div class="form-group">
-              <label for="modal-margem">Margem <span class="unit-tag">%</span></label>
+              <label for="modal-margem">Porcentagem de lucro <span class="unit-tag">%</span></label>
               <input id="modal-margem" type="number" min="0" max="500" placeholder="40" oninput="calcularModalPreco()" />
             </div>
 
@@ -684,42 +651,19 @@
       return parseFloat((value || '0').replace(',', '.')) || 0;
     }
 
-    // ─── Toggle de modo de custo ───
-    var _modoCusto = 'grama';
-    function setModoCusto(modo) {
-      _modoCusto = modo;
-      document.getElementById('modo-grama-section').style.display  = modo === 'grama'  ? '' : 'none';
-      document.getElementById('modo-direto-section').style.display = modo === 'direto' ? '' : 'none';
-      var btnG = document.getElementById('btn-modo-grama');
-      var btnD = document.getElementById('btn-modo-direto');
-      if (btnG && btnD) {
-        btnG.style.background = modo === 'grama'  ? 'var(--pink-500)' : 'transparent';
-        btnG.style.color      = modo === 'grama'  ? '#fff' : 'var(--gray-500)';
-        btnD.style.background = modo === 'direto' ? 'var(--pink-500)' : 'transparent';
-        btnD.style.color      = modo === 'direto' ? '#fff' : 'var(--gray-500)';
-      }
-      calcularPrecoAutomatico();
-    }
-
     // ─── Calculadora integrada no formulário ───
+    // Fórmula: custo banho = valor_banho_por_g × peso_apos_banho
+    //          custo total = preço_peça_bruta + custo_banho
+    //          varejo = custo_total × (1 + %)
     function calcularPrecoAutomatico() {
-      var bar    = document.getElementById('cost-result-bar');
-      var margem = parseFloat(document.getElementById('p-margem').value) || 0;
-      var custoBruto, custoBanho;
+      var bar          = document.getElementById('cost-result-bar');
+      var precoBruto   = parseCustoG(document.getElementById('p-preco-bruto').value);
+      var banhoG       = parseCustoG(document.getElementById('p-banho-g').value);
+      var pesoApos     = parseFloat(document.getElementById('p-peso-apos-banho').value) || 0;
+      var margem       = parseFloat(document.getElementById('p-margem').value) || 0;
 
-      if (_modoCusto === 'direto') {
-        custoBruto = parseCustoG(document.getElementById('p-custo-direto-peca').value);
-        custoBanho = parseCustoG(document.getElementById('p-custo-direto-banho').value);
-      } else {
-        var pesoBruto   = parsePesoGramas(document.getElementById('p-peso-bruto').value);
-        var custoBrutoG = parseCustoG(document.getElementById('p-custo-bruto').value);
-        var pesoBanho   = parsePesoGramas(document.getElementById('p-peso').value);
-        var custoBanhoG = parseCustoG(document.getElementById('p-custo-g').value);
-        custoBruto = (pesoBruto > 0 && custoBrutoG > 0) ? pesoBruto * custoBrutoG : 0;
-        custoBanho = (pesoBanho > 0 && custoBanhoG > 0) ? pesoBanho * custoBanhoG : 0;
-      }
-
-      var custoTotal = custoBruto + custoBanho;
+      var custoBanho = (banhoG > 0 && pesoApos > 0) ? banhoG * pesoApos : 0;
+      var custoTotal = precoBruto + custoBanho;
 
       if (custoTotal <= 0) { bar.style.display = 'none'; return; }
 
@@ -727,7 +671,7 @@
       var atacado = custoTotal * (1 + margem / 100 * 0.6);
       var lucroUn = varejo - custoTotal;
 
-      document.getElementById('crb-bruto').textContent   = custoBruto > 0 ? formatBRL(custoBruto) : '—';
+      document.getElementById('crb-bruto').textContent   = precoBruto > 0 ? formatBRL(precoBruto) : '—';
       document.getElementById('crb-banho').textContent   = custoBanho > 0 ? formatBRL(custoBanho) : '—';
       document.getElementById('crb-custo').textContent   = formatBRL(custoTotal);
       document.getElementById('crb-varejo').textContent  = formatBRL(varejo);
@@ -868,24 +812,12 @@
       document.getElementById('modal-atacado').value   = 'R$ ' + p.precoAtacado.toFixed(2).replace('.', ',');
       document.getElementById('modal-descricao').value = p.descricao || '';
 
-      // Peça bruta
-      if (p.pesoBrutoGramas) {
-        document.getElementById('modal-peso-bruto').value  = (p.pesoBrutoGramas / 1000).toFixed(3).replace('.', ',');
-        document.getElementById('modal-custo-bruto').value = p.custoGramaBruto ? p.custoGramaBruto.toFixed(2).replace('.', ',') : '';
-      } else {
-        document.getElementById('modal-peso-bruto').value  = '';
-        document.getElementById('modal-custo-bruto').value = '';
-      }
-      // Banho
-      if (p.pesoGramas) {
-        document.getElementById('modal-peso').value    = (p.pesoGramas / 1000).toFixed(3).replace('.', ',');
-        document.getElementById('modal-custo-g').value = p.custoGrama ? p.custoGrama.toFixed(2).replace('.', ',') : '';
-      } else {
-        document.getElementById('modal-peso').value    = '';
-        document.getElementById('modal-custo-g').value = '';
-      }
-      document.getElementById('modal-margem').value = p.margemLucro || '';
-      if (p.pesoBrutoGramas || p.pesoGramas) {
+      document.getElementById('modal-preco-bruto').value     = p.precoBruto      ? p.precoBruto.toFixed(2).replace('.', ',')     : '';
+      document.getElementById('modal-peso-bruto-g').value    = p.pesoBrutoGramas ? String(p.pesoBrutoGramas)                        : '';
+      document.getElementById('modal-banho-g').value         = p.custoGrama      ? p.custoGrama.toFixed(2).replace('.', ',')        : '';
+      document.getElementById('modal-peso-apos-banho').value = p.pesoAposBanho   ? String(p.pesoAposBanho)                         : '';
+      document.getElementById('modal-margem').value          = p.margemLucro     || '';
+      if (p.precoBruto || p.pesoAposBanho) {
         calcularModalPreco();
       } else {
         document.getElementById('modal-cost-bar').style.display = 'none';
@@ -908,15 +840,14 @@
     }
 
     function calcularModalPreco() {
-      var pesoBruto   = parsePesoGramas(document.getElementById('modal-peso-bruto').value);
-      var custoBrutoG = parseCustoG(document.getElementById('modal-custo-bruto').value);
-      var pesoBanho   = parsePesoGramas(document.getElementById('modal-peso').value);
-      var custoBanhoG = parseCustoG(document.getElementById('modal-custo-g').value);
-      var margem      = parseFloat(document.getElementById('modal-margem').value) || 0;
-      var bar         = document.getElementById('modal-cost-bar');
+      var precoBruto = parseCustoG(document.getElementById('modal-preco-bruto').value);
+      var banhoG     = parseCustoG(document.getElementById('modal-banho-g').value);
+      var pesoApos   = parseFloat(document.getElementById('modal-peso-apos-banho').value) || 0;
+      var margem     = parseFloat(document.getElementById('modal-margem').value) || 0;
+      var bar        = document.getElementById('modal-cost-bar');
 
-      var custoBruto = (pesoBruto > 0 && custoBrutoG > 0) ? pesoBruto * custoBrutoG : 0;
-      var custoBanho = (pesoBanho > 0 && custoBanhoG > 0) ? pesoBanho * custoBanhoG : 0;
+      var custoBruto = precoBruto;
+      var custoBanho = (banhoG > 0 && pesoApos > 0) ? banhoG * pesoApos : 0;
       var custoTotal = custoBruto + custoBanho;
 
       if (custoTotal <= 0) { bar.style.display = 'none'; return; }
@@ -956,17 +887,16 @@
       function parsePreco(v) {
         return parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
       }
-      var imgEl       = document.getElementById('modal-preview-img-photo');
-      var pesoBrutoG  = parsePesoGramas(document.getElementById('modal-peso-bruto').value);
-      var custoBrutoG = parseCustoG(document.getElementById('modal-custo-bruto').value);
-      var pesoG       = parsePesoGramas(document.getElementById('modal-peso').value);
-      var custoG      = parseCustoG(document.getElementById('modal-custo-g').value);
-      var margemV     = parseFloat(document.getElementById('modal-margem').value) || 0;
-      var custoBruto  = pesoBrutoG > 0 && custoBrutoG > 0 ? pesoBrutoG * custoBrutoG : 0;
-      var custoBanho  = pesoG > 0 && custoG > 0 ? pesoG * custoG : 0;
-      var custoTot    = custoBruto + custoBanho;
-      var precoVar    = parsePreco(document.getElementById('modal-varejo').value);
-      var lucroUn     = custoTot > 0 ? precoVar - custoTot : undefined;
+      var imgEl         = document.getElementById('modal-preview-img-photo');
+      var precoBruto    = parseCustoG(document.getElementById('modal-preco-bruto').value);
+      var pesoBrutoG    = parseFloat(document.getElementById('modal-peso-bruto-g').value)    || 0;
+      var banhoG        = parseCustoG(document.getElementById('modal-banho-g').value);
+      var pesoAposBanho = parseFloat(document.getElementById('modal-peso-apos-banho').value) || 0;
+      var margemV       = parseFloat(document.getElementById('modal-margem').value) || 0;
+      var custoBanho    = banhoG > 0 && pesoAposBanho > 0 ? banhoG * pesoAposBanho : 0;
+      var custoTot      = precoBruto + custoBanho;
+      var precoVar      = parsePreco(document.getElementById('modal-varejo').value);
+      var lucroUn       = custoTot > 0 ? precoVar - custoTot : undefined;
 
       var todos = getProdutos();
       var idx = todos.findIndex(function(x) { return x.id === id; });
@@ -980,13 +910,13 @@
         precoAtacado:  parsePreco(document.getElementById('modal-atacado').value),
         descricao:     document.getElementById('modal-descricao').value.trim(),
         imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : old.imagem,
-        pesoBrutoGramas: pesoBrutoG   || undefined,
-        custoGramaBruto: custoBrutoG  || undefined,
-        pesoGramas:      pesoG        || undefined,
-        custoGrama:      custoG       || undefined,
-        margemLucro:     margemV      || undefined,
-        custoTotal:      custoTot     || undefined,
-        lucroUnitario:   lucroUn,
+        precoBruto:       precoBruto     || undefined,
+        pesoBrutoGramas:  pesoBrutoG     || undefined,
+        custoGrama:       banhoG         || undefined,
+        pesoAposBanho:    pesoAposBanho  || undefined,
+        margemLucro:      margemV        || undefined,
+        custoTotal:       custoTot       || undefined,
+        lucroUnitario:    lucroUn,
       });
 
       saveProdutos(todos);
@@ -1002,11 +932,11 @@
       document.getElementById('preco-atacado').value = '';
       document.getElementById('descricao').value     = '';
       document.getElementById('imagem').value        = '';
-      document.getElementById('p-peso-bruto').value  = '';
-      document.getElementById('p-custo-bruto').value = '';
-      document.getElementById('p-peso').value        = '';
-      document.getElementById('p-custo-g').value     = '';
-      document.getElementById('p-margem').value      = '';
+      document.getElementById('p-preco-bruto').value     = '';
+      document.getElementById('p-peso-bruto-g').value    = '';
+      document.getElementById('p-banho-g').value         = '';
+      document.getElementById('p-peso-apos-banho').value = '';
+      document.getElementById('p-margem').value          = '';
       document.getElementById('cost-result-bar').style.display = 'none';
       document.getElementById('preview-img-photo').style.display = 'none';
       document.getElementById('preview-img-icon').style.display  = '';
@@ -1023,25 +953,13 @@
       }
       var imgEl = document.getElementById('preview-img-photo');
 
-      var margemV  = parseFloat(document.getElementById('p-margem').value) || 0;
-      var custoBruto, custoBanho;
-      var custoPecaDireto  = 0, custoBanhoDireto = 0;
-      var pesoBrutoG = 0, custoBrutoG = 0, pesoG = 0, custoG = 0;
-
-      if (_modoCusto === 'direto') {
-        custoPecaDireto  = parseCustoG(document.getElementById('p-custo-direto-peca').value);
-        custoBanhoDireto = parseCustoG(document.getElementById('p-custo-direto-banho').value);
-        custoBruto = custoPecaDireto;
-        custoBanho = custoBanhoDireto;
-      } else {
-        pesoBrutoG  = parsePesoGramas(document.getElementById('p-peso-bruto').value);
-        custoBrutoG = parseCustoG(document.getElementById('p-custo-bruto').value);
-        pesoG    = parsePesoGramas(document.getElementById('p-peso').value);
-        custoG   = parseCustoG(document.getElementById('p-custo-g').value);
-        custoBruto = pesoBrutoG > 0 && custoBrutoG > 0 ? pesoBrutoG * custoBrutoG : 0;
-        custoBanho = pesoG > 0 && custoG > 0 ? pesoG * custoG : 0;
-      }
-      var custoTot = custoBruto + custoBanho;
+      var precoBruto    = parseCustoG(document.getElementById('p-preco-bruto').value);
+      var pesoBrutoG    = parseFloat(document.getElementById('p-peso-bruto-g').value)    || 0;
+      var banhoG        = parseCustoG(document.getElementById('p-banho-g').value);
+      var pesoAposBanho = parseFloat(document.getElementById('p-peso-apos-banho').value) || 0;
+      var margemV       = parseFloat(document.getElementById('p-margem').value) || 0;
+      var custoBanho    = banhoG > 0 && pesoAposBanho > 0 ? banhoG * pesoAposBanho : 0;
+      var custoTot      = precoBruto + custoBanho;
       var precoVar = parsePreco(document.getElementById('preco-varejo').value);
       var lucroUn  = custoTot > 0 ? precoVar - custoTot : undefined;
 
@@ -1057,12 +975,10 @@
         precoAtacado:    parsePreco(document.getElementById('preco-atacado').value),
         imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : null,
         icone:           'ti-diamond',
+        precoBruto:       precoBruto        || undefined,
         pesoBrutoGramas:  pesoBrutoG        || undefined,
-        custoGramaBruto:  custoBrutoG       || undefined,
-        pesoGramas:       pesoG             || undefined,
-        custoGrama:       custoG            || undefined,
-        custoPecaDireto:  custoPecaDireto   || undefined,
-        custoBanhoDireto: custoBanhoDireto  || undefined,
+        custoGrama:       banhoG            || undefined,
+        pesoAposBanho:    pesoAposBanho     || undefined,
         margemLucro:      margemV           || undefined,
         custoTotal:       custoTot          || undefined,
         lucroUnitario:    lucroUn,
