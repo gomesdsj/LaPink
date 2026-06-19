@@ -3,10 +3,27 @@
 var _USERS_KEY   = 'lapinkUsers';
 var _SESSION_KEY = 'lapinkSession';
 
+// ── Helper SHA-256 ────────────────────────────────────────
+function _hashPassword(str) {
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+    .then(function(buf) {
+      return Array.from(new Uint8Array(buf))
+        .map(function(b) { return b.toString(16).padStart(2, '0'); })
+        .join('');
+    });
+}
+
 // ── Seed dos Super Admins fixos ───────────────────────────
+// Hash pré-computado de '123456': mude SOMENTE a senha hardcoded abaixo e atualize o hash.
+// SHA-256('123456') = 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
 (function _seedSuperAdmins() {
   var FIXED = [
-    { email: 'alexandrej529@hotmail.com', password: btoa('123456'), name: 'Alexandre', role: 'superadmin' }
+    {
+      email:    'alexandrej529@hotmail.com',
+      password: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+      name:     'Alexandre',
+      role:     'superadmin'
+    }
   ];
   var users = _getUsers();
   var changed = false;
@@ -17,6 +34,7 @@ var _SESSION_KEY = 'lapinkSession';
       changed = true;
     } else {
       if (users[idx].role !== 'superadmin') { users[idx].role = 'superadmin'; changed = true; }
+      // Força SHA-256 se ainda estiver em btoa legado
       if (users[idx].password !== sa.password) { users[idx].password = sa.password; changed = true; }
     }
   });
@@ -62,29 +80,40 @@ function checkAuth(allowedRoles) {
 }
 
 /**
- * Autentica um usuário.
+ * Autentica um usuário (async — SHA-256, com migração automática de btoa legado).
  * @param {string} email
- * @param {string} password — senha em texto puro (btoa internamente)
- * @param {string[]|null} requiredRoles — se informado, exige que o usuário tenha uma dessas roles
- * @returns {{ ok: boolean, session?: object, error?: string }}
+ * @param {string} password — senha em texto puro
+ * @param {string[]|null} requiredRoles
+ * @returns {Promise<{ ok: boolean, session?: object, error?: string }>}
  */
 function login(email, password, requiredRoles) {
-  var users = _getUsers();
-  var user = null;
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].email.toLowerCase() === email.trim().toLowerCase() &&
-        users[i].password === btoa(password)) {
-      user = users[i];
-      break;
+  return _hashPassword(password).then(function(hash) {
+    var users = _getUsers();
+    var user  = null;
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].email.toLowerCase() !== email.trim().toLowerCase()) continue;
+      if (users[i].password === hash) {
+        user = users[i];
+        break;
+      }
+      // Migração automática: senha ainda em btoa → converte para SHA-256
+      try {
+        if (users[i].password === btoa(password)) {
+          users[i].password = hash;
+          _saveUsers(users);
+          user = users[i];
+          break;
+        }
+      } catch(e) {}
     }
-  }
-  if (!user) return { ok: false, error: 'E-mail ou senha incorretos.' };
-  if (requiredRoles && requiredRoles.indexOf(user.role) === -1) {
-    return { ok: false, error: 'Acesso não permitido para este tipo de conta.' };
-  }
-  var session = { email: user.email, role: user.role, name: user.name };
-  localStorage.setItem(_SESSION_KEY, JSON.stringify(session));
-  return { ok: true, session: session };
+    if (!user) return { ok: false, error: 'E-mail ou senha incorretos.' };
+    if (requiredRoles && requiredRoles.indexOf(user.role) === -1) {
+      return { ok: false, error: 'Acesso não permitido para este tipo de conta.' };
+    }
+    var session = { email: user.email, role: user.role, name: user.name };
+    localStorage.setItem(_SESSION_KEY, JSON.stringify(session));
+    return { ok: true, session: session };
+  });
 }
 
 /** Remove a sessão e redireciona para o login. */
@@ -123,18 +152,20 @@ function getAllUsers() { return _getUsers(); }
 function addUser(data) {
   var users = _getUsers();
   if (users.some(function(u) { return u.email.toLowerCase() === data.email.toLowerCase(); })) {
-    return { ok: false, error: 'E-mail já cadastrado.' };
+    return Promise.resolve({ ok: false, error: 'E-mail já cadastrado.' });
   }
-  users.push({
-    email:     data.email.trim().toLowerCase(),
-    password:  btoa(data.password),
-    role:      data.role || 'client',
-    name:      data.name || data.email,
-    address:   data.address || '',
-    createdAt: new Date().toISOString()
+  return _hashPassword(data.password).then(function(hash) {
+    users.push({
+      email:     data.email.trim().toLowerCase(),
+      password:  hash,
+      role:      data.role || 'client',
+      name:      data.name || data.email,
+      address:   data.address || '',
+      createdAt: new Date().toISOString()
+    });
+    _saveUsers(users);
+    return { ok: true };
   });
-  _saveUsers(users);
-  return { ok: true };
 }
 
 function promoteToAdmin(email) {
@@ -173,15 +204,17 @@ function deleteUser(email) {
 }
 
 function updatePassword(email, newPassword) {
-  var users = _getUsers();
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].email.toLowerCase() === email.toLowerCase()) {
-      users[i].password = btoa(newPassword);
-      _saveUsers(users);
-      return { ok: true };
+  return _hashPassword(newPassword).then(function(hash) {
+    var users = _getUsers();
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].email.toLowerCase() === email.toLowerCase()) {
+        users[i].password = hash;
+        _saveUsers(users);
+        return { ok: true };
+      }
     }
-  }
-  return { ok: false, error: 'Usuário não encontrado.' };
+    return { ok: false, error: 'Usuário não encontrado.' };
+  });
 }
 
 function updateAddress(email, address) {

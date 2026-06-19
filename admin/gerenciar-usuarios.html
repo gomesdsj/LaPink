@@ -35,7 +35,6 @@
         <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
         <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
         <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-        <a class="sidebar-link" href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Ver Loja</a>
           <div class="nav-section-label">Loja</div>
         <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
         <div class="nav-section-label">Auxiliar</div>
@@ -207,7 +206,7 @@
     document.getElementById('modal-novo').classList.remove('show');
   }
 
-  function criarUsuario() {
+  async function criarUsuario() {
     var errEl = document.getElementById('nu-error');
     var nome  = document.getElementById('nu-nome').value.trim();
     var email = document.getElementById('nu-email').value.trim();
@@ -225,7 +224,7 @@
       return;
     }
 
-    var r = addUser({ name: nome, email: email, password: senha, role: role });
+    var r = await addUser({ name: nome, email: email, password: senha, role: role });
     if (!r.ok) {
       errEl.textContent = r.error;
       errEl.style.display = 'block';

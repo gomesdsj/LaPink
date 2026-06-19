@@ -30,14 +30,19 @@ if (loginForm) {
       }
     }
 
-    // Fallback: usuários criados pelo painel admin (lapinkUsers, senha btoa)
+    // Fallback: usuários criados pelo painel admin (lapinkUsers) — tenta SHA-256, depois btoa legado
     if (!client) {
       try {
         var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
         var found = users.find(function(u) {
-          return u.email === email && u.password === btoa(loginPassword);
+          return u.email === email && (u.password === hashedInput || u.password === btoa(loginPassword));
         });
         if (found) {
+          // Migra btoa → SHA-256 se necessário
+          if (found.password === btoa(loginPassword) && found.password !== hashedInput) {
+            found.password = hashedInput;
+            localStorage.setItem('lapinkUsers', JSON.stringify(users));
+          }
           client = { email: found.email, name: found.name, role: found.role || 'client' };
         }
       } catch(e) {}

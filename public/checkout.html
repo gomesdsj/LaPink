@@ -171,6 +171,9 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
 <script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
 <script>
+function _esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 (function() {
 
   function fmtMoeda(v) {
@@ -203,12 +206,12 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
     // Renderiza itens
     itemsList.innerHTML = cart.map(function(item) {
       var imgHtml = item.imagem
-        ? '<img src="' + item.imagem + '" alt="' + item.nome + '" />'
+        ? '<img src="' + _esc(item.imagem) + '" alt="' + _esc(item.nome) + '" />'
         : '<i class="ti ti-diamond"></i>';
-      return '<div class="cart-item" data-id="' + item.id + '">' +
+      return '<div class="cart-item" data-id="' + _esc(item.id) + '">' +
         '<div class="cart-item-img">' + imgHtml + '</div>' +
         '<div class="cart-item-info">' +
-          '<div class="cart-item-name">' + item.nome + '</div>' +
+          '<div class="cart-item-name">' + _esc(item.nome) + '</div>' +
           '<div class="cart-item-price">' + fmtMoeda(item.preco) + '</div>' +
           '<div class="cart-item-sub">Subtotal: ' + fmtMoeda(item.preco * item.qty) + '</div>' +
         '</div>' +
@@ -268,14 +271,21 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
     var cart  = getCart();
     var total = getCartTotal();
 
-    // Numero do pedido
-    var numPedido = 'LP' + String(Math.floor(Math.random() * 9000) + 1000);
+    // Número do pedido — contador persistente, nunca repete
+    var _cnt = parseInt(localStorage.getItem('lapinkPedidoCounter') || '999') + 1;
+    localStorage.setItem('lapinkPedidoCounter', String(_cnt));
+    var numPedido = 'LP' + String(_cnt).padStart(4, '0');
+
+    // Captura e-mail do cliente logado (se houver)
+    var _lc = (typeof getLoggedClient === 'function') ? getLoggedClient() : null;
+    var _clienteEmail = _lc ? (_lc.email || '') : '';
 
     // Salva pedido em lapinkPedidos
     var pedido = {
-      id:      Date.now(),
-      numero:  numPedido,
-      cliente: { name: nome, email: '', whatsapp: whatsapp },
+      id:          Date.now(),
+      numero:      numPedido,
+      clienteEmail: _clienteEmail,
+      cliente:     { name: nome, email: _clienteEmail, whatsapp: whatsapp },
       itens:   cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
       total:   total,
       status:  'aguardando',
@@ -314,12 +324,16 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
       '*Total:* ' + fmtMoeda(total) + '\n\n' +
       'Aguardando confirmação.';
 
-    // Número WhatsApp da loja
-    var wpp = '5511999999999';
+    // Número WhatsApp da loja — lido das configurações
+    var wpp = '';
     try {
       var cfg = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}');
-      if (cfg.whatsapp) wpp = cfg.whatsapp;
+      if (cfg.whatsapp) wpp = cfg.whatsapp.replace(/\D/g, '');
     } catch(e) {}
+    if (!wpp) {
+      alert('O WhatsApp da loja ainda não foi configurado.\nPeça ao administrador para preencher em Configurações → Dados da loja.');
+      return;
+    }
 
     // Limpa carrinho e mostra sucesso
     clearCart();

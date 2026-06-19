@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Configurações</title>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
 <link rel="stylesheet" href="css/Principal.css" />
 <link rel="stylesheet" href="css/componentes.css" />
 <link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
@@ -64,7 +66,6 @@
           <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-          <a class="sidebar-link" href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Ver Loja</a>
           <div class="nav-section-label">Loja</div>
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
@@ -155,7 +156,7 @@
                 </div>
                 <div class="form-group">
                   <label>E-mail admin</label>
-                  <input type="email" id="cfg-admin-email" placeholder="admin@lapink.com" />
+                  <input type="email" id="cfg-admin-email" readonly style="background:var(--gray-100);color:var(--gray-500);cursor:default;" />
                 </div>
               </div>
             </div>
@@ -284,17 +285,19 @@
           <!-- ── ABA: INTEGRAÇÕES ── -->
           <div class="config-panel" id="panel-integracoes">
 
+            <!-- Aviso de segurança -->
+            <div class="section-card" style="border-color:#fca5a5;background:#fff5f5;">
+              <h3 style="color:#b91c1c;"><i class="ti ti-shield-exclamation"></i> Segurança importante</h3>
+              <p style="font-size:13px;color:#7f1d1d;">Tokens secretos (Access Tokens, Bearer Tokens) <strong>nunca devem ser salvos no navegador</strong> — qualquer pessoa com acesso ao dispositivo pode visualizá-los. Guarde-os em variáveis de ambiente no servidor ou em um gerenciador de segredos (ex.: AWS Secrets Manager, Vault).<br><br>Aqui são salvos apenas os identificadores públicos (IDs e Public Keys), que são seguros para o lado do cliente.</p>
+            </div>
+
             <!-- Mercado Pago -->
             <div class="section-card">
               <h3><i class="ti ti-credit-card"></i> Mercado Pago</h3>
-              <p>Integração de pagamento. Obtenha as chaves em <strong>mercadopago.com.br → Credenciais</strong>.</p>
+              <p>Integração de pagamento. Obtenha as chaves em <strong>mercadopago.com.br → Credenciais</strong>. <strong>Atenção:</strong> cole apenas a <em>Public Key</em> (começa com APP_USR-). O Access Token secreto deve ser configurado no servidor, não aqui.</p>
               <div class="form-group">
-                <label>Public Key <small style="color:var(--gray-400)">(prefixo APP_USR-…)</small></label>
+                <label>Public Key <small style="color:var(--gray-400)">(prefixo APP_USR-…, segura para expor)</small></label>
                 <input type="text" id="int-mp-pk" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
-              </div>
-              <div class="form-group">
-                <label>Access Token <small style="color:var(--gray-400)">(prefixo APP_USR-… ou TEST-…)</small></label>
-                <input type="password" id="int-mp-at" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
               </div>
               <div class="form-row" style="align-items:center;">
                 <div class="form-group" style="flex:0 0 auto;">
@@ -347,20 +350,16 @@
             <!-- WhatsApp Business API -->
             <div class="section-card">
               <h3><i class="ti ti-brand-whatsapp"></i> WhatsApp Business API</h3>
-              <p>Para notificações automáticas de status de pedido via WhatsApp Business Cloud API (Meta).</p>
+              <p>IDs públicos para integração com a Meta Cloud API. O <strong>Bearer Token</strong> deve ficar exclusivamente no servidor.</p>
               <div class="form-row">
                 <div class="form-group">
                   <label>Phone Number ID</label>
                   <input type="text" id="int-wba-phone-id" placeholder="1234567890" autocomplete="off" />
                 </div>
                 <div class="form-group">
-                  <label>Access Token (Bearer)</label>
-                  <input type="password" id="int-wba-token" placeholder="EAAxxxxxxxxxx…" autocomplete="off" />
+                  <label>Business Account ID</label>
+                  <input type="text" id="int-wba-biz-id" placeholder="1234567890" autocomplete="off" />
                 </div>
-              </div>
-              <div class="form-group">
-                <label>ID da conta comercial (Business Account ID)</label>
-                <input type="text" id="int-wba-biz-id" placeholder="1234567890" autocomplete="off" />
               </div>
               <div class="form-actions" style="margin-top:8px;">
                 <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar WhatsApp Business</button>
@@ -433,38 +432,50 @@
 
   // ─── ABA CONTA ────────────────────────────────────────────
   function carregarConta() {
-    var cfg = getObj('lapinkAdminConfig');
-    document.getElementById('cfg-admin-nome').value = cfg.nome || '';
-    document.getElementById('cfg-admin-email').value = cfg.email || '';
+    var session = getSession();
+    var users = (function() { try { return JSON.parse(localStorage.getItem('lapinkUsers') || '[]'); } catch(e) { return []; } })();
+    var u = users.find(function(x) { return session && x.email === session.email; });
+    document.getElementById('cfg-admin-nome').value  = (u && u.name) || (session && session.name) || '';
+    document.getElementById('cfg-admin-email').value = (session && session.email) || '';
     document.getElementById('cfg-senha-atual').value = '';
-    document.getElementById('cfg-senha-nova').value = '';
-    document.getElementById('cfg-senha-conf').value = '';
+    document.getElementById('cfg-senha-nova').value  = '';
+    document.getElementById('cfg-senha-conf').value  = '';
   }
 
-  function salvarConta() {
-    var cfg = getObj('lapinkAdminConfig');
-    var nome = document.getElementById('cfg-admin-nome').value.trim();
-    var email = document.getElementById('cfg-admin-email').value.trim();
+  async function salvarConta() {
+    var nome       = document.getElementById('cfg-admin-nome').value.trim();
     var senhaAtual = document.getElementById('cfg-senha-atual').value;
-    var senhaNova = document.getElementById('cfg-senha-nova').value;
-    var senhaConf = document.getElementById('cfg-senha-conf').value;
+    var senhaNova  = document.getElementById('cfg-senha-nova').value;
+    var senhaConf  = document.getElementById('cfg-senha-conf').value;
 
     if (!nome) { showToast('Informe o nome de exibição.', 'erro'); return; }
 
-    // Troca de senha
+    var session = getSession();
+
+    // Troca de senha — valida primeiro via login, depois atualiza com SHA-256
     if (senhaNova || senhaConf) {
-      if (cfg.senha && senhaAtual !== cfg.senha) { showToast('Senha atual incorreta.', 'erro'); return; }
+      if (!senhaAtual) { showToast('Informe a senha atual.', 'erro'); return; }
       if (senhaNova !== senhaConf) { showToast('As senhas não conferem.', 'erro'); return; }
-      if (senhaNova.length < 4) { showToast('A nova senha deve ter pelo menos 4 caracteres.', 'erro'); return; }
-      cfg.senha = senhaNova;
+      if (senhaNova.length < 6) { showToast('A nova senha deve ter pelo menos 6 caracteres.', 'erro'); return; }
+      // Verifica senha atual contra auth.js (mesma validação do login)
+      var check = await login(session.email, senhaAtual, null);
+      if (!check.ok) { showToast('Senha atual incorreta.', 'erro'); return; }
+      var r = await updatePassword(session.email, senhaNova);
+      if (!r.ok) { showToast(r.error || 'Erro ao atualizar senha.', 'erro'); return; }
     }
 
-    cfg.nome = nome;
-    cfg.email = email;
-    localStorage.setItem('lapinkAdminConfig', JSON.stringify(cfg));
+    // Atualiza nome de exibição no registro de usuários
+    var users = (function() { try { return JSON.parse(localStorage.getItem('lapinkUsers') || '[]'); } catch(e) { return []; } })();
+    var ui = users.findIndex(function(u) { return u.email === session.email; });
+    if (ui !== -1) { users[ui].name = nome; localStorage.setItem('lapinkUsers', JSON.stringify(users)); }
+
+    // Atualiza sessão com novo nome
+    session.name = nome;
+    localStorage.setItem('lapinkSession', JSON.stringify(session));
+
     document.getElementById('cfg-senha-atual').value = '';
-    document.getElementById('cfg-senha-nova').value = '';
-    document.getElementById('cfg-senha-conf').value = '';
+    document.getElementById('cfg-senha-nova').value  = '';
+    document.getElementById('cfg-senha-conf').value  = '';
     showToast('Conta atualizada!');
   }
 
@@ -546,30 +557,26 @@
   // ─── ABA INTEGRAÇÕES ──────────────────────────────────────
   function carregarIntegracoes() {
     var cfg = getObj('lapinkApiConfig');
-    document.getElementById('int-mp-pk').value       = cfg.mpPublicKey   || '';
-    document.getElementById('int-mp-at').value       = cfg.mpAccessToken || '';
-    document.getElementById('int-mp-modo').value     = cfg.mpModo        || 'sandbox';
-    document.getElementById('int-mp-wpp').value      = cfg.mpWhatsapp    || '';
-    document.getElementById('int-dns-url').value     = cfg.dnsUrl        || '';
-    document.getElementById('int-dns-admin').value   = cfg.dnsAdmin      || '';
-    document.getElementById('int-ga-id').value       = cfg.gaId          || '';
-    document.getElementById('int-wba-phone-id').value= cfg.wbaPhoneId    || '';
-    document.getElementById('int-wba-token').value   = cfg.wbaToken      || '';
-    document.getElementById('int-wba-biz-id').value  = cfg.wbaBizId      || '';
+    document.getElementById('int-mp-pk').value       = cfg.mpPublicKey || '';
+    document.getElementById('int-mp-modo').value     = cfg.mpModo      || 'sandbox';
+    document.getElementById('int-mp-wpp').value      = cfg.mpWhatsapp  || '';
+    document.getElementById('int-dns-url').value     = cfg.dnsUrl      || '';
+    document.getElementById('int-dns-admin').value   = cfg.dnsAdmin    || '';
+    document.getElementById('int-ga-id').value       = cfg.gaId        || '';
+    document.getElementById('int-wba-phone-id').value= cfg.wbaPhoneId  || '';
+    document.getElementById('int-wba-biz-id').value  = cfg.wbaBizId    || '';
   }
 
   function salvarIntegracoes() {
     var cfg = {
-      mpPublicKey:   document.getElementById('int-mp-pk').value.trim(),
-      mpAccessToken: document.getElementById('int-mp-at').value.trim(),
-      mpModo:        document.getElementById('int-mp-modo').value,
-      mpWhatsapp:    document.getElementById('int-mp-wpp').value.trim(),
-      dnsUrl:        document.getElementById('int-dns-url').value.trim(),
-      dnsAdmin:      document.getElementById('int-dns-admin').value.trim(),
-      gaId:          document.getElementById('int-ga-id').value.trim(),
-      wbaPhoneId:    document.getElementById('int-wba-phone-id').value.trim(),
-      wbaToken:      document.getElementById('int-wba-token').value.trim(),
-      wbaBizId:      document.getElementById('int-wba-biz-id').value.trim()
+      mpPublicKey: document.getElementById('int-mp-pk').value.trim(),
+      mpModo:      document.getElementById('int-mp-modo').value,
+      mpWhatsapp:  document.getElementById('int-mp-wpp').value.trim(),
+      dnsUrl:      document.getElementById('int-dns-url').value.trim(),
+      dnsAdmin:    document.getElementById('int-dns-admin').value.trim(),
+      gaId:        document.getElementById('int-ga-id').value.trim(),
+      wbaPhoneId:  document.getElementById('int-wba-phone-id').value.trim(),
+      wbaBizId:    document.getElementById('int-wba-biz-id').value.trim()
     };
     localStorage.setItem('lapinkApiConfig', JSON.stringify(cfg));
     showToast('Integrações salvas com sucesso!');
@@ -582,7 +589,5 @@
   carregarIntegracoes();
   </script>
   <script src="js/sidebar.js"></script>
-  <script src="js/utils.js"></script>
-<script src="js/auth.js"></script>
 </body>
 </html>

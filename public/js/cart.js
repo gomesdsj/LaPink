@@ -2,11 +2,11 @@
 var CART_KEY = 'lapinkCart';
 
 function getCart() {
-  try { return JSON.parse(sessionStorage.getItem(CART_KEY) || '[]'); } catch(e) { return []; }
+  try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch(e) { return []; }
 }
 
 function saveCart(cart) {
-  sessionStorage.setItem(CART_KEY, JSON.stringify(cart));
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
   updateCartBadge();
 }
 
@@ -33,7 +33,7 @@ function updateCartItemQty(id, qty) {
 }
 
 function clearCart() {
-  sessionStorage.removeItem(CART_KEY);
+  localStorage.removeItem(CART_KEY);
   updateCartBadge();
 }
 

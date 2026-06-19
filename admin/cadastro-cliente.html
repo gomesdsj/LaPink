@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Cadastro de Cliente</title>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
 <link rel="stylesheet" href="css/Principal.css" />
 <link rel="stylesheet" href="css/componentes.css" />
 <link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
@@ -16,6 +18,7 @@
 </style>
 </head>
 <body>
+<script>checkAuth(['superadmin', 'admin']);</script>
   <div id="app-admin">
     <div class="admin-layout">
       <aside class="sidebar" id="sidebar">
@@ -29,7 +32,6 @@
           <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link active" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-          <a class="sidebar-link" href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Ver Loja</a>
           <div class="nav-section-label">Loja</div>
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
@@ -111,9 +113,6 @@
     </div>
   </div>
 
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
-  <script>checkAuth(['superadmin', 'admin']);</script>
   <script>
     var forgotSection = document.getElementById('forgotPasswordSection');
     function toggleForgotPassword() {

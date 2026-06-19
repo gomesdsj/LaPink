@@ -38,7 +38,6 @@
           <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link active" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-          <a class="sidebar-link" href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Ver Loja</a>
           <div class="nav-section-label">Loja</div>
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
@@ -240,7 +239,7 @@
       }
     }
 
-    function saveClientPassword(button) {
+    async function saveClientPassword(button) {
       var card = button.closest('.customer-card');
       var email = card.dataset.email;
       var passwordField = card.querySelector('input[name="resetPassword"]');
@@ -255,16 +254,23 @@
         showToast('As senhas não conferem.', 'erro');
         return;
       }
+      if (password.length < 6) {
+        showToast('A senha deve ter pelo menos 6 caracteres.', 'erro');
+        return;
+      }
       var clients = getClients();
       var index = clients.findIndex(function(client) { return client.email === email; });
       if (index === -1) {
         showToast('Cliente não encontrado.', 'erro');
         return;
       }
-      clients[index].password = password;
+      // Salva com SHA-256 para manter consistência com o login público
+      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+      var hash = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+      clients[index].password = hash;
       saveClients(clients);
       showToast('Senha atualizada com sucesso.');
-      card.querySelector('.password').textContent = 'Senha: ' + maskPassword(password);
+      card.querySelector('.password').textContent = 'Senha: ••••••';
       togglePasswordReset(button, true);
     }
 

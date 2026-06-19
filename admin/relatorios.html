@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Relatórios</title>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
 <link rel="stylesheet" href="css/Principal.css" />
 <link rel="stylesheet" href="css/componentes.css" />
 <link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
@@ -82,7 +84,6 @@
         <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
         <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
         <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-        <a class="sidebar-link" href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Ver Loja</a>
           <div class="nav-section-label">Loja</div>
         <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
         <div class="nav-section-label">Auxiliar</div>
@@ -488,10 +489,10 @@ function renderVendas() {
   var contagemProdutos = {};
 
   pedidos.forEach(function(ped) {
-    var st = (ped.status || 'novo').toLowerCase();
+    var st = (ped.status || 'aguardando').toLowerCase();
     contadorStatus[st] = (contadorStatus[st] || 0) + 1;
-    if (st === 'pago' || st === 'enviado') receitaTotal += ped.total || 0;
-    if (st === 'pendente' || st === 'novo') pendentes++;
+    if (st !== 'cancelado') receitaTotal += parseFloat(ped.total) || 0;
+    if (st === 'aguardando') pendentes++;
 
     if (Array.isArray(ped.itens)) {
       ped.itens.forEach(function(item) {
@@ -501,16 +502,17 @@ function renderVendas() {
     }
   });
 
-  var ticketMedio = total > 0 ? receitaTotal / total : 0;
+  var ativosCount = pedidos.filter(function(p) { return (p.status || '') !== 'cancelado'; }).length;
+  var ticketMedio = ativosCount > 0 ? receitaTotal / ativosCount : 0;
 
   document.getElementById('v-total-pedidos').textContent  = total;
   document.getElementById('v-receita-total').textContent  = formatBRL(receitaTotal);
-  document.getElementById('v-ticket-medio').textContent   = total > 0 ? formatBRL(ticketMedio) : '—';
+  document.getElementById('v-ticket-medio').textContent   = ativosCount > 0 ? formatBRL(ticketMedio) : '—';
   document.getElementById('v-pendentes').textContent      = pendentes;
 
   // Gráfico receita por status
-  var statusLabels = { pago:'Pago', pendente:'Pendente', enviado:'Enviado', cancelado:'Cancelado', novo:'Novo' };
-  var statusColors = { pago:'var(--green-400,#4ade80)', pendente:'#facc15', enviado:'#60a5fa', cancelado:'var(--red-400)', novo:'var(--pink-300)' };
+  var statusLabels = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' };
+  var statusColors = { aguardando:'#facc15', preparando:'var(--pink-300)', enviado:'#60a5fa', concluido:'var(--green-400,#4ade80)', cancelado:'var(--red-400)' };
   var statusItems = Object.keys(contadorStatus).map(function(k) {
     return { nome: statusLabels[k] || k, qtd: contadorStatus[k], cor: statusColors[k] || 'var(--pink-300)' };
   }).sort(function(a,b){ return b.qtd - a.qtd; });
@@ -529,8 +531,8 @@ function renderVendas() {
     return;
   }
   tbody.innerHTML = pedidos.slice().reverse().map(function(ped) {
-    var st = (ped.status || 'novo').toLowerCase();
-    var stLabel = { pago:'Pago', pendente:'Pendente', enviado:'Enviado', cancelado:'Cancelado', novo:'Novo' }[st] || ped.status;
+    var st = (ped.status || 'aguardando').toLowerCase();
+    var stLabel = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' }[st] || ped.status;
     var nItens = Array.isArray(ped.itens) ? ped.itens.length : 0;
     var data = ped.data ? new Date(ped.data).toLocaleDateString('pt-BR') : '—';
     return '<tr>' +
@@ -776,7 +778,5 @@ renderClientes();
 renderEstoque();
 </script>
 <script src="js/sidebar.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/auth.js"></script>
 </body>
 </html>

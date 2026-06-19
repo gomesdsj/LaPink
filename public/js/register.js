@@ -44,6 +44,7 @@ if (registerForm) {
 
     saveClients(clients);
     setRegisterMessage('Cadastro realizado com sucesso! Redirecionando para login...', true);
+    sessionStorage.setItem('referrerPage', 'minha-conta.html');
     setTimeout(() => location.href = 'login.html', 1200);
   });
 }

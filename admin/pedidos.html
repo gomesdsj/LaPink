@@ -59,7 +59,6 @@
           <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link active" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-          <a class="sidebar-link" href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Ver Loja</a>
           <div class="nav-section-label">Loja</div>
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
@@ -88,6 +87,7 @@
               <h2>Gestão de pedidos</h2>
               <p>Acompanhe, atualize e gerencie todos os pedidos da loja.</p>
             </div>
+            <button class="btn btn-primary" type="button" onclick="abrirModalNovoPedido()"><i class="ti ti-plus"></i> Novo pedido</button>
           </div>
 
           <!-- Stats -->
@@ -163,40 +163,7 @@
   <script>
   // ─── Estado ───────────────────────────────────────────────
   var filtroAtual = 'todos';
-
-  // ─── Seeds ────────────────────────────────────────────────
-  var SEEDS = [
-    {
-      id: 1700000001000, numero: '3412',
-      cliente: { name: 'Mariana Silva', email: 'mariana@email.com', whatsapp: '11991234567' },
-      itens: [{ nome: 'Anel solitário rosê', qty: 1, preco: 89.90 }, { nome: 'Colar de coração', qty: 1, preco: 189.80 }],
-      total: 279.70, status: 'concluido', data: '2025-06-10', obs: ''
-    },
-    {
-      id: 1700000002000, numero: '3413',
-      cliente: { name: 'Camila Rocha', email: '', whatsapp: '21988765432' },
-      itens: [{ nome: 'Bolsa mini clutch', qty: 1, preco: 149.90 }],
-      total: 149.90, status: 'aguardando', data: '2025-06-14', obs: 'Presente de aniversário'
-    },
-    {
-      id: 1700000003000, numero: '3414',
-      cliente: { name: 'Bruna Ferreira', email: 'bruna@email.com', whatsapp: '31977654321' },
-      itens: [{ nome: 'Anel solitário rosê', qty: 1, preco: 89.90 }, { nome: 'Brincos de pérola', qty: 1, preco: 119.90 }],
-      total: 209.80, status: 'preparando', data: '2025-06-15', obs: ''
-    },
-    {
-      id: 1700000004000, numero: '3415',
-      cliente: { name: 'Juliana Costa', email: 'ju@email.com', whatsapp: '41966543210' },
-      itens: [{ nome: 'Pulseira dourada', qty: 2, preco: 79.90 }],
-      total: 159.80, status: 'enviado', data: '2025-06-16', obs: ''
-    },
-    {
-      id: 1700000005000, numero: '3416',
-      cliente: { name: 'Fernanda Lima', email: '', whatsapp: '51955432109' },
-      itens: [{ nome: 'Colar de pérolas', qty: 1, preco: 229.90 }, { nome: 'Brincos de pérola', qty: 1, preco: 119.90 }],
-      total: 349.80, status: 'aguardando', data: '2025-06-17', obs: 'Ligar antes de entregar'
-    }
-  ];
+  var editandoPedidoId = null;
 
   // ─── localStorage helpers ─────────────────────────────────
   function getPedidos() {
@@ -207,19 +174,12 @@
     localStorage.setItem('lapinkPedidos', JSON.stringify(arr));
   }
 
-  function carregarPedidos() {
-    var pedidos = getPedidos();
-    if (pedidos.length === 0) {
-      setPedidos(SEEDS);
-    }
-  }
+  function carregarPedidos() { /* sem seeds — dados reais do localStorage */ }
 
   // ─── Utilitários ──────────────────────────────────────────
   function fmtData(iso) {
     if (!iso) return '';
-    var p = iso.split('-');
-    if (p.length !== 3) return iso;
-    return p[2] + '/' + p[1] + '/' + p[0];
+    try { return new Date(iso).toLocaleDateString('pt-BR'); } catch(e) { return iso; }
   }
 
   function fmtMoeda(v) {
@@ -227,10 +187,9 @@
   }
 
   function proximoNumero() {
-    var pedidos = getPedidos() || [];
-    if (pedidos.length === 0) return '3417';
-    var nums = pedidos.map(function(p) { return parseInt(p.numero, 10) || 0; });
-    return String(Math.max.apply(null, nums) + 1);
+    var cnt = parseInt(localStorage.getItem('lapinkPedidoCounter') || '999') + 1;
+    localStorage.setItem('lapinkPedidoCounter', String(cnt));
+    return 'LP' + String(cnt).padStart(4, '0');
   }
 
   function badgeStatus(status) {
@@ -332,6 +291,7 @@
             '<option value="concluido"' + (p.status === 'concluido' ? ' selected' : '') + '>Concluído</option>' +
             '<option value="cancelado"' + (p.status === 'cancelado' ? ' selected' : '') + '>Cancelado</option>' +
           '</select>' +
+          '<button class="btn-icon" type="button" onclick="abrirEditarPedido(' + p.id + ')"><i class="ti ti-pencil"></i> Editar</button>' +
           (waNum ? '<a href="' + waLink + '" target="_blank" rel="noopener" class="btn-icon wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>' : '') +
           '<button class="btn-icon danger" type="button" onclick="excluirPedido(' + p.id + ')"><i class="ti ti-trash"></i> Excluir</button>' +
         '</div>' +
@@ -368,6 +328,17 @@
     var p = null;
     for (var i = 0; i < pedidos.length; i++) { if (pedidos[i].id === id) { p = pedidos[i]; break; } }
     if (!confirm('Excluir pedido #' + (p ? p.numero : id) + '? Essa ação não pode ser desfeita.')) return;
+
+    // Restaura estoque dos itens do pedido (exceto cancelados já descontados)
+    if (p && Array.isArray(p.itens) && p.status !== 'cancelado') {
+      var produtos = getProdutos();
+      p.itens.forEach(function(item) {
+        var idx = produtos.findIndex(function(pr) { return pr.nome === item.nome; });
+        if (idx >= 0) produtos[idx].estoque = (parseInt(produtos[idx].estoque) || 0) + (item.qty || 1);
+      });
+      localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
+    }
+
     setPedidos(pedidos.filter(function(x) { return x.id !== id; }));
     renderStats();
     renderPedidos();
@@ -376,6 +347,8 @@
 
   // ─── Modal Novo Pedido ────────────────────────────────────
   function abrirModalNovoPedido() {
+    editandoPedidoId = null;
+    document.querySelector('#modalOverlay .modal h2').textContent = 'Novo pedido';
     document.getElementById('m-nome').value = '';
     document.getElementById('m-whatsapp').value = '';
     document.getElementById('m-email').value = '';
@@ -383,6 +356,22 @@
     document.getElementById('itensList').innerHTML = '';
     document.getElementById('totalCalculado').textContent = 'R$ 0,00';
     adicionarItemRow();
+    document.getElementById('modalOverlay').style.display = 'flex';
+  }
+
+  function abrirEditarPedido(id) {
+    var pedidos = getPedidos() || [];
+    var p = pedidos.find(function(x) { return x.id === id; });
+    if (!p) return;
+    editandoPedidoId = id;
+    document.querySelector('#modalOverlay .modal h2').textContent = 'Editar pedido #' + (p.numero || id);
+    document.getElementById('m-nome').value     = (p.cliente && p.cliente.name)     || '';
+    document.getElementById('m-whatsapp').value = (p.cliente && p.cliente.whatsapp) || '';
+    document.getElementById('m-email').value    = (p.cliente && p.cliente.email)    || p.clienteEmail || '';
+    document.getElementById('m-obs').value      = p.obs || '';
+    document.getElementById('itensList').innerHTML = '';
+    (p.itens || []).forEach(function(item) { adicionarItemRow(item); });
+    recalcularTotal();
     document.getElementById('modalOverlay').style.display = 'flex';
   }
 
@@ -394,7 +383,7 @@
     document.getElementById('modalOverlay').style.display = 'none';
   }
 
-  function adicionarItemRow() {
+  function adicionarItemRow(preenchido) {
     var produtos = getProdutos();
     var lista = document.getElementById('itensList');
     var row = document.createElement('div');
@@ -413,6 +402,24 @@
       '<button class="btn-icon danger" type="button" onclick="this.parentElement.remove();recalcularTotal();" title="Remover item"><i class="ti ti-x"></i></button>';
 
     lista.appendChild(row);
+
+    if (preenchido) {
+      var sel = row.querySelector('.item-select');
+      var targetVal = preenchido.nome + '|' + preenchido.preco;
+      var found = false;
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === targetVal) { sel.selectedIndex = i; found = true; break; }
+      }
+      if (!found) {
+        var opt = document.createElement('option');
+        opt.value = targetVal;
+        opt.textContent = preenchido.nome + ' — ' + fmtMoeda(preenchido.preco);
+        sel.appendChild(opt);
+        sel.value = targetVal;
+      }
+      row.querySelector('.item-qty').value = preenchido.qty || 1;
+    }
+
     recalcularTotal();
   }
 
@@ -459,15 +466,51 @@
     if (itens.length === 0) { showToast('Adicione ao menos um item ao pedido.', 'erro'); return; }
 
     var pedidos = getPedidos() || [];
+
+    if (editandoPedidoId !== null) {
+      // ── MODO EDIÇÃO ──────────────────────────────────────────
+      var eidx = pedidos.findIndex(function(x) { return x.id === editandoPedidoId; });
+      if (eidx < 0) { showToast('Pedido não encontrado.', 'erro'); return; }
+      var antigo = pedidos[eidx];
+
+      // Restaura estoque antigo, aplica novo
+      var produtos = getProdutos();
+      (antigo.itens || []).forEach(function(item) {
+        var pidx = produtos.findIndex(function(pr) { return pr.nome === item.nome; });
+        if (pidx >= 0) produtos[pidx].estoque = (parseInt(produtos[pidx].estoque) || 0) + (item.qty || 1);
+      });
+      itens.forEach(function(item) {
+        var pidx = produtos.findIndex(function(pr) { return pr.nome === item.nome; });
+        if (pidx >= 0) produtos[pidx].estoque = Math.max(0, (parseInt(produtos[pidx].estoque) || 0) - item.qty);
+      });
+      localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
+
+      pedidos[eidx].cliente     = { name: nome, email: email, whatsapp: whatsapp };
+      pedidos[eidx].clienteEmail = email;
+      pedidos[eidx].itens       = itens;
+      pedidos[eidx].total       = totalCalc;
+      pedidos[eidx].obs         = obs;
+      setPedidos(pedidos);
+
+      editandoPedidoId = null;
+      fecharModalDireto();
+      renderStats();
+      renderPedidos();
+      showToast('Pedido #' + pedidos[eidx].numero + ' atualizado!');
+      return;
+    }
+
+    // ── MODO CRIAÇÃO ─────────────────────────────────────────
     var novo = {
-      id: Date.now(),
-      numero: proximoNumero(),
-      cliente: { name: nome, email: email, whatsapp: whatsapp },
-      itens: itens,
-      total: totalCalc,
-      status: 'aguardando',
-      data: new Date().toISOString().split('T')[0],
-      obs: obs
+      id:          Date.now(),
+      numero:      proximoNumero(),
+      clienteEmail: email,
+      cliente:     { name: nome, email: email, whatsapp: whatsapp },
+      itens:       itens,
+      total:       totalCalc,
+      status:      'aguardando',
+      data:        new Date().toISOString(),
+      obs:         obs
     };
 
     pedidos.push(novo);

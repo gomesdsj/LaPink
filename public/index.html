@@ -100,8 +100,8 @@
         <h1 class="hero-title">Elegância que conta sua história</h1>
         <p class="hero-sub">Descubra semijoias, bolsas e acessórios escolhidos para realçar seu estilo em qualquer ocasião.</p>
         <div class="hero-btns">
-          <button class="btn btn-primary" type="button">Ver coleção</button>
-          <button class="btn btn-secondary" type="button">Promoções</button>
+          <button class="btn btn-primary" type="button" onclick="location.href='V1.html'">Ver coleção</button>
+          <button class="btn btn-secondary" type="button" onclick="document.getElementById('mais-vendidos').scrollIntoView({behavior:'smooth'})">Promoções</button>
         </div>
       </div>
       <div class="hero-visual" aria-hidden="true"><i class="ti ti-diamond"></i></div>
@@ -160,48 +160,11 @@
         <span class="section-title" id="bestsellers-title">Mais vendidos</span>
         <a class="section-link" href="#newsletter">Ver tudo <i class="ti ti-arrow-right" aria-hidden="true"></i></a>
       </div>
-      <div class="prod-grid">
-        <a class="prod-card" href="produto.html">
-          <div class="prod-img-wrap">
-            <i class="prod-img-icon ti ti-ring" aria-hidden="true"></i>
-            <span class="prod-badge">Novo</span>
-            <button class="prod-fav" aria-label="Adicionar Anel solitário rosê aos favoritos" type="button" onclick="event.preventDefault()">
-              <i class="ti ti-heart" aria-hidden="true"></i>
-            </button>
-          </div>
-          <div class="prod-info">
-            <div class="prod-name">Anel solitário rosê</div>
-            <div class="prod-price-row"><span class="prod-price">R$ 89,90</span></div>
-          </div>
-        </a>
-        <a class="prod-card" href="produto.html">
-          <div class="prod-img-wrap">
-            <i class="prod-img-icon ti ti-necklace" aria-hidden="true"></i>
-            <span class="prod-badge">-20%</span>
-            <button class="prod-fav" aria-label="Adicionar Colar de coração aos favoritos" type="button" onclick="event.preventDefault()">
-              <i class="ti ti-heart" aria-hidden="true"></i>
-            </button>
-          </div>
-          <div class="prod-info">
-            <div class="prod-name">Colar de coração</div>
-            <div class="prod-price-row">
-              <span class="prod-price">R$ 69,90</span>
-              <span class="prod-old">R$ 87,90</span>
-            </div>
-          </div>
-        </a>
-        <a class="prod-card" href="produto.html">
-          <div class="prod-img-wrap">
-            <i class="prod-img-icon ti ti-briefcase" aria-hidden="true"></i>
-            <button class="prod-fav" aria-label="Adicionar Bolsa mini clutch aos favoritos" type="button" onclick="event.preventDefault()">
-              <i class="ti ti-heart" aria-hidden="true"></i>
-            </button>
-          </div>
-          <div class="prod-info">
-            <div class="prod-name">Bolsa mini clutch</div>
-            <div class="prod-price-row"><span class="prod-price">R$ 149,90</span></div>
-          </div>
-        </a>
+      <div class="prod-grid" id="grid-mais-vendidos">
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:#bbb;">
+          <i class="ti ti-package" style="font-size:36px;display:block;margin-bottom:8px;opacity:.4"></i>
+          Carregando produtos…
+        </div>
       </div>
     </section>
 
@@ -276,6 +239,47 @@
 
   <script src="js/storage.js"></script>
   <script src="js/auth.js"></script>
+  <script>
+  // Produtos mais vendidos — carrega do localStorage
+  (function() {
+    function _e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    var grid = document.getElementById('grid-mais-vendidos');
+    if (!grid) return;
+    var produtos = [];
+    try { produtos = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) {}
+    if (!produtos.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#bbb;"><i class="ti ti-package" style="font-size:36px;display:block;margin-bottom:8px;opacity:.4"></i>Nenhum produto cadastrado ainda.</div>';
+      return;
+    }
+    grid.innerHTML = produtos.slice(0,3).map(function(p) {
+      var preco = 'R$ ' + Number(p.precoVarejo||0).toFixed(2).replace('.',',');
+      var img = p.imagem
+        ? '<img src="' + _e(p.imagem) + '" alt="' + _e(p.nome) + '" style="width:100%;height:100%;object-fit:cover;" />'
+        : '<i class="prod-img-icon ti ' + _e(p.icone||'ti-diamond') + '" aria-hidden="true"></i>';
+      return '<a class="prod-card" href="produto.html?id=' + encodeURIComponent(p.id) + '">' +
+        '<div class="prod-img-wrap">' + img +
+          '<button class="prod-fav" aria-label="Favoritos" type="button" onclick="event.preventDefault()">' +
+            '<i class="ti ti-heart" aria-hidden="true"></i></button></div>' +
+        '<div class="prod-info">' +
+          '<div class="prod-name">' + _e(p.nome) + '</div>' +
+          '<div class="prod-price-row"><span class="prod-price">' + preco + '</span></div>' +
+        '</div></a>';
+    }).join('');
+  })();
+
+  // CNPJ e nome da loja dinâmicos no rodapé
+  (function() {
+    try {
+      var cfg = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}');
+      var bottom = document.querySelector('.footer-bottom span');
+      if (bottom && cfg.cnpj) {
+        bottom.textContent = '© ' + new Date().getFullYear() + ' ' + (cfg.nomeLoja || 'LaPink') + ' · Todos os direitos reservados · CNPJ ' + cfg.cnpj;
+      } else if (bottom) {
+        bottom.textContent = '© ' + new Date().getFullYear() + ' ' + (cfg.nomeLoja || 'LaPink') + ' · Todos os direitos reservados';
+      }
+    } catch(e) {}
+  })();
+  </script>
   <script>
     // Mobile nav drawer
     const navToggle = document.getElementById('navToggle');

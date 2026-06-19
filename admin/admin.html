@@ -57,7 +57,6 @@
           <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
           <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
           <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-          <a class="sidebar-link" href="../public/V1.html" target="_blank"><i class="ti ti-external-link"></i> Ver Loja</a>
           <div class="nav-section-label">Loja</div>
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
@@ -104,6 +103,16 @@
               <div class="s-value" id="stat-valor">—</div>
               <div class="s-delta up"><i class="ti ti-trending-up"></i> a preço varejo</div>
             </a>
+            <a class="stat-card" href="pedidos.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Receita total</div>
+              <div class="s-value" id="stat-receita">—</div>
+              <div class="s-delta up"><i class="ti ti-coin"></i> pedidos ativos</div>
+            </a>
+            <a class="stat-card" href="pedidos.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Pedidos</div>
+              <div class="s-value" id="stat-pedidos">—</div>
+              <div class="s-delta neutral"><i class="ti ti-shopping-cart"></i> registrados</div>
+            </a>
             <a class="stat-card" href="relatorios.html" style="text-decoration:none; cursor:pointer;">
               <div class="s-label">Estoque crítico</div>
               <div class="s-value" id="stat-critico">—</div>
@@ -128,7 +137,7 @@
             </div>
           </div>
 
-          <!-- Estoque baixo + Carrinhos abandonados -->
+          <!-- Estoque baixo + Pedidos recentes -->
           <div class="chart-grid-3">
             <div class="card">
               <div class="section-header"><span class="section-title">Estoque baixo</span></div>
@@ -137,27 +146,8 @@
               </ul>
             </div>
             <div class="card">
-              <div class="section-header"><span class="section-title">Carrinhos abandonados</span></div>
-              <div class="ab-card">
-                <div class="ab-user">
-                  <div class="ab-avatar">MS</div>
-                  <div class="ab-info"><strong>Marcela S.</strong><span>3 itens no carrinho</span></div>
-                </div>
-                <div class="ab-meta">
-                  <span class="ab-value">R$ 348</span>
-                  <button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button>
-                </div>
-              </div>
-              <div class="ab-card">
-                <div class="ab-user">
-                  <div class="ab-avatar">LA</div>
-                  <div class="ab-info"><strong>Larissa A.</strong><span>2 itens no carrinho</span></div>
-                </div>
-                <div class="ab-meta">
-                  <span class="ab-value">R$ 229</span>
-                  <button class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Contatar</button>
-                </div>
-              </div>
+              <div class="section-header"><span class="section-title">Pedidos recentes</span></div>
+              <div id="lista-pedidos-recentes"><div class="empty-state" style="padding:24px 0;"><i class="ti ti-shopping-cart"></i><span>Sem pedidos ainda</span></div></div>
             </div>
           </div>
 
@@ -213,26 +203,6 @@
 
     /* ── Dados (getProdutos, getClients → utils.js) ── */
 
-    /* ── Stats ── */
-    function renderStats() {
-      var produtos = getProdutos();
-      var clientes = getClients();
-
-      document.getElementById('stat-produtos').textContent = produtos.length;
-      document.getElementById('stat-clientes').textContent = clientes.length;
-
-      var valorTotal = 0;
-      var critico = 0;
-      produtos.forEach(function(p) {
-        var preco = parseBRL(String(p.precoVarejo || 0));
-        var est = parseInt(p.estoque) || 0;
-        valorTotal += preco * est;
-        if (est <= 5) critico++;
-      });
-
-      document.getElementById('stat-valor').textContent = formatBRL(valorTotal);
-      document.getElementById('stat-critico').textContent = critico;
-    }
 
     /* ── SVG bar chart — receita por categoria ── */
     function renderChartCategoria() {
@@ -399,12 +369,71 @@
       }).join('');
     }
 
+    /* ── Stats de vendas no dashboard ── */
+    function renderStats() {
+      var produtos = getProdutos();
+      var clientes = getClients();
+      var pedidos  = getPedidos();
+
+      document.getElementById('stat-produtos').textContent = produtos.length;
+      document.getElementById('stat-clientes').textContent = clientes.length;
+
+      var valorTotal = 0;
+      var critico = 0;
+      produtos.forEach(function(p) {
+        var preco = parseBRL(String(p.precoVarejo || 0));
+        var est = parseInt(p.estoque) || 0;
+        valorTotal += preco * est;
+        if (est <= 5) critico++;
+      });
+
+      document.getElementById('stat-valor').textContent   = formatBRL(valorTotal);
+      document.getElementById('stat-critico').textContent = critico;
+
+      // Atualiza card de receita e pedidos se existir
+      var elReceita  = document.getElementById('stat-receita');
+      var elPedidos  = document.getElementById('stat-pedidos');
+      if (elReceita) {
+        var receita = pedidos.filter(function(p) { return p.status !== 'cancelado'; })
+                             .reduce(function(s, p) { return s + (parseFloat(p.total) || 0); }, 0);
+        elReceita.textContent = formatBRL(receita);
+      }
+      if (elPedidos) elPedidos.textContent = pedidos.length;
+    }
+
+    /* ── Pedidos recentes ── */
+    function renderPedidosRecentes() {
+      var pedidos = getPedidos();
+      var cont = document.getElementById('lista-pedidos-recentes');
+      if (!pedidos.length) {
+        cont.innerHTML = '<div class="empty-state" style="padding:16px 0;"><i class="ti ti-shopping-cart"></i><p style="font-size:12px;">Nenhum pedido ainda</p></div>';
+        return;
+      }
+      var statusLabel = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' };
+      var statusCor   = { aguardando:'badge-amber', preparando:'badge-pink', enviado:'badge-blue', concluido:'badge-green', cancelado:'badge-red' };
+      cont.innerHTML = pedidos.slice(0, 5).map(function(p) {
+        var st = (p.status || 'aguardando').toLowerCase();
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--gray-100);gap:8px;">' +
+          '<div style="font-size:12px;">' +
+            '<strong>#' + escHtml(p.numero || String(p.id).slice(-4)) + '</strong>' +
+            '<div style="font-size:11px;color:var(--gray-400);">' + escHtml((p.cliente && p.cliente.name) || '—') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<div style="font-size:12px;font-weight:700;color:var(--pink-500);">' + formatBRL(p.total || 0) + '</div>' +
+            '<span class="badge ' + (statusCor[st] || 'badge') + '" style="font-size:10px;">' + (statusLabel[st] || st) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+      '<a href="pedidos.html" style="display:block;text-align:center;font-size:11px;color:var(--pink-500);font-weight:700;text-decoration:none;padding:8px 0;">Ver todos →</a>';
+    }
+
     /* ── Init ── */
     function init() {
       renderStats();
       renderChartCategoria();
       renderTopProdutos();
       renderEstoqueBaixo();
+      renderPedidosRecentes();
       renderTabela();
     }
 

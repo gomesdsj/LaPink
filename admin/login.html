@@ -187,7 +187,7 @@
     btn.querySelector('i').className = isText ? 'ti ti-eye' : 'ti ti-eye-off';
   }
 
-  function doLogin(e, type) {
+  async function doLogin(e, type) {
     e.preventDefault();
     var errEl = document.getElementById('err-' + type);
     errEl.classList.remove('show');
@@ -205,7 +205,7 @@
       redirect = '../public/minha-conta.html';
     }
 
-    var result = login(email, pw, roles);
+    var result = await login(email, pw, roles);
     if (!result.ok) {
       errEl.textContent = result.error;
       errEl.classList.add('show');

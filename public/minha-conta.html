@@ -4,7 +4,48 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Minha Conta</title>
-<script src="../admin/js/auth.js"></script>
+<script src="js/storage.js"></script>
+<script>
+  function getSession() {
+    return getLoggedClient();
+  }
+  function checkAuth(roles) {
+    var s = getSession();
+    if (!s || !s.email) { location.href = 'login.html'; return; }
+    if (roles && roles.length && roles.indexOf(s.role || 'client') === -1) {
+      location.href = 'login.html';
+    }
+  }
+  function logout() {
+    clearLoggedClient();
+    location.href = 'V1.html';
+  }
+  function getAllUsers() {
+    try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }
+  }
+  function updateAddress(email, addr) {
+    try {
+      var users = getAllUsers();
+      var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
+      if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' };
+      users[idx].address = addr;
+      localStorage.setItem('lapinkClients', JSON.stringify(users));
+      return { ok: true };
+    } catch(e) { return { ok: false, error: 'Erro ao salvar.' }; }
+  }
+  async function updatePassword(email, nova) {
+    try {
+      var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(nova));
+      var hash = Array.from(new Uint8Array(buf)).map(function(b) { return b.toString(16).padStart(2,'0'); }).join('');
+      var users = getAllUsers();
+      var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
+      if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' };
+      users[idx].password = hash;
+      localStorage.setItem('lapinkClients', JSON.stringify(users));
+      return { ok: true };
+    } catch(e) { return { ok: false, error: 'Erro ao alterar senha.' }; }
+  }
+</script>
 <link rel="stylesheet" href="../css/Principal.css" />
 <link rel="stylesheet" href="../css/componentes.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
@@ -162,7 +203,8 @@
   function renderPedidos() {
     var todos = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]');
     var meus = todos.filter(function(p) {
-      return _session && (p.clienteEmail || '').toLowerCase() === _session.email.toLowerCase();
+      var emailPedido = (p.clienteEmail || (p.cliente && p.cliente.email) || '').toLowerCase();
+      return _session && emailPedido !== '' && emailPedido === _session.email.toLowerCase();
     });
     var cont = document.getElementById('lista-pedidos');
     if (!meus.length) {
@@ -170,16 +212,17 @@
       return;
     }
     cont.innerHTML = meus.map(function(p) {
-      var status = p.status || 'Em processamento';
-      var badge = status === 'Entregue' ? 'badge-green' : status === 'Cancelado' ? 'badge-red' : 'badge-amber';
+      var st = (p.status || 'aguardando').toLowerCase();
+      var stLabel = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' }[st] || p.status;
+      var badge = st === 'concluido' ? 'badge-green' : st === 'cancelado' ? 'badge-red' : st === 'enviado' ? 'badge-blue' : 'badge-amber';
       var total = p.total ? 'R$ ' + Number(p.total).toFixed(2).replace('.', ',') : '—';
       var data  = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
       return '<div class="pedido-card">' +
         '<div class="p-info">' +
-          '<div class="p-id">Pedido #' + (p.id || '—') + '</div>' +
+          '<div class="p-id">Pedido ' + (p.numero || '#' + p.id) + '</div>' +
           '<div class="p-date">' + data + '</div>' +
         '</div>' +
-        '<span class="badge ' + badge + '">' + status + '</span>' +
+        '<span class="badge ' + badge + '">' + stLabel + '</span>' +
         '<div class="p-total">' + total + '</div>' +
       '</div>';
     }).join('');
@@ -192,14 +235,14 @@
     alert(r.ok ? 'Endereço salvo!' : (r.error || 'Erro ao salvar.'));
   }
 
-  function salvarSenha() {
+  async function salvarSenha() {
     var errEl = document.getElementById('senha-erro');
     errEl.style.display = 'none';
     var nova = document.getElementById('nova-senha').value;
     var conf = document.getElementById('confirmar-senha').value;
     if (!nova || nova.length < 6) { errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
     if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
-    var r = updatePassword(_session.email, nova);
+    var r = await updatePassword(_session.email, nova);
     if (r.ok) {
       document.getElementById('nova-senha').value = '';
       document.getElementById('confirmar-senha').value = '';

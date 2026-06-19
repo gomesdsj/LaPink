@@ -43,7 +43,6 @@
 .product-desc { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 20px; }
 .product-price-main { font-size: 28px; font-weight: 800; color: #D4537E; margin-bottom: 4px; }
 .product-price-atacado { font-size: 13px; color: #888; margin-bottom: 4px; }
-.product-margem { font-size: 12px; color: #2e7d32; font-weight: 700; margin-bottom: 20px; }
 .product-stock { font-size: 13px; color: #666; margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
 .product-stock.low { color: #c0392b; }
 .btn-buy-full {
@@ -124,7 +123,6 @@
       <p class="product-desc" id="prod-desc"></p>
       <div class="product-price-main" id="prod-price">—</div>
       <div class="product-price-atacado" id="prod-atacado"></div>
-      <div class="product-margem" id="prod-margem"></div>
       <div class="product-stock" id="prod-stock"><i class="ti ti-stack"></i> <span id="prod-stock-txt">—</span></div>
       <button class="btn-buy-full" id="btn-comprar" type="button">
         <i class="ti ti-shopping-cart"></i> Adicionar ao carrinho
@@ -186,10 +184,6 @@
   document.getElementById('prod-price').textContent   = 'R$ ' + varejo.toFixed(2).replace('.', ',');
   if (atacado) {
     document.getElementById('prod-atacado').textContent = 'Preço atacado R$ ' + atacado.toFixed(2).replace('.', ',');
-  }
-  if (varejo && atacado && varejo > atacado) {
-    var margem = ((varejo - atacado) / varejo * 100).toFixed(0);
-    document.getElementById('prod-margem').textContent = 'Margem de revenda +' + margem + '%';
   }
 
   var stockEl = document.getElementById('prod-stock');
