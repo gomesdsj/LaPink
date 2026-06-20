@@ -79,29 +79,41 @@ body {
 }
 .nav-links a:hover { color: var(--pk-500); }
 
-.nav-actions { display: flex; gap: 14px; align-items: center; }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
 .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   color: var(--pk-400);
   font-size: 18px;
   cursor: pointer;
-  transition: color .18s, transform .18s;
+  transition: color .18s, background .18s, transform .15s;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: none;
+  flex-shrink: 0;
 }
-.nav-icon:hover { color: var(--pk-500); transform: scale(1.1); }
-.login-link { display: inline-flex; align-items: center; justify-content: center; }
-.nav-user {
-  color: var(--pk-500);
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--pk-100);
-  padding: 5px 14px;
-  border-radius: 20px;
-  display: none;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--pk-200);
+.nav-icon:hover { color: var(--pk-500); background: var(--pk-50); transform: scale(1.08); }
+.nav-user { display: none; } /* nome exibido no tooltip do ícone */
+.logout-btn { display: none; }
+
+/* Search mobile — expande abaixo da nav */
+#mobileSearchBtn { display: none; }
+.search-bar-open {
+  display: flex !important;
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: #fff;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--pk-200);
+  box-shadow: 0 4px 12px rgba(42,21,32,.08);
+  z-index: 99;
 }
-.logout-btn { display: none; background: none; border: none; cursor: pointer; }
-.nav-icon.logout-btn { background: none; border: none; cursor: pointer; }
 
 /* Busca */
 .search-bar {
@@ -554,22 +566,25 @@ body {
 }
 
 @media (max-width: 768px) {
-  /* Nav mobile: hambúrguer à esquerda, logo ao centro, ações à direita */
   .nav {
     flex-wrap: nowrap;
     height: 52px;
     padding: 0 14px;
     gap: 0;
     justify-content: space-between;
+    position: relative;
   }
   .nav-hamburger { display: inline-flex; }
   .logo { flex: 1; padding-left: 10px; }
   .search-bar { display: none; }
-  .nav-links { display: none; } /* conteúdo vai para o drawer */
-  .nav-actions { width: auto; gap: 10px; flex-shrink: 0; }
-  /* Oculta ícones redundantes na nav mobile */
-  .nav-actions .ti-heart,
-  .nav-actions .ti-shopping-bag { display: none !important; }
+  .nav-links { display: none; }
+  .nav-actions { width: auto; gap: 4px; flex-shrink: 0; }
+  /* Mobile: mostra só busca + carrinho + conta; oculta redundantes */
+  #navHeartBtn,
+  #logoutBtn,
+  #panelBtn,
+  .nav-user { display: none !important; }
+  #mobileSearchBtn { display: inline-flex !important; }
 }
 
 @media (max-width: 640px) {

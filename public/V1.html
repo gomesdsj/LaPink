@@ -324,11 +324,16 @@
       <a onclick="limparFiltro()" style="cursor:pointer;">Promoções</a>
     </div>
     <div class="nav-actions">
-      <a class="cart-nav-btn nav-icon" href="checkout.html" title="Carrinho" aria-label="Carrinho de compras">
+      <button class="nav-icon" id="mobileSearchBtn" aria-label="Buscar" title="Buscar" onclick="(function(){var b=document.querySelector('.search-bar');b.classList.toggle('search-bar-open');if(b.classList.contains('search-bar-open'))b.querySelector('input').focus();})()">
+        <i class="ti ti-search"></i>
+      </button>
+      <a class="cart-nav-btn nav-icon" href="checkout.html" title="Carrinho" aria-label="Carrinho" style="position:relative;">
         <i class="ti ti-shopping-cart"></i>
-        <span class="cart-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#D4537E;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;">0</span>
+        <span class="cart-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#D4537E;color:#fff;border-radius:50%;width:17px;height:17px;font-size:10px;font-weight:800;align-items:center;justify-content:center;line-height:17px;text-align:center;">0</span>
       </a>
-      <button class="nav-icon" onclick="showToast('Em breve: lista de favoritos!')" aria-label="Favoritos" title="Favoritos"><i class="ti ti-heart"></i></button>
+      <button class="nav-icon" id="navHeartBtn" onclick="showToast('Em breve: lista de favoritos!')" aria-label="Favoritos" title="Favoritos">
+        <i class="ti ti-heart"></i>
+      </button>
       <span class="nav-user" id="navUser"></span>
       <a href="../admin/admin.html" id="panelBtn" class="panel-nav-btn" title="Ir para o Painel Admin">
         <i class="ti ti-layout-dashboard"></i> Painel
@@ -336,11 +341,12 @@
       <button class="nav-icon" id="navUserBtn" aria-label="Minha conta" title="Minha conta" onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(c&&c.email){openProfileModal();}else{location.href='login.html';}})()">
         <i class="ti ti-user"></i>
       </button>
-      <button id="installBtn" class="nav-icon" style="display:none;">Instalar</button>
-      <button class="nav-icon logout-btn" id="logoutBtn" title="Sair">
+      <button class="nav-icon logout-btn" id="logoutBtn" title="Sair da conta" aria-label="Sair">
         <i class="ti ti-power"></i>
       </button>
-      <a href="checkout.html" class="nav-icon" title="Sacola" aria-label="Sacola de compras"><i class="ti ti-shopping-bag"></i></a>
+      <button id="installBtn" class="nav-icon" style="display:none;" aria-label="Instalar app">
+        <i class="ti ti-download"></i>
+      </button>
     </div>
   </div>
 
