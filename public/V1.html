@@ -327,7 +327,7 @@
         <i class="ti ti-shopping-cart"></i>
         <span class="cart-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#D4537E;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;">0</span>
       </a>
-      <i class="ti ti-heart nav-icon"></i>
+      <button class="nav-icon" onclick="showToast('Em breve: lista de favoritos!')" aria-label="Favoritos" title="Favoritos"><i class="ti ti-heart"></i></button>
       <span class="nav-user" id="navUser"></span>
       <a href="../admin/admin.html" id="panelBtn" title="Ir para o Painel Admin" style="display:none;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;background:var(--pink-500,#993556);color:#fff;font-size:12px;font-weight:700;text-decoration:none;border:none;cursor:pointer;">
         <i class="ti ti-layout-dashboard"></i> Painel
@@ -339,7 +339,7 @@
       <button class="nav-icon logout-btn" id="logoutBtn" title="Sair">
         <i class="ti ti-power"></i>
       </button>
-      <i class="ti ti-shopping-bag nav-icon"></i>
+      <a href="checkout.html" class="nav-icon" title="Sacola" aria-label="Sacola de compras"><i class="ti ti-shopping-bag"></i></a>
     </div>
   </div>
 
@@ -712,18 +712,6 @@
   var anuncioEl = document.getElementById('v1-anuncio');
   if (anuncioEl) anuncioEl.innerHTML = '<i class="ti ti-truck"></i> ' + config.anuncio;
 
-  // Hero
-  var heroTituloEl = document.getElementById('v1-hero-titulo');
-  if (heroTituloEl) heroTituloEl.innerHTML   = config.hero.titulo.replace(/\n/g, '<br>');
-  var heroEyebrowEl = document.getElementById('v1-hero-eyebrow');
-  if (heroEyebrowEl) heroEyebrowEl.textContent = config.hero.eyebrow;
-  var heroSubEl = document.getElementById('v1-hero-sub');
-  if (heroSubEl) heroSubEl.textContent = config.hero.sub;
-  var heroBtn1 = document.getElementById('v1-hero-btn1');
-  if (heroBtn1) heroBtn1.textContent = config.hero.btn1;
-  var heroBtn2 = document.getElementById('v1-hero-btn2');
-  if (heroBtn2) heroBtn2.textContent = config.hero.btn2;
-
   // Depoimentos — oculta a seção quando não há depoimentos configurados
   var revGrid    = document.getElementById('v1-rev-grid');
   var revSection = revGrid && revGrid.closest('.reviews');
@@ -803,7 +791,7 @@
   document.addEventListener('lapinkProdutosAtualizados', function() {
     atualizarProdutos();
     var secao = document.getElementById('secao-catalogo');
-    if (secao && secao._renderizado) renderCatalogoCompleto();
+    if (secao && secao.style.display !== 'none') renderCatalogoCompleto();
   });
 
   // URL param — suporte a ?cat=Anéis (deep link por categoria)
@@ -943,9 +931,7 @@ if (installBtn) {
     } catch(e) { return DEFAULTS; }
   }
 
-  function esc(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+
 
   function renderSlide(s) {
     var media = '';
@@ -1094,7 +1080,7 @@ function renderDrawerCategories() {
   var submenu = document.getElementById('drawerCatSubmenu');
   if (!submenu) return;
 
-  var produtos = (function() {
+  var produtos = (typeof getProdutos === 'function') ? getProdutos() : (function() {
     try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; }
     catch(e) { return []; }
   })();
@@ -1131,7 +1117,7 @@ window.toggleDrawerCat = function() {
   function syncProfileBtn() {
     var client = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
     var btn = document.getElementById('drawerProfileBtn');
-    if (btn) btn.style.display = (client && client.name) ? 'flex' : 'none';
+    if (btn) btn.style.display = (client && client.email) ? 'flex' : 'none';
   }
 
   // auth.js já está carregado neste ponto — envolve a função existente

@@ -10,9 +10,6 @@
 <script src="js/cloud-sync.js"></script>
 <script src="js/storage.js"></script>
 <script>
-  function getSession() {
-    return getLoggedClient();
-  }
   function checkAuth(roles) {
     var s = getSession();
     if (!s || !s.email) { location.href = 'login.html'; return; }
@@ -186,14 +183,18 @@
   <!-- Seção: Alterar Senha -->
   <div class="conta-section-title"><i class="ti ti-lock"></i> Alterar senha</div>
   <div class="card">
+    <div class="form-group">
+      <label>Senha atual</label>
+      <input type="password" id="senha-atual" placeholder="••••••••" autocomplete="current-password" />
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label>Nova senha</label>
-        <input type="password" id="nova-senha" placeholder="Mínimo 6 caracteres" />
+        <input type="password" id="nova-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
       </div>
       <div class="form-group">
         <label>Confirmar nova senha</label>
-        <input type="password" id="confirmar-senha" placeholder="Repita a nova senha" />
+        <input type="password" id="confirmar-senha" placeholder="Repita a nova senha" autocomplete="new-password" />
       </div>
     </div>
     <div id="senha-erro" style="color:var(--red-400);font-size:12px;margin-bottom:10px;display:none;"></div>
@@ -205,11 +206,42 @@
 </main>
 
 <script>
-  var _session = getSession();
+  var _session = getLoggedClient();
+  var _isAdmin = _session && (_session.role === 'admin' || _session.role === 'superadmin');
+
+  function _toast(msg, tipo) {
+    var el = document.getElementById('_mc_toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = '_mc_toast';
+      el.setAttribute('role', 'status');
+      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:24px;font-size:13px;font-weight:600;color:#fff;z-index:9999;display:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.18);';
+      document.body.appendChild(el);
+    }
+    el.style.background = tipo === 'erro' ? '#C0392B' : '#2A1520';
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
+  }
 
   // Preenche dados da sessão
   document.getElementById('nome-cliente').textContent = _session ? _session.name : '';
   document.getElementById('email-cliente').textContent = _session ? _session.email : '';
+
+  // Oculta seções de endereço e senha para admins (dados ficam em lapinkUsers, não lapinkClients)
+  if (_isAdmin) {
+    var secEndereco = document.querySelector('.conta-section-title:nth-of-type(2)');
+    var cardEndereco = document.querySelector('.conta-main .card:first-of-type');
+    document.querySelectorAll('.conta-section-title').forEach(function(el, i) {
+      if (i > 0) { el.style.display = 'none'; }
+    });
+    document.querySelectorAll('.conta-main .card').forEach(function(el) { el.style.display = 'none'; });
+    var aviso = document.createElement('div');
+    aviso.style.cssText = 'background:var(--pink-50);border:1px solid var(--pink-200);border-radius:var(--radius-lg);padding:16px 20px;color:var(--pink-600);font-size:13px;margin-top:12px;';
+    aviso.innerHTML = '<i class="ti ti-shield-lock" style="margin-right:6px;"></i>Administradores gerenciam senha e dados no <a href="../admin/configuracoes.html" style="color:var(--pink-500);font-weight:700;">Painel Admin</a>.';
+    document.querySelector('.conta-main').appendChild(aviso);
+  }
 
   // Carrega endereço salvo
   (function carregarEndereco() {
@@ -278,21 +310,33 @@
   function salvarEndereco() {
     var addr = document.getElementById('campo-endereco').value.trim();
     var r = updateAddress(_session.email, addr);
-    alert(r.ok ? 'Endereço salvo!' : (r.error || 'Erro ao salvar.'));
+    if (r.ok) _toast('Endereço salvo!');
+    else _toast(r.error || 'Erro ao salvar.', 'erro');
   }
 
   async function salvarSenha() {
     var errEl = document.getElementById('senha-erro');
     errEl.style.display = 'none';
-    var nova = document.getElementById('nova-senha').value;
-    var conf = document.getElementById('confirmar-senha').value;
-    if (!nova || nova.length < 6) { errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
+    var atual = document.getElementById('senha-atual').value;
+    var nova  = document.getElementById('nova-senha').value;
+    var conf  = document.getElementById('confirmar-senha').value;
+    if (!atual) { errEl.textContent = 'Informe sua senha atual.'; errEl.style.display = 'block'; return; }
+    if (!nova || nova.length < 6) { errEl.textContent = 'A nova senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
     if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
+
+    // Verifica senha atual antes de alterar
+    var clients = typeof getAllUsers === 'function' ? getAllUsers() : [];
+    var user = clients.find(function(u) { return u.email.toLowerCase() === _session.email.toLowerCase(); });
+    if (!user) { errEl.textContent = 'Usuário não encontrado.'; errEl.style.display = 'block'; return; }
+    var hashAtual = await hashPassword(atual);
+    if (user.password !== hashAtual) { errEl.textContent = 'Senha atual incorreta.'; errEl.style.display = 'block'; return; }
+
     var r = await updatePassword(_session.email, nova);
     if (r.ok) {
+      document.getElementById('senha-atual').value = '';
       document.getElementById('nova-senha').value = '';
       document.getElementById('confirmar-senha').value = '';
-      alert('Senha alterada com sucesso!');
+      _toast('Senha alterada com sucesso!');
     } else {
       errEl.textContent = r.error || 'Erro ao alterar senha.';
       errEl.style.display = 'block';
