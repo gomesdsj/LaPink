@@ -575,18 +575,32 @@
         ? '<div style="font-size:11px;color:#888;margin-top:1px;">Atacado: R$ ' + atacado.toFixed(2).replace('.', ',') + '</div>'
         : '';
       var favHtml  = esgotado ? '' : '<i class="ti ti-heart prod-fav"></i>';
-      var preco_str = varejo.toFixed(2).replace('.', ',');
-      var btnHtml  = esgotado
-        ? '<button class="btn-secondary btn-buy btn-esgotado" disabled>Fora de estoque</button>'
-        : '<button class="btn-secondary btn-buy" data-id="' + esc(p.id) + '" data-nome="' + esc(p.nome) + '" data-preco="' + varejo + '" data-imagem="' + esc(p.imagem || '') + '" onclick="event.stopPropagation();handleBuyCart(this)"><i class="ti ti-shopping-cart" style="font-size:13px;margin-right:4px;"></i> Comprar</button>';
+      var precoFmt = 'R$ ' + varejo.toFixed(2).replace('.', ',');
 
-      return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '" onclick="verProduto(\'' + esc(String(p.id)) + '\')" style="cursor:pointer;">' +
+      var overlayHtml = esgotado ? '' :
+        '<div class="prod-qty-overlay">' +
+          '<div class="qty-nome">' + esc(p.nome) + '</div>' +
+          '<div class="qty-preco">' + precoFmt + '</div>' +
+          '<div class="qty-controls">' +
+            '<button class="qty-btn" onclick="event.stopPropagation();mudaQty(this,-1)">−</button>' +
+            '<input class="qty-num" type="number" value="1" min="1" max="99" onclick="event.stopPropagation()" />' +
+            '<button class="qty-btn" onclick="event.stopPropagation();mudaQty(this,1)">+</button>' +
+          '</div>' +
+          '<button class="btn-add-qty" onclick="event.stopPropagation();addQtyToCart(this)">' +
+            '<i class="ti ti-shopping-cart"></i> Adicionar ao carrinho' +
+          '</button>' +
+          '<button class="btn-ver-detalhes" onclick="event.stopPropagation();verProduto(\'' + esc(String(p.id)) + '\')">Ver detalhes da peça</button>' +
+        '</div>';
+
+      return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '"' +
+          ' data-id="' + esc(String(p.id)) + '" data-nome="' + esc(p.nome) + '" data-preco="' + varejo + '" data-imagem="' + esc(p.imagem || '') + '"' +
+          ' onclick="abrirQty(event,this)">' +
         '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
           '<div><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span>' + atacadoHtml + '</div>' +
-          btnHtml +
         '</div>' +
+        overlayHtml +
       '</div>';
     }).join('');
   }
@@ -830,31 +844,57 @@ function assinarNewsletter() {
   setTimeout(function() { msg.textContent = ''; msg.className = 'nl-msg'; }, 5000);
 }
 
-// ── Clique no card — abre página de detalhes/especificações ──
+// ── Ver detalhes da peça (produto.html) ──
 window.verProduto = function(id) {
   location.href = 'produto.html?id=' + encodeURIComponent(id);
 };
 
-// ── Botão Comprar — adiciona ao carrinho e vai para checkout ──
-window.handleBuyCart = function(btn) {
-  var id     = btn.dataset.id;
-  var nome   = btn.dataset.nome   || '';
-  var preco  = parseFloat(btn.dataset.preco) || 0;
-  var imagem = btn.dataset.imagem || null;
-  if (typeof addToCart === 'function') {
-    addToCart({ id: id, nome: nome, precoVarejo: preco, imagem: imagem || undefined }, 1);
-    showToast('Adicionado ao carrinho!');
-    setTimeout(function() { location.href = 'checkout.html'; }, 700);
-  } else {
-    location.href = 'checkout.html';
-  }
+// ── Abre overlay de quantidade ao clicar no card ──
+window.abrirQty = function(event, card) {
+  if (event.target.closest('.prod-qty-overlay')) return;
+  if (card.classList.contains('prod-card--esgotado')) return;
+  document.querySelectorAll('.prod-qty-overlay.open').forEach(function(o) {
+    o.classList.remove('open');
+  });
+  var overlay = card.querySelector('.prod-qty-overlay');
+  if (!overlay) return;
+  var inp = overlay.querySelector('.qty-num');
+  if (inp) inp.value = 1;
+  overlay.classList.add('open');
 };
 
-// mantido para compatibilidade com catálogo completo
-function handleBuy(event) {
-  var btn = event.currentTarget || event.target;
-  window.handleBuyCart(btn);
-}
+// ── Fecha todos os overlays (clique fora do card) ──
+window.fecharQty = function() {
+  document.querySelectorAll('.prod-qty-overlay.open').forEach(function(o) {
+    o.classList.remove('open');
+  });
+};
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.prod-card')) fecharQty();
+});
+
+// ── Altera quantidade no overlay ──
+window.mudaQty = function(btn, delta) {
+  var inp = btn.closest('.qty-controls').querySelector('.qty-num');
+  inp.value = Math.max(1, Math.min(99, (parseInt(inp.value) || 1) + delta));
+};
+
+// ── Adiciona ao carrinho com a quantidade escolhida ──
+window.addQtyToCart = function(btn) {
+  var card   = btn.closest('.prod-card');
+  var overlay = btn.closest('.prod-qty-overlay');
+  var qty    = parseInt(overlay.querySelector('.qty-num').value) || 1;
+  var id     = card.dataset.id;
+  var nome   = card.dataset.nome   || '';
+  var preco  = parseFloat(card.dataset.preco) || 0;
+  var imagem = card.dataset.imagem || undefined;
+  if (typeof addToCart === 'function') {
+    addToCart({ id: id, nome: nome, precoVarejo: preco, imagem: imagem }, qty);
+    showToast(qty + 'x adicionado ao carrinho!');
+    fecharQty();
+  }
+};
 </script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
