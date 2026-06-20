@@ -575,11 +575,12 @@
         ? '<div style="font-size:11px;color:#888;margin-top:1px;">Atacado: R$ ' + atacado.toFixed(2).replace('.', ',') + '</div>'
         : '';
       var favHtml  = esgotado ? '' : '<i class="ti ti-heart prod-fav"></i>';
+      var preco_str = varejo.toFixed(2).replace('.', ',');
       var btnHtml  = esgotado
         ? '<button class="btn-secondary btn-buy btn-esgotado" disabled>Fora de estoque</button>'
-        : '<button class="btn-secondary btn-buy" data-id="' + esc(p.id) + '" data-product="' + esc(p.nome) + '">Comprar</button>';
+        : '<button class="btn-secondary btn-buy" data-id="' + esc(p.id) + '" data-nome="' + esc(p.nome) + '" data-preco="' + varejo + '" data-imagem="' + esc(p.imagem || '') + '" onclick="event.stopPropagation();handleBuyCart(this)"><i class="ti ti-shopping-cart" style="font-size:13px;margin-right:4px;"></i> Comprar</button>';
 
-      return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '">' +
+      return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '" onclick="verProduto(' + esc(p.id) + ')" style="cursor:pointer;">' +
         '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
@@ -829,15 +830,30 @@ function assinarNewsletter() {
   setTimeout(function() { msg.textContent = ''; msg.className = 'nl-msg'; }, 5000);
 }
 
-// ── handleBuy — abre página do produto ──
+// ── Clique no card — abre página de detalhes/especificações ──
+window.verProduto = function(id) {
+  location.href = 'produto.html?id=' + encodeURIComponent(id);
+};
+
+// ── Botão Comprar — adiciona ao carrinho e vai para checkout ──
+window.handleBuyCart = function(btn) {
+  var id     = btn.dataset.id;
+  var nome   = btn.dataset.nome   || '';
+  var preco  = parseFloat(btn.dataset.preco) || 0;
+  var imagem = btn.dataset.imagem || null;
+  if (typeof addToCart === 'function') {
+    addToCart({ id: id, nome: nome, precoVarejo: preco, imagem: imagem || undefined }, 1);
+    showToast('Adicionado ao carrinho!');
+    setTimeout(function() { location.href = 'checkout.html'; }, 700);
+  } else {
+    location.href = 'checkout.html';
+  }
+};
+
+// mantido para compatibilidade com catálogo completo
 function handleBuy(event) {
   var btn = event.currentTarget || event.target;
-  var id  = btn.dataset.id;
-  if (id) {
-    location.href = 'produto.html?id=' + id;
-  } else {
-    location.href = 'produto.html?nome=' + encodeURIComponent(btn.dataset.product || '');
-  }
+  window.handleBuyCart(btn);
 }
 </script>
 

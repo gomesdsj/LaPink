@@ -253,6 +253,7 @@ body {
   border-color: var(--pk-400);
   box-shadow: 0 6px 24px rgba(212,83,126,.14);
   transform: translateY(-3px);
+  cursor: pointer;
 }
 .prod-img {
   background: var(--pk-50);
