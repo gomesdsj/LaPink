@@ -102,6 +102,57 @@
 .btn-add-dest:disabled { opacity: .4; cursor: default; }
 
 /* ── Botão câmera ── */
+/* ── Carrossel editor ── */
+.slide-card {
+  border: .5px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: var(--white);
+}
+.slide-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--gray-50);
+  border-bottom: .5px solid var(--gray-200);
+  cursor: pointer;
+}
+.slide-card-head h4 { font-size: 13px; font-weight: 700; color: var(--gray-700); flex:1; margin: 0; }
+.slide-card-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.slide-img-wrap {
+  width: 100%; height: 120px;
+  border: 1.5px dashed var(--gray-200);
+  border-radius: var(--radius-lg);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; position: relative; background: var(--pk-50);
+  cursor: pointer;
+}
+.slide-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.slide-img-wrap .slide-img-placeholder { color: var(--gray-400); text-align: center; font-size: 12px; }
+.slide-img-wrap .slide-img-placeholder i { font-size: 28px; display: block; margin-bottom: 4px; color: var(--pk-300); }
+.slide-img-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.38);
+  display: none; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: 700; gap: 6px;
+}
+.slide-img-wrap:hover .slide-img-overlay { display: flex; }
+.cor-radios { display: flex; gap: 8px; flex-wrap: wrap; }
+.cor-radio { display: none; }
+.cor-label {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; display: block;
+  transition: transform .15s, border-color .15s;
+}
+.cor-radio:checked + .cor-label { border-color: #333; transform: scale(1.2); }
+.cor-pink  { background: linear-gradient(135deg,#FFF0F7,#FFD8EC); }
+.cor-rose  { background: linear-gradient(135deg,#FFEAF4,#FFC8E0); }
+.cor-gold  { background: linear-gradient(135deg,#FFF4DE,#FFE8B8); }
+.cor-mint  { background: linear-gradient(135deg,#E8FAF5,#C8F0E4); }
+.cor-dark  { background: linear-gradient(135deg,#5a1840,#F04A86); }
+.slide-acao-select { font-size: 12px; padding: 6px 10px; border: .5px solid var(--gray-200); border-radius: var(--radius-md); background: var(--white); color: var(--gray-700); width: 100%; }
+
 .btn-upload-foto {
   cursor: pointer;
   background: var(--gray-100);
@@ -355,6 +406,7 @@
           <button class="tab-btn" data-tab="hero"><i class="ti ti-star"></i> Hero</button>
           <button class="tab-btn" data-tab="depoimentos"><i class="ti ti-message-circle"></i> Depoimentos</button>
           <button class="tab-btn" data-tab="newsletter"><i class="ti ti-mail"></i> Newsletter</button>
+          <button class="tab-btn" data-tab="carrossel"><i class="ti ti-photo-up"></i> Carrossel</button>
         </div>
 
         <div class="v1-editor-wrap">
@@ -491,6 +543,26 @@
                 <input id="cfg-nl-btn" type="text" placeholder="Quero desconto" />
               </div>
             </div>
+          </div>
+
+          <!-- ─── TAB CARROSSEL ─── -->
+          <div class="tab-content" id="tab-carrossel">
+            <div class="sub-section-header">
+              <span class="sub-badge">6</span>
+              <div>
+                <h2>Carrossel de destaques</h2>
+                <p>Slides exibidos no topo da loja. Adicione imagens, textos e botões para cada slide. Recomendado: até 5 slides.</p>
+              </div>
+            </div>
+            <div id="carrossel-editor"></div>
+            <div style="display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="adicionarSlide()"><i class="ti ti-plus"></i> Novo slide</button>
+              <button class="btn btn-secondary" id="btn-remover-slide" onclick="removerUltimoSlide()" style="color:var(--red-400); display:none;"><i class="ti ti-trash"></i> Remover último</button>
+            </div>
+            <p style="font-size:11px; color:var(--gray-400); margin-top:10px; display:flex; align-items:flex-start; gap:5px;">
+              <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
+              Imagem ideal: 800×400 px, JPG ou PNG, até 2 MB. Se não houver imagem, um ícone decorativo é exibido.
+            </p>
           </div>
 
         </div><!-- /v1-editor-wrap -->
@@ -759,6 +831,141 @@ function removerUltimoDepoimento() {
   renderDepoimentos();
 }
 
+// ══ CARROSSEL ══════════════════════════════════════════════════════════
+var SLIDE_DEFAULTS = [
+  { eyebrow:'Nova coleção — verão 2025', titulo:'Elegância que\nconta sua história',
+    subtitulo:'Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.',
+    btn1Txt:'Ver coleção', btn1Acao:'colecao', btn2Txt:'Ver promoções', btn2Acao:'colecao',
+    imagem:'', icone:'ti-diamond', cor:'rose' }
+];
+
+var slidesData = [];
+
+function getCarrossel() {
+  try {
+    var s = JSON.parse(localStorage.getItem('lapinkCarrossel') || 'null');
+    return (s && s.length) ? s : JSON.parse(JSON.stringify(SLIDE_DEFAULTS));
+  } catch(e) { return JSON.parse(JSON.stringify(SLIDE_DEFAULTS)); }
+}
+
+function renderCarrossel() {
+  var el = document.getElementById('carrossel-editor');
+  if (!el) return;
+  if (!slidesData.length) {
+    el.innerHTML = '<div class="sel-empty" style="padding:20px;">Nenhum slide. Clique em "+ Novo slide".</div>';
+    document.getElementById('btn-remover-slide').style.display = 'none';
+    return;
+  }
+  document.getElementById('btn-remover-slide').style.display = slidesData.length > 1 ? 'inline-flex' : 'none';
+
+  var CORES = ['pink','rose','gold','mint','dark'];
+  var ACOES = [
+    {v:'colecao',l:'Ver coleção'},
+    {v:'brincos',l:'Brincos'},
+    {v:'aneis',  l:'Anéis'},
+    {v:'colares',l:'Colares'},
+    {v:'bolsas', l:'Bolsas'},
+    {v:'',       l:'Sem ação'}
+  ];
+
+  el.innerHTML = slidesData.map(function(s, i) {
+    var imgHtml = s.imagem
+      ? '<img src="' + escHtml(s.imagem) + '" alt="Slide ' + (i+1) + '" />'
+      : '<div class="slide-img-placeholder"><i class="ti ti-photo-up"></i>Clique para adicionar imagem</div>';
+
+    var coresHtml = CORES.map(function(c) {
+      return '<input type="radio" class="cor-radio" name="slide-cor-' + i + '" id="sc-' + i + '-' + c + '" value="' + c + '"' +
+        (s.cor === c ? ' checked' : '') + ' onchange="slidesData[' + i + '].cor=this.value">' +
+        '<label class="cor-label cor-' + c + '" for="sc-' + i + '-' + c + '" title="' + c + '"></label>';
+    }).join('');
+
+    function acoesSelect(field, val) {
+      return '<select class="slide-acao-select" onchange="slidesData[' + i + '].' + field + '=this.value">' +
+        ACOES.map(function(a) {
+          return '<option value="' + a.v + '"' + (val === a.v ? ' selected' : '') + '>' + a.l + '</option>';
+        }).join('') + '</select>';
+    }
+
+    return '<div class="slide-card">' +
+      '<div class="slide-card-head">' +
+        '<i class="ti ti-grip-vertical" style="color:var(--gray-300);"></i>' +
+        '<h4>Slide ' + (i+1) + (s.eyebrow ? ' — ' + escHtml(s.eyebrow) : '') + '</h4>' +
+      '</div>' +
+      '<div class="slide-card-body">' +
+        '<label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.06em;">Imagem do slide</label>' +
+        '<label class="slide-img-wrap">' +
+          imgHtml +
+          '<div class="slide-img-overlay"><i class="ti ti-camera"></i> Alterar foto</div>' +
+          '<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="atualizarFotoSlide(' + i + ',this)">' +
+        '</label>' +
+        (s.imagem ? '<button class="btn btn-secondary" style="font-size:11px;color:var(--red-400);margin-top:-4px;" onclick="slidesData[' + i + '].imagem=\'\';renderCarrossel()"><i class="ti ti-trash"></i> Remover foto</button>' : '') +
+        '<div class="form-row">' +
+          '<div class="form-group" style="margin-bottom:0;">' +
+            '<label for="slide-eyebrow-' + i + '">Texto pequeno</label>' +
+            '<input id="slide-eyebrow-' + i + '" type="text" placeholder="Ex: Nova coleção" value="' + escHtml(s.eyebrow||'') + '" oninput="slidesData[' + i + '].eyebrow=this.value">' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom:0;">' +
+          '<label for="slide-titulo-' + i + '">Título</label>' +
+          '<textarea id="slide-titulo-' + i + '" rows="2" style="resize:vertical;" placeholder="Título do slide" oninput="slidesData[' + i + '].titulo=this.value">' + escHtml(s.titulo||'') + '</textarea>' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom:0;">' +
+          '<label for="slide-sub-' + i + '">Subtítulo</label>' +
+          '<input id="slide-sub-' + i + '" type="text" placeholder="Descrição curta..." value="' + escHtml(s.subtitulo||'') + '" oninput="slidesData[' + i + '].subtitulo=this.value">' +
+        '</div>' +
+        '<div class="form-row">' +
+          '<div class="form-group" style="margin-bottom:0;">' +
+            '<label>Botão primário</label>' +
+            '<input type="text" placeholder="Texto do botão" value="' + escHtml(s.btn1Txt||'') + '" oninput="slidesData[' + i + '].btn1Txt=this.value">' +
+            acoesSelect('btn1Acao', s.btn1Acao||'') +
+          '</div>' +
+          '<div class="form-group" style="margin-bottom:0;">' +
+            '<label>Botão secundário</label>' +
+            '<input type="text" placeholder="Texto do botão" value="' + escHtml(s.btn2Txt||'') + '" oninput="slidesData[' + i + '].btn2Txt=this.value">' +
+            acoesSelect('btn2Acao', s.btn2Acao||'') +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px;">Tema de cor</label>' +
+          '<div class="cor-radios">' + coresHtml + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function adicionarSlide() {
+  if (slidesData.length >= 6) { showToast('Máximo de 6 slides.', 'erro'); return; }
+  slidesData.push({ eyebrow:'', titulo:'Novo slide', subtitulo:'', btn1Txt:'Ver coleção', btn1Acao:'colecao', btn2Txt:'', btn2Acao:'', imagem:'', icone:'ti-diamond', cor:'pink' });
+  renderCarrossel();
+}
+
+function removerUltimoSlide() {
+  if (slidesData.length <= 1) return;
+  slidesData.pop();
+  renderCarrossel();
+}
+
+function atualizarFotoSlide(idx, input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (!_validarImagem(file)) { input.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    slidesData[idx].imagem = e.target.result;
+    renderCarrossel();
+    showToast('Foto do slide ' + (idx+1) + ' atualizada!');
+  };
+  reader.readAsDataURL(file);
+}
+
+function salvarCarrossel() {
+  localStorage.setItem('lapinkCarrossel', JSON.stringify(slidesData));
+  if (window.LaPinkSync) window.LaPinkSync.push('lapinkCarrossel', slidesData);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+
 function coletarConfig() {
   return {
     anuncio: document.getElementById('cfg-anuncio').value.trim()       || DEFAULT_CONFIG.anuncio,
@@ -783,10 +990,9 @@ function publicarAlteracoes() {
   var config = coletarConfig();
   try {
     localStorage.setItem('lapinkLojaConfig', JSON.stringify(config));
-    // Marca timestamp local para que o cloud-sync do V1 não sobrescreva com dados antigos do Firestore
     localStorage.setItem('lapinkLojaConfig_ts', String(Date.now()));
-    // Envia para o Firestore se o cloud-sync estiver disponível (carregado via defer)
     if (window.LaPinkSync) window.LaPinkSync.push('lapinkLojaConfig', config);
+    salvarCarrossel();
     var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('save-status').textContent = 'Publicado às ' + hora;
     showToast('Alterações publicadas na loja!');
@@ -815,6 +1021,9 @@ function publicarAlteracoes() {
 
   depoimentosData = cfg.depoimentos.map(function(d) { return { texto: d.texto, autor: d.autor }; });
   renderDepoimentos();
+
+  slidesData = getCarrossel().map(function(s) { return Object.assign({}, s); });
+  renderCarrossel();
 })();
 </script>
 <script src="js/sidebar.js"></script>
