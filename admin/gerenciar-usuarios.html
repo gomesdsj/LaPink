@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Gerenciar Usuários</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="../public/js/firebase-init.js"></script>
-<script src="../public/js/cloud-sync.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="../public/js/firebase-init.js"></script>
+<script defer src="../public/js/cloud-sync.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/utils.js"></script>
 <link rel="stylesheet" href="css/Principal.css" />
@@ -372,6 +372,9 @@
         var cb = document.getElementById('ed-page-' + p.id);
         return cb && cb.checked;
       }).map(function(p) { return p.id; });
+      if (selecionadas.length === 0) {
+        errEl.textContent = 'Selecione pelo menos uma aba para o admin.'; errEl.style.display = 'block'; return;
+      }
       // null = acesso total (todas marcadas), array = acesso restrito
       pages = selecionadas.length === PAGES_LIST.length ? null : selecionadas;
     }
@@ -395,7 +398,13 @@
   }
 
   renderTabela();
+
+  // Re-renderiza a tabela se outro dispositivo sincronizar lapinkUsers via Firestore
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'lapinkUsers') renderTabela();
+  });
 </script>
 <script src="js/sidebar.js"></script>
 </body>
 </html>
+

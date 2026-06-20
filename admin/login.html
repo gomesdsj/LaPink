@@ -169,9 +169,10 @@
     if (s.role === 'superadmin' || s.role === 'admin') {
       window.location.replace(_redirectForSession(s));
     } else {
+      var _esc = function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
       var banner = document.createElement('div');
       banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#fef3c7;border-bottom:1px solid #fcd34d;padding:10px 20px;text-align:center;font-size:13px;z-index:999;';
-      banner.innerHTML = 'Você está logado como <strong>' + (s.email || s.name || 'cliente') + '</strong>. ' +
+      banner.innerHTML = 'Você está logado como <strong>' + _esc(s.email || s.name || 'cliente') + '</strong>. ' +
         '<a href="#" onclick="logout();return false;" style="color:#b45309;font-weight:700;text-decoration:underline;">Sair e entrar com outra conta</a>';
       document.body.prepend(banner);
     }
