@@ -207,9 +207,10 @@
   box-shadow:0 -8px 40px rgba(42,21,32,.18);
   z-index:2001; max-height:90svh; overflow-y:auto;
   transform:translateY(100%);
-  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  opacity:0; pointer-events:none;
+  transition:transform .32s cubic-bezier(.4,0,.2,1), opacity .28s;
 }
-.profile-sheet.open { transform:translateY(0); }
+.profile-sheet.open { transform:translateY(0); opacity:1; pointer-events:auto; }
 
 @media (min-width:600px) {
   .profile-sheet {
