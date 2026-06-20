@@ -251,101 +251,10 @@ body {
   position: relative;
 }
 
-/* ── Overlay de quantidade ── */
-.prod-qty-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,.97);
-  backdrop-filter: blur(4px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 18px 16px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s ease;
-  z-index: 10;
-  border-radius: var(--r);
-}
-.prod-qty-overlay.open { opacity: 1; pointer-events: auto; }
-.qty-nome {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--pk-dark);
-  text-align: center;
-  line-height: 1.3;
-}
-.qty-preco {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--pk-500);
-}
-.qty-controls {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  border: 1.5px solid var(--pk-200);
-  border-radius: 30px;
-  overflow: hidden;
-}
-.qty-btn {
-  background: none;
-  border: none;
-  width: 36px;
-  height: 36px;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--pk-500);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s;
-}
-.qty-btn:hover { background: var(--pk-50); }
-.qty-num {
-  width: 40px;
-  text-align: center;
-  border: none;
-  border-left: 1px solid var(--pk-200);
-  border-right: 1px solid var(--pk-200);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--pk-dark);
-  outline: none;
-  -moz-appearance: textfield;
-}
-.qty-num::-webkit-outer-spin-button,
-.qty-num::-webkit-inner-spin-button { -webkit-appearance: none; }
-.btn-add-qty {
-  width: 100%;
-  background: var(--pk-500);
-  color: #fff;
-  border: none;
-  border-radius: 22px;
-  padding: 10px 0;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.btn-add-qty:hover { background: var(--pk-600); }
-.btn-ver-detalhes {
-  font-size: 11px;
-  color: var(--pk-soft);
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-}
-.btn-ver-detalhes:hover { color: var(--pk-500); }
+/* ── input qty: remove setas nativas ── */
+#qtyInput::-webkit-outer-spin-button,
+#qtyInput::-webkit-inner-spin-button { -webkit-appearance: none; }
+#qtyInput { -moz-appearance: textfield; }
 .prod-card:hover {
   border-color: var(--pk-400);
   box-shadow: 0 6px 24px rgba(212,83,126,.14);
