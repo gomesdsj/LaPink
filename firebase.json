@@ -1,0 +1,40 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      ".gitignore",
+      "*.md",
+      "*.log",
+      "dev-server.js",
+      "package.json",
+      "package-lock.json",
+      "lapink-insomnia.json",
+      "AGENTES_STATUS.md",
+      "**/node_modules/**",
+      "data/**",
+      ".env"
+    ],
+    "rewrites": [
+      {
+        "source": "/",
+        "destination": "/public/V1.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(html|js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|png|webp|gif|svg|ico|woff|woff2)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=604800" }
+        ]
+      }
+    ]
+  }
+}
