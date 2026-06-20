@@ -333,9 +333,9 @@
       <a href="../admin/admin.html" id="panelBtn" title="Ir para o Painel Admin" style="display:none;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;background:var(--pink-500,#993556);color:#fff;font-size:12px;font-weight:700;text-decoration:none;border:none;cursor:pointer;">
         <i class="ti ti-layout-dashboard"></i> Painel
       </a>
-      <a href="login.html" class="nav-icon login-link" aria-label="Entrar" id="loginLink">
+      <button class="nav-icon" id="navUserBtn" aria-label="Minha conta" title="Minha conta" onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(c&&c.email){openProfileModal();}else{location.href='login.html';}})()">
         <i class="ti ti-user"></i>
-      </a>
+      </button>
       <button id="installBtn" class="nav-icon" style="display:none;">Instalar</button>
       <button class="nav-icon logout-btn" id="logoutBtn" title="Sair">
         <i class="ti ti-power"></i>
@@ -1117,8 +1117,15 @@ window.toggleDrawerCat = function() {
 (function() {
   function syncProfileBtn() {
     var client = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
+    var loggedIn = !!(client && client.email);
     var btn = document.getElementById('drawerProfileBtn');
-    if (btn) btn.style.display = (client && client.email) ? 'flex' : 'none';
+    if (btn) btn.style.display = loggedIn ? 'flex' : 'none';
+    var navBtn = document.getElementById('navUserBtn');
+    if (navBtn) {
+      navBtn.title = loggedIn ? ('Olá, ' + (client.name || client.email)) : 'Entrar';
+      navBtn.setAttribute('aria-label', loggedIn ? 'Minha conta' : 'Entrar');
+      navBtn.style.color = loggedIn ? 'var(--pink-500, #D4537E)' : '';
+    }
   }
 
   // auth.js já está carregado neste ponto — envolve a função existente
