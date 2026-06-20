@@ -161,14 +161,19 @@
 </div>
 
 <script>
-  // Se já logado, redireciona direto
+  // Se já logado como admin/superadmin, redireciona — senão mostra aviso com opção de sair
   (function() {
     var s = getSession();
     if (!s) return;
     if (s.role === 'superadmin' || s.role === 'admin') {
       window.location.replace('admin.html');
     } else {
-      window.location.replace('../public/minha-conta.html');
+      // Sessão ativa como cliente — mostra banner para trocar conta
+      var banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#fef3c7;border-bottom:1px solid #fcd34d;padding:10px 20px;text-align:center;font-size:13px;z-index:999;';
+      banner.innerHTML = 'Você está logado como <strong>' + (s.email || s.name || 'cliente') + '</strong>. ' +
+        '<a href="#" onclick="logout();return false;" style="color:#b45309;font-weight:700;text-decoration:underline;">Sair e entrar com outra conta</a>';
+      document.body.prepend(banner);
     }
   })();
 
