@@ -26,6 +26,19 @@ async function _doRegister() {
     return;
   }
 
+  // Validação de e-mail básica
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setRegisterMessage('E-mail inválido.', false);
+    return;
+  }
+
+  // Validação de WhatsApp — mínimo 10 dígitos
+  var waDigits = whatsapp.replace(/\D/g, '');
+  if (waDigits.length < 10 || waDigits.length > 15) {
+    setRegisterMessage('WhatsApp inválido. Use formato: (11) 99999-9999.', false);
+    return;
+  }
+
   if (password.length < 6) {
     setRegisterMessage('A senha deve ter no mínimo 6 caracteres.', false);
     return;

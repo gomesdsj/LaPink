@@ -6,6 +6,7 @@
 <title>LaPink — Dashboard</title>
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/api.js"></script>
 <link rel="stylesheet" href="css/Principal.css" />
 <link rel="stylesheet" href="css/componentes.css" />
 <link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
@@ -61,6 +62,7 @@
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
           <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
           <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
           <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
           <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
@@ -93,25 +95,35 @@
 
           <!-- Stats dinâmicos -->
           <div class="stat-grid">
-            <a class="stat-card" href="cadastro-produto.html" style="text-decoration:none; cursor:pointer;">
-              <div class="s-label">Produtos</div>
-              <div class="s-value" id="stat-produtos">—</div>
-              <div class="s-delta neutral"><i class="ti ti-package"></i> cadastrados</div>
-            </a>
-            <a class="stat-card" href="relatorios.html" style="text-decoration:none; cursor:pointer;">
-              <div class="s-label">Valor em estoque</div>
-              <div class="s-value" id="stat-valor">—</div>
-              <div class="s-delta up"><i class="ti ti-trending-up"></i> a preço varejo</div>
+            <a class="stat-card" href="financeiro.html" style="text-decoration:none; cursor:pointer; border-top:3px solid var(--pink-400,#D4537E);">
+              <div class="s-label">Vendas do mês</div>
+              <div class="s-value" id="stat-vendas-mes">—</div>
+              <div class="s-delta" id="stat-vendas-delta"><i class="ti ti-calendar"></i> mês atual</div>
             </a>
             <a class="stat-card" href="pedidos.html" style="text-decoration:none; cursor:pointer;">
               <div class="s-label">Receita total</div>
               <div class="s-value" id="stat-receita">—</div>
               <div class="s-delta up"><i class="ti ti-coin"></i> pedidos ativos</div>
             </a>
+            <a class="stat-card" href="financeiro.html" style="text-decoration:none; cursor:pointer; border-top:3px solid #facc15;">
+              <div class="s-label">A receber</div>
+              <div class="s-value" id="stat-areceber">—</div>
+              <div class="s-delta neutral" id="stat-areceber-sub"><i class="ti ti-clock-dollar"></i> cobranças</div>
+            </a>
             <a class="stat-card" href="pedidos.html" style="text-decoration:none; cursor:pointer;">
               <div class="s-label">Pedidos</div>
               <div class="s-value" id="stat-pedidos">—</div>
               <div class="s-delta neutral"><i class="ti ti-shopping-cart"></i> registrados</div>
+            </a>
+            <a class="stat-card" href="relatorios.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Valor em estoque</div>
+              <div class="s-value" id="stat-valor">—</div>
+              <div class="s-delta up"><i class="ti ti-trending-up"></i> a preço varejo</div>
+            </a>
+            <a class="stat-card" href="cadastro-produto.html" style="text-decoration:none; cursor:pointer;">
+              <div class="s-label">Produtos</div>
+              <div class="s-value" id="stat-produtos">—</div>
+              <div class="s-delta neutral"><i class="ti ti-package"></i> cadastrados</div>
             </a>
             <a class="stat-card" href="relatorios.html" style="text-decoration:none; cursor:pointer;">
               <div class="s-label">Estoque crítico</div>
@@ -123,6 +135,22 @@
               <div class="s-value" id="stat-clientes">—</div>
               <div class="s-delta neutral"><i class="ti ti-users"></i> cadastrados</div>
             </a>
+          </div>
+
+          <!-- Gráfico: Receita mensal -->
+          <div class="card" style="margin-bottom:20px; padding:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+              <span class="section-title"><i class="ti ti-trending-up" style="color:var(--pink-400);margin-right:6px;"></i>Receita mensal — últimos 6 meses</span>
+              <div style="display:flex; gap:12px;">
+                <span style="font-size:11px;color:var(--gray-400);display:flex;align-items:center;gap:5px;">
+                  <span style="width:10px;height:10px;border-radius:2px;background:var(--pink-300,#f9a8d4);display:inline-block;"></span>Receita
+                </span>
+                <span style="font-size:11px;color:var(--gray-400);display:flex;align-items:center;gap:5px;">
+                  <span style="width:10px;height:10px;border-radius:2px;background:#4ade80;display:inline-block;"></span>Pago
+                </span>
+              </div>
+            </div>
+            <div id="chart-vendas-mensal" style="min-height:130px;"></div>
           </div>
 
           <!-- Gráficos principais -->
@@ -369,36 +397,103 @@
       }).join('');
     }
 
-    /* ── Stats de vendas no dashboard ── */
-    function renderStats() {
-      var produtos = getProdutos();
-      var clientes = getClients();
-      var pedidos  = getPedidos();
-
-      document.getElementById('stat-produtos').textContent = produtos.length;
-      document.getElementById('stat-clientes').textContent = clientes.length;
-
-      var valorTotal = 0;
-      var critico = 0;
-      produtos.forEach(function(p) {
-        var preco = parseBRL(String(p.precoVarejo || 0));
-        var est = parseInt(p.estoque) || 0;
-        valorTotal += preco * est;
-        if (est <= 5) critico++;
-      });
-
-      document.getElementById('stat-valor').textContent   = formatBRL(valorTotal);
-      document.getElementById('stat-critico').textContent = critico;
-
-      // Atualiza card de receita e pedidos se existir
-      var elReceita  = document.getElementById('stat-receita');
-      var elPedidos  = document.getElementById('stat-pedidos');
-      if (elReceita) {
-        var receita = pedidos.filter(function(p) { return p.status !== 'cancelado'; })
-                             .reduce(function(s, p) { return s + (parseFloat(p.total) || 0); }, 0);
-        elReceita.textContent = formatBRL(receita);
+    /* ── Gráfico mensal de receita ── */
+    function renderChartMensal(vendasPorMes) {
+      var meses = vendasPorMes || {};
+      var keys  = Object.keys(meses).sort().slice(-6);
+      var maxV  = 0;
+      keys.forEach(function(k) { if (meses[k].receita > maxV) maxV = meses[k].receita; });
+      if (!maxV) maxV = 1;
+      var MNAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      var chartEl = document.getElementById('chart-vendas-mensal');
+      if (!chartEl) return;
+      if (!keys.length) {
+        chartEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--gray-400);font-size:13px;"><i class="ti ti-chart-bar-off" style="font-size:32px;display:block;margin-bottom:8px;"></i>Sem vendas registradas ainda. <a href="pedidos.html" style="color:var(--pink-500);font-weight:700;">Cadastrar pedido</a></div>';
+        return;
       }
-      if (elPedidos) elPedidos.textContent = pedidos.length;
+      chartEl.innerHTML =
+        '<div style="display:flex;align-items:flex-end;gap:8px;height:130px;padding:0 4px;border-bottom:1px solid var(--gray-100);">' +
+        keys.map(function(k) {
+          var m    = meses[k];
+          var pctR = (m.receita / maxV * 100).toFixed(1);
+          var pctP = m.pagos ? (m.pagos / maxV * 100).toFixed(1) : 0;
+          var parts = k.split('-');
+          var label = MNAMES[parseInt(parts[1]) - 1] + '/' + parts[0].slice(2);
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0;min-width:0;">' +
+            '<div style="display:flex;align-items:flex-end;gap:2px;width:100%;height:110px;">' +
+              '<div style="flex:1;height:' + pctR + '%;background:var(--pink-300,#f9a8d4);border-radius:4px 4px 0 0;min-height:2px;transition:height .4s;" title="Receita: ' + formatBRL(m.receita) + '"></div>' +
+              '<div style="flex:1;height:' + pctP + '%;background:#4ade80;border-radius:4px 4px 0 0;min-height:' + (pctP > 0 ? '2' : '0') + 'px;transition:height .4s;" title="Recebido: ' + formatBRL(m.pagos || 0) + '"></div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:var(--gray-400);margin-top:4px;text-align:center;">' + label + '</div>' +
+            '<div style="font-size:10px;font-weight:600;color:var(--gray-600);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">' + (m.receita >= 1000 ? 'R$' + (m.receita/1000).toFixed(1) + 'k' : formatBRL(m.receita)) + '</div>' +
+          '</div>';
+        }).join('') + '</div>';
+    }
+
+    /* ── Stats de vendas no dashboard (usa LaPinkAPI) ── */
+    function renderStats() {
+      LaPinkAPI.getDashboardStats().then(function(stats) {
+        // KPIs principais
+        document.getElementById('stat-produtos').textContent   = stats.produtos.total;
+        document.getElementById('stat-clientes').textContent   = stats.clientes.total;
+        document.getElementById('stat-receita').textContent    = formatBRL(stats.receita.total);
+        document.getElementById('stat-pedidos').textContent    = stats.pedidos.total;
+        document.getElementById('stat-critico').textContent    = stats.produtos.estoqueBaixo;
+        document.getElementById('stat-vendas-mes').textContent = formatBRL(stats.receita.mes);
+        document.getElementById('stat-areceber').textContent   = formatBRL(stats.financeiro.aReceber);
+
+        // Valor em estoque (calculado localmente, não vem no stats)
+        var valorTotal = 0;
+        getProdutos().forEach(function(p) {
+          valorTotal += parseBRL(String(p.precoVarejo || 0)) * (parseInt(p.estoque) || 0);
+        });
+        document.getElementById('stat-valor').textContent = formatBRL(valorTotal);
+
+        // Delta mês vs mês anterior
+        var deltaEl = document.getElementById('stat-vendas-delta');
+        if (stats.receita.deltaPct !== null) {
+          var d = parseFloat(stats.receita.deltaPct);
+          var cor = d >= 0 ? '#4ade80' : 'var(--red-400)';
+          var ic  = d >= 0 ? 'ti-arrow-up' : 'ti-arrow-down';
+          deltaEl.innerHTML = '<i class="ti ' + ic + '" style="color:' + cor + '"></i> ' + (d >= 0 ? '+' : '') + d + '% vs mês anterior';
+        } else {
+          deltaEl.innerHTML = '<i class="ti ti-calendar"></i> mês atual';
+        }
+
+        // Sub de cobranças
+        var subEl = document.getElementById('stat-areceber-sub');
+        if (subEl) {
+          var n = stats.financeiro.cobPendentes;
+          subEl.innerHTML = '<i class="ti ti-clock-dollar"></i> ' + n + ' cobrança' + (n !== 1 ? 's' : '') + ' pendente' + (n !== 1 ? 's' : '');
+        }
+
+        // Gráfico mensal
+        renderChartMensal(stats.vendasPorMes);
+
+        // Demais renders
+        renderChartCategoria();
+        renderTopProdutos();
+        renderEstoqueBaixo();
+        renderPedidosRecentes();
+        renderTabela();
+      }).catch(function(e) {
+        console.error('[LaPink] Erro no dashboard:', e);
+        // Fallback síncrono
+        var produtos = getProdutos(), clientes = getClients(), pedidos = getPedidos();
+        document.getElementById('stat-produtos').textContent = produtos.length;
+        document.getElementById('stat-clientes').textContent = clientes.length;
+        document.getElementById('stat-pedidos').textContent  = pedidos.length;
+        var rec = 0, val = 0, crit = 0;
+        produtos.forEach(function(p) {
+          val += parseBRL(String(p.precoVarejo||0)) * (parseInt(p.estoque)||0);
+          if ((parseInt(p.estoque)||0) <= 5) crit++;
+        });
+        pedidos.forEach(function(p) { if (p.status !== 'cancelado') rec += parseFloat(p.total)||0; });
+        document.getElementById('stat-valor').textContent   = formatBRL(val);
+        document.getElementById('stat-receita').textContent = formatBRL(rec);
+        document.getElementById('stat-critico').textContent = crit;
+        renderChartCategoria(); renderTopProdutos(); renderEstoqueBaixo(); renderPedidosRecentes(); renderTabela();
+      });
     }
 
     /* ── Pedidos recentes ── */

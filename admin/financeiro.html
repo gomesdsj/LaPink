@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Financeiro</title>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+/* ─── Seção título (igual relatorios) ─── */
+.rel-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin: 28px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: .5px solid var(--gray-100);
+  padding-bottom: 8px;
+}
+.rel-section-title:first-child { margin-top: 0; }
+
+/* ─── Status pills (igual relatorios) ─── */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+}
+.status-pill.aguardando { background:#fef9c3; color:#92400e; }
+.status-pill.preparando { background:var(--pink-50); color:var(--pink-500); }
+.status-pill.enviado    { background:#dbeafe; color:#1d4ed8; }
+.status-pill.concluido  { background:var(--green-100,#dcfce7); color:#16a34a; }
+.status-pill.cancelado  { background:#fee2e2; color:#b91c1c; }
+
+/* ─── Stat card top borders (KPI) ─── */
+.kpi-receita  { border-top: 3px solid var(--pink-400); }
+.kpi-recebido { border-top: 3px solid #4ade80; }
+.kpi-areceber { border-top: 3px solid #facc15; }
+.kpi-pendente { border-top: 3px solid #60a5fa; }
+
+/* ─── Cobrança card ─── */
+.cob-list { display: flex; flex-direction: column; gap: 10px; }
+.cob-card {
+  background: var(--white); border: .5px solid var(--gray-200);
+  border-radius: var(--radius-md); padding: 14px 18px;
+  display: flex; align-items: center; gap: 16px;
+  transition: box-shadow .15s;
+}
+.cob-card:hover { box-shadow: var(--shadow-sm); }
+.cob-card--pago { opacity: .85; }
+.cob-info { flex: 1; min-width: 0; }
+.cob-num  { font-size: 13px; font-weight: 700; color: var(--gray-800); }
+.cob-nome { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cob-wa   { font-size: 12px; color: #16a34a; margin-top: 2px; }
+.cob-wa i { vertical-align: middle; }
+.cob-meta { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+.cob-right {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 6px; flex-shrink: 0;
+}
+.cob-total { font-size: 16px; font-weight: 800; color: var(--gray-800); }
+.cob-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 2px; }
+.cob-actions .btn { font-size: 12px; padding: 5px 12px; }
+
+/* ─── Filter bar ─── */
+.filter-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px; flex-wrap: wrap;
+}
+.filter-bar select, .filter-bar input {
+  border: .5px solid var(--gray-200); border-radius: var(--radius-sm);
+  padding: 7px 12px; font-size: 13px; color: var(--gray-700);
+  background: var(--white); outline: none;
+}
+.filter-bar select:focus, .filter-bar input:focus {
+  border-color: var(--pink-300); box-shadow: 0 0 0 3px var(--pink-50);
+}
+.filter-label { font-size: 12px; color: var(--gray-400); font-weight: 600; margin-left: auto; }
+
+/* ─── Monthly bar chart (flexbox) ─── */
+.chart-cols {
+  display: flex; align-items: flex-end; gap: 8px; height: 160px;
+  padding: 0 4px; border-bottom: 1px solid var(--gray-100);
+}
+.chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.chart-bars { display: flex; align-items: flex-end; gap: 3px; width: 100%; height: 140px; }
+.chart-bar { flex: 1; border-radius: 4px 4px 0 0; min-height: 2px; transition: height .4s ease; }
+.chart-bar--receita { background: var(--pink-300, #f9a8d4); }
+.chart-bar--pago    { background: #4ade80; }
+.chart-foot { width: 100%; text-align: center; padding-top: 6px; }
+.chart-foot-label { font-size: 10px; color: var(--gray-400); }
+.chart-foot-val   { font-size: 10px; color: var(--gray-600); font-weight: 600; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chart-legend { display: flex; gap: 16px; margin-bottom: 12px; }
+.chart-legend span { font-size: 11px; color: var(--gray-500); display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* ─── Dois gráficos lado a lado ─── */
+.chart-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 600px) { .chart-grid-2 { grid-template-columns: 1fr; } }
+
+/* ─── SVG bar chart (igual relatorios) ─── */
+.top-item { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:.5px solid var(--gray-100); }
+.top-item:last-child { border-bottom:none; }
+.top-item-name { flex:1; font-size:12px; font-weight:600; color:var(--gray-700); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-bar-wrap { width:80px; height:6px; background:var(--gray-100); border-radius:3px; flex-shrink:0; }
+.top-bar { height:6px; background:var(--pink-300); border-radius:3px; }
+.top-val { font-size:11px; font-weight:700; color:var(--pink-500); min-width:64px; text-align:right; flex-shrink:0; }
+
+/* ─── Badge pago ─── */
+.badge-pago { background: #dcfce7; color: #16a34a; border: .5px solid #bbf7d0; }
+
+/* ─── Empty state ─── */
+.fin-empty { text-align: center; padding: 40px 24px; color: var(--gray-400); }
+.fin-empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+
+/* ─── Pagamentos: card de método ─── */
+.pay-method-card { padding: 18px 20px; margin-bottom: 0; }
+.pay-method-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.pay-method-info  { display: flex; align-items: flex-start; gap: 14px; flex: 1; }
+.pay-icon         { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.pay-method-name  { font-size: 15px; font-weight: 700; color: var(--gray-800); margin-bottom: 2px; }
+.pay-method-desc  { font-size: 12px; color: var(--gray-400); line-height: 1.5; }
+.pay-fields       { margin-top: 18px; border-top: .5px solid var(--gray-100); padding-top: 16px; }
+.pay-grid         { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.pay-preview      { margin-top: 16px; }
+
+/* ─── Toggle switch ─── */
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0; background: var(--gray-200);
+  border-radius: 24px; cursor: pointer; transition: background .2s;
+}
+.toggle-track::before {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  left: 3px; top: 3px; background: #fff; border-radius: 50%;
+  transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.toggle-switch input:checked + .toggle-track { background: var(--pink-400, #D4537E); }
+.toggle-switch input:checked + .toggle-track::before { transform: translateX(20px); }
+
+/* ─── Form controls (reutilizados no tab Pagamentos) ─── */
+.form-label { display: block; font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+.form-control { width: 100%; padding: 9px 12px; border: .5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 13px; color: var(--gray-700); background: var(--white); outline: none; transition: border-color .15s; }
+.form-control:focus { border-color: var(--pink-300); box-shadow: 0 0 0 3px var(--pink-50); }
+textarea.form-control { resize: vertical; }
+
+/* ─── Bandeiras grid ─── */
+.bandeiras-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.bandeira-label { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border: .5px solid var(--gray-200); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--gray-600); transition: border-color .15s, background .15s; user-select: none; }
+.bandeira-label:hover { border-color: var(--pink-300); background: var(--pink-50); }
+.bandeira-label input { margin: 0; accent-color: var(--pink-400); }
+
+@media print {
+  .sidebar, .admin-topbar, .hamburger, .page-tabs, .btn { display: none !important; }
+  .admin-main { margin-left: 0 !important; }
+  .tab-content { display: block !important; }
+}
+@media (max-width: 600px) {
+  .cob-card { flex-direction: column; align-items: flex-start; }
+  .cob-right { align-items: flex-start; width: 100%; }
+  .chart-foot-val { display: none; }
+  .pay-method-header { flex-wrap: wrap; }
+  .pay-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<script>checkAuth(['superadmin', 'admin']);</script>
+<div id="app-admin">
+  <div class="admin-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+        <div class="logo-name">LaPink</div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Visão geral</div>
+        <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+        <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+        <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+        <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+        <div class="nav-section-label">Loja</div>
+        <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
+        <div class="nav-section-label">Auxiliar</div>
+        <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+        <a class="sidebar-link active" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
+        <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+        <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
+        <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
+      </div>
+      <div class="sidebar-footer">
+        <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+        <button onclick="logout()" style="margin-top:6px;"><i class="ti ti-logout"></i> Sair</button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+        <h1>Financeiro</h1>
+      </header>
+
+      <section class="admin-page show">
+
+        <div class="page-tabs">
+          <button class="tab-btn active" data-tab="cobrancas"><i class="ti ti-bell-dollar"></i> Cobranças</button>
+          <button class="tab-btn" data-tab="historico"><i class="ti ti-history"></i> Histórico</button>
+          <button class="tab-btn" data-tab="relatorio"><i class="ti ti-chart-bar"></i> Relatório</button>
+          <button class="tab-btn" data-tab="pagamentos"><i class="ti ti-credit-card"></i> Pagamentos</button>
+        </div>
+
+        <!-- ══════════════════════════════
+             TAB COBRANÇAS
+        ══════════════════════════════ -->
+        <div class="tab-content active" id="tab-cobrancas">
+
+          <div class="rel-section-title"><i class="ti ti-chart-pie"></i> Resumo financeiro</div>
+          <div class="stat-grid">
+            <div class="stat-card kpi-receita">
+              <div class="s-label">Receita total</div>
+              <div class="s-value" id="k-receita">R$ 0,00</div>
+              <div class="s-delta neutral"><i class="ti ti-cash"></i> todos os pedidos</div>
+            </div>
+            <div class="stat-card kpi-recebido">
+              <div class="s-label">Já recebido</div>
+              <div class="s-value" id="k-recebido">R$ 0,00</div>
+              <div class="s-delta up" id="k-recebido-pct"><i class="ti ti-circle-check"></i> confirmados</div>
+            </div>
+            <div class="stat-card kpi-areceber">
+              <div class="s-label">A receber</div>
+              <div class="s-value" id="k-areceber">R$ 0,00</div>
+              <div class="s-delta neutral" id="k-areceber-pct"><i class="ti ti-clock-dollar"></i> pendente</div>
+            </div>
+            <div class="stat-card kpi-pendente">
+              <div class="s-label">Cobranças pendentes</div>
+              <div class="s-value" id="k-pendentes">0</div>
+              <div class="s-delta neutral" id="k-pendentes-sub"><i class="ti ti-alert-circle"></i> pedidos</div>
+            </div>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-bell-dollar"></i> Cobranças pendentes</div>
+          <div class="filter-bar">
+            <select id="filtro-status" onchange="renderCobrancas()">
+              <option value="todos">Todos os status</option>
+              <option value="aguardando">Aguardando</option>
+              <option value="preparando">Em preparo</option>
+              <option value="enviado">Enviado</option>
+              <option value="concluido">Concluído</option>
+            </select>
+            <input type="text" id="filtro-nome" placeholder="Buscar cliente…" oninput="renderCobrancas()" style="min-width:180px;" />
+            <span class="filter-label" id="cob-count-label"></span>
+          </div>
+          <div class="cob-list" id="lista-cobrancas">
+            <div class="fin-empty"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i><p>Carregando…</p></div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════
+             TAB HISTÓRICO
+        ══════════════════════════════ -->
+        <div class="tab-content" id="tab-historico">
+
+          <div class="rel-section-title"><i class="ti ti-circle-check"></i> Pagamentos confirmados</div>
+          <div class="cob-list" id="lista-historico">
+            <div class="fin-empty"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i><p>Carregando…</p></div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════
+             TAB RELATÓRIO
+        ══════════════════════════════ -->
+        <div class="tab-content" id="tab-relatorio">
+
+          <div class="rel-section-title"><i class="ti ti-trending-up"></i> Receita mensal (últimos 6 meses)</div>
+          <div class="chart-grid-2">
+            <div class="chart-box">
+              <h3>Evolução mensal — Receita vs Recebido</h3>
+              <div class="chart-legend">
+                <span><span class="legend-dot" style="background:var(--pink-300,#f9a8d4)"></span>Receita</span>
+                <span><span class="legend-dot" style="background:#4ade80"></span>Recebido</span>
+              </div>
+              <div class="chart-cols" id="chart-mensal">
+                <div class="fin-empty" style="width:100%;padding:16px;"><i class="ti ti-chart-bar-off"></i><p>Sem pedidos</p></div>
+              </div>
+            </div>
+            <div class="chart-box">
+              <h3>Maiores devedores</h3>
+              <div id="chart-top-devedores"></div>
+            </div>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-users"></i> Clientes com cobranças pendentes</div>
+          <div class="table-box">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>E-mail / WhatsApp</th>
+                  <th>Pedidos</th>
+                  <th>Total a receber</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-devedores-body">
+                <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-receipt"></i> Resumo por status de pedido</div>
+          <div class="table-box">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Pedidos</th>
+                  <th>Valor total</th>
+                  <th>Pago</th>
+                  <th>% da receita</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-status-body">
+                <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gray-400)">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="rel-section-title"><i class="ti ti-list-details"></i> Todos os pedidos</div>
+          <div class="table-box">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Pedido</th>
+                  <th>Cliente</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Pagamento</th>
+                  <th>Data</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-todos-body">
+                <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray-400)">Carregando…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════
+             TAB PAGAMENTOS
+        ══════════════════════════════ -->
+        <div class="tab-content" id="tab-pagamentos">
+
+          <!-- ── PIX ── -->
+          <div class="rel-section-title"><i class="ti ti-qrcode"></i> PIX</div>
+          <div class="card pay-method-card" id="card-pix">
+            <div class="pay-method-header">
+              <div class="pay-method-info">
+                <i class="ti ti-qrcode pay-icon" style="color:#32bcad;"></i>
+                <div>
+                  <div class="pay-method-name">PIX</div>
+                  <div class="pay-method-desc">Receba instantaneamente via chave PIX. O cliente vê os dados na confirmação do pedido.</div>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pix-ativo" onchange="togglePaySection('pix')" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div id="pix-fields" class="pay-fields" style="display:none;">
+              <div class="pay-grid">
+                <div class="form-group">
+                  <label class="form-label">Tipo de chave</label>
+                  <select id="pix-tipo" class="form-control">
+                    <option value="cpf">CPF</option>
+                    <option value="cnpj">CNPJ</option>
+                    <option value="email">E-mail</option>
+                    <option value="telefone">Telefone</option>
+                    <option value="aleatoria">Chave aleatória</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Chave PIX</label>
+                  <input type="text" id="pix-chave" class="form-control" placeholder="Ex: 123.456.789-00" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nome do favorecido</label>
+                  <input type="text" id="pix-nome" class="form-control" placeholder="Nome que aparece no QR" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Banco / instituição</label>
+                  <input type="text" id="pix-banco" class="form-control" placeholder="Ex: Nubank, Mercado Pago…" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Instrução ao cliente</label>
+                <textarea id="pix-instrucao" class="form-control" rows="2" placeholder="Ex: Após o pagamento, envie o comprovante via WhatsApp."></textarea>
+              </div>
+              <div class="pay-preview" id="pix-preview" style="display:none;">
+                <div style="font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Pré-visualização (como o cliente vê)</div>
+                <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px 18px;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                    <i class="ti ti-qrcode" style="font-size:22px;color:#16a34a;"></i>
+                    <strong style="color:#15803d;font-size:15px;">Pagar via PIX</strong>
+                  </div>
+                  <div style="font-size:13px;color:#166534;">
+                    <div><strong>Tipo:</strong> <span id="prev-pix-tipo">—</span></div>
+                    <div><strong>Chave:</strong> <span id="prev-pix-chave" style="font-family:monospace;font-size:14px;letter-spacing:.04em;"></span>
+                      <button type="button" onclick="copiarChavePix()" style="background:none;border:none;cursor:pointer;color:#16a34a;font-size:13px;padding:0 4px;"><i class="ti ti-copy"></i> copiar</button>
+                    </div>
+                    <div><strong>Favorecido:</strong> <span id="prev-pix-nome"></span></div>
+                    <div style="margin-top:8px;font-size:12px;color:#166534;border-top:1px solid #bbf7d0;padding-top:8px;" id="prev-pix-instrucao"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── CARTÃO ── -->
+          <div class="rel-section-title"><i class="ti ti-credit-card"></i> Cartão de crédito / débito</div>
+          <div class="card pay-method-card" id="card-cartao">
+            <div class="pay-method-header">
+              <div class="pay-method-info">
+                <i class="ti ti-credit-card pay-icon" style="color:#6366f1;"></i>
+                <div>
+                  <div class="pay-method-name">Cartão</div>
+                  <div class="pay-method-desc">Configure as bandeiras aceitas, parcelamento e juros. Gateway integrado quando o banco for conectado.</div>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cartao-ativo" onchange="togglePaySection('cartao')" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div id="cartao-fields" class="pay-fields" style="display:none;">
+              <div class="pay-grid">
+                <div class="form-group">
+                  <label class="form-label">Parcelas máximas</label>
+                  <select id="cartao-parcelamento" class="form-control">
+                    <option value="1">Somente à vista</option>
+                    <option value="2">Até 2x</option>
+                    <option value="3">Até 3x</option>
+                    <option value="6">Até 6x</option>
+                    <option value="10">Até 10x</option>
+                    <option value="12">Até 12x</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Parcelas sem juros</label>
+                  <select id="cartao-sem-juros" class="form-control">
+                    <option value="1">Somente 1x</option>
+                    <option value="2">Até 2x</option>
+                    <option value="3">Até 3x</option>
+                    <option value="6">Até 6x</option>
+                    <option value="12">Até 12x</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Juros ao mês (% acima do limite)</label>
+                  <input type="number" id="cartao-juros" class="form-control" placeholder="Ex: 1.99" min="0" max="30" step="0.01" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Gateway / maquininha</label>
+                  <select id="cartao-gateway" class="form-control">
+                    <option value="manual">Manual (maquininha física)</option>
+                    <option value="mercadopago">Mercado Pago (futuro)</option>
+                    <option value="pagseguro">PagSeguro (futuro)</option>
+                    <option value="stripe">Stripe (futuro)</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bandeiras aceitas</label>
+                <div class="bandeiras-grid">
+                  <label class="bandeira-label"><input type="checkbox" value="visa" class="bandeira-cb" /> <i class="ti ti-brand-visa" style="color:#1a1f71;font-size:22px;"></i> Visa</label>
+                  <label class="bandeira-label"><input type="checkbox" value="mastercard" class="bandeira-cb" /> <i class="ti ti-brand-mastercard" style="color:#eb001b;font-size:22px;"></i> Mastercard</label>
+                  <label class="bandeira-label"><input type="checkbox" value="elo" class="bandeira-cb" /> <span style="font-weight:800;font-size:13px;color:#f7b731;">ELO</span></label>
+                  <label class="bandeira-label"><input type="checkbox" value="amex" class="bandeira-cb" /> <span style="font-weight:800;font-size:13px;color:#2e77bc;">Amex</span></label>
+                  <label class="bandeira-label"><input type="checkbox" value="hipercard" class="bandeira-cb" /> <span style="font-weight:800;font-size:13px;color:#b22222;">Hiper</span></label>
+                  <label class="bandeira-label"><input type="checkbox" value="pix_card" class="bandeira-cb" /> <i class="ti ti-qrcode" style="color:#32bcad;font-size:18px;"></i> Débito</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TRANSFERÊNCIA ── -->
+          <div class="rel-section-title"><i class="ti ti-building-bank"></i> Transferência bancária (TED/DOC)</div>
+          <div class="card pay-method-card" id="card-transferencia">
+            <div class="pay-method-header">
+              <div class="pay-method-info">
+                <i class="ti ti-building-bank pay-icon" style="color:#0ea5e9;"></i>
+                <div>
+                  <div class="pay-method-name">Transferência bancária</div>
+                  <div class="pay-method-desc">TED ou DOC. Os dados bancários são exibidos ao cliente após o pedido.</div>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="transf-ativo" onchange="togglePaySection('transf')" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div id="transf-fields" class="pay-fields" style="display:none;">
+              <div class="pay-grid">
+                <div class="form-group">
+                  <label class="form-label">Banco</label>
+                  <input type="text" id="transf-banco" class="form-control" placeholder="Ex: Itaú, Bradesco…" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Agência</label>
+                  <input type="text" id="transf-agencia" class="form-control" placeholder="0000" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Conta</label>
+                  <input type="text" id="transf-conta" class="form-control" placeholder="00000-0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tipo de conta</label>
+                  <select id="transf-tipo-conta" class="form-control">
+                    <option value="corrente">Conta corrente</option>
+                    <option value="poupanca">Poupança</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Titular</label>
+                  <input type="text" id="transf-titular" class="form-control" placeholder="Nome completo ou razão social" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CPF / CNPJ do titular</label>
+                  <input type="text" id="transf-cpf" class="form-control" placeholder="000.000.000-00" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── DINHEIRO ── -->
+          <div class="rel-section-title"><i class="ti ti-cash"></i> Pagamento presencial</div>
+          <div class="card pay-method-card" id="card-dinheiro">
+            <div class="pay-method-header">
+              <div class="pay-method-info">
+                <i class="ti ti-cash pay-icon" style="color:#84cc16;"></i>
+                <div>
+                  <div class="pay-method-name">Dinheiro / na entrega</div>
+                  <div class="pay-method-desc">Combinado por WhatsApp. O cliente recebe instrução para pagar no momento da entrega.</div>
+                </div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="dinheiro-ativo" onchange="togglePaySection('dinheiro')" />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div id="dinheiro-fields" class="pay-fields" style="display:none;">
+              <div class="form-group">
+                <label class="form-label">Instrução ao cliente</label>
+                <textarea id="dinheiro-instrucao" class="form-control" rows="2" placeholder="Ex: O pagamento será realizado no momento da entrega. Troco para notas de R$50."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Botão salvar ── -->
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+            <button class="btn btn-secondary" onclick="carregarPagamentos()"><i class="ti ti-refresh"></i> Restaurar</button>
+            <button class="btn btn-primary" onclick="salvarPagamentos()"><i class="ti ti-device-floppy"></i> Salvar configurações</button>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+/* ── Tabs (igual relatorios) ── */
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ── Helpers ── */
+function getPedidos() {
+  try { return JSON.parse(localStorage.getItem('lapinkPedidos') || '[]') || []; } catch(e) { return []; }
+}
+function setPedidos(arr) {
+  localStorage.setItem('lapinkPedidos', JSON.stringify(arr));
+}
+function getStoreConfig() {
+  try { return JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}') || {}; } catch(e) { return {}; }
+}
+function pct(val, total) {
+  if (!total) return '0%';
+  return (val / total * 100).toFixed(1) + '%';
+}
+
+var _toastTimer;
+function showToast(msg, type) {
+  var el = document.getElementById('_toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_toast';
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--gray-800);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:opacity .25s,transform .25s;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = type === 'success' ? '#1ebe5a' : type === 'erro' ? 'var(--red-400)' : 'var(--gray-800)';
+  el.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { el.style.opacity = '0'; }, 2800);
+}
+
+var STATUS_LABEL = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' };
+var STATUS_CLASS = { aguardando:'badge-amber', preparando:'badge-pink', enviado:'badge-blue', concluido:'badge-green', cancelado:'badge-red' };
+var MNAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+/* ── SVG bar chart horizontal (igual relatorios) ── */
+function renderHBarChart(containerId, items, labelKey, valueKey, formatFn, color) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  if (!items.length) {
+    container.innerHTML = '<div style="padding:24px 0; text-align:center; color:var(--gray-400); font-size:12px;"><i class="ti ti-chart-bar" style="font-size:24px; display:block; margin-bottom:6px;"></i>Sem dados suficientes.</div>';
+    return;
+  }
+  var barColor = color || 'var(--pink-300)';
+  var maxVal   = Math.max.apply(null, items.map(function(i) { return i[valueKey]; })) || 1;
+  var rowH     = 22, labelW = 110, barAreaW = 180, valW = 80;
+  var totalW   = labelW + barAreaW + valW + 20;
+  var totalH   = items.length * rowH + 10;
+
+  var rows = items.map(function(item, idx) {
+    var y    = idx * rowH + rowH / 2 + 5;
+    var barW = Math.max(4, Math.round((item[valueKey] / maxVal) * barAreaW));
+    var label = String(item[labelKey] || '').length > 14
+      ? String(item[labelKey]).slice(0, 13) + '…'
+      : String(item[labelKey] || '');
+    var val = formatFn ? formatFn(item[valueKey]) : item[valueKey];
+    return (
+      '<text x="' + (labelW - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="9" fill="var(--gray-400)">' + label + '</text>' +
+      '<rect x="' + labelW + '" y="' + (y - 6) + '" width="' + barW + '" height="12" rx="3" fill="' + barColor + '" />' +
+      '<text x="' + (labelW + barW + 4) + '" y="' + (y + 4) + '" font-size="9" fill="var(--gray-500)">' + val + '</text>'
+    );
+  }).join('');
+
+  container.innerHTML = (
+    '<svg width="100%" viewBox="0 0 ' + totalW + ' ' + totalH + '" preserveAspectRatio="xMidYMid meet" style="display:block;">' +
+    '<rect width="' + totalW + '" height="' + totalH + '" fill="#fff" />' + rows + '</svg>'
+  );
+}
+
+/* ── KPIs ── */
+function renderKPIs() {
+  var pedidos = getPedidos();
+  var receita = 0, recebido = 0, aReceber = 0, countPend = 0;
+  pedidos.forEach(function(p) {
+    if ((p.status || '').toLowerCase() === 'cancelado') return;
+    var t = parseFloat(p.total) || 0;
+    receita += t;
+    if (p.pago) recebido += t;
+    else { aReceber += t; countPend++; }
+  });
+
+  document.getElementById('k-receita').textContent   = formatBRL(receita);
+  document.getElementById('k-recebido').textContent  = formatBRL(recebido);
+  document.getElementById('k-areceber').textContent  = formatBRL(aReceber);
+  document.getElementById('k-pendentes').textContent = countPend;
+
+  var pctRecebido = receita > 0 ? (recebido / receita * 100).toFixed(1) : 0;
+  document.getElementById('k-recebido-pct').innerHTML = '<i class="ti ti-circle-check"></i> ' + pctRecebido + '% da receita';
+  document.getElementById('k-areceber-pct').innerHTML = '<i class="ti ti-clock-dollar"></i> ' + pct(aReceber, receita) + ' pendente';
+  document.getElementById('k-pendentes-sub').innerHTML = '<i class="ti ti-alert-circle"></i> ' + (countPend === 1 ? '1 pedido' : countPend + ' pedidos');
+}
+
+/* ── Cobranças ── */
+function renderCobrancas() {
+  var pedidos    = getPedidos();
+  var filtroSt   = (document.getElementById('filtro-status') || {}).value || 'todos';
+  var filtroNome = ((document.getElementById('filtro-nome') || {}).value || '').trim().toLowerCase();
+
+  var lista = pedidos.filter(function(p) {
+    if ((p.status || '').toLowerCase() === 'cancelado') return false;
+    if (p.pago) return false;
+    if (filtroSt !== 'todos' && (p.status || '').toLowerCase() !== filtroSt) return false;
+    if (filtroNome) {
+      var nome  = ((p.cliente && p.cliente.name) || '').toLowerCase();
+      var email = (p.clienteEmail || '').toLowerCase();
+      if (!nome.includes(filtroNome) && !email.includes(filtroNome)) return false;
+    }
+    return true;
+  }).sort(function(a, b) { return new Date(b.data) - new Date(a.data); });
+
+  var countEl = document.getElementById('cob-count-label');
+  if (countEl) countEl.textContent = lista.length + ' cobrança' + (lista.length !== 1 ? 's' : '');
+
+  var container = document.getElementById('lista-cobrancas');
+  if (!lista.length) {
+    container.innerHTML = '<div class="fin-empty"><i class="ti ti-circle-check" style="color:#4ade80;font-size:44px"></i><p style="font-weight:600;color:var(--gray-600)">Nenhuma cobrança pendente!</p><p style="font-size:12px">Todos os pedidos foram pagos ou não há pedidos.</p></div>';
+    return;
+  }
+  container.innerHTML = lista.map(function(p) {
+    var st     = (p.status || 'aguardando').toLowerCase();
+    var data   = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
+    var nItens = Array.isArray(p.itens) ? p.itens.length : 0;
+    var nome   = escHtml((p.cliente && p.cliente.name) || '—');
+    var wa     = (p.cliente && p.cliente.whatsapp) || '';
+    var waHtml = wa ? '<div class="cob-wa"><i class="ti ti-brand-whatsapp"></i> ' + escHtml(wa) + '</div>' : '';
+    return '<div class="cob-card">' +
+      '<div class="cob-info">' +
+        '<div class="cob-num">Pedido #' + escHtml(String(p.numero || p.id)) + '</div>' +
+        '<div class="cob-nome">' + nome + '</div>' +
+        waHtml +
+        '<div class="cob-meta">' + nItens + ' item' + (nItens !== 1 ? 'ns' : '') + ' &middot; ' + data + '</div>' +
+      '</div>' +
+      '<div class="cob-right">' +
+        '<div class="cob-total">' + formatBRL(p.total) + '</div>' +
+        '<span class="status-pill ' + st + '">' + (STATUS_LABEL[st] || st) + '</span>' +
+        '<div class="cob-actions">' +
+          (wa ? '<button class="btn btn-secondary" onclick="cobrarWA(' + p.id + ')"><i class="ti ti-brand-whatsapp"></i> Cobrar</button>' : '') +
+          '<button class="btn btn-primary" onclick="marcarPago(' + p.id + ')"><i class="ti ti-check"></i> Marcar pago</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── Histórico ── */
+function renderHistorico() {
+  var pedidos = getPedidos().filter(function(p) { return p.pago === true; })
+                .sort(function(a, b) { return new Date(b.data) - new Date(a.data); });
+
+  var container = document.getElementById('lista-historico');
+  if (!pedidos.length) {
+    container.innerHTML = '<div class="fin-empty"><i class="ti ti-receipt-off"></i><p>Nenhum pagamento confirmado ainda.</p><p style="font-size:12px">Marque pedidos como pagos na aba Cobranças.</p></div>';
+    return;
+  }
+  container.innerHTML = pedidos.map(function(p) {
+    var st   = (p.status || 'aguardando').toLowerCase();
+    var data = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
+    var nome = escHtml((p.cliente && p.cliente.name) || '—');
+    return '<div class="cob-card cob-card--pago">' +
+      '<div class="cob-info">' +
+        '<div class="cob-num">Pedido #' + escHtml(String(p.numero || p.id)) + '</div>' +
+        '<div class="cob-nome">' + nome + '</div>' +
+        '<div class="cob-meta">' + data + '</div>' +
+      '</div>' +
+      '<div class="cob-right">' +
+        '<div class="cob-total">' + formatBRL(p.total) + '</div>' +
+        '<span class="status-pill ' + st + '">' + (STATUS_LABEL[st] || st) + '</span>' +
+        '<span class="badge badge-pago"><i class="ti ti-check"></i> Pago</span>' +
+        '<div class="cob-actions">' +
+          '<button class="btn btn-secondary" style="font-size:11px;" onclick="desfazerPago(' + p.id + ')"><i class="ti ti-x"></i> Desfazer</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── Relatório ── */
+function renderRelatorio() {
+  var pedidos = getPedidos();
+
+  /* Gráfico mensal (últimos 6 meses) */
+  var meses = {};
+  pedidos.forEach(function(p) {
+    if ((p.status || '').toLowerCase() === 'cancelado' || !p.data) return;
+    var d   = new Date(p.data);
+    var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    if (!meses[key]) meses[key] = { receita: 0, pagos: 0 };
+    meses[key].receita += parseFloat(p.total) || 0;
+    if (p.pago) meses[key].pagos += parseFloat(p.total) || 0;
+  });
+  var keys = Object.keys(meses).sort().slice(-6);
+  var maxV = 0;
+  keys.forEach(function(k) { if (meses[k].receita > maxV) maxV = meses[k].receita; });
+
+  var chartEl = document.getElementById('chart-mensal');
+  if (chartEl) {
+    if (!keys.length) {
+      chartEl.innerHTML = '<div class="fin-empty" style="width:100%;padding:16px;"><i class="ti ti-chart-bar-off"></i><p>Sem pedidos registrados.</p></div>';
+    } else {
+      chartEl.innerHTML = keys.map(function(k) {
+        var m    = meses[k];
+        var pctR = maxV > 0 ? (m.receita / maxV * 100) : 0;
+        var pctP = maxV > 0 ? (m.pagos   / maxV * 100) : 0;
+        var parts = k.split('-');
+        var label = MNAMES[parseInt(parts[1]) - 1] + '/' + parts[0].slice(2);
+        return '<div class="chart-col">' +
+          '<div class="chart-bars">' +
+            '<div class="chart-bar chart-bar--receita" style="height:' + pctR.toFixed(1) + '%" title="Receita: ' + formatBRL(m.receita) + '"></div>' +
+            '<div class="chart-bar chart-bar--pago" style="height:' + pctP.toFixed(1) + '%" title="Recebido: ' + formatBRL(m.pagos) + '"></div>' +
+          '</div>' +
+          '<div class="chart-foot">' +
+            '<div class="chart-foot-label">' + label + '</div>' +
+            '<div class="chart-foot-val">' + formatBRL(m.receita) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  /* Top devedores — SVG bar chart */
+  var pendObj = {};
+  pedidos.forEach(function(p) {
+    if ((p.status || '').toLowerCase() === 'cancelado' || p.pago) return;
+    var email = p.clienteEmail || (p.cliente && p.cliente.email) || '?';
+    var nome  = (p.cliente && p.cliente.name) || email;
+    if (!pendObj[email]) pendObj[email] = { nome: nome, total: 0, count: 0, email: email, wa: (p.cliente && p.cliente.whatsapp) || '' };
+    pendObj[email].total += parseFloat(p.total) || 0;
+    pendObj[email].count++;
+  });
+  var topPend = Object.values(pendObj).sort(function(a, b) { return b.total - a.total; }).slice(0, 8);
+  renderHBarChart('chart-top-devedores', topPend, 'nome', 'total', function(v) {
+    return v >= 1000 ? 'R$' + (v / 1000).toFixed(1) + 'k' : 'R$' + v.toFixed(0);
+  }, '#facc15');
+
+  /* Tabela devedores */
+  var tbody = document.getElementById('tabela-devedores-body');
+  if (tbody) {
+    tbody.innerHTML = topPend.length
+      ? topPend.map(function(c) {
+          var wa = c.wa ? '<br><span style="color:#16a34a;font-size:11px;"><i class="ti ti-brand-whatsapp"></i> ' + escHtml(c.wa) + '</span>' : '';
+          var waBtn = c.wa
+            ? '<a href="https://wa.me/55' + c.wa.replace(/\D/g,'') + '?text=' + encodeURIComponent('Olá ' + c.nome + '! Passamos para lembrar sobre pedidos em aberto na LaPink. 💕') + '" target="_blank" class="btn btn-secondary" style="font-size:11px;padding:3px 10px;"><i class="ti ti-brand-whatsapp"></i> Cobrar</a>'
+            : '';
+          return '<tr>' +
+            '<td><strong>' + escHtml(c.nome) + '</strong></td>' +
+            '<td style="font-size:12px;">' + escHtml(c.email) + wa + '</td>' +
+            '<td>' + c.count + ' pedido' + (c.count !== 1 ? 's' : '') + '</td>' +
+            '<td><strong style="color:var(--pink-500);">' + formatBRL(c.total) + '</strong></td>' +
+            '<td>' + waBtn + '</td>' +
+          '</tr>';
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhuma cobrança pendente.</td></tr>';
+  }
+
+  /* Tabela por status */
+  var statObj = {};
+  var receitaTotal = 0;
+  pedidos.forEach(function(p) {
+    var st = (p.status || 'aguardando').toLowerCase();
+    if (!statObj[st]) statObj[st] = { count: 0, total: 0, pagos: 0 };
+    statObj[st].count++;
+    var t = parseFloat(p.total) || 0;
+    statObj[st].total += t;
+    if (p.pago) statObj[st].pagos += t;
+    if (st !== 'cancelado') receitaTotal += t;
+  });
+  var stOrder = ['aguardando','preparando','enviado','concluido','cancelado'];
+  var tbody2 = document.getElementById('tabela-status-body');
+  if (tbody2) {
+    var rows = stOrder.filter(function(s) { return statObj[s]; }).map(function(s) {
+      var d = statObj[s];
+      return '<tr>' +
+        '<td><span class="status-pill ' + s + '">' + (STATUS_LABEL[s] || s) + '</span></td>' +
+        '<td>' + d.count + '</td>' +
+        '<td>' + formatBRL(d.total) + '</td>' +
+        '<td>' + (d.pagos > 0 ? formatBRL(d.pagos) : '—') + '</td>' +
+        '<td>' + (s !== 'cancelado' ? pct(d.total, receitaTotal) : '—') + '</td>' +
+      '</tr>';
+    });
+    tbody2.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Nenhum pedido.</td></tr>';
+  }
+
+  /* Tabela todos os pedidos */
+  var tbody3 = document.getElementById('tabela-todos-body');
+  if (tbody3) {
+    if (!pedidos.length) {
+      tbody3.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum pedido registrado. <a href="pedidos.html" style="color:var(--pink-500);">Acessar pedidos</a></td></tr>';
+    } else {
+      tbody3.innerHTML = pedidos.slice().reverse().map(function(p) {
+        var st   = (p.status || 'aguardando').toLowerCase();
+        var data = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
+        var pagoHtml = p.pago
+          ? '<span class="badge badge-pago"><i class="ti ti-check"></i> Pago</span>'
+          : '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="marcarPago(' + p.id + ')">Marcar pago</button>';
+        var desfHtml = p.pago
+          ? '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;margin-left:4px;" onclick="desfazerPago(' + p.id + ')"><i class="ti ti-x"></i></button>'
+          : '';
+        return '<tr>' +
+          '<td><strong>#' + escHtml(String(p.numero || p.id || '—')) + '</strong></td>' +
+          '<td>' + escHtml((p.cliente && p.cliente.name) || '—') + '</td>' +
+          '<td>' + formatBRL(p.total || 0) + '</td>' +
+          '<td><span class="status-pill ' + st + '">' + (STATUS_LABEL[st] || st) + '</span></td>' +
+          '<td>' + pagoHtml + desfHtml + '</td>' +
+          '<td>' + data + '</td>' +
+          '<td>' +
+            ((p.cliente && p.cliente.whatsapp)
+              ? '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="cobrarWA(' + p.id + ')"><i class="ti ti-brand-whatsapp"></i></button>'
+              : '') +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+  }
+}
+
+/* ── Actions ── */
+function marcarPago(id) {
+  var pedidos = getPedidos();
+  var idx = pedidos.findIndex(function(p) { return p.id === id; });
+  if (idx === -1) return;
+  pedidos[idx].pago = true;
+  setPedidos(pedidos);
+  render();
+  showToast('Pedido marcado como pago!', 'success');
+}
+
+function desfazerPago(id) {
+  var pedidos = getPedidos();
+  var idx = pedidos.findIndex(function(p) { return p.id === id; });
+  if (idx === -1) return;
+  pedidos[idx].pago = false;
+  setPedidos(pedidos);
+  render();
+  showToast('Marcação de pago desfeita.');
+}
+
+function cobrarWA(id) {
+  var pedidos = getPedidos();
+  var p = pedidos.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var wa = ((p.cliente && p.cliente.whatsapp) || '').replace(/\D/g, '');
+  if (!wa) { showToast('WhatsApp do cliente não informado.', 'erro'); return; }
+  if (!wa.startsWith('55')) wa = '55' + wa;
+  var nome   = (p.cliente && p.cliente.name) || 'cliente';
+  var numero = p.numero || ('#' + p.id);
+  var st     = (p.status || 'aguardando').toLowerCase();
+  var config = getStoreConfig();
+  var loja   = config.nomeLoja || 'LaPink';
+  var msg = 'Olá ' + nome + '! 👋\n\nPassando para lembrar sobre o seu pedido *#' + numero + '* na *' + loja + '* no valor de *' + formatBRL(p.total) + '*.\n\nStatus atual: ' + (STATUS_LABEL[st] || st) + '.\n\nAguardamos a confirmação do pagamento para darmos andamento! 💕\n\nQualquer dúvida é só chamar.';
+  window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+/* ── Full render ── */
+function render() {
+  renderKPIs();
+  renderCobrancas();
+  renderHistorico();
+  renderRelatorio();
+}
+
+/* ════════════════════════════════════════
+   PAGAMENTOS — config
+════════════════════════════════════════ */
+var PAY_KEY = 'lapinkPaymentConfig';
+
+function getPayConfig() {
+  try { return JSON.parse(localStorage.getItem(PAY_KEY) || 'null') || {}; } catch(e) { return {}; }
+}
+function setPayConfig(cfg) {
+  localStorage.setItem(PAY_KEY, JSON.stringify(cfg));
+}
+
+function togglePaySection(section) {
+  var id = section === 'transf' ? 'transf' : section;
+  var ativo = document.getElementById(id + '-ativo').checked;
+  var fields = document.getElementById(id + '-fields');
+  if (fields) fields.style.display = ativo ? '' : 'none';
+  if (section === 'pix') atualizarPreviewPix();
+}
+
+function atualizarPreviewPix() {
+  var ativo  = document.getElementById('pix-ativo').checked;
+  var chave  = (document.getElementById('pix-chave').value || '').trim();
+  var nome   = (document.getElementById('pix-nome').value || '').trim();
+  var tipo   = document.getElementById('pix-tipo').value;
+  var instruc = (document.getElementById('pix-instrucao').value || '').trim();
+  var prev   = document.getElementById('pix-preview');
+
+  var tipoLabel = { cpf:'CPF', cnpj:'CNPJ', email:'E-mail', telefone:'Telefone', aleatoria:'Chave aleatória' }[tipo] || tipo;
+
+  if (ativo && chave) {
+    document.getElementById('prev-pix-tipo').textContent     = tipoLabel;
+    document.getElementById('prev-pix-chave').textContent    = chave;
+    document.getElementById('prev-pix-nome').textContent     = nome || '—';
+    document.getElementById('prev-pix-instrucao').textContent = instruc;
+    if (prev) prev.style.display = '';
+  } else {
+    if (prev) prev.style.display = 'none';
+  }
+}
+
+function copiarChavePix() {
+  var chave = document.getElementById('pix-chave').value || '';
+  if (!chave) return;
+  try {
+    navigator.clipboard.writeText(chave).then(function() { showToast('Chave PIX copiada!', 'success'); });
+  } catch(e) {
+    showToast('Chave: ' + chave);
+  }
+}
+
+function carregarPagamentos() {
+  var cfg = getPayConfig();
+  var pix   = cfg.pix   || {};
+  var cart  = cfg.cartao || {};
+  var tr    = cfg.transferencia || {};
+  var din   = cfg.dinheiro || {};
+
+  /* PIX */
+  document.getElementById('pix-ativo').checked = !!pix.ativo;
+  document.getElementById('pix-tipo').value     = pix.tipoChave || 'cpf';
+  document.getElementById('pix-chave').value    = pix.chave || '';
+  document.getElementById('pix-nome').value     = pix.nomeFavorecido || '';
+  document.getElementById('pix-banco').value    = pix.banco || '';
+  document.getElementById('pix-instrucao').value = pix.instrucao || 'Após o pagamento, envie o comprovante via WhatsApp.';
+  togglePaySection('pix');
+
+  /* Cartão */
+  document.getElementById('cartao-ativo').checked = !!cart.ativo;
+  document.getElementById('cartao-parcelamento').value = cart.parcelaMax || '3';
+  document.getElementById('cartao-sem-juros').value    = cart.parcelasSemJuros || '1';
+  document.getElementById('cartao-juros').value        = cart.jurosPct || '';
+  document.getElementById('cartao-gateway').value      = cart.gateway || 'manual';
+  document.querySelectorAll('.bandeira-cb').forEach(function(cb) {
+    cb.checked = Array.isArray(cart.bandeiras) && cart.bandeiras.indexOf(cb.value) >= 0;
+  });
+  togglePaySection('cartao');
+
+  /* Transferência */
+  document.getElementById('transf-ativo').checked     = !!tr.ativo;
+  document.getElementById('transf-banco').value       = tr.banco || '';
+  document.getElementById('transf-agencia').value     = tr.agencia || '';
+  document.getElementById('transf-conta').value       = tr.conta || '';
+  document.getElementById('transf-tipo-conta').value  = tr.tipoConta || 'corrente';
+  document.getElementById('transf-titular').value     = tr.titular || '';
+  document.getElementById('transf-cpf').value         = tr.cpf || '';
+  togglePaySection('transf');
+
+  /* Dinheiro */
+  document.getElementById('dinheiro-ativo').checked    = !!din.ativo;
+  document.getElementById('dinheiro-instrucao').value  = din.instrucao || '';
+  togglePaySection('dinheiro');
+}
+
+function salvarPagamentos() {
+  var bandeiras = [];
+  document.querySelectorAll('.bandeira-cb:checked').forEach(function(cb) { bandeiras.push(cb.value); });
+
+  var cfg = {
+    pix: {
+      ativo          : document.getElementById('pix-ativo').checked,
+      tipoChave      : document.getElementById('pix-tipo').value,
+      chave          : document.getElementById('pix-chave').value.trim(),
+      nomeFavorecido : document.getElementById('pix-nome').value.trim(),
+      banco          : document.getElementById('pix-banco').value.trim(),
+      instrucao      : document.getElementById('pix-instrucao').value.trim()
+    },
+    cartao: {
+      ativo           : document.getElementById('cartao-ativo').checked,
+      gateway         : document.getElementById('cartao-gateway').value,
+      parcelaMax      : parseInt(document.getElementById('cartao-parcelamento').value) || 1,
+      parcelasSemJuros: parseInt(document.getElementById('cartao-sem-juros').value) || 1,
+      jurosPct        : parseFloat(document.getElementById('cartao-juros').value) || 0,
+      bandeiras       : bandeiras
+    },
+    transferencia: {
+      ativo    : document.getElementById('transf-ativo').checked,
+      banco    : document.getElementById('transf-banco').value.trim(),
+      agencia  : document.getElementById('transf-agencia').value.trim(),
+      conta    : document.getElementById('transf-conta').value.trim(),
+      tipoConta: document.getElementById('transf-tipo-conta').value,
+      titular  : document.getElementById('transf-titular').value.trim(),
+      cpf      : document.getElementById('transf-cpf').value.trim()
+    },
+    dinheiro: {
+      ativo    : document.getElementById('dinheiro-ativo').checked,
+      instrucao: document.getElementById('dinheiro-instrucao').value.trim()
+    }
+  };
+
+  /* Validações básicas */
+  if (cfg.pix.ativo && !cfg.pix.chave) {
+    showToast('Informe a chave PIX para ativar.', 'erro'); return;
+  }
+  if (cfg.transferencia.ativo && (!cfg.transferencia.banco || !cfg.transferencia.conta)) {
+    showToast('Informe banco e conta para ativar a transferência.', 'erro'); return;
+  }
+
+  setPayConfig(cfg);
+  atualizarPreviewPix();
+  showToast('Configurações de pagamento salvas!', 'success');
+}
+
+/* Preview ao vivo no PIX */
+['pix-chave','pix-nome','pix-instrucao'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', atualizarPreviewPix);
+});
+var pixTipoEl = document.getElementById('pix-tipo');
+if (pixTipoEl) pixTipoEl.addEventListener('change', atualizarPreviewPix);
+
+window.addEventListener('DOMContentLoaded', function() {
+  render();
+  carregarPagamentos();
+});
+</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

@@ -82,6 +82,39 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
 .co-success a { display: inline-block; background: #D4537E; color: #fff; border-radius: 30px; padding: 12px 28px; font-size: 14px; font-weight: 700; text-decoration: none; }
 .co-success a:hover { background: #b93d65; }
 
+/* ── Formas de pagamento ── */
+.co-payment-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.co-payment-opt  {
+  display: flex; align-items: flex-start; gap: 12px;
+  border: 1.5px solid #F4C0D1; border-radius: 12px; padding: 14px;
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.co-payment-opt:has(input:checked), .co-payment-opt.selected {
+  border-color: #D4537E; background: #fff5f8;
+}
+.co-payment-opt input[type=radio] { margin-top: 2px; accent-color: #D4537E; flex-shrink: 0; }
+.co-payment-opt-icon { font-size: 22px; flex-shrink: 0; }
+.co-payment-opt-body { flex: 1; }
+.co-payment-opt-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+.co-payment-opt-sub   { font-size: 12px; color: #888; }
+
+/* ── Caixa de info de pagamento ── */
+.co-pay-info-box {
+  margin-top: 12px; border-radius: 10px; padding: 14px 16px;
+  font-size: 13px; line-height: 1.6;
+}
+.co-pay-info-box.pix  { background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; }
+.co-pay-info-box.transf { background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; }
+.co-pay-info-box.dinheiro { background: #f7fee7; border: 1.5px solid #a3e635; color: #3f6212; }
+.co-pix-chave {
+  font-family: monospace; font-size: 15px; letter-spacing: .04em;
+  font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 6px 0;
+}
+.co-copy-btn {
+  background: none; border: none; cursor: pointer; font-size: 13px;
+  color: #16a34a; display: flex; align-items: center; gap: 4px;
+}
+
 /* Mobile */
 @media (max-width: 640px) {
   .co-page { gap: 0; }
@@ -134,6 +167,13 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
       </form>
     </div>
 
+    <!-- Forma de pagamento -->
+    <div class="co-card" id="co-payment-section" style="display:none;">
+      <h2 class="co-section-title"><i class="ti ti-credit-card"></i> Forma de pagamento</h2>
+      <div class="co-payment-opts" id="co-payment-opts"></div>
+      <div id="co-pay-info"></div>
+    </div>
+
     <!-- Tela de sucesso -->
     <div class="co-card co-success" id="co-success">
       <div class="co-success-icon"><i class="ti ti-circle-check"></i></div>
@@ -180,11 +220,92 @@ function _esc(s) {
     return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
   }
 
+  /* ── Pagamentos configurados ── */
+  function getPayConfig() {
+    try { return JSON.parse(localStorage.getItem('lapinkPaymentConfig') || 'null') || {}; } catch(e) { return {}; }
+  }
+
+  function renderPaymentOpts() {
+    var cfg  = getPayConfig();
+    var opts = [];
+    if (cfg.pix   && cfg.pix.ativo   && cfg.pix.chave)    opts.push('pix');
+    if (cfg.cartao && cfg.cartao.ativo)                    opts.push('cartao');
+    if (cfg.transferencia && cfg.transferencia.ativo && cfg.transferencia.banco) opts.push('transf');
+    if (cfg.dinheiro && cfg.dinheiro.ativo)                opts.push('dinheiro');
+
+    var sec  = document.getElementById('co-payment-section');
+    var cont = document.getElementById('co-payment-opts');
+    if (!opts.length) { if (sec) sec.style.display = 'none'; return; }
+
+    var labels = { pix:'PIX', cartao:'Cartão de crédito/débito', transf:'Transferência bancária', dinheiro:'Dinheiro / na entrega' };
+    var icons  = { pix:'ti-qrcode', cartao:'ti-credit-card', transf:'ti-building-bank', dinheiro:'ti-cash' };
+
+    cont.innerHTML = opts.map(function(k, i) {
+      return '<label class="co-payment-opt">' +
+        '<input type="radio" name="payMethod" value="' + k + '"' + (i === 0 ? ' checked' : '') + ' onchange="renderPayInfo()" />' +
+        '<i class="ti ' + icons[k] + ' co-payment-opt-icon"></i>' +
+        '<div class="co-payment-opt-body"><div class="co-payment-opt-title">' + labels[k] + '</div></div>' +
+      '</label>';
+    }).join('');
+
+    if (sec) sec.style.display = '';
+    renderPayInfo();
+  }
+
+  function renderPayInfo() {
+    var cfg = getPayConfig();
+    var sel = document.querySelector('input[name="payMethod"]:checked');
+    var box = document.getElementById('co-pay-info');
+    if (!sel || !box) return;
+    var k = sel.value;
+    var html = '';
+
+    if (k === 'pix' && cfg.pix) {
+      var tipoLabel = { cpf:'CPF', cnpj:'CNPJ', email:'E-mail', telefone:'Telefone', aleatoria:'Chave aleatória' }[cfg.pix.tipoChave] || cfg.pix.tipoChave;
+      html = '<div class="co-pay-info-box pix">' +
+        '<strong><i class="ti ti-qrcode"></i> Pagar via PIX</strong><br>' +
+        '<span>Tipo: ' + _esc(tipoLabel) + '</span><br>' +
+        '<span class="co-pix-chave">' + _esc(cfg.pix.chave) +
+          '<button type="button" class="co-copy-btn" onclick="navigator.clipboard.writeText(\'' + _esc(cfg.pix.chave) + '\')"><i class="ti ti-copy"></i> copiar</button>' +
+        '</span>' +
+        (cfg.pix.nomeFavorecido ? '<span>Favorecido: ' + _esc(cfg.pix.nomeFavorecido) + '</span><br>' : '') +
+        (cfg.pix.instrucao ? '<p style="margin-top:8px;font-size:12px;">' + _esc(cfg.pix.instrucao) + '</p>' : '') +
+      '</div>';
+    } else if (k === 'cartao' && cfg.cartao) {
+      html = '<div class="co-pay-info-box" style="background:#f5f3ff;border:1.5px solid #c4b5fd;color:#4c1d95;">' +
+        '<strong><i class="ti ti-credit-card"></i> Cartão</strong><br>' +
+        'Pagamento via maquininha no momento da entrega/retirada.' +
+        (cfg.cartao.parcelaMax > 1 ? '<br>Parcelamento em até ' + cfg.cartao.parcelaMax + 'x.' : '') +
+      '</div>';
+    } else if (k === 'transf' && cfg.transferencia) {
+      var tr = cfg.transferencia;
+      html = '<div class="co-pay-info-box transf">' +
+        '<strong><i class="ti ti-building-bank"></i> Transferência bancária</strong><br>' +
+        'Banco: ' + _esc(tr.banco) + '<br>' +
+        'Agência: ' + _esc(tr.agencia || '—') + ' &nbsp; Conta: ' + _esc(tr.conta || '—') + '<br>' +
+        'Titular: ' + _esc(tr.titular || '—') +
+      '</div>';
+    } else if (k === 'dinheiro' && cfg.dinheiro) {
+      html = '<div class="co-pay-info-box dinheiro">' +
+        '<strong><i class="ti ti-cash"></i> Pagamento na entrega</strong><br>' +
+        _esc(cfg.dinheiro.instrucao || 'Pagamento no momento da entrega.') +
+      '</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  function getSelectedPayMethod() {
+    var sel = document.querySelector('input[name="payMethod"]:checked');
+    var labels = { pix:'PIX', cartao:'Cartão', transf:'Transferência', dinheiro:'Dinheiro/Entrega' };
+    return sel ? (labels[sel.value] || sel.value) : '';
+  }
+
   function render() {
     var cart = getCart();
     var emptyEl    = document.getElementById('co-empty');
     var cartSec    = document.getElementById('co-cart-section');
     var formSec    = document.getElementById('co-form-section');
+    var paymentSec = document.getElementById('co-payment-section');
     var summarySec = document.getElementById('co-summary-section');
     var successEl  = document.getElementById('co-success');
     var itemsList  = document.getElementById('co-items-list');
@@ -193,6 +314,7 @@ function _esc(s) {
       emptyEl.style.display    = '';
       cartSec.style.display    = 'none';
       formSec.style.display    = 'none';
+      if (paymentSec) paymentSec.style.display = 'none';
       summarySec.style.display = 'none';
       successEl.style.display  = 'none';
       return;
@@ -202,6 +324,7 @@ function _esc(s) {
     cartSec.style.display    = '';
     formSec.style.display    = '';
     summarySec.style.display = '';
+    renderPaymentOpts();
 
     // Renderiza itens
     itemsList.innerHTML = cart.map(function(item) {
@@ -316,13 +439,15 @@ function _esc(s) {
       return '- ' + i.nome + ' x' + i.qty + ' — ' + fmtMoeda(i.preco) + ' cada';
     }).join('\n');
 
+    var payLabel = getSelectedPayMethod();
     var msg =
       '*Novo Pedido LaPink* 🛍\n' +
       '*Nº:* ' + numPedido + '\n' +
       '*Nome:* ' + nome + '\n\n' +
       '*Itens:*\n' + itensMsg + '\n\n' +
-      '*Total:* ' + fmtMoeda(total) + '\n\n' +
-      'Aguardando confirmação.';
+      '*Total:* ' + fmtMoeda(total) + '\n' +
+      (payLabel ? '*Pagamento:* ' + payLabel + '\n' : '') +
+      '\nAguardando confirmação.';
 
     // Número WhatsApp da loja — lido das configurações
     var wpp = '';

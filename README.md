@@ -1,7 +1,4 @@
 # LaPink
-<<<<<<< HEAD
-Projeto E-comercie 
-=======
 
 Projeto organizado para facilitar manutenção e adição de fotos de produto.
 
@@ -19,6 +16,7 @@ Projeto organizado para facilitar manutenção e adição de fotos de produto.
   - `pedidos.html` — lista de pedidos
   - `clientes.html` — lista de clientes
   - `relatorios.html` — relatórios e métricas
+  - `financeiro.html` — cobranças, histórico e configuração de pagamentos
 
 - `css/` — arquivos de estilo
   - `Principal.css`
@@ -27,8 +25,6 @@ Projeto organizado para facilitar manutenção e adição de fotos de produto.
   - `componentes.css`
 
 - `assets/images/` — pasta para adicionar fotos dos produtos e outras imagens do site
-  - Use esta pasta para armazenar fotos de produtos e referências visuais do site
-  - Use esta pasta para armazenar fotos de produtos e referências visuais do site
 
 ## Como usar
 
@@ -36,23 +32,7 @@ Projeto organizado para facilitar manutenção e adição de fotos de produto.
 - Abra `admin/admin.html` para acessar o painel administrativo
 - Coloque imagens de produto em `assets/images/` e atualize os caminhos nas páginas conforme necessário
 
-## Backend Node.js
-
-- O backend está em `server/`
-- Execute `npm install` dentro de `server/`
-- Use `npm run dev` para rodar o servidor em modo de desenvolvimento
-- Endpoints disponíveis:
-  - `GET /api/clients`
-  - `POST /api/clients`
-  - `PUT /api/clients/:email`
-  - `DELETE /api/clients/:email`
-  - `GET /api/orders`
-  - `POST /api/orders`
-  - `DELETE /api/orders/:id`
-
 ## Servidor de Desenvolvimento
-
-Para testar a aplicação no navegador (incluindo em celular):
 
 ```bash
 npm install
@@ -67,14 +47,7 @@ O servidor iniciará em `http://localhost:3000` (computador local).
 2. Abra o navegador no celular
 3. Acesse: `http://<SEU_IP_LOCAL>:3000`
 
-**Exemplo:** `http://192.168.1.100:3000`
-
-O IP local será mostrado no terminal quando o servidor iniciar:
-```
-🌐 Servidor rodando em:
-   Local:    http://localhost:3000
-   Rede:     http://192.168.x.x:3000    ← Use este link no celular
-```
+O IP local será mostrado no terminal quando o servidor iniciar.
 
 ### Testar autenticação
 
@@ -82,4 +55,17 @@ O IP local será mostrado no terminal quando o servidor iniciar:
 2. Faça **login** com as credenciais criadas
 3. Valide o comportamento de autenticação (mostra nome, botão de logout, etc)
 4. Teste em diferentes páginas (`index.html` e `V1.html`)
->>>>>>> master
+
+## Banco de dados
+
+O arquivo `admin/js/api.js` é a camada de abstração de dados do projeto.
+Hoje usa `localStorage` como backend. Para migrar para um banco real:
+
+1. Ajuste `API_BASE_URL` para a URL do servidor
+2. Troque `USE_REMOTE` para `true`
+3. O restante do código permanece idêntico
+
+## Usuário padrão (Super Admin)
+
+- **E-mail:** alexandrej529@hotmail.com
+- **Senha:** 123456 (altere após o primeiro acesso em Configurações)

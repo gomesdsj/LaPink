@@ -202,6 +202,28 @@
 
   document.getElementById('product-layout').style.display = 'flex';
 
+  // Schema.org JSON-LD para SEO
+  var ld = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    'name': produto.nome,
+    'description': produto.descricao || '',
+    'category': produto.categoria || '',
+    'offers': {
+      '@type': 'Offer',
+      'priceCurrency': 'BRL',
+      'price': varejo.toFixed(2),
+      'availability': est > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      'seller': { '@type': 'Organization', 'name': 'LaPink' }
+    }
+  };
+  if (produto.imagem) ld['image'] = produto.imagem;
+  if (produto.codigoPeca) ld['sku'] = produto.codigoPeca;
+  var ldScript = document.createElement('script');
+  ldScript.type = 'application/ld+json';
+  ldScript.textContent = JSON.stringify(ld);
+  document.head.appendChild(ldScript);
+
   // Adiciona botão "Ver carrinho / Finalizar" após o btn-back-loja
   var btnBack = document.querySelector('.btn-back-loja');
   if (btnBack) {

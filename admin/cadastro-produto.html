@@ -64,6 +64,7 @@
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
           <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
           <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
           <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
           <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
@@ -604,18 +605,61 @@
       }
     }
 
+    var _MIME_VALIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    var _MAX_IMG_SIZE = 5 * 1024 * 1024; // 5 MB antes de comprimir
+
+    function _validarArquivoImagem(file) {
+      if (!_MIME_VALIDOS.includes(file.type)) {
+        showToast('Formato inválido. Use JPEG, PNG, WebP ou GIF.', 'erro');
+        return false;
+      }
+      if (file.size > _MAX_IMG_SIZE) {
+        showToast('Imagem muito grande. Máximo 5 MB.', 'erro');
+        return false;
+      }
+      return true;
+    }
+
+    /* Comprime para máx 600×600px, qualidade 72%, resultado ≤ 500 KB */
+    function _comprimirImagem(file) {
+      return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = function(e) {
+          var img = new Image();
+          img.onerror = reject;
+          img.onload = function() {
+            var MAX = 600, q = 0.72;
+            var w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+              else       { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            var base64 = canvas.toDataURL('image/jpeg', q);
+            // Se ainda > 500 KB, reduz qualidade
+            if (base64.length > 500 * 1024 * 4 / 3) {
+              base64 = canvas.toDataURL('image/jpeg', 0.5);
+            }
+            resolve(base64);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
     function atualizarImagemPreview(input) {
-      const file = input.files[0];
+      var file = input.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img  = document.getElementById('preview-img-photo');
-        const icon = document.getElementById('preview-img-icon');
-        img.src            = e.target.result;
-        img.style.display  = 'block';
-        icon.style.display = 'none';
-      };
-      reader.readAsDataURL(file);
+      if (!_validarArquivoImagem(file)) { input.value = ''; return; }
+      _comprimirImagem(file).then(function(base64) {
+        var img  = document.getElementById('preview-img-photo');
+        var icon = document.getElementById('preview-img-icon');
+        img.src = base64; img.style.display = 'block'; icon.style.display = 'none';
+      });
     }
 
     // ─────────────────────────────────────────
@@ -750,19 +794,17 @@
     function trocarFotoProduto(id, input) {
       var file = input.files[0];
       if (!file) return;
-      if (!file.type.startsWith('image/')) { showToast('Selecione uma imagem válida.', 'erro'); return; }
-      var reader = new FileReader();
-      reader.onload = function(e) {
+      if (!_validarArquivoImagem(file)) { input.value = ''; return; }
+      _comprimirImagem(file).then(function(base64) {
         var lista = getProdutos();
         var idx = lista.findIndex(function(p) { return p.id === id; });
         if (idx >= 0) {
-          lista[idx].imagem = e.target.result;
+          lista[idx].imagem = base64;
           saveProdutos(lista);
           filtrarProdutos();
           showToast('Foto atualizada!');
         }
-      };
-      reader.readAsDataURL(file);
+      });
     }
 
     function filtrarProdutos() {
@@ -855,13 +897,12 @@
     function atualizarImagemModal(input) {
       var file = input.files[0];
       if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function(e) {
+      if (!_validarArquivoImagem(file)) { input.value = ''; return; }
+      _comprimirImagem(file).then(function(base64) {
         var img  = document.getElementById('modal-preview-img-photo');
         var icon = document.getElementById('modal-preview-img-icon');
-        img.src = e.target.result; img.style.display = 'block'; icon.style.display = 'none';
-      };
-      reader.readAsDataURL(file);
+        img.src = base64; img.style.display = 'block'; icon.style.display = 'none';
+      });
     }
 
     function salvarEdicaoModal() {

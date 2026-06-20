@@ -347,7 +347,7 @@
       if (!c) return DEFAULT;
       c.hero       = Object.assign({}, DEFAULT.hero,       c.hero       || {});
       c.newsletter = Object.assign({}, DEFAULT.newsletter, c.newsletter || {});
-      if (!Array.isArray(c.depoimentos) || !c.depoimentos.length) c.depoimentos = DEFAULT.depoimentos;
+      if (!Array.isArray(c.depoimentos)) c.depoimentos = [];
       if (!Array.isArray(c.destaque))   c.destaque = [];
       return c;
     } catch { return DEFAULT; }
@@ -387,7 +387,12 @@
         badgeHtml = '<span class="prod-badge">' + esc(badge) + '</span>';
       }
 
-      var preco    = 'R$ ' + Number(p.precoVarejo || 0).toFixed(2).replace('.', ',');
+      var varejo   = Number(p.precoVarejo  || 0);
+      var atacado  = Number(p.precoAtacado || 0);
+      var preco    = 'R$ ' + varejo.toFixed(2).replace('.', ',');
+      var atacadoHtml = (atacado > 0 && atacado < varejo)
+        ? '<div style="font-size:11px;color:#888;margin-top:1px;">Atacado: R$ ' + atacado.toFixed(2).replace('.', ',') + '</div>'
+        : '';
       var favHtml  = esgotado ? '' : '<i class="ti ti-heart prod-fav"></i>';
       var btnHtml  = esgotado
         ? '<button class="btn-secondary btn-buy btn-esgotado" disabled>Fora de estoque</button>'
@@ -397,7 +402,7 @@
         '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
-          '<div><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span></div>' +
+          '<div><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span>' + atacadoHtml + '</div>' +
           btnHtml +
         '</div>' +
       '</div>';
@@ -545,8 +550,9 @@
   var heroBtn2 = document.getElementById('v1-hero-btn2');
   if (heroBtn2) heroBtn2.textContent = config.hero.btn2;
 
-  // Depoimentos
-  var revGrid = document.getElementById('v1-rev-grid');
+  // Depoimentos — oculta a seção quando não há depoimentos configurados
+  var revGrid    = document.getElementById('v1-rev-grid');
+  var revSection = revGrid && revGrid.closest('.reviews');
   if (revGrid && config.depoimentos && config.depoimentos.length) {
     revGrid.innerHTML = config.depoimentos.map(function(d) {
       return '<div class="rev-card">' +
@@ -555,6 +561,8 @@
         '<div class="rev-author">' + esc(d.autor) + '</div>' +
       '</div>';
     }).join('');
+  } else if (revSection) {
+    revSection.style.display = 'none';
   }
 
   // Newsletter

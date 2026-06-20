@@ -63,6 +63,7 @@
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
           <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
           <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
           <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
           <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
@@ -195,7 +196,7 @@
   function badgeStatus(status) {
     var map = { aguardando: 'badge-pink', preparando: 'badge-amber', enviado: 'badge-blue', concluido: 'badge-green', cancelado: 'badge-red' };
     var labels = { aguardando: 'Aguardando', preparando: 'Em preparo', enviado: 'Enviado', concluido: 'Concluído', cancelado: 'Cancelado' };
-    return '<span class="badge ' + (map[status] || 'badge') + '">' + (labels[status] || status) + '</span>';
+    return '<span class="badge ' + (map[status] || 'badge') + '">' + escHtml(labels[status] || status) + '</span>';
   }
 
   // ─── Toast ────────────────────────────────────────────────
@@ -258,7 +259,7 @@
 
     grid.innerHTML = filtrados.map(function(p) {
       var itensHtml = (p.itens || []).map(function(it) {
-        return '<li>' + escHtml(it.nome) + ' &times; ' + it.qty + ' — ' + fmtMoeda((it.preco || 0) * (it.qty || 1)) + '</li>';
+        return '<li>' + escHtml(it.nome) + ' &times; ' + escHtml(String(it.qty)) + ' — ' + fmtMoeda((it.preco || 0) * (it.qty || 1)) + '</li>';
       }).join('');
 
       var obsHtml = p.obs ? '<div class="pedido-obs"><i class="ti ti-note"></i> ' + escHtml(p.obs) + '</div>' : '';

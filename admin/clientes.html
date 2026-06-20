@@ -42,6 +42,7 @@
           <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
           <div class="nav-section-label">Auxiliar</div>
           <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
           <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
           <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
           <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
@@ -171,16 +172,23 @@
       }
 
       clientGrid.innerHTML = clients.map(function(client) {
-        var waNumber = '55' + client.whatsapp.replace(/\D/g, '');
+        var waDigits = (client.whatsapp || '').replace(/\D/g, '');
+        var waNumber = waDigits ? '55' + waDigits : '';
+        // Fix #10: purchases usa { pedidoId, total, data } — não p.order nem p.items
         var purchases = client.purchases && client.purchases.length > 0
-          ? client.purchases.map(function(p) { return '<div class="customer-purchase-item"><span>' + p.order + '</span><span>' + p.items + ' itens</span></div>'; }).join('')
-          : '<div class="customer-purchase-item"><span>Nenhuma compra registrada</span><span>0 itens</span></div>';
-        return '<article class="card customer-card" data-email="' + client.email + '">' +
+          ? client.purchases.map(function(p) {
+              var pid = escHtml(String(p.pedidoId || p.order || '—'));
+              var tot = typeof p.total === 'number' ? 'R$ ' + p.total.toFixed(2).replace('.',',') : '—';
+              return '<div class="customer-purchase-item"><span>Pedido #' + pid + '</span><span>' + tot + '</span></div>';
+            }).join('')
+          : '<div class="customer-purchase-item"><span>Nenhuma compra registrada</span><span>—</span></div>';
+        var waUrl = waNumber ? 'https://wa.me/' + waNumber + '?text=' + encodeURIComponent('Olá ' + (client.name || '') + '!') : '#';
+        return '<article class="card customer-card" data-email="' + escHtml(client.email) + '">' +
           '<div class="customer-meta">' +
             '<div class="customer-details">' +
-              '<strong>' + client.name + '</strong>' +
-              '<span>' + client.email + '</span>' +
-              '<span><a href="https://wa.me/' + waNumber + '" target="_blank" style="color:var(--green-400); font-weight:600; text-decoration:none;"><i class="ti ti-brand-whatsapp"></i> ' + client.whatsapp + '</a></span>' +
+              '<strong>' + escHtml(client.name || '—') + '</strong>' +
+              '<span>' + escHtml(client.email || '—') + '</span>' +
+              '<span><a href="https://wa.me/' + escHtml(waNumber) + '" target="_blank" style="color:var(--green-400); font-weight:600; text-decoration:none;"><i class="ti ti-brand-whatsapp"></i> ' + escHtml(client.whatsapp || '—') + '</a></span>' +
               '<span class="password">Senha: ' + maskPassword(client.password) + '</span>' +
             '</div>' +
             '<span class="badge badge-green">R$ ' + (client.totalSpent || 0).toFixed(2) + '</span>' +
@@ -193,7 +201,7 @@
             '<button type="button" class="btn btn-secondary" onclick="editClient(\'' + encodeURIComponent(client.email) + '\')">Editar</button>' +
             '<button type="button" class="btn btn-danger" onclick="deleteClient(\'' + encodeURIComponent(client.email) + '\')">Excluir</button>' +
             '<button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)">Redefinir senha</button>' +
-            '<button type="button" class="btn btn-secondary" onclick="window.open(\'https://wa.me/' + waNumber + '?text=Ol%C3%A1%20' + encodeURIComponent(client.name) + '!\',\'_blank\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>' +
+            (waNumber ? '<button type="button" class="btn btn-secondary" onclick="window.open(\'' + escHtml(waUrl) + '\',\'_blank\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>' : '') +
           '</div>' +
           '<form class="reset-password-form" style="display:none;">' +
             '<div class="form-group">' +

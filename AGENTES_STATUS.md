@@ -2,7 +2,7 @@
 ## Equipe TechCorp · Ativa até o fim do projeto
 
 > Este arquivo é o painel de comando vivo da equipe. Atualizado a cada sessão.  
-> Última atualização: 2026-06-18
+> Última atualização: 2026-06-19
 
 ---
 
@@ -62,14 +62,14 @@
 | ✅ | Hash SHA-256 de senhas em storage.js, register.js, login.js (backward compatible) |
 | ✅ | Corrigir XSS em admin.html (escHtml em todos os innerHTML de dados de produto) |
 | ✅ | Corrigir XSS em clientes.html (purchases sem escape) |
-| ⏳ | Corrigir XSS em pedidos.html (renderização de itens e nomes de clientes em innerHTML) |
+| ✅ | Corrigir XSS em pedidos.html (badgeStatus status bruto + it.qty sem escape) |
 | ✅ | Corrigir XSS em loja-v1.html (escHtml aplicado em thumbHtml, nome, badge, depoimentos) |
 | ✅ | Painel de pré-visualização ao vivo em loja-v1.html: mini-cards com foto, badge e preço, atualiza em tempo real ao adicionar/remover/reordenar/trocar badge/trocar foto |
 | ✅ | Login unificado: login.js verifica lapinkClients (SHA-256) e lapinkUsers (btoa) — usuários do admin passam a logar na loja pública |
 | ✅ | Hash SHA-256 em cadastro-cliente.html: handleFormSubmit e redefinirSenha async via Web Crypto API |
 | ✅ | Página cadastro-cliente.html protegida com checkAuth(['superadmin','admin']) |
 | ✅ | populateForm não exibe senha ao editar; senha opcional ao editar cliente existente |
-| ⏳ | Adicionar validação de formato de e-mail em register.js e login.js |
+| ✅ | Adicionar validação de formato de e-mail em register.js e login.js |
 | ⏳ | Adicionar validação de WhatsApp (apenas dígitos, 10-11 caracteres) |
 | ⏳ | Limitar tamanho de imagem base64 antes de salvar (máx ~500KB) |
 | ⏳ | Adicionar `<meta http-equiv="Content-Security-Policy">` nas páginas admin |
@@ -394,7 +394,7 @@
 1. ~~Incluir utils.js + remover duplicatas~~ ✅ *concluído 2026-06-18*
 2. ~~Decrementar estoque no checkout público~~ ✅ *concluído 2026-06-18*
 3. ~~Hash de senha ao criar/editar cliente admin~~ ✅ *concluído 2026-06-18*
-4. XSS em pedidos.html (renderização de itens e nomes em innerHTML) *(Beatriz Santos)*
+4. ~~XSS em pedidos.html~~ ✅ *concluído 2026-06-19*
 
 ### 🟠 Esta semana
 5. Schema.org Product em produto.html *(Lucas Rocha)*

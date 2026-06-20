@@ -90,7 +90,16 @@ function _loginUrl() {
 // ── API pública ───────────────────────────────────────────
 
 function getSession() {
-  try { return JSON.parse(localStorage.getItem(_SESSION_KEY) || 'null'); } catch(e) { return null; }
+  try {
+    var s = JSON.parse(localStorage.getItem(_SESSION_KEY) || 'null');
+    if (!s) return null;
+    // Sessões sem expiresAt (legadas) expiram em 8h a partir do momento lido
+    if (s.expiresAt && Date.now() > s.expiresAt) {
+      localStorage.removeItem(_SESSION_KEY);
+      return null;
+    }
+    return s;
+  } catch(e) { return null; }
 }
 
 /**
@@ -112,37 +121,51 @@ function checkAuth(allowedRoles) {
 }
 
 /**
- * Autentica um usuário (async — SHA-256, com migração automática de btoa legado).
+ * Autentica um usuário (async — SHA-256).
+ * Rate limiting: 5 tentativas por 15 min por email.
  * @param {string} email
  * @param {string} password — senha em texto puro
  * @param {string[]|null} requiredRoles
  * @returns {Promise<{ ok: boolean, session?: object, error?: string }>}
  */
 function login(email, password, requiredRoles) {
+  // Rate limiting por e-mail
+  var _attKey = '_adm_att_' + btoa(email.trim().toLowerCase()).replace(/=/g, '');
+  try {
+    var _now = Date.now();
+    var _att = JSON.parse(localStorage.getItem(_attKey) || '[]');
+    _att = _att.filter(function(t) { return _now - t < 15 * 60 * 1000; });
+    if (_att.length >= 5) {
+      return Promise.resolve({ ok: false, error: 'Muitas tentativas. Aguarde alguns minutos.' });
+    }
+  } catch(e) {}
+
   return _hashPassword(password).then(function(hash) {
     var users = _getUsers();
     var user  = null;
     for (var i = 0; i < users.length; i++) {
       if (users[i].email.toLowerCase() !== email.trim().toLowerCase()) continue;
-      if (users[i].password === hash) {
-        user = users[i];
-        break;
-      }
-      // Migração automática: senha ainda em btoa → converte para SHA-256
-      try {
-        if (users[i].password === btoa(password)) {
-          users[i].password = hash;
-          _saveUsers(users);
-          user = users[i];
-          break;
-        }
-      } catch(e) {}
+      if (users[i].password === hash) { user = users[i]; break; }
     }
-    if (!user) return { ok: false, error: 'E-mail ou senha incorretos.' };
+    if (!user) {
+      try {
+        var _a = JSON.parse(localStorage.getItem(_attKey) || '[]');
+        _a.push(Date.now());
+        localStorage.setItem(_attKey, JSON.stringify(_a));
+      } catch(e) {}
+      return { ok: false, error: 'E-mail ou senha incorretos.' };
+    }
     if (requiredRoles && requiredRoles.indexOf(user.role) === -1) {
       return { ok: false, error: 'Acesso não permitido para este tipo de conta.' };
     }
-    var session = { email: user.email, role: user.role, name: user.name };
+    // Login OK — limpa contagem de tentativas
+    try { localStorage.removeItem(_attKey); } catch(e) {}
+    var session = {
+      email     : user.email,
+      role      : user.role,
+      name      : user.name,
+      expiresAt : Date.now() + 8 * 60 * 60 * 1000  // 8 horas
+    };
     localStorage.setItem(_SESSION_KEY, JSON.stringify(session));
     return { ok: true, session: session };
   });
