@@ -48,6 +48,8 @@
 | ✅ | Paleta harmonizada: rosa vibrante (#F04A86) + fundo branco com tokens CSS em v1.css |
 | ✅ | Header admin simplificado: somente hamburger + nome da página (saudação só no dashboard) |
 | ⏳ | Aplicar `.form-group.error` + `.field-error` nas validações dos formulários |
+| ✅ | Drawer hamburger V1: accordion "Categorias" com todos os tipos de produto (dinâmico, do localStorage) |
+| ✅ | Modal "Minha conta" na loja V1: qualquer usuário logado pode editar nome, e-mail, WhatsApp e senha |
 | ⏳ | Remover seção "Carrinhos abandonados" hardcoded do admin.html ou implementar real |
 | ⏳ | Adicionar paginação em tabelas de relatórios (primeiros 20 + "Ver mais") |
 | ⏳ | Adicionar seção "Produtos relacionados" em produto.html (mesma categoria) |
@@ -360,6 +362,7 @@
 |--------|--------|
 | ✅ | Carrinho funcional com feedback visual |
 | ✅ | Checkout com geração de pedido e WhatsApp |
+| ✅ | Área "Minha conta" na loja V1 (drawer → modal com edição de nome, e-mail, WhatsApp e senha) |
 | ⏳ | Página `public/meu-pedido.html?id=XXX` para cliente acompanhar status |
 | ⏳ | WhatsApp automático ao mudar status do pedido (links wa.me com template) |
 | ⏳ | Avaliações de produto (estrelas + texto) em produto.html |

@@ -143,6 +143,131 @@
   .carousel-title { font-size:19px; }
   .carousel-eyebrow { font-size:10px; }
 }
+
+/* ── Toast (loja pública) ── */
+.toast {
+  position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+  background:#2A1520; color:#fff; padding:11px 24px; border-radius:24px;
+  font-size:13px; font-weight:600; z-index:9999; display:none;
+  white-space:nowrap; box-shadow:0 4px 24px rgba(0,0,0,.22);
+  animation:lapinkToastIn .25s ease;
+}
+.toast.err { background:#C0392B; }
+@keyframes lapinkToastIn {
+  from { opacity:0; transform:translateX(-50%) translateY(10px); }
+  to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+
+/* ── Drawer: accordion de categorias ── */
+.drawer-section-toggle {
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; background:none; border:none;
+  padding:13px 20px; font-size:14px; font-weight:600;
+  color:#4A1E30; cursor:pointer; text-align:left;
+  border-left:3px solid transparent;
+  transition:background .15s, color .15s;
+}
+.drawer-section-toggle:hover { background:#FDF4F8; color:#D4537E; border-left-color:#D4537E; }
+.drawer-section-toggle > span { display:flex; align-items:center; gap:10px; flex:1; }
+.drawer-section-toggle > span i { font-size:18px; color:#DE8FAE; flex-shrink:0; }
+.drawer-toggle-chevron { font-size:14px; color:#B08898; transition:transform .22s; flex-shrink:0; }
+.drawer-toggle-chevron.open { transform:rotate(90deg); }
+
+.drawer-submenu { max-height:0; overflow:hidden; transition:max-height .3s ease; background:#FDF4F8; }
+.drawer-submenu.open { max-height:700px; }
+.drawer-submenu a {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 20px 10px 44px; font-size:13px; font-weight:500;
+  color:#6A3050; text-decoration:none; cursor:pointer;
+  border-left:3px solid transparent; transition:background .13s, color .13s;
+}
+.drawer-submenu a:hover { background:#FDEEF5; color:#D4537E; border-left-color:#D4537E; }
+.drawer-submenu a i { font-size:15px; color:#DE8FAE; flex-shrink:0; }
+.drawer-cat-badge { font-size:10px; font-weight:700; color:#D4537E; background:#FCF0F5; padding:1px 7px; border-radius:20px; margin-left:auto; }
+
+/* ── Drawer: botão Minha conta ── */
+.drawer-btn-profile {
+  display:none; width:100%; align-items:center; gap:8px;
+  background:#FDF4F8; color:#D4537E; border:1.5px solid #F5D5E4;
+  border-radius:12px; padding:11px 16px; font-size:14px; font-weight:700;
+  cursor:pointer; transition:background .15s; margin-bottom:6px;
+}
+.drawer-btn-profile:hover { background:#FDEEF5; }
+
+/* ── Modal Minha Conta (bottom sheet) ── */
+.profile-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(42,21,32,.52); backdrop-filter:blur(3px); z-index:2000;
+}
+.profile-overlay.open { display:block; }
+
+.profile-sheet {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#fff; border-radius:20px 20px 0 0;
+  box-shadow:0 -8px 40px rgba(42,21,32,.18);
+  z-index:2001; max-height:90svh; overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+}
+.profile-sheet.open { transform:translateY(0); }
+
+@media (min-width:600px) {
+  .profile-sheet {
+    left:50%; right:auto; bottom:auto; top:50%;
+    transform:translate(-50%, calc(-50% - 12px)) scale(.96);
+    width:420px; border-radius:18px; max-height:86vh;
+  }
+  .profile-sheet.open { transform:translate(-50%,-50%) scale(1); }
+}
+
+.profile-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 20px 14px; border-bottom:1px solid #F5D5E4;
+  position:sticky; top:0; background:#fff; z-index:1;
+}
+.profile-header h3 {
+  font-size:15px; font-weight:800; color:#2A1520; margin:0;
+  display:flex; align-items:center; gap:8px;
+}
+.profile-header h3 i { color:#D4537E; font-size:18px; }
+.profile-close-btn {
+  background:none; border:none; color:#B08898; font-size:20px;
+  cursor:pointer; padding:4px; border-radius:6px;
+  display:flex; align-items:center; transition:color .15s, background .15s;
+}
+.profile-close-btn:hover { color:#D4537E; background:#FDF4F8; }
+
+.profile-body { padding:20px; display:flex; flex-direction:column; gap:14px; }
+.profile-field label {
+  display:block; font-size:11px; font-weight:700; color:#B08898;
+  text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px;
+}
+.profile-field input {
+  width:100%; box-sizing:border-box; border:1.5px solid #F5D5E4;
+  border-radius:10px; padding:10px 13px; font-size:14px; color:#2A1520;
+  outline:none; background:#fff;
+  transition:border-color .15s, box-shadow .15s;
+}
+.profile-field input:focus { border-color:#D4537E; box-shadow:0 0 0 3px rgba(212,83,126,.12); }
+.profile-divider { height:1px; background:#F5D5E4; }
+.profile-section-title {
+  font-size:11px; font-weight:700; color:#D4537E;
+  text-transform:uppercase; letter-spacing:.06em;
+  display:flex; align-items:center; gap:6px;
+}
+.profile-footer {
+  padding:14px 20px 20px; display:flex; gap:10px;
+  border-top:1px solid #F5D5E4; position:sticky; bottom:0; background:#fff;
+}
+.profile-footer button {
+  flex:1; border-radius:12px; padding:11px 20px; font-size:14px;
+  font-weight:700; cursor:pointer; border:none; transition:background .15s;
+}
+.profile-btn-cancel { background:#FDF4F8; color:#D4537E; border:1.5px solid #F5D5E4 !important; }
+.profile-btn-cancel:hover { background:#FDEEF5; }
+.profile-btn-save { background:#D4537E; color:#fff; }
+.profile-btn-save:hover { background:#BF3F6A; }
+.profile-btn-save:disabled { opacity:.6; cursor:wait; }
 </style>
 </head>
 <body>
@@ -161,13 +286,23 @@
       <button class="drawer-close" id="drawerClose" aria-label="Fechar menu"><i class="ti ti-x"></i></button>
     </div>
     <nav class="drawer-links">
-      <a onclick="drawerNav(function(){filtrarCategoria('Anéis')})"><i class="ti ti-circle"></i> Semijoias</a>
-      <a onclick="drawerNav(function(){filtrarCategoria('Bolsas')})"><i class="ti ti-briefcase"></i> Bolsas</a>
-      <a onclick="drawerNav(function(){filtrarCategoria('Brincos')})"><i class="ti ti-star"></i> Acessórios</a>
+      <a onclick="drawerNav(limparFiltro)"><i class="ti ti-home"></i> Início</a>
+
+      <!-- Categorias accordion (populado dinamicamente) -->
+      <button class="drawer-section-toggle" onclick="toggleDrawerCat()" id="drawerCatToggle" aria-expanded="false">
+        <span><i class="ti ti-layout-grid"></i> Categorias</span>
+        <i class="ti ti-chevron-right drawer-toggle-chevron" id="drawerCatChevron"></i>
+      </button>
+      <div class="drawer-submenu" id="drawerCatSubmenu" role="menu"></div>
+
       <a onclick="drawerNav(limparFiltro)"><i class="ti ti-tag"></i> Promoções</a>
+      <a href="checkout.html"><i class="ti ti-shopping-cart"></i> Carrinho</a>
     </nav>
     <div class="drawer-footer">
       <span class="drawer-user" id="drawerUser"></span>
+      <button class="drawer-btn drawer-btn-profile" id="drawerProfileBtn" onclick="closeDrawer(); openProfileModal();">
+        <i class="ti ti-user-circle"></i> Minha conta
+      </button>
       <a href="login.html" class="drawer-btn drawer-btn-in" id="drawerLoginBtn"><i class="ti ti-user"></i> Entrar / Cadastrar</a>
       <button class="drawer-btn drawer-btn-out" id="drawerLogoutBtn" onclick="clearLoggedClient();updateAuthUI();closeDrawer();"><i class="ti ti-power"></i> Sair da conta</button>
     </div>
@@ -312,6 +447,45 @@
   <div class="footer-bottom"><span>© 2025 LaPink · Todos os direitos reservados · CNPJ 00.000.000/0001-00</span></div>
 
 </div><!-- /site -->
+
+<!-- ═══ Modal Minha Conta ═══ -->
+<div class="profile-overlay" id="profileOverlay" onclick="closeProfileModal()"></div>
+<div class="profile-sheet" id="profileSheet" role="dialog" aria-modal="true" aria-label="Minha conta">
+  <div class="profile-header">
+    <h3><i class="ti ti-user-circle"></i> Minha conta</h3>
+    <button class="profile-close-btn" onclick="closeProfileModal()" aria-label="Fechar"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="profile-body">
+    <div class="profile-field">
+      <label>Nome completo</label>
+      <input type="text" id="profileNome" placeholder="Seu nome completo" autocomplete="name" />
+    </div>
+    <div class="profile-field">
+      <label>E-mail</label>
+      <input type="email" id="profileEmail" placeholder="seu@email.com" autocomplete="email" />
+    </div>
+    <div class="profile-field">
+      <label>WhatsApp / Telefone</label>
+      <input type="tel" id="profileWhatsapp" placeholder="(00) 00000-0000" autocomplete="tel" />
+    </div>
+    <div class="profile-divider"></div>
+    <span class="profile-section-title"><i class="ti ti-lock"></i> Trocar senha (opcional)</span>
+    <div class="profile-field">
+      <label>Senha atual</label>
+      <input type="password" id="profileSenhaAtual" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <div class="profile-field">
+      <label>Nova senha</label>
+      <input type="password" id="profileNovaSenha" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+    </div>
+  </div>
+  <div class="profile-footer">
+    <button class="profile-btn-cancel" onclick="closeProfileModal()">Cancelar</button>
+    <button class="profile-btn-save" id="profileSaveBtn" onclick="saveProfileData()">
+      <i class="ti ti-check"></i> Salvar
+    </button>
+  </div>
+</div>
 
 <!-- ═══ Scripts de configuração e renderização ═══ -->
 <script>
@@ -881,6 +1055,7 @@ if (installBtn) {
 
   function openDrawer() {
     if (!drawer) return;
+    renderDrawerCategories();
     drawer.classList.add('open');
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -896,8 +1071,211 @@ if (installBtn) {
   if (hamburger) hamburger.addEventListener('click', openDrawer);
   if (overlay)   overlay.addEventListener('click', closeDrawer);
   if (closeBtn)  closeBtn.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeDrawer(); closeProfileModal(); } });
 })();
+</script>
+
+<script>
+// ── Drawer: categorias dinâmicas ──────────────────────────
+var CAT_ICONS = {
+  'Anéis':     'ti-circle',
+  'Brincos':   'ti-star',
+  'Colares':   'ti-link',
+  'Bolsas':    'ti-briefcase',
+  'Pulseiras': 'ti-infinity',
+  'Conjuntos': 'ti-package',
+  'Berloques': 'ti-diamond',
+  'Chokers':   'ti-crown',
+  'Outros':    'ti-tag'
+};
+var CAT_FALLBACK = ['Anéis','Brincos','Colares','Bolsas','Pulseiras','Conjuntos','Berloques','Chokers'];
+
+function renderDrawerCategories() {
+  var submenu = document.getElementById('drawerCatSubmenu');
+  if (!submenu) return;
+
+  var produtos = (function() {
+    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; }
+    catch(e) { return []; }
+  })();
+
+  var cats = {};
+  produtos.forEach(function(p) {
+    var c = (p.categoria || 'Outros').trim();
+    cats[c] = (cats[c] || 0) + 1;
+  });
+
+  var catNames = Object.keys(cats).sort();
+  if (!catNames.length) catNames = CAT_FALLBACK;
+
+  submenu.innerHTML = catNames.map(function(cat) {
+    var icon    = CAT_ICONS[cat] || 'ti-tag';
+    var count   = cats[cat] ? '<span class="drawer-cat-badge">' + cats[cat] + '</span>' : '';
+    var catEsc  = cat.replace(/'/g, "\\'");
+    return '<a role="menuitem" onclick="drawerNav(function(){filtrarCategoria(\'' + catEsc + '\')})"><i class="ti ' + icon + '"></i> ' + cat + count + '</a>';
+  }).join('');
+}
+
+window.toggleDrawerCat = function() {
+  var submenu = document.getElementById('drawerCatSubmenu');
+  var chevron = document.getElementById('drawerCatChevron');
+  var toggle  = document.getElementById('drawerCatToggle');
+  if (!submenu) return;
+  var isOpen = submenu.classList.toggle('open');
+  if (chevron) chevron.classList.toggle('open', isOpen);
+  if (toggle)  toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+};
+
+// Sincroniza visibilidade do botão "Minha conta" — wraps updateAuthUI após auth.js
+(function() {
+  function syncProfileBtn() {
+    var client = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
+    var btn = document.getElementById('drawerProfileBtn');
+    if (btn) btn.style.display = (client && client.name) ? 'flex' : 'none';
+  }
+
+  // auth.js já está carregado neste ponto — envolve a função existente
+  var orig = window.updateAuthUI;
+  window.updateAuthUI = function() {
+    if (typeof orig === 'function') orig.apply(this, arguments);
+    syncProfileBtn();
+  };
+
+  document.addEventListener('DOMContentLoaded', syncProfileBtn);
+})();
+</script>
+
+<script>
+// ── Modal Minha Conta ─────────────────────────────────────
+window.openProfileModal = function() {
+  var overlay = document.getElementById('profileOverlay');
+  var sheet   = document.getElementById('profileSheet');
+  if (!overlay || !sheet) return;
+
+  var client = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
+  if (!client) { showToast('Faça login para acessar sua conta.'); return; }
+
+  // Preenche campos básicos da sessão
+  document.getElementById('profileNome').value        = client.name  || '';
+  document.getElementById('profileEmail').value       = client.email || '';
+  document.getElementById('profileSenhaAtual').value  = '';
+  document.getElementById('profileNovaSenha').value   = '';
+
+  // Busca WhatsApp em lapinkClients (clientes da loja)
+  var whatsappEl = document.getElementById('profileWhatsapp');
+  if (whatsappEl) {
+    try {
+      var clients = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
+      var found   = clients.find(function(c) { return (c.email || '') === client.email; });
+      whatsappEl.value = (found && (found.whatsapp || found.phone || found.telefone)) || '';
+    } catch(e) { whatsappEl.value = ''; }
+  }
+
+  overlay.classList.add('open');
+  sheet.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  setTimeout(function() { document.getElementById('profileNome').focus(); }, 320);
+};
+
+window.closeProfileModal = function() {
+  var overlay = document.getElementById('profileOverlay');
+  var sheet   = document.getElementById('profileSheet');
+  if (overlay) overlay.classList.remove('open');
+  if (sheet)   sheet.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+window.saveProfileData = async function() {
+  var client = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
+  if (!client) return;
+
+  var nome       = (document.getElementById('profileNome').value       || '').trim();
+  var emailNovo  = (document.getElementById('profileEmail').value      || '').trim();
+  var whatsapp   = (document.getElementById('profileWhatsapp').value   || '').trim();
+  var senhaAtual = (document.getElementById('profileSenhaAtual').value || '').trim();
+  var novaSenha  = (document.getElementById('profileNovaSenha').value  || '').trim();
+
+  if (!nome) {
+    showToast('Informe seu nome.');
+    document.getElementById('profileNome').focus();
+    return;
+  }
+  if (novaSenha && novaSenha.length < 6) {
+    showToast('A nova senha precisa ter pelo menos 6 caracteres.');
+    document.getElementById('profileNovaSenha').focus();
+    return;
+  }
+  if (novaSenha && !senhaAtual) {
+    showToast('Informe sua senha atual para alterá-la.');
+    document.getElementById('profileSenhaAtual').focus();
+    return;
+  }
+
+  var saveBtn = document.getElementById('profileSaveBtn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = 'Salvando...'; }
+
+  try {
+    var role    = client.role || 'client';
+    var isAdmin = (role === 'admin' || role === 'superadmin');
+
+    if (isAdmin) {
+      // Admins ficam em lapinkUsers (senha = btoa)
+      var users = (function() {
+        try { return JSON.parse(localStorage.getItem('lapinkUsers') || '[]'); } catch(e) { return []; }
+      })();
+      var uidx = users.findIndex(function(u) { return u.email === client.email; });
+
+      if (novaSenha) {
+        if (uidx < 0 || users[uidx].password !== btoa(senhaAtual)) {
+          showToast('Senha atual incorreta.');
+          return;
+        }
+        users[uidx].password = btoa(novaSenha);
+      }
+      if (uidx >= 0) {
+        users[uidx].nome = nome;
+        localStorage.setItem('lapinkUsers', JSON.stringify(users));
+      }
+    } else {
+      // Clientes ficam em lapinkClients (senha = SHA-256)
+      var clients = (function() {
+        try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }
+      })();
+      var cidx = clients.findIndex(function(c) { return c.email === client.email; });
+
+      if (novaSenha) {
+        var currentHash = await hashPassword(senhaAtual);
+        if (cidx < 0 || clients[cidx].password !== currentHash) {
+          showToast('Senha atual incorreta.');
+          return;
+        }
+        clients[cidx].password = await hashPassword(novaSenha);
+      }
+      if (cidx >= 0) {
+        clients[cidx].nome     = nome;
+        clients[cidx].email    = emailNovo || clients[cidx].email;
+        clients[cidx].whatsapp = whatsapp;
+        localStorage.setItem('lapinkClients', JSON.stringify(clients));
+      }
+    }
+
+    // Atualiza sessão
+    var updated = Object.assign({}, client, {
+      name:  nome,
+      email: emailNovo || client.email
+    });
+    if (typeof setLoggedClient === 'function') setLoggedClient(updated);
+    if (typeof updateAuthUI    === 'function') updateAuthUI();
+
+    showToast('Perfil atualizado!');
+    closeProfileModal();
+  } catch(e) {
+    showToast('Erro ao salvar. Tente novamente.');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="ti ti-check"></i> Salvar'; }
+  }
+};
 </script>
 </body>
 </html>

@@ -783,6 +783,10 @@ function publicarAlteracoes() {
   var config = coletarConfig();
   try {
     localStorage.setItem('lapinkLojaConfig', JSON.stringify(config));
+    // Marca timestamp local para que o cloud-sync do V1 não sobrescreva com dados antigos do Firestore
+    localStorage.setItem('lapinkLojaConfig_ts', String(Date.now()));
+    // Envia para o Firestore se o cloud-sync estiver disponível (carregado via defer)
+    if (window.LaPinkSync) window.LaPinkSync.push('lapinkLojaConfig', config);
     var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('save-status').textContent = 'Publicado às ' + hora;
     showToast('Alterações publicadas na loja!');
@@ -814,5 +818,9 @@ function publicarAlteracoes() {
 })();
 </script>
 <script src="js/sidebar.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="../public/js/firebase-init.js"></script>
+<script defer src="../public/js/cloud-sync.js"></script>
 </body>
 </html>
