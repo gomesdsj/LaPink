@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
@@ -13,9 +13,34 @@
 <style>
   .role-badge-superadmin { background:#fdf4e3;color:#b45309;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px; }
   .role-badge-admin       { background:var(--pink-50);color:var(--pink-500);font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px; }
-  .role-badge-client      { background:var(--blue-50);color:var(--blue-400);font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px; }
-  .action-group { display:flex;gap:6px;flex-wrap:wrap; }
+  .role-badge-client      { background:var(--blue-50,#eff6ff);color:var(--blue-400,#60a5fa);font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px; }
+  .action-group   { display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
   .modal-form-grid { display:grid;gap:14px; }
+
+  /* ── Abas / permissões ── */
+  .pages-grid { display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px; }
+  .pages-check-item {
+    display:flex;align-items:center;gap:7px;
+    font-size:13px;cursor:pointer;
+    padding:7px 10px;border-radius:8px;
+    background:var(--gray-50);border:.5px solid var(--gray-100);
+    transition:background .15s;
+  }
+  .pages-check-item:hover { background:var(--pink-50); }
+  .pages-check-item input[type="checkbox"] { width:15px;height:15px;accent-color:var(--pink-500);flex-shrink:0; }
+  .pages-check-item i { font-size:14px;color:var(--gray-400); }
+  .pages-section-header {
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:11px;font-weight:700;color:var(--gray-400);
+    text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;
+  }
+  .pages-actions { display:flex;gap:6px; }
+  .pages-actions button {
+    font-size:11px;padding:3px 10px;border:none;border-radius:6px;
+    background:var(--gray-100);color:var(--gray-600);cursor:pointer;transition:background .15s;
+  }
+  .pages-actions button:hover { background:var(--gray-200); }
+  .pages-count { font-size:10px;font-weight:600;color:var(--gray-400);margin-left:5px;vertical-align:middle; }
 </style>
 </head>
 <body>
@@ -35,14 +60,14 @@
         <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
         <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
         <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
-          <div class="nav-section-label">Loja</div>
+        <div class="nav-section-label">Loja</div>
         <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
         <div class="nav-section-label">Auxiliar</div>
         <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
         <a class="sidebar-link" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
         <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
-        <div class="nav-section-label">Sistema</div>
-        <a class="sidebar-link active" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios"><i class="ti ti-shield-lock"></i> Usuários</a>
+        <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
+        <a class="sidebar-link active" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
       </div>
       <div class="sidebar-footer">
         <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
@@ -63,14 +88,13 @@
         <div class="page-header">
           <div>
             <h2>Usuários do sistema</h2>
-            <p>Gerencie admins e clientes. Apenas o Super Admin pode acessar esta página.</p>
+            <p>Gerencie admins, permissões e abas visíveis. Apenas o Super Admin acessa esta página.</p>
           </div>
           <button class="btn btn-primary" onclick="abrirModalNovoUsuario()">
             <i class="ti ti-user-plus"></i> Novo usuário
           </button>
         </div>
 
-        <!-- Filtro -->
         <div class="search-bar-admin" style="margin-bottom:16px;">
           <input type="text" id="busca-usuario" placeholder="Buscar por nome ou e-mail…" oninput="renderTabela()" />
           <select id="filtro-role" onchange="renderTabela()">
@@ -81,14 +105,13 @@
           </select>
         </div>
 
-        <!-- Tabela -->
         <div class="table-box">
           <table class="data-table">
             <thead>
               <tr>
                 <th>Nome</th>
                 <th>E-mail</th>
-                <th>Perfil</th>
+                <th>Perfil / Acesso</th>
                 <th>Cadastro</th>
                 <th>Ações</th>
               </tr>
@@ -105,7 +128,7 @@
 <!-- Modal — Novo Usuário -->
 <div class="modal-overlay" id="modal-novo">
   <div class="modal" style="max-width:460px;">
-    <button class="modal-close" onclick="fecharModal()">×</button>
+    <button class="modal-close" onclick="fecharModalNovo()">×</button>
     <h2>Novo usuário</h2>
     <p class="modal-sub">Crie uma conta de Admin ou Cliente.</p>
     <div class="modal-form-grid">
@@ -129,14 +152,74 @@
         </select>
       </div>
       <div id="nu-error" style="color:var(--red-400);font-size:12px;display:none;"></div>
-      <button class="btn-full" onclick="criarUsuario()">Criar usuário</button>
+      <button class="btn-full" onclick="criarUsuario()">
+        <i class="ti ti-user-plus"></i> Criar usuário
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal — Editar Usuário -->
+<div class="modal-overlay" id="modal-editar">
+  <div class="modal" style="max-width:520px;">
+    <button class="modal-close" onclick="fecharModalEditar()">×</button>
+    <h2>Editar usuário</h2>
+    <p class="modal-sub" id="ed-email-label" style="color:var(--gray-400);font-size:12px;margin-top:2px;"></p>
+    <div class="modal-form-grid">
+
+      <div class="form-group">
+        <label>Nome</label>
+        <input type="text" id="ed-nome" placeholder="Nome completo" />
+      </div>
+
+      <div class="form-group">
+        <label>Nível de permissão</label>
+        <select id="ed-role" onchange="togglePagesSection()">
+          <option value="client">Cliente — sem acesso ao painel admin</option>
+          <option value="admin">Admin — acesso ao painel admin</option>
+        </select>
+      </div>
+
+      <!-- Seção de abas (só para Admin) -->
+      <div id="ed-pages-section" style="display:none;">
+        <div class="pages-section-header">
+          <span><i class="ti ti-layout-grid" style="margin-right:5px;"></i>Abas visíveis para este admin</span>
+          <span class="pages-actions">
+            <button onclick="selecionarTodasAbas(true)">Marcar todas</button>
+            <button onclick="selecionarTodasAbas(false)">Desmarcar todas</button>
+          </span>
+        </div>
+        <div class="pages-grid" id="ed-pages-list"></div>
+      </div>
+
+      <div id="ed-error" style="color:var(--red-400);font-size:12px;display:none;"></div>
+      <button class="btn-full" onclick="salvarEdicao()">
+        <i class="ti ti-device-floppy"></i> Salvar alterações
+      </button>
     </div>
   </div>
 </div>
 
 <script>
+  var PAGES_LIST = ADMIN_PAGES; // definido em auth.js
+
+  // ── Build checkboxes de abas no modal ───────────────────
+  (function() {
+    var container = document.getElementById('ed-pages-list');
+    PAGES_LIST.forEach(function(p) {
+      var label = document.createElement('label');
+      label.className = 'pages-check-item';
+      label.innerHTML =
+        '<input type="checkbox" id="ed-page-' + p.id + '" value="' + p.id + '" />' +
+        '<i class="ti ' + p.icon + '"></i>' +
+        '<span>' + p.label + '</span>';
+      container.appendChild(label);
+    });
+  })();
+
+  // ── Tabela ──────────────────────────────────────────────
   function renderTabela() {
-    var busca = (document.getElementById('busca-usuario').value || '').toLowerCase();
+    var busca      = (document.getElementById('busca-usuario').value || '').toLowerCase();
     var roleFiltro = document.getElementById('filtro-role').value;
     var users = getAllUsers().filter(function(u) {
       var matchBusca = !busca || u.name.toLowerCase().includes(busca) || u.email.toLowerCase().includes(busca);
@@ -146,64 +229,63 @@
 
     var roleLabel = { superadmin: 'Super Admin', admin: 'Admin', client: 'Cliente' };
     var tbody = document.getElementById('tabela-body');
+
     if (!users.length) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:32px;">Nenhum usuário encontrado.</td></tr>';
       return;
     }
+
     tbody.innerHTML = users.map(function(u) {
       var date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : '—';
+
+      // Célula Perfil/Acesso
+      var perfilHtml = '<span class="role-badge-' + u.role + '">' + (roleLabel[u.role] || u.role) + '</span>';
+      if (u.role === 'admin') {
+        var total = PAGES_LIST.length;
+        var count = Array.isArray(u.pages) ? u.pages.length : total;
+        var cor   = count < total ? 'color:var(--pink-500)' : 'color:var(--gray-400)';
+        perfilHtml += '<span class="pages-count" style="' + cor + '">' + count + '/' + total + ' abas</span>';
+      }
+
+      // Ações
       var actions = '';
       if (u.role === 'superadmin') {
-        actions = '<span style="font-size:11px;color:var(--gray-400);">Não editável</span>';
+        actions = '<span style="font-size:11px;color:var(--gray-400);"><i class="ti ti-lock" style="font-size:12px;vertical-align:middle;"></i> Não editável</span>';
       } else {
-        if (u.role === 'client') {
-          actions += '<button class="btn-edit btn-sm" onclick="promover(\'' + escHtml(u.email) + '\')"><i class="ti ti-arrow-up"></i> Tornar Admin</button>';
-        } else if (u.role === 'admin') {
-          actions += '<button class="btn btn-secondary btn-sm" onclick="revogar(\'' + escHtml(u.email) + '\')"><i class="ti ti-arrow-down"></i> Revogar Admin</button>';
-        }
-        actions += ' <button class="btn-danger btn-sm" onclick="excluir(\'' + escHtml(u.email) + '\',' + '\'' + escHtml(u.name) + '\')"><i class="ti ti-trash"></i> Excluir</button>';
+        actions =
+          '<button class="btn-edit btn-sm" onclick="abrirModalEditar(\'' + escHtml(u.email) + '\')"><i class="ti ti-pencil"></i> Editar</button>' +
+          ' <button class="btn-danger btn-sm" onclick="excluir(\'' + escHtml(u.email) + '\',\'' + escHtml(u.name) + '\')"><i class="ti ti-trash"></i></button>';
       }
+
       return '<tr>' +
         '<td><strong>' + escHtml(u.name) + '</strong></td>' +
-        '<td>' + escHtml(u.email) + '</td>' +
-        '<td><span class="role-badge-' + u.role + '">' + (roleLabel[u.role] || u.role) + '</span></td>' +
+        '<td style="font-size:12px;color:var(--gray-500);">' + escHtml(u.email) + '</td>' +
+        '<td>' + perfilHtml + '</td>' +
         '<td>' + date + '</td>' +
         '<td><div class="action-group">' + actions + '</div></td>' +
         '</tr>';
     }).join('');
   }
 
-  function promover(email) {
-    if (!confirm('Tornar este usuário Administrador?')) return;
-    var r = promoteToAdmin(email);
-    showToast(r.ok ? 'Usuário promovido a Admin.' : r.error, r.ok ? '' : 'erro');
-    if (r.ok) renderTabela();
-  }
-
-  function revogar(email) {
-    if (!confirm('Revogar as permissões de Admin deste usuário?')) return;
-    var r = revokeAdmin(email);
-    showToast(r.ok ? 'Permissões revogadas.' : r.error, r.ok ? '' : 'erro');
-    if (r.ok) renderTabela();
-  }
-
+  // ── Excluir ─────────────────────────────────────────────
   function excluir(email, nome) {
-    if (!confirm('Excluir o usuário "' + nome + '"? Esta ação não pode ser desfeita.')) return;
+    if (!confirm('Excluir o usuário "' + nome + '"?\nEsta ação não pode ser desfeita.')) return;
     var r = deleteUser(email);
     showToast(r.ok ? 'Usuário excluído.' : r.error, r.ok ? '' : 'erro');
     if (r.ok) renderTabela();
   }
 
+  // ── Modal Novo ──────────────────────────────────────────
   function abrirModalNovoUsuario() {
-    document.getElementById('nu-nome').value = '';
+    document.getElementById('nu-nome').value  = '';
     document.getElementById('nu-email').value = '';
     document.getElementById('nu-senha').value = '';
-    document.getElementById('nu-role').value = 'client';
+    document.getElementById('nu-role').value  = 'client';
     document.getElementById('nu-error').style.display = 'none';
     document.getElementById('modal-novo').classList.add('show');
   }
 
-  function fecharModal() {
+  function fecharModalNovo() {
     document.getElementById('modal-novo').classList.remove('show');
   }
 
@@ -215,36 +297,97 @@
     var role  = document.getElementById('nu-role').value;
 
     if (!nome || !email || !senha) {
-      errEl.textContent = 'Preencha todos os campos.';
-      errEl.style.display = 'block';
-      return;
+      errEl.textContent = 'Preencha todos os campos.'; errEl.style.display = 'block'; return;
     }
     if (senha.length < 6) {
-      errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.';
-      errEl.style.display = 'block';
-      return;
+      errEl.textContent = 'A senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return;
     }
 
     var r = await addUser({ name: nome, email: email, password: senha, role: role });
-    if (!r.ok) {
-      errEl.textContent = r.error;
-      errEl.style.display = 'block';
-      return;
-    }
-    fecharModal();
+    if (!r.ok) { errEl.textContent = r.error; errEl.style.display = 'block'; return; }
+    fecharModalNovo();
     showToast('Usuário criado com sucesso!');
     renderTabela();
   }
 
+  // ── Modal Editar ────────────────────────────────────────
+  var _editTarget = null;
+
+  function abrirModalEditar(email) {
+    var users = getAllUsers();
+    var u = users.find(function(x) { return x.email === email; });
+    if (!u) return;
+    _editTarget = u;
+
+    document.getElementById('ed-email-label').textContent = u.email;
+    document.getElementById('ed-nome').value  = u.name;
+    document.getElementById('ed-role').value  = u.role;
+    document.getElementById('ed-error').style.display = 'none';
+
+    // Marca checkboxes de acordo com as páginas salvas
+    var pages = Array.isArray(u.pages) ? u.pages : null;
+    PAGES_LIST.forEach(function(p) {
+      var cb = document.getElementById('ed-page-' + p.id);
+      if (cb) cb.checked = !pages || pages.indexOf(p.id) !== -1;
+    });
+
+    togglePagesSection();
+    document.getElementById('modal-editar').classList.add('show');
+  }
+
+  function fecharModalEditar() {
+    document.getElementById('modal-editar').classList.remove('show');
+    _editTarget = null;
+  }
+
+  function togglePagesSection() {
+    var role = document.getElementById('ed-role').value;
+    document.getElementById('ed-pages-section').style.display = role === 'admin' ? 'block' : 'none';
+  }
+
+  function selecionarTodasAbas(checked) {
+    PAGES_LIST.forEach(function(p) {
+      var cb = document.getElementById('ed-page-' + p.id);
+      if (cb) cb.checked = checked;
+    });
+  }
+
+  function salvarEdicao() {
+    if (!_editTarget) return;
+    var errEl = document.getElementById('ed-error');
+    var nome  = document.getElementById('ed-nome').value.trim();
+    var role  = document.getElementById('ed-role').value;
+
+    if (!nome) {
+      errEl.textContent = 'O nome é obrigatório.'; errEl.style.display = 'block'; return;
+    }
+
+    var pages = null;
+    if (role === 'admin') {
+      var selecionadas = PAGES_LIST.filter(function(p) {
+        var cb = document.getElementById('ed-page-' + p.id);
+        return cb && cb.checked;
+      }).map(function(p) { return p.id; });
+      // null = acesso total (todas marcadas), array = acesso restrito
+      pages = selecionadas.length === PAGES_LIST.length ? null : selecionadas;
+    }
+
+    var r = updateUser(_editTarget.email, { name: nome, role: role, pages: pages });
+    if (!r.ok) { errEl.textContent = r.error; errEl.style.display = 'block'; return; }
+    fecharModalEditar();
+    showToast('Usuário atualizado com sucesso!');
+    renderTabela();
+  }
+
+  // ── Toast ────────────────────────────────────────────────
   function showToast(msg, tipo) {
     var t = document.createElement('div');
-    t.className = 'toast' + (tipo === 'erro' ? '' : '');
     t.textContent = msg;
     t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;background:' +
-      (tipo === 'erro' ? 'var(--red-400)' : 'var(--green-400)') +
-      ';color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);';
+      (tipo === 'erro' ? 'var(--red-400,#f87171)' : 'var(--green-400,#4ade80)') +
+      ';color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);transition:opacity .3s;';
     document.body.appendChild(t);
-    setTimeout(function() { t.remove(); }, 3000);
+    setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { t.remove(); }, 300); }, 2700);
   }
 
   renderTabela();

@@ -82,6 +82,26 @@ function _saveUsers(arr) {
   localStorage.setItem(_USERS_KEY, JSON.stringify(arr));
 }
 
+// ── Páginas do painel admin (usadas para controle de acesso por usuário) ─
+var ADMIN_PAGES = [
+  { id: 'dashboard',     href: 'admin.html',            label: 'Dashboard',     icon: 'ti-layout-dashboard' },
+  { id: 'produtos',      href: 'cadastro-produto.html', label: 'Produtos',      icon: 'ti-package' },
+  { id: 'pedidos',       href: 'pedidos.html',          label: 'Pedidos',       icon: 'ti-shopping-cart' },
+  { id: 'clientes',      href: 'clientes.html',         label: 'Clientes',      icon: 'ti-users' },
+  { id: 'loja-v1',       href: 'loja-v1.html',          label: 'Editor Loja V1',icon: 'ti-layout' },
+  { id: 'relatorios',    href: 'relatorios.html',       label: 'Relatórios',    icon: 'ti-chart-bar' },
+  { id: 'financeiro',    href: 'financeiro.html',       label: 'Financeiro',    icon: 'ti-coin' },
+  { id: 'configuracoes', href: 'configuracoes.html',    label: 'Configurações', icon: 'ti-settings' },
+];
+
+function _getCurrentPageId() {
+  var filename = window.location.pathname.replace(/\\/g, '/').split('/').pop() || '';
+  for (var i = 0; i < ADMIN_PAGES.length; i++) {
+    if (ADMIN_PAGES[i].href === filename) return ADMIN_PAGES[i].id;
+  }
+  return null;
+}
+
 function _loginUrl() {
   var path = window.location.pathname.replace(/\\/g, '/');
   return path.includes('/public/') ? '../admin/login.html' : 'login.html';
@@ -116,6 +136,14 @@ function checkAuth(allowedRoles) {
   if (allowedRoles && allowedRoles.indexOf(session.role) === -1) {
     window.location.replace(_loginUrl());
     return false;
+  }
+  // Verifica acesso à página específica para admins com abas restritas
+  if (session.role === 'admin' && Array.isArray(session.pages)) {
+    var pid = _getCurrentPageId();
+    if (pid && session.pages.indexOf(pid) === -1) {
+      window.location.replace(_loginUrl());
+      return false;
+    }
   }
   return true;
 }
@@ -164,6 +192,7 @@ function login(email, password, requiredRoles) {
       email     : user.email,
       role      : user.role,
       name      : user.name,
+      pages     : (user.role === 'admin' && Array.isArray(user.pages)) ? user.pages : null,
       expiresAt : Date.now() + 8 * 60 * 60 * 1000  // 8 horas
     };
     localStorage.setItem(_SESSION_KEY, JSON.stringify(session));
@@ -198,6 +227,17 @@ function renderSuperAdminLink() {
   var show = (session && session.role === 'superadmin') ? 'flex' : 'none';
   if (link) link.style.display = show;
   if (sec)  sec.style.display  = show === 'flex' ? 'block' : 'none';
+}
+
+/** Aplica restrições de abas na sidebar para admins com acesso limitado. */
+function applyAdminPermissions() {
+  renderSuperAdminLink();
+  var session = getSession();
+  if (!session || session.role !== 'admin' || !Array.isArray(session.pages)) return;
+  ADMIN_PAGES.forEach(function(p) {
+    var link = document.querySelector('.sidebar-link[href="' + p.href + '"]');
+    if (link && session.pages.indexOf(p.id) === -1) link.style.display = 'none';
+  });
 }
 
 // ── Funções de gerenciamento de usuários (para gerenciar-usuarios.html) ──
@@ -258,6 +298,18 @@ function deleteUser(email) {
   return { ok: true };
 }
 
+function updateUser(email, data) {
+  var users = _getUsers();
+  var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
+  if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' };
+  if (users[idx].role === 'superadmin') return { ok: false, error: 'Não é possível alterar o Super Admin.' };
+  if (data.name  !== undefined) users[idx].name  = data.name;
+  if (data.role  !== undefined) users[idx].role  = data.role;
+  if (data.pages !== undefined) users[idx].pages = data.pages; // null = acesso total, array = restrito
+  _saveUsers(users);
+  return { ok: true };
+}
+
 function updatePassword(email, newPassword) {
   return _hashPassword(newPassword).then(function(hash) {
     var users = _getUsers();
@@ -287,5 +339,5 @@ function updateAddress(email, address) {
 // ── Init automático em páginas admin ─────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   renderSessionTopbar();
-  renderSuperAdminLink();
+  applyAdminPermissions();
 });

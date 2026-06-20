@@ -1,0 +1,471 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-06-19T12:00:00.000Z",
+  "resources": [
+
+    {
+      "_id": "wrk_lapink",
+      "parentId": null,
+      "_type": "workspace",
+      "name": "LaPink API",
+      "description": "Testes e validação da API LaPink — autenticação, CRUD e permissões por aba."
+    },
+
+    {
+      "_id": "env_lapink_base",
+      "parentId": "wrk_lapink",
+      "_type": "environment",
+      "name": "Dev Local",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "token": "COLE_O_TOKEN_AQUI_APOS_LOGIN",
+        "superadmin_email": "alexandrej529@hotmail.com",
+        "superadmin_password_sha256": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+        "produto_id": 0,
+        "pedido_id": 0,
+        "admin_email": "admin@lapink.com"
+      }
+    },
+
+    {
+      "_id": "env_lapink_celular",
+      "parentId": "wrk_lapink",
+      "_type": "environment",
+      "name": "Rede (Celular)",
+      "data": {
+        "base_url": "http://192.168.7.2:3000",
+        "token": "COLE_O_TOKEN_AQUI_APOS_LOGIN",
+        "superadmin_email": "alexandrej529@hotmail.com",
+        "superadmin_password_sha256": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+        "produto_id": 0,
+        "pedido_id": 0,
+        "admin_email": "admin@lapink.com"
+      }
+    },
+
+    {
+      "_id": "grp_auth",
+      "parentId": "wrk_lapink",
+      "_type": "request_group",
+      "name": "🔐 Autenticação"
+    },
+
+    {
+      "_id": "req_login_super",
+      "parentId": "grp_auth",
+      "_type": "request",
+      "name": "Login — Super Admin",
+      "method": "POST",
+      "url": "{{ base_url }}/api/auth/login",
+      "description": "Senha padrão: 123456 (SHA-256 já preenchido na variável de ambiente).\nCopie o token da resposta e cole em {{ token }} no Environment.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ superadmin_email }}\",\n  \"password\": \"{{ superadmin_password_sha256 }}\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_login_admin",
+      "parentId": "grp_auth",
+      "_type": "request",
+      "name": "Login — Admin (teste de permissões)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/auth/login",
+      "description": "Use para testar um admin criado em POST /api/usuarios.\nAlter password_sha256 conforme a senha definida.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ admin_email }}\",\n  \"password\": \"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_me",
+      "parentId": "grp_auth",
+      "_type": "request",
+      "name": "Quem sou eu (me)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/auth/me",
+      "description": "Retorna dados do usuário do token atual.",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "req_logout",
+      "parentId": "grp_auth",
+      "_type": "request",
+      "name": "Logout",
+      "method": "POST",
+      "url": "{{ base_url }}/api/auth/logout",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }],
+      "body": { "mimeType": "application/json", "text": "{}" }
+    },
+
+    {
+      "_id": "grp_produtos",
+      "parentId": "wrk_lapink",
+      "_type": "request_group",
+      "name": "📦 Produtos"
+    },
+
+    {
+      "_id": "req_get_produtos",
+      "parentId": "grp_produtos",
+      "_type": "request",
+      "name": "Listar produtos",
+      "method": "GET",
+      "url": "{{ base_url }}/api/produtos",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "req_post_produto",
+      "parentId": "grp_produtos",
+      "_type": "request",
+      "name": "Criar produto",
+      "method": "POST",
+      "url": "{{ base_url }}/api/produtos",
+      "description": "O servidor gera o id automaticamente. Salve o id retornado em {{ produto_id }}.",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Anel Prata Cristal\",\n  \"categoria\": \"Anel\",\n  \"precoVarejo\": 59.90,\n  \"estoque\": 10,\n  \"descricao\": \"Anel folheado prata com pedra cristal\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_put_produto",
+      "parentId": "grp_produtos",
+      "_type": "request",
+      "name": "Atualizar produto",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/produtos/{{ produto_id }}",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Anel Prata Cristal — Atualizado\",\n  \"categoria\": \"Anel\",\n  \"precoVarejo\": 69.90,\n  \"estoque\": 8,\n  \"descricao\": \"Anel folheado prata com pedra cristal (atualizado)\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_delete_produto",
+      "parentId": "grp_produtos",
+      "_type": "request",
+      "name": "Excluir produto",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/produtos/{{ produto_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "grp_pedidos",
+      "parentId": "wrk_lapink",
+      "_type": "request_group",
+      "name": "🛒 Pedidos"
+    },
+
+    {
+      "_id": "req_get_pedidos",
+      "parentId": "grp_pedidos",
+      "_type": "request",
+      "name": "Listar pedidos",
+      "method": "GET",
+      "url": "{{ base_url }}/api/pedidos",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "req_post_pedido",
+      "parentId": "grp_pedidos",
+      "_type": "request",
+      "name": "Criar pedido",
+      "method": "POST",
+      "url": "{{ base_url }}/api/pedidos",
+      "description": "Salve o id retornado em {{ pedido_id }}.",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cliente\": { \"name\": \"Maria Teste\", \"whatsapp\": \"11999999999\" },\n  \"itens\": [\n    { \"nome\": \"Anel Prata Cristal\", \"preco\": 59.90, \"qty\": 2 }\n  ],\n  \"total\": 119.80,\n  \"status\": \"aguardando\",\n  \"pago\": false\n}"
+      }
+    },
+
+    {
+      "_id": "req_patch_status",
+      "parentId": "grp_pedidos",
+      "_type": "request",
+      "name": "Atualizar status do pedido",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/pedidos/{{ pedido_id }}/status",
+      "description": "Valores válidos: aguardando, preparando, enviado, concluido, cancelado",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": { "mimeType": "application/json", "text": "{\n  \"status\": \"preparando\"\n}" }
+    },
+
+    {
+      "_id": "req_patch_pagamento",
+      "parentId": "grp_pedidos",
+      "_type": "request",
+      "name": "Marcar como pago",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/pedidos/{{ pedido_id }}/pagamento",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": { "mimeType": "application/json", "text": "{\n  \"pago\": true\n}" }
+    },
+
+    {
+      "_id": "req_delete_pedido",
+      "parentId": "grp_pedidos",
+      "_type": "request",
+      "name": "Excluir pedido",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/pedidos/{{ pedido_id }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "grp_clientes",
+      "parentId": "wrk_lapink",
+      "_type": "request_group",
+      "name": "👥 Clientes"
+    },
+
+    {
+      "_id": "req_get_clientes",
+      "parentId": "grp_clientes",
+      "_type": "request",
+      "name": "Listar clientes",
+      "method": "GET",
+      "url": "{{ base_url }}/api/clientes",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "req_post_cliente",
+      "parentId": "grp_clientes",
+      "_type": "request",
+      "name": "Criar cliente",
+      "method": "POST",
+      "url": "{{ base_url }}/api/clientes",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"cliente@teste.com\",\n  \"name\": \"Ana Teste\",\n  \"whatsapp\": \"11988887777\",\n  \"address\": \"Rua das Flores, 123\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_put_cliente",
+      "parentId": "grp_clientes",
+      "_type": "request",
+      "name": "Atualizar cliente",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/clientes/cliente%40teste.com",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"cliente@teste.com\",\n  \"name\": \"Ana Teste Atualizada\",\n  \"whatsapp\": \"11988887777\",\n  \"address\": \"Rua das Rosas, 456\"\n}"
+      }
+    },
+
+    {
+      "_id": "req_delete_cliente",
+      "parentId": "grp_clientes",
+      "_type": "request",
+      "name": "Excluir cliente",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/clientes/cliente%40teste.com",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "grp_usuarios",
+      "parentId": "wrk_lapink",
+      "_type": "request_group",
+      "name": "🛡️ Usuários (superadmin)"
+    },
+
+    {
+      "_id": "req_get_usuarios",
+      "parentId": "grp_usuarios",
+      "_type": "request",
+      "name": "Listar usuários",
+      "method": "GET",
+      "url": "{{ base_url }}/api/usuarios",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "req_post_admin_restrito",
+      "parentId": "grp_usuarios",
+      "_type": "request",
+      "name": "Criar admin — acesso restrito (só Pedidos + Clientes)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/usuarios",
+      "description": "Cria um admin com acesso apenas às abas 'pedidos' e 'clientes'.\nUse este usuário para testar o bloqueio de abas em 🔒 Permissões.",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ admin_email }}\",\n  \"name\": \"Admin Restrito\",\n  \"role\": \"admin\",\n  \"password\": \"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92\",\n  \"pages\": [\"pedidos\", \"clientes\"]\n}"
+      }
+    },
+
+    {
+      "_id": "req_post_admin_total",
+      "parentId": "grp_usuarios",
+      "_type": "request",
+      "name": "Criar admin — acesso total",
+      "method": "POST",
+      "url": "{{ base_url }}/api/usuarios",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin2@lapink.com\",\n  \"name\": \"Admin Total\",\n  \"role\": \"admin\",\n  \"password\": \"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92\",\n  \"pages\": null\n}"
+      }
+    },
+
+    {
+      "_id": "req_put_usuario_pages",
+      "parentId": "grp_usuarios",
+      "_type": "request",
+      "name": "Editar permissões de admin (pages)",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/usuarios/{{ admin_email }}",
+      "description": "Altera as abas visíveis do admin. Use null para acesso total.\nAbas válidas: dashboard, produtos, pedidos, clientes, loja-v1, relatorios, financeiro, configuracoes",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Admin Restrito\",\n  \"role\": \"admin\",\n  \"pages\": [\"pedidos\", \"clientes\", \"relatorios\"]\n}"
+      }
+    },
+
+    {
+      "_id": "req_delete_usuario",
+      "parentId": "grp_usuarios",
+      "_type": "request",
+      "name": "Excluir usuário",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/usuarios/{{ admin_email }}",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "grp_permissoes",
+      "parentId": "wrk_lapink",
+      "_type": "request_group",
+      "name": "🔒 Validação de Permissões"
+    },
+
+    {
+      "_id": "req_sem_token",
+      "parentId": "grp_permissoes",
+      "_type": "request",
+      "name": "Sem token → 401",
+      "method": "GET",
+      "url": "{{ base_url }}/api/produtos",
+      "description": "Deve retornar 401 Não autenticado.",
+      "headers": []
+    },
+
+    {
+      "_id": "req_admin_sem_produtos",
+      "parentId": "grp_permissoes",
+      "_type": "request",
+      "name": "Admin restrito tenta acessar Produtos → 403",
+      "method": "GET",
+      "url": "{{ base_url }}/api/produtos",
+      "description": "Fluxo:\n1. Execute 'Criar admin — acesso restrito' em Usuários\n2. Execute 'Login — Admin' em Auth\n3. Cole o token do admin (não do superadmin) aqui\n4. Deve retornar 403 com as abas permitidas.",
+      "headers": [{ "name": "Authorization", "value": "Bearer COLE_TOKEN_DO_ADMIN_RESTRITO" }]
+    },
+
+    {
+      "_id": "req_admin_com_pedidos",
+      "parentId": "grp_permissoes",
+      "_type": "request",
+      "name": "Admin restrito acessa Pedidos → 200 ✅",
+      "method": "GET",
+      "url": "{{ base_url }}/api/pedidos",
+      "description": "O admin restrito TEM acesso a 'pedidos'. Deve retornar 200.",
+      "headers": [{ "name": "Authorization", "value": "Bearer COLE_TOKEN_DO_ADMIN_RESTRITO" }]
+    },
+
+    {
+      "_id": "req_admin_tenta_super",
+      "parentId": "grp_permissoes",
+      "_type": "request",
+      "name": "Admin tenta acessar Usuários → 403",
+      "method": "GET",
+      "url": "{{ base_url }}/api/usuarios",
+      "description": "Qualquer usuário sem role=superadmin deve receber 403.",
+      "headers": [{ "name": "Authorization", "value": "Bearer COLE_TOKEN_DO_ADMIN_RESTRITO" }]
+    },
+
+    {
+      "_id": "grp_migracao",
+      "parentId": "wrk_lapink",
+      "_type": "request_group",
+      "name": "📤 Migração (localStorage → servidor)"
+    },
+
+    {
+      "_id": "req_export",
+      "parentId": "grp_migracao",
+      "_type": "request",
+      "name": "Exportar dados do servidor",
+      "method": "GET",
+      "url": "{{ base_url }}/api/export",
+      "description": "Retorna todo o db.json (produtos, pedidos, clientes). Útil para backup.",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "req_import",
+      "parentId": "grp_migracao",
+      "_type": "request",
+      "name": "Importar dados do localStorage",
+      "method": "POST",
+      "url": "{{ base_url }}/api/import",
+      "description": "Cole aqui o JSON exportado do localStorage (via console do browser):\n\nJSON.stringify({\n  produtos:  JSON.parse(localStorage.lapinkProdutos || '[]'),\n  pedidos:   JSON.parse(localStorage.lapinkPedidos  || '[]'),\n  clientes:  JSON.parse(localStorage.lapinkClients  || '[]'),\n  config:    JSON.parse(localStorage.lapinkStoreConfig || '{}'),\n  lojaConfig:JSON.parse(localStorage.lapinkLojaConfig || '{}')\n})",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type",  "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"produtos\": [],\n  \"pedidos\": [],\n  \"clientes\": []\n}"
+      }
+    }
+
+  ]
+}
