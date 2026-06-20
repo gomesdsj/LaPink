@@ -324,13 +324,13 @@
       <a onclick="limparFiltro()" style="cursor:pointer;">Promoções</a>
     </div>
     <div class="nav-actions">
-      <a class="cart-nav-btn" href="checkout.html" title="Carrinho" style="position:relative;display:inline-flex;align-items:center;gap:4px;color:var(--pink-500,#993556);font-weight:700;text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--pink-200,#F4C0D1);">
+      <a class="cart-nav-btn nav-icon" href="checkout.html" title="Carrinho" aria-label="Carrinho de compras">
         <i class="ti ti-shopping-cart"></i>
         <span class="cart-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#D4537E;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;align-items:center;justify-content:center;">0</span>
       </a>
       <button class="nav-icon" onclick="showToast('Em breve: lista de favoritos!')" aria-label="Favoritos" title="Favoritos"><i class="ti ti-heart"></i></button>
       <span class="nav-user" id="navUser"></span>
-      <a href="../admin/admin.html" id="panelBtn" title="Ir para o Painel Admin" style="display:none;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;background:var(--pink-500,#993556);color:#fff;font-size:12px;font-weight:700;text-decoration:none;border:none;cursor:pointer;">
+      <a href="../admin/admin.html" id="panelBtn" class="panel-nav-btn" title="Ir para o Painel Admin">
         <i class="ti ti-layout-dashboard"></i> Painel
       </a>
       <button class="nav-icon" id="navUserBtn" aria-label="Minha conta" title="Minha conta" onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(c&&c.email){openProfileModal();}else{location.href='login.html';}})()">
@@ -550,7 +550,7 @@
       var baixo      = est > 0 && est <= 5;
 
       var thumb = p.imagem
-        ? '<img src="' + p.imagem + '" alt="' + esc(p.nome) + '" style="width:100%;height:100%;object-fit:cover;border-radius:12px 12px 0 0;" />'
+        ? '<img src="' + p.imagem + '" alt="' + esc(p.nome) + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />'
         : '<i class="ti ' + esc(p.icone || 'ti-diamond') + '"></i>';
 
       var badgeHtml = '';

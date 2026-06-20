@@ -168,10 +168,19 @@ body {
 .btn-buy {
   margin-top: 10px;
   width: 100%;
-  padding: 9px 0;
+  padding: 10px 0;
   border-radius: 22px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
+  background: var(--pk-500);
+  color: #fff;
+  border-color: var(--pk-500);
+  box-shadow: 0 2px 8px rgba(212,83,126,.20);
+}
+.btn-buy:hover {
+  background: var(--pk-600);
+  border-color: var(--pk-600);
+  box-shadow: 0 4px 14px rgba(212,83,126,.30);
 }
 
 /* ── Seções ──────────────────────── */
@@ -215,11 +224,11 @@ body {
   background: var(--pk-50);
   box-shadow: 0 4px 16px rgba(212,83,126,.12);
 }
-.cat-icon { font-size: 24px; color: var(--pk-400); margin-bottom: 8px; }
-.cat-name { font-size: 11px; color: var(--pk-dark); font-weight: 600; }
+.cat-icon { font-size: 28px; color: var(--pk-400); margin-bottom: 8px; }
+.cat-name { font-size: 12px; color: var(--pk-dark); font-weight: 600; }
 
 /* ── Cards de produto ─────────── */
-.prod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 4px; }
+.prod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 4px; }
 .prod-card {
   background: #fff;
   border: 1.5px solid var(--pk-200);
@@ -230,18 +239,21 @@ body {
 }
 .prod-card:hover {
   border-color: var(--pk-400);
-  box-shadow: 0 6px 20px rgba(212,83,126,.12);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(212,83,126,.14);
+  transform: translateY(-3px);
 }
 .prod-img {
   background: var(--pk-50);
-  height: 104px;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  min-height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: hidden;
 }
-.prod-img i { font-size: 36px; color: var(--pk-300); }
+.prod-img i { font-size: 52px; color: var(--pk-300); }
 .prod-badge {
   background: var(--pk-500);
   color: #fff;
@@ -262,10 +274,10 @@ body {
   transition: color .18s;
 }
 .prod-card:hover .prod-fav { color: var(--pk-500); }
-.prod-info { padding: 12px; }
-.prod-name { font-size: 11px; font-weight: 600; color: var(--pk-dark); margin-bottom: 4px; }
-.prod-price { font-size: 13px; color: var(--pk-500); font-weight: 700; }
-.prod-old { font-size: 10px; color: var(--pk-300); text-decoration: line-through; margin-left: 5px; }
+.prod-info { padding: 14px; }
+.prod-name { font-size: 13px; font-weight: 600; color: var(--pk-dark); margin-bottom: 6px; line-height: 1.3; }
+.prod-price { font-size: 15px; color: var(--pk-500); font-weight: 700; }
+.prod-old { font-size: 11px; color: var(--pk-300); text-decoration: line-through; margin-left: 5px; }
 
 /* ── Banner atacado ─────────── */
 .banner {
@@ -385,6 +397,39 @@ body {
 .btn-esgotado              { opacity: .5; cursor: not-allowed !important; }
 .prod-price--esgotado      { text-decoration: line-through; color: var(--pk-soft) !important; }
 
+/* ── Nav: botão carrinho ── */
+.cart-nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pk-500);
+  font-size: 18px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color .18s, transform .18s;
+}
+.cart-nav-btn:hover { color: var(--pk-600); transform: scale(1.1); }
+
+/* ── Nav: botão painel admin ── */
+.panel-nav-btn {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 22px;
+  background: var(--pk-500);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background .18s;
+  white-space: nowrap;
+}
+.panel-nav-btn:hover { background: var(--pk-600); }
+
 /* ── Hamburger (desktop: oculto) ── */
 .nav-hamburger {
   display: none;
@@ -503,7 +548,8 @@ body {
 @media (max-width: 900px) {
   .section { padding: 22px 16px; }
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
-  .prod-grid { grid-template-columns: repeat(2, 1fr); }
+  .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .prod-img { min-height: 140px; }
   .reviews .rev-grid { grid-template-columns: repeat(2, 1fr); }
   .banner, .newsletter { margin: 0 16px 20px; }
   .footer { grid-template-columns: repeat(2, 1fr); padding: 22px 16px; }
