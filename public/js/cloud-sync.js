@@ -6,7 +6,7 @@
 //   • Em todo localStorage.setItem para chaves lapink: também grava no Firestore
 
 (function () {
-  var SYNC_KEYS = ['lapinkClients', 'lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig'];
+  var SYNC_KEYS = ['lapinkClients', 'lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkUsers'];
 
   // ── Firestore helpers ─────────────────────────────────────────
   function db() {
