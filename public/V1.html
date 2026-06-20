@@ -580,7 +580,7 @@
         ? '<button class="btn-secondary btn-buy btn-esgotado" disabled>Fora de estoque</button>'
         : '<button class="btn-secondary btn-buy" data-id="' + esc(p.id) + '" data-nome="' + esc(p.nome) + '" data-preco="' + varejo + '" data-imagem="' + esc(p.imagem || '') + '" onclick="event.stopPropagation();handleBuyCart(this)"><i class="ti ti-shopping-cart" style="font-size:13px;margin-right:4px;"></i> Comprar</button>';
 
-      return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '" onclick="verProduto(' + esc(p.id) + ')" style="cursor:pointer;">' +
+      return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '" onclick="verProduto(\'' + esc(String(p.id)) + '\')" style="cursor:pointer;">' +
         '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
