@@ -49,8 +49,10 @@
     } catch(e) { return { ok: false, error: 'Erro ao alterar senha.' }; }
   }
 </script>
-<link rel="stylesheet" href="../css/Principal.css" />
-<link rel="stylesheet" href="../css/componentes.css" />
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 <style>
   body { background: var(--gray-50); min-height: 100vh; }
@@ -119,7 +121,7 @@
 </style>
 </head>
 <body>
-<script>checkAuth(['client']);</script>
+<script>checkAuth(['client', 'admin', 'superadmin']);</script>
 
 <!-- Topbar -->
 <header class="conta-topbar">
