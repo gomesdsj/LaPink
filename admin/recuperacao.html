@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Recuperação de Acesso</title>
+<link rel="stylesheet" href="css/Principal.css" />
+<style>
+  body { background:#f9fafb; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; font-family:inherit; }
+  .card { background:#fff; border:.5px solid #e5e7eb; border-radius:16px; padding:32px; max-width:560px; width:100%; box-shadow:0 4px 24px rgba(0,0,0,.07); }
+  h1 { font-size:18px; font-weight:800; color:#1f2937; margin-bottom:4px; }
+  .sub { font-size:12px; color:#9ca3af; margin-bottom:24px; }
+  .user-row { display:flex; align-items:center; gap:10px; padding:10px 14px; border:.5px solid #e5e7eb; border-radius:10px; margin-bottom:8px; }
+  .user-info { flex:1; }
+  .user-name { font-size:13px; font-weight:700; color:#1f2937; }
+  .user-email { font-size:11px; color:#6b7280; }
+  .badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; }
+  .badge-superadmin { background:#fdf4e3; color:#b45309; }
+  .badge-admin      { background:#fdf2f8; color:#db2777; }
+  .badge-client     { background:#eff6ff; color:#3b82f6; }
+  .btn-del { padding:5px 12px; font-size:12px; font-weight:600; background:#fee2e2; color:#dc2626; border:none; border-radius:8px; cursor:pointer; }
+  .btn-del:hover { background:#fecaca; }
+  .btn-del:disabled { opacity:.4; cursor:default; }
+  .divider { border:none; border-top:.5px solid #e5e7eb; margin:20px 0; }
+  .action-bar { display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+  .btn { padding:9px 18px; font-size:13px; font-weight:600; border:none; border-radius:10px; cursor:pointer; }
+  .btn-primary { background:#f04a86; color:#fff; }
+  .btn-primary:hover { background:#db3a76; }
+  .btn-secondary { background:#f3f4f6; color:#374151; }
+  .btn-secondary:hover { background:#e5e7eb; }
+  .alert { padding:12px 16px; border-radius:10px; font-size:13px; font-weight:600; margin-bottom:16px; }
+  .alert-warn { background:#fef3c7; color:#92400e; border:.5px solid #fcd34d; }
+  .alert-ok   { background:#d1fae5; color:#065f46; border:.5px solid #6ee7b7; display:none; }
+  .empty { text-align:center; color:#9ca3af; font-size:13px; padding:24px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔧 Recuperação de Acesso — LaPink</h1>
+  <p class="sub">Esta página permite gerenciar usuários diretamente no localStorage sem precisar logar.</p>
+
+  <div class="alert alert-warn">⚠️ Página de uso restrito. Não compartilhe este link.</div>
+  <div class="alert alert-ok" id="msg-ok"></div>
+
+  <strong style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;">Usuários do painel admin (lapinkUsers)</strong>
+  <div id="lista-admin" style="margin-top:10px;"></div>
+
+  <hr class="divider" />
+
+  <strong style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b7280;">Clientes da loja (lapinkClients)</strong>
+  <div id="lista-clients" style="margin-top:10px;"></div>
+
+  <hr class="divider" />
+
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="location.href='login.html'">Ir para o Login</button>
+    <button class="btn btn-secondary" onclick="limparSessao()">Limpar sessão ativa</button>
+  </div>
+</div>
+
+<script>
+  function ok(msg) {
+    var el = document.getElementById('msg-ok');
+    el.textContent = '✓ ' + msg;
+    el.style.display = 'block';
+    setTimeout(function(){ el.style.display = 'none'; }, 3000);
+  }
+
+  function renderAdmin() {
+    var users = [];
+    try { users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]'); } catch(e) {}
+    var el = document.getElementById('lista-admin');
+    if (!users.length) { el.innerHTML = '<p class="empty">Nenhum usuário encontrado.</p>'; return; }
+    el.innerHTML = users.map(function(u) {
+      var cls = 'badge-' + (u.role || 'client');
+      var label = { superadmin:'Super Admin', admin:'Admin', client:'Cliente' }[u.role] || u.role;
+      var prot = u.role === 'superadmin';
+      return '<div class="user-row">' +
+        '<div class="user-info">' +
+          '<div class="user-name">' + escHtml(u.name || '—') + '</div>' +
+          '<div class="user-email">' + escHtml(u.email) + '</div>' +
+        '</div>' +
+        '<span class="badge ' + cls + '">' + label + '</span>' +
+        '<button class="btn-del" onclick="excluirAdmin(\'' + escHtml(u.email) + '\')" ' + (prot ? 'disabled title="Super Admin não pode ser excluído"' : '') + '>Excluir</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderClients() {
+    var clients = [];
+    try { clients = JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) {}
+    var el = document.getElementById('lista-clients');
+    if (!clients.length) { el.innerHTML = '<p class="empty">Nenhum cliente encontrado.</p>'; return; }
+    el.innerHTML = clients.map(function(c) {
+      return '<div class="user-row">' +
+        '<div class="user-info">' +
+          '<div class="user-name">' + escHtml(c.name || c.email) + '</div>' +
+          '<div class="user-email">' + escHtml(c.email) + '</div>' +
+        '</div>' +
+        '<span class="badge badge-client">Cliente</span>' +
+        '<button class="btn-del" onclick="excluirCliente(\'' + escHtml(c.email) + '\')">Excluir</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function excluirAdmin(email) {
+    if (!confirm('Excluir usuário "' + email + '"?')) return;
+    var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
+    localStorage.setItem('lapinkUsers', JSON.stringify(users.filter(function(u){ return u.email.toLowerCase() !== email.toLowerCase(); })));
+    ok('Usuário excluído: ' + email);
+    renderAdmin();
+  }
+
+  function excluirCliente(email) {
+    if (!confirm('Excluir cliente "' + email + '"?')) return;
+    var clients = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
+    localStorage.setItem('lapinkClients', JSON.stringify(clients.filter(function(c){ return c.email.toLowerCase() !== email.toLowerCase(); })));
+    ok('Cliente excluído: ' + email);
+    renderClients();
+  }
+
+  function limparSessao() {
+    localStorage.removeItem('lapinkSession');
+    localStorage.removeItem('lapinkLoggedClient');
+    ok('Sessão limpa. Agora você pode fazer login normalmente.');
+  }
+
+  renderAdmin();
+  renderClients();
+</script>
+</body>
+</html>
