@@ -940,6 +940,10 @@ if (installBtn) {
 
 
 
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   function renderSlide(s) {
     var media = '';
     if (s.imagem) {
