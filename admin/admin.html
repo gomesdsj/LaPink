@@ -41,6 +41,10 @@
   .stock-list li:last-child { border-bottom: none; }
   .stock-list .s-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 8px; }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../public/js/firebase-init.js"></script>
+<script src="../public/js/cloud-sync.js"></script>
 </head>
 <body>
 <script>checkAuth(['superadmin', 'admin']);</script>
