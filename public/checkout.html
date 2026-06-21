@@ -244,6 +244,24 @@ body {
 }
 .co-copy-btn:hover { background: #dcfce7; }
 
+/* ── Formas de pagamento aceitas (badges no resumo) ── */
+.co-pay-badges-label {
+  font-size: 11px; font-weight: 700; color: var(--pk-soft);
+  text-transform: uppercase; letter-spacing: .07em;
+  margin-top: 16px; margin-bottom: 8px;
+}
+.co-pay-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.co-pay-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 20px;
+  border: 1.5px solid var(--pk-200); background: var(--pk-50);
+  font-size: 12px; font-weight: 700; color: var(--pk-600);
+  cursor: pointer; transition: background .15s, border-color .15s;
+  text-decoration: none;
+}
+.co-pay-badge:hover { background: var(--pk-100); border-color: var(--pk-400); }
+.co-pay-badge i { font-size: 15px; color: var(--pk-500); }
+
 /* ── Resumo ── */
 .co-summary-row {
   display: flex; justify-content: space-between; align-items: center;
@@ -416,6 +434,11 @@ body {
       <button class="btn-confirm" id="co-btn-confirm" type="button">
         <i class="ti ti-brand-whatsapp"></i> Confirmar pelo WhatsApp
       </button>
+
+      <div id="co-pay-badges-wrap" style="display:none;">
+        <div class="co-pay-badges-label">Formas de pagamento</div>
+        <div class="co-pay-badges" id="co-pay-badges"></div>
+      </div>
     </div>
   </div>
 
@@ -439,6 +462,30 @@ function _esc(s) {
 
   function getPayConfig() {
     try { return JSON.parse(localStorage.getItem('lapinkPaymentConfig') || 'null') || {}; } catch(e) { return {}; }
+  }
+
+  function renderPaymentBadges() {
+    var cfg  = getPayConfig();
+    var wrap = document.getElementById('co-pay-badges-wrap');
+    var cont = document.getElementById('co-pay-badges');
+    if (!wrap || !cont) return;
+
+    var methods = [
+      { key:'pix',    icon:'ti-qrcode',       label:'PIX',          ok: cfg.pix          && cfg.pix.ativo          && cfg.pix.chave },
+      { key:'cartao', icon:'ti-credit-card',   label:'Cartão',       ok: cfg.cartao       && cfg.cartao.ativo },
+      { key:'transf', icon:'ti-building-bank', label:'Transferência', ok: cfg.transferencia && cfg.transferencia.ativo && cfg.transferencia.banco },
+      { key:'din',    icon:'ti-cash',          label:'Dinheiro',     ok: cfg.dinheiro     && cfg.dinheiro.ativo },
+    ];
+
+    var ativos = methods.filter(function(m) { return m.ok; });
+    if (!ativos.length) { wrap.style.display = 'none'; return; }
+
+    cont.innerHTML = ativos.map(function(m) {
+      return '<span class="co-pay-badge" onclick="document.getElementById(\'co-payment-section\').scrollIntoView({behavior:\'smooth\',block:\'start\'})">' +
+        '<i class="ti ' + m.icon + '"></i>' + m.label + '</span>';
+    }).join('');
+
+    wrap.style.display = '';
   }
 
   function renderPaymentOpts() {
@@ -545,6 +592,7 @@ function _esc(s) {
     formSec.style.display    = '';
     summarySec.style.display = '';
     renderPaymentOpts();
+    renderPaymentBadges();
 
     itemsList.innerHTML = cart.map(function(item) {
       var imgHtml = item.imagem
