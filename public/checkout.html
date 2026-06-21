@@ -165,12 +165,15 @@ body {
   height: 40px; display: flex; align-items: center; justify-content: center;
 }
 .cart-item-remove {
-  background: none; border: none;
-  color: var(--pk-300); cursor: pointer;
-  font-size: 18px; padding: 4px;
-  transition: color .15s;
+  background: var(--pk-50); border: 1.5px solid var(--pk-200);
+  color: var(--pk-400); cursor: pointer;
+  font-size: 15px;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s, border-color .15s, color .15s;
 }
-.cart-item-remove:hover { color: #e74c3c; }
+.cart-item-remove:hover { background: #fee2e2; border-color: #fca5a5; color: #e74c3c; }
 
 /* ── Formulário ── */
 .form-group { margin-bottom: 14px; }

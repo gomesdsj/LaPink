@@ -13,7 +13,7 @@ function saveCart(cart) {
 function addToCart(produto, qty) {
   qty = qty || 1;
   var cart = getCart();
-  var idx = cart.findIndex(function(i) { return i.id === produto.id; });
+  var idx = cart.findIndex(function(i) { return String(i.id) === String(produto.id); });
   if (idx >= 0) {
     cart[idx].qty += qty;
   } else {
@@ -23,7 +23,7 @@ function addToCart(produto, qty) {
 }
 
 function removeFromCart(id) {
-  saveCart(getCart().filter(function(i) { return i.id !== id; }));
+  saveCart(getCart().filter(function(i) { return String(i.id) !== String(id); }));
 }
 
 function updateCartItemQty(id, qty) {
