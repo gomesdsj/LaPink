@@ -285,6 +285,28 @@ function revokeAdmin(email) {
   return { ok: false, error: 'Usuário não encontrado.' };
 }
 
+function addUserFromClient(client) {
+  var users = _getUsers();
+  var email = (client.email || '').trim().toLowerCase();
+  var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email; });
+  if (idx !== -1) {
+    if (users[idx].role === 'superadmin') return { ok: false, error: 'Não é possível alterar o Super Admin.' };
+    users[idx].role = 'admin';
+    if (client.name || client.nome) users[idx].name = client.name || client.nome;
+  } else {
+    users.push({
+      email: email,
+      password: client.password || '',
+      role: 'admin',
+      name: client.name || client.nome || email,
+      address: client.endereco || client.address || '',
+      createdAt: new Date().toISOString()
+    });
+  }
+  _saveUsers(users);
+  return { ok: true };
+}
+
 function deleteUser(email) {
   var users = _getUsers();
   var target = users.find(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });

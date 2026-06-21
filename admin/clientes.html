@@ -146,6 +146,9 @@
     }
 
     function renderClients() {
+      var session = getSession();
+      var isSuperAdmin = session && session.role === 'superadmin';
+      var adminUsers = isSuperAdmin ? getAllUsers() : [];
       var clients = getClients();
 
       // Filtro por busca
@@ -176,6 +179,17 @@
       }
 
       clientGrid.innerHTML = clients.map(function(client) {
+        var userEntry = isSuperAdmin ? adminUsers.find(function(u) { return u.email.toLowerCase() === (client.email||'').toLowerCase(); }) : null;
+        var isAdmin = userEntry && (userEntry.role === 'admin' || userEntry.role === 'superadmin');
+        var adminBadge = isAdmin ? ' <span class="badge badge-pink" style="font-size:11px;vertical-align:middle;"><i class="ti ti-shield"></i> Admin</span>' : '';
+        var adminBtn = '';
+        if (isSuperAdmin) {
+          if (isAdmin && userEntry.role !== 'superadmin') {
+            adminBtn = '<button type="button" class="btn btn-secondary" onclick="revokeClientAdmin(\'' + encodeURIComponent(client.email) + '\')"><i class="ti ti-shield-off"></i> Revogar Admin</button>';
+          } else if (!isAdmin) {
+            adminBtn = '<button type="button" class="btn btn-primary" onclick="promoteClientToAdmin(\'' + encodeURIComponent(client.email) + '\')"><i class="ti ti-shield-check"></i> Tornar Admin</button>';
+          }
+        }
         var waDigits = (client.whatsapp || '').replace(/\D/g, '');
         var waNumber = waDigits ? '55' + waDigits : '';
         // Fix #10: purchases usa { pedidoId, total, data } — não p.order nem p.items
@@ -190,7 +204,7 @@
         return '<article class="card customer-card" data-email="' + escHtml(client.email) + '">' +
           '<div class="customer-meta">' +
             '<div class="customer-details">' +
-              '<strong>' + escHtml(client.name || '—') + '</strong>' +
+              '<strong>' + escHtml(client.name || '—') + adminBadge + '</strong>' +
               '<span>' + escHtml(client.email || '—') + '</span>' +
               '<span><a href="https://wa.me/' + escHtml(waNumber) + '" target="_blank" style="color:var(--green-400); font-weight:600; text-decoration:none;"><i class="ti ti-brand-whatsapp"></i> ' + escHtml(client.whatsapp || '—') + '</a></span>' +
               '<span class="password">Senha: ' + maskPassword(client.password) + '</span>' +
@@ -206,6 +220,7 @@
             '<button type="button" class="btn btn-danger" onclick="deleteClient(\'' + encodeURIComponent(client.email) + '\')">Excluir</button>' +
             '<button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)">Redefinir senha</button>' +
             (waNumber ? '<button type="button" class="btn btn-secondary" onclick="window.open(\'' + escHtml(waUrl) + '\',\'_blank\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>' : '') +
+            adminBtn +
           '</div>' +
           '<form class="reset-password-form" style="display:none;">' +
             '<div class="form-group">' +
@@ -282,6 +297,34 @@
       showToast('Senha atualizada com sucesso.');
       card.querySelector('.password').textContent = 'Senha: ••••••';
       togglePasswordReset(button, true);
+    }
+
+    function promoteClientToAdmin(encodedEmail) {
+      var email = decodeURIComponent(encodedEmail);
+      var client = getClients().find(function(c) { return c.email === email; });
+      if (!client) { showToast('Cliente não encontrado.', 'erro'); return; }
+      if (!confirm('Tornar "' + (client.name || email) + '" administrador da loja?\n\nEle poderá acessar o painel admin com a senha atual.')) return;
+      var result = addUserFromClient(client);
+      if (result.ok) {
+        showToast((client.name || email) + ' agora é Admin.');
+        renderClients();
+      } else {
+        showToast(result.error, 'erro');
+      }
+    }
+
+    function revokeClientAdmin(encodedEmail) {
+      var email = decodeURIComponent(encodedEmail);
+      var client = getClients().find(function(c) { return c.email === email; });
+      var name = client ? (client.name || email) : email;
+      if (!confirm('Revogar acesso de administrador de "' + name + '"?')) return;
+      var result = revokeAdmin(email);
+      if (result.ok) {
+        showToast('Acesso admin revogado de ' + name + '.');
+        renderClients();
+      } else {
+        showToast(result.error, 'erro');
+      }
     }
 
     window.addEventListener('DOMContentLoaded', function() {
