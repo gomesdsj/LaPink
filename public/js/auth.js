@@ -39,7 +39,8 @@ function updateAuthUI() {
     show('drawerUser',       'block');
     show('drawerLogoutBtn',  'flex');
     var isAdmin = client.role === 'admin' || client.role === 'superadmin';
-    show('panelBtn', isAdmin ? 'inline-block' : 'none');
+    show('panelBtn',       isAdmin ? 'inline-block' : 'none');
+    show('drawerPanelBtn', isAdmin ? 'flex'         : 'none');
   } else {
     setText('navUser',    '');
     setText('drawerUser', '');
@@ -52,6 +53,7 @@ function updateAuthUI() {
     show('drawerUser',       'none');
     show('drawerLogoutBtn',  'none');
     show('panelBtn',         'none');
+    show('drawerPanelBtn',   'none');
   }
 }
 
