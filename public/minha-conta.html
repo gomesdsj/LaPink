@@ -172,8 +172,37 @@
   <div class="conta-section-title"><i class="ti ti-map-pin"></i> Endereço de entrega</div>
   <div class="card">
     <div class="form-group">
-      <label>Endereço completo</label>
-      <textarea id="campo-endereco" rows="3" placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"></textarea>
+      <label>CEP</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="end-cep" placeholder="00000-000" maxlength="9" autocomplete="postal-code" style="flex:1;" oninput="mcMaskCep(this)" onblur="mcBuscaCep(this.value)" />
+        <button type="button" id="mcCepBtn" onclick="mcBuscaCep(document.getElementById('end-cep').value)" class="btn btn-secondary btn-sm" style="white-space:nowrap;">Buscar</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Rua / Logradouro</label>
+      <input type="text" id="end-rua" placeholder="Rua, Avenida..." autocomplete="street-address" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Número</label>
+        <input type="text" id="end-numero" placeholder="Nº" />
+      </div>
+      <div class="form-group">
+        <label>Complemento</label>
+        <input type="text" id="end-complemento" placeholder="Apto, bloco..." />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Bairro</label>
+      <input type="text" id="end-bairro" placeholder="Bairro" />
+    </div>
+    <div class="form-group">
+      <label>Cidade / UF</label>
+      <input type="text" id="end-cidade" placeholder="Cidade - UF" />
+    </div>
+    <div class="form-group">
+      <label>Ponto de referência</label>
+      <input type="text" id="end-referencia" placeholder="Ex: próximo ao mercado..." />
     </div>
     <button class="btn btn-primary btn-sm" onclick="salvarEndereco()">
       <i class="ti ti-check"></i> Salvar endereço
@@ -243,14 +272,46 @@
     document.querySelector('.conta-main').appendChild(aviso);
   }
 
-  // Carrega endereço salvo
+  // Carrega endereço salvo (objeto estruturado)
   (function carregarEndereco() {
     var users = typeof getAllUsers === 'function' ? getAllUsers() : [];
-    var user = users.find(function(u) { return _session && u.email.toLowerCase() === _session.email.toLowerCase(); });
-    if (user && user.address) {
-      document.getElementById('campo-endereco').value = user.address;
-    }
+    var user = users.find(function(u) { return _session && (u.email||'').toLowerCase() === (_session.email||'').toLowerCase(); });
+    var end = (user && user.endereco) || {};
+    document.getElementById('end-cep').value         = end.cep         || '';
+    document.getElementById('end-rua').value         = end.rua         || '';
+    document.getElementById('end-numero').value      = end.numero      || '';
+    document.getElementById('end-complemento').value = end.complemento || '';
+    document.getElementById('end-bairro').value      = end.bairro      || '';
+    document.getElementById('end-cidade').value      = end.cidade      || '';
+    document.getElementById('end-referencia').value  = end.referencia  || '';
   })();
+
+  function mcMaskCep(input) {
+    var v = input.value.replace(/\D/g, '').slice(0, 8);
+    input.value = v.length > 5 ? v.slice(0,5) + '-' + v.slice(5) : v;
+  }
+  var _mcCepBuscando = false;
+  function mcBuscaCep(cep) {
+    var c = (cep || '').replace(/\D/g, '');
+    if (c.length !== 8 || _mcCepBuscando) return;
+    var btn = document.getElementById('mcCepBtn');
+    _mcCepBuscando = true;
+    if (btn) { btn.textContent = '...'; btn.disabled = true; }
+    fetch('https://viacep.com.br/ws/' + c + '/json/')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.erro) { _toast('CEP não encontrado.'); return; }
+        document.getElementById('end-rua').value    = d.logradouro || '';
+        document.getElementById('end-bairro').value = d.bairro     || '';
+        document.getElementById('end-cidade').value = (d.localidade||'') + (d.uf ? ' - '+d.uf : '');
+        document.getElementById('end-numero').focus();
+      })
+      .catch(function() { _toast('Erro ao buscar CEP.', 'erro'); })
+      .finally(function() {
+        _mcCepBuscando = false;
+        if (btn) { btn.textContent = 'Buscar'; btn.disabled = false; }
+      });
+  }
 
   // Lista pedidos do cliente
   function renderPedidos() {
@@ -308,10 +369,23 @@
   renderPedidos();
 
   function salvarEndereco() {
-    var addr = document.getElementById('campo-endereco').value.trim();
-    var r = updateAddress(_session.email, addr);
-    if (r.ok) _toast('Endereço salvo!');
-    else _toast(r.error || 'Erro ao salvar.', 'erro');
+    var end = {
+      cep:         (document.getElementById('end-cep').value         || '').trim(),
+      rua:         (document.getElementById('end-rua').value         || '').trim(),
+      numero:      (document.getElementById('end-numero').value      || '').trim(),
+      complemento: (document.getElementById('end-complemento').value || '').trim(),
+      bairro:      (document.getElementById('end-bairro').value      || '').trim(),
+      cidade:      (document.getElementById('end-cidade').value      || '').trim(),
+      referencia:  (document.getElementById('end-referencia').value  || '').trim()
+    };
+    try {
+      var users = getAllUsers();
+      var idx = users.findIndex(function(u) { return (u.email||'').toLowerCase() === (_session.email||'').toLowerCase(); });
+      if (idx === -1) { _toast('Usuário não encontrado.', 'erro'); return; }
+      users[idx].endereco = end;
+      localStorage.setItem('lapinkClients', JSON.stringify(users));
+      _toast('Endereço salvo!');
+    } catch(e) { _toast('Erro ao salvar.', 'erro'); }
   }
 
   async function salvarSenha() {

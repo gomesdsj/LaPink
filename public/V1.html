@@ -481,7 +481,7 @@
       <label>CEP</label>
       <div style="display:flex;gap:6px;">
         <input type="text" id="profileCep" placeholder="00000-000" maxlength="9" autocomplete="postal-code" style="flex:1;" oninput="maskCep(this)" onblur="buscaCep(this.value)" />
-        <button type="button" onclick="buscaCep(document.getElementById('profileCep').value)" style="background:#FDF4F8;border:1.5px solid #F5D5E4;border-radius:10px;padding:0 12px;color:#D4537E;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">Buscar</button>
+        <button type="button" id="profileCepBtn" onclick="buscaCep(document.getElementById('profileCep').value)" style="background:#FDF4F8;border:1.5px solid #F5D5E4;border-radius:10px;padding:0 12px;color:#D4537E;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">Buscar</button>
       </div>
     </div>
     <div class="profile-field">
@@ -738,10 +738,6 @@
       prodGrid.innerHTML = renderCards(destaqueItems, emptyDestaqueMsg);
     }
 
-    // Reanexar clique em comprar (já que innerHTML foi reescrito)
-    prodGrid.querySelectorAll('.btn-buy').forEach(function(btn) {
-      btn.addEventListener('click', handleBuy);
-    });
   }
 
   // ── Inicialização ──
@@ -869,9 +865,11 @@ window.verProduto = function(id) {
 
 // ── Produto atual no bottom sheet ──
 var _qtyProduto = null;
+var _fecharQtyTimer = null;
 
 // ── Abre bottom sheet de quantidade ao clicar no card ──
 window.abrirQty = function(event, card) {
+  clearTimeout(_fecharQtyTimer); // cancela fechamento pendente
   var id     = card.dataset.id;
   var nome   = card.dataset.nome   || '';
   var preco  = parseFloat(card.dataset.preco) || 0;
@@ -930,7 +928,8 @@ window.fecharQty = function() {
   if (!backdrop || !sheet) return;
   backdrop.style.opacity = '0';
   sheet.style.transform  = 'translateY(100%)';
-  setTimeout(function() {
+  clearTimeout(_fecharQtyTimer);
+  _fecharQtyTimer = setTimeout(function() {
     backdrop.style.display = 'none';
     sheet.style.display    = 'none';
     document.body.style.overflow = '';
@@ -946,14 +945,17 @@ window.confirmAddQty = function() {
     addToCart(_qtyProduto, qty);
     showToast(qty + 'x adicionado ao carrinho!');
     fecharQty();
+  } else {
+    showToast('Carrinho indisponível. Tente recarregar a página.');
   }
 };
 
 // ── Ver detalhes a partir do sheet ──
 window.verProdutoSheet = function() {
   if (!_qtyProduto) return;
+  var id = _qtyProduto.id; // salva antes do fecharQty anular _qtyProduto
   fecharQty();
-  setTimeout(function() { verProduto(_qtyProduto.id); }, 320);
+  setTimeout(function() { verProduto(id); }, 320);
 };
 </script>
 
@@ -1285,7 +1287,7 @@ window.openProfileModal = function() {
   var whatsappEl = document.getElementById('profileWhatsapp');
   try {
     var clients = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
-    var found   = clients.find(function(c) { return (c.email || '') === client.email; });
+    var found   = clients.find(function(c) { return (c.email || '').toLowerCase() === (client.email || '').toLowerCase(); });
     if (whatsappEl) whatsappEl.value = (found && (found.whatsapp || found.phone || found.telefone)) || '';
     var end = (found && found.endereco) || {};
     document.getElementById('profileCep').value        = end.cep        || '';
@@ -1297,6 +1299,9 @@ window.openProfileModal = function() {
     document.getElementById('profileReferencia').value = end.referencia || '';
   } catch(e) {
     if (whatsappEl) whatsappEl.value = '';
+    ['profileCep','profileRua','profileNumero','profileComplemento','profileBairro','profileCidade','profileReferencia'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
   }
 
   overlay.classList.add('open');
@@ -1311,7 +1316,11 @@ window.closeProfileModal = function() {
   var sheet   = document.getElementById('profileSheet');
   if (overlay) overlay.classList.remove('open');
   if (sheet)   sheet.classList.remove('open');
-  document.body.style.overflow = '';
+  // Só libera scroll se qty-sheet também não estiver aberto
+  var qtySheet = document.getElementById('qty-sheet');
+  if (!qtySheet || qtySheet.style.display === 'none') {
+    document.body.style.overflow = '';
+  }
 };
 
 window.maskCep = function(input) {
@@ -1319,10 +1328,12 @@ window.maskCep = function(input) {
   input.value = v.length > 5 ? v.slice(0,5) + '-' + v.slice(5) : v;
 };
 
+var _cepBuscando = false;
 window.buscaCep = function(cep) {
   var c = (cep || '').replace(/\D/g, '');
-  if (c.length !== 8) return;
-  var btn = document.querySelector('[onclick*="buscaCep"]');
+  if (c.length !== 8 || _cepBuscando) return;
+  var btn = document.getElementById('profileCepBtn');
+  _cepBuscando = true;
   if (btn) { btn.textContent = '...'; btn.disabled = true; }
   fetch('https://viacep.com.br/ws/' + c + '/json/')
     .then(function(r) { return r.json(); })
@@ -1335,6 +1346,7 @@ window.buscaCep = function(cep) {
     })
     .catch(function() { showToast('Erro ao buscar CEP.'); })
     .finally(function() {
+      _cepBuscando = false;
       if (btn) { btn.textContent = 'Buscar'; btn.disabled = false; }
     });
 };
@@ -1382,21 +1394,22 @@ window.saveProfileData = async function() {
     var isAdmin = (role === 'admin' || role === 'superadmin');
 
     if (isAdmin) {
-      // Admins ficam em lapinkUsers (senha = btoa)
+      // Admins ficam em lapinkUsers (senha = SHA-256)
       var users = (function() {
         try { return JSON.parse(localStorage.getItem('lapinkUsers') || '[]'); } catch(e) { return []; }
       })();
-      var uidx = users.findIndex(function(u) { return u.email === client.email; });
+      var uidx = users.findIndex(function(u) { return (u.email || '').toLowerCase() === (client.email || '').toLowerCase(); });
 
       if (novaSenha) {
-        if (uidx < 0 || users[uidx].password !== btoa(senhaAtual)) {
+        var currentHashAdmin = await hashPassword(senhaAtual);
+        if (uidx < 0 || users[uidx].password !== currentHashAdmin) {
           showToast('Senha atual incorreta.');
           return;
         }
-        users[uidx].password = btoa(novaSenha);
+        users[uidx].password = await hashPassword(novaSenha);
       }
       if (uidx >= 0) {
-        users[uidx].nome = nome;
+        users[uidx].name = nome;
         localStorage.setItem('lapinkUsers', JSON.stringify(users));
       }
     } else {
@@ -1404,7 +1417,7 @@ window.saveProfileData = async function() {
       var clients = (function() {
         try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }
       })();
-      var cidx = clients.findIndex(function(c) { return c.email === client.email; });
+      var cidx = clients.findIndex(function(c) { return (c.email || '').toLowerCase() === (client.email || '').toLowerCase(); });
 
       if (novaSenha) {
         var currentHash = await hashPassword(senhaAtual);
