@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#D4537E" />
+<title>LaPink — Recuperar senha</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/images/icon-192.png" type="image/png" />
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  .auth-card-icon {
+    width: 52px; height: 52px; border-radius: var(--radius-lg);
+    background: var(--pink-50); color: var(--pink-500);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin: 0 auto 20px;
+  }
+  .auth-card h1 { text-align: center; font-size: 22px; font-weight: 800; color: var(--gray-800); margin-bottom: 4px; }
+  .auth-card > p { text-align: center; }
+  .input-icon-wrap { position: relative; }
+  .input-icon-wrap input { padding-left: 40px !important; }
+  .input-icon-wrap .inp-icon {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--gray-400); pointer-events: none;
+  }
+  .recovery-success {
+    display: none; text-align: center; padding: 24px 0;
+  }
+  .recovery-success .success-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #dcfce7; color: #16a34a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin: 0 auto 16px;
+  }
+  .recovery-success h2 { font-size: 18px; font-weight: 700; color: var(--gray-800); margin-bottom: 8px; }
+  .recovery-success p { font-size: 14px; color: var(--gray-500); }
+  .not-configured {
+    display: none; background: #fff7ed; border: 1px solid #fed7aa;
+    border-radius: 10px; padding: 16px; margin-top: 12px;
+    font-size: 13px; color: #7c2d12; line-height: 1.5;
+  }
+</style>
+</head>
+<body class="auth-background">
+  <a class="skip-link" href="#recoveryForm">Pular para o formulário</a>
+
+  <header class="store-nav">
+    <a class="store-logo" href="index.html" aria-label="LaPink — início">
+      <i class="ti ti-diamond" aria-hidden="true"></i>
+      <span class="logo-name">LaPink</span>
+    </a>
+    <div class="nav-actions">
+      <button class="nav-admin-btn" onclick="location.href='login.html'" type="button">
+        <i class="ti ti-arrow-left"></i> Voltar ao login
+      </button>
+    </div>
+  </header>
+
+  <section class="store-section auth-page">
+    <article class="card auth-card">
+      <div class="auth-card-icon" aria-hidden="true">
+        <i class="ti ti-key"></i>
+      </div>
+      <h1>Recuperar senha</h1>
+      <p>Informe seu e-mail cadastrado e enviaremos uma senha temporária.</p>
+
+      <!-- Formulário -->
+      <form id="recoveryForm" novalidate>
+        <div class="form-group">
+          <label for="rec-email">E-mail</label>
+          <div class="input-icon-wrap">
+            <i class="ti ti-mail inp-icon" aria-hidden="true"></i>
+            <input id="rec-email" type="email" placeholder="email@dominio.com"
+                   autocomplete="email" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-full" id="rec-btn">Enviar senha temporária</button>
+        </div>
+        <div class="form-message" id="recMessage" role="alert" aria-live="polite"></div>
+        <div class="not-configured" id="notConfigured">
+          <strong><i class="ti ti-alert-triangle"></i> E-mail não configurado</strong><br>
+          O administrador ainda não configurou o serviço de envio de e-mail.<br>
+          Entre em contato com a loja para redefinir sua senha.
+        </div>
+      </form>
+
+      <!-- Sucesso -->
+      <div class="recovery-success" id="recoverySuccess">
+        <div class="success-icon"><i class="ti ti-mail-check"></i></div>
+        <h2>E-mail enviado!</h2>
+        <p>Verifique sua caixa de entrada (e o spam).<br>Use a senha temporária para entrar e altere-a depois.</p>
+        <div class="form-actions" style="margin-top:20px;">
+          <button class="btn-full" onclick="location.href='login.html'">Ir para o login</button>
+        </div>
+      </div>
+
+      <p class="auth-footer-text" style="margin-top:20px;">Lembrou a senha? <a href="login.html">Entrar</a></p>
+    </article>
+  </section>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-init.js"></script>
+  <script src="js/cloud-sync.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    function gerarSenhaTemp() {
+      var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      var s = '';
+      for (var i = 0; i < 8; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+      return s;
+    }
+
+    function getApiConfig() {
+      try { return JSON.parse(localStorage.getItem('lapinkApiConfig') || '{}'); } catch(e) { return {}; }
+    }
+
+    function showMsg(msg, erro) {
+      var el = document.getElementById('recMessage');
+      el.textContent = msg;
+      el.style.color = erro ? 'var(--red-500, #ef4444)' : 'var(--green-600, #16a34a)';
+    }
+
+    document.getElementById('recoveryForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var email = document.getElementById('rec-email').value.trim().toLowerCase();
+      if (!email) { showMsg('Informe seu e-mail.', true); return; }
+
+      var clients = getClients();
+      var client = clients.find(function(c) { return (c.email || '').toLowerCase() === email; });
+
+      if (!client) {
+        showMsg('E-mail não encontrado. Verifique o e-mail digitado.', true);
+        return;
+      }
+
+      var cfg = getApiConfig();
+      if (!cfg.emailjsPk || !cfg.emailjsSid || !cfg.emailjsTid) {
+        document.getElementById('notConfigured').style.display = 'block';
+        return;
+      }
+
+      var btn = document.getElementById('rec-btn');
+      btn.disabled = true;
+      btn.textContent = 'Enviando…';
+      document.getElementById('notConfigured').style.display = 'none';
+      showMsg('', false);
+
+      var tempPassword = gerarSenhaTemp();
+      var hash = await hashPassword(tempPassword);
+
+      var idx = clients.findIndex(function(c) { return (c.email || '').toLowerCase() === email; });
+      clients[idx].password = hash;
+      saveClients(clients);
+
+      try {
+        emailjs.init({ publicKey: cfg.emailjsPk });
+        await emailjs.send(cfg.emailjsSid, cfg.emailjsTid, {
+          to_email: client.email,
+          to_name:  client.name || client.email,
+          temp_password: tempPassword
+        });
+        document.getElementById('recoveryForm').style.display = 'none';
+        document.getElementById('recoverySuccess').style.display = 'block';
+      } catch (err) {
+        showMsg('Erro ao enviar e-mail. Tente novamente.', true);
+        btn.disabled = false;
+        btn.textContent = 'Enviar senha temporária';
+      }
+    });
+  </script>
+</body>
+</html>
