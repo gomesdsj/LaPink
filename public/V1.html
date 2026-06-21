@@ -874,35 +874,95 @@ window.verProduto = function(id) {
 var _qtyProduto = null;
 var _fecharQtyTimer = null;
 
-// ── Abre bottom sheet de quantidade ao clicar no card ──
+// ── Abre modal de detalhes ao clicar no card ──
 window.abrirQty = function(event, card) {
-  clearTimeout(_fecharQtyTimer); // cancela fechamento pendente
+  clearTimeout(_fecharQtyTimer);
   var id     = card.dataset.id;
   var nome   = card.dataset.nome   || '';
   var preco  = parseFloat(card.dataset.preco) || 0;
   var imagem = card.dataset.imagem || '';
 
-  _qtyProduto = { id: id, nome: nome, precoVarejo: preco, imagem: imagem || undefined };
+  // Busca dados completos do produto para exibir categoria, código, estoque e preço varejo
+  var _prods = [];
+  try { _prods = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; } catch(e) {}
+  var prod = _prods.find(function(p) { return String(p.id) === String(id); }) || {};
 
-  // Thumb
-  var thumb = document.getElementById('qtySheetThumb');
-  thumb.innerHTML = imagem
-    ? '<img src="' + imagem + '" alt="' + nome + '" style="width:100%;height:100%;object-fit:cover;">'
-    : '<i class="ti ti-diamond" style="font-size:30px;color:var(--pk-300);"></i>';
+  var varejo  = Number(prod.precoVarejo  || 0);
+  var atacado = Number(prod.precoAtacado || 0);
+  var precoPrincipal = atacado > 0 ? atacado : varejo;
+  var estoque = Number(prod.estoque || 0);
 
-  document.getElementById('qtySheetNome').textContent  = nome;
-  document.getElementById('qtySheetPreco').textContent = 'R$ ' + preco.toFixed(2).replace('.', ',');
+  _qtyProduto = { id: id, nome: nome, precoVarejo: precoPrincipal, imagem: imagem || undefined };
+
+  // Imagem
+  var imgEl = document.getElementById('qtySheetImg');
+  if (imgEl) {
+    var existingClose = imgEl.querySelector('button');
+    imgEl.innerHTML = imagem
+      ? '<img src="' + imagem + '" alt="' + nome + '" style="width:100%;height:100%;object-fit:cover;">'
+      : '<i class="ti ti-diamond" style="font-size:60px;color:var(--pk-300);"></i>';
+    if (existingClose) imgEl.appendChild(existingClose);
+    else {
+      var closeBtn = document.createElement('button');
+      closeBtn.setAttribute('onclick','fecharQty()');
+      closeBtn.setAttribute('aria-label','Fechar');
+      closeBtn.innerHTML = '<i class="ti ti-x"></i>';
+      closeBtn.style.cssText = 'position:absolute;top:12px;right:12px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;color:var(--pk-dark);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
+      imgEl.appendChild(closeBtn);
+    }
+  }
+
+  // Categoria
+  var catEl = document.getElementById('qtySheetCat');
+  if (catEl) catEl.textContent = prod.categoria || '';
+
+  // Nome
+  document.getElementById('qtySheetNome').textContent = nome;
+
+  // Código
+  var codEl = document.getElementById('qtySheetCodigo');
+  if (codEl) codEl.textContent = prod.codigoPeca ? 'Cód. ' + prod.codigoPeca : '';
+
+  // Preço principal
+  document.getElementById('qtySheetPreco').textContent = 'R$ ' + precoPrincipal.toFixed(2).replace('.', ',');
+
+  // Preço de referência (varejo) — exibe só se há diferença
+  var refEl = document.getElementById('qtySheetPrecoRef');
+  if (refEl) {
+    if (atacado > 0 && varejo > 0 && varejo !== atacado) {
+      refEl.textContent = 'De R$ ' + varejo.toFixed(2).replace('.', ',');
+    } else {
+      refEl.textContent = '';
+    }
+  }
+
+  // Estoque
+  var estoqueEl = document.getElementById('qtySheetEstoque');
+  if (estoqueEl) {
+    if (estoque <= 0) {
+      estoqueEl.innerHTML = '<i class="ti ti-alert-circle" style="color:#c0392b"></i> Esgotado';
+      estoqueEl.style.color = '#c0392b';
+    } else if (estoque <= 3) {
+      estoqueEl.innerHTML = '<i class="ti ti-clock" style="color:#e67e22"></i> Últimas ' + estoque + ' unid.';
+      estoqueEl.style.color = '#e67e22';
+    } else {
+      estoqueEl.innerHTML = '<i class="ti ti-check" style="color:#27ae60"></i> Em estoque (' + estoque + ' unid.)';
+      estoqueEl.style.color = '#27ae60';
+    }
+  }
+
   document.getElementById('qtyInput').value = 1;
   _atualizarSubtotal();
 
-  // Abre sheet
+  // Abre modal
   var backdrop = document.getElementById('qty-backdrop');
   var sheet    = document.getElementById('qty-sheet');
   backdrop.style.display = 'block';
   sheet.style.display    = 'block';
   requestAnimationFrame(function() {
     backdrop.style.opacity = '1';
-    sheet.style.transform  = 'translateY(0)';
+    sheet.style.opacity    = '1';
+    sheet.style.transform  = 'translate(-50%,-50%) scale(1)';
   });
   document.body.style.overflow = 'hidden';
 };
@@ -928,20 +988,21 @@ document.addEventListener('DOMContentLoaded', function() {
   if (inp) inp.addEventListener('input', _atualizarSubtotal);
 });
 
-// ── Fecha bottom sheet ──
+// ── Fecha modal de produto ──
 window.fecharQty = function() {
   var backdrop = document.getElementById('qty-backdrop');
   var sheet    = document.getElementById('qty-sheet');
   if (!backdrop || !sheet) return;
   backdrop.style.opacity = '0';
-  sheet.style.transform  = 'translateY(100%)';
+  sheet.style.opacity    = '0';
+  sheet.style.transform  = 'translate(-50%,-50%) scale(.95)';
   clearTimeout(_fecharQtyTimer);
   _fecharQtyTimer = setTimeout(function() {
     backdrop.style.display = 'none';
     sheet.style.display    = 'none';
     document.body.style.overflow = '';
     _qtyProduto = null;
-  }, 300);
+  }, 280);
 };
 
 // ── Confirma adição ao carrinho ──
@@ -1528,71 +1589,75 @@ window.saveProfileData = async function() {
 };
 </script>
 
-<!-- ── Bottom sheet de quantidade ── -->
+<!-- ── Modal de detalhes do produto ── -->
 <div id="qty-backdrop" onclick="fecharQty()" style="
   display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.45); z-index:1100;
-  transition:opacity .22s;
+  background:rgba(0,0,0,.55); z-index:1100;
+  opacity:0; transition:opacity .25s;
 "></div>
 
-<div id="qty-sheet" role="dialog" aria-modal="true" aria-label="Adicionar ao carrinho" style="
-  display:none; position:fixed; left:0; right:0; bottom:0;
-  background:#fff; border-radius:20px 20px 0 0;
-  padding:0; z-index:1101;
-  box-shadow:0 -8px 40px rgba(0,0,0,.18);
-  transform:translateY(100%);
-  transition:transform .3s cubic-bezier(.4,0,.2,1);
+<div id="qty-sheet" role="dialog" aria-modal="true" aria-label="Detalhes do produto" style="
+  display:none; position:fixed;
+  top:50%; left:50%; transform:translate(-50%,-50%) scale(.95);
+  width:min(480px,calc(100vw - 32px));
+  background:#fff; border-radius:20px;
+  z-index:1101;
+  box-shadow:0 20px 60px rgba(0,0,0,.22);
+  transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .28s;
+  opacity:0;
   max-height:90vh; overflow-y:auto;
 ">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;">
-    <div style="width:40px;height:4px;background:var(--pk-200);border-radius:4px;margin:0 auto 0;position:absolute;left:50%;transform:translateX(-50%);top:10px;"></div>
+  <!-- imagem -->
+  <div id="qtySheetImg" style="
+    width:100%; height:220px;
+    background:var(--pk-50);
+    display:flex;align-items:center;justify-content:center;
+    border-radius:20px 20px 0 0; overflow:hidden; position:relative;
+  ">
     <button onclick="fecharQty()" aria-label="Fechar" style="
-      margin-left:auto;background:none;border:none;
-      width:32px;height:32px;cursor:pointer;
-      color:var(--pk-soft);font-size:20px;
-      display:flex;align-items:center;justify-content:center;
-      border-radius:50%;transition:background .15s;
-    " onmouseover="this.style.background='var(--pk-50)'" onmouseout="this.style.background='none'">
-      <i class="ti ti-x"></i>
-    </button>
+      position:absolute;top:12px;right:12px;
+      background:rgba(255,255,255,.85);border:none;border-radius:50%;
+      width:36px;height:36px;cursor:pointer;font-size:18px;
+      color:var(--pk-dark);display:flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(4px);
+    "><i class="ti ti-x"></i></button>
   </div>
 
-  <div style="padding:12px 20px 32px;display:flex;flex-direction:column;gap:14px;">
-    <!-- thumb + info -->
-    <div style="display:flex;align-items:center;gap:14px;">
-      <div id="qtySheetThumb" style="
-        width:72px;height:72px;border-radius:12px;
-        background:var(--pk-50);flex-shrink:0;
-        display:flex;align-items:center;justify-content:center;
-        overflow:hidden;
-      "></div>
-      <div>
-        <div id="qtySheetNome" style="font-size:15px;font-weight:700;color:var(--pk-dark);line-height:1.3;"></div>
-        <div id="qtySheetPreco" style="font-size:18px;font-weight:800;color:var(--pk-500);margin-top:4px;"></div>
-      </div>
+  <div style="padding:20px 20px 28px;display:flex;flex-direction:column;gap:16px;">
+    <!-- categoria + nome -->
+    <div>
+      <div id="qtySheetCat" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--pk-400);margin-bottom:6px;"></div>
+      <div id="qtySheetNome" style="font-size:20px;font-weight:800;color:var(--pk-dark);line-height:1.25;"></div>
+      <div id="qtySheetCodigo" style="font-size:11px;color:#aaa;font-family:monospace;margin-top:4px;"></div>
     </div>
+
+    <!-- preço -->
+    <div>
+      <div id="qtySheetPreco" style="font-size:26px;font-weight:900;color:var(--pk-500);line-height:1;"></div>
+      <div id="qtySheetPrecoRef" style="font-size:12px;color:#999;margin-top:3px;"></div>
+    </div>
+
+    <!-- estoque -->
+    <div id="qtySheetEstoque" style="font-size:13px;color:#666;display:flex;align-items:center;gap:6px;"></div>
 
     <!-- quantidade -->
     <div>
-      <div style="font-size:11px;font-weight:700;color:var(--pk-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Quantidade</div>
-      <div style="
-        display:inline-flex;align-items:center;
-        border:1.5px solid var(--pk-200);border-radius:30px;overflow:hidden;
-      ">
+      <div style="font-size:11px;font-weight:700;color:var(--pk-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Quantidade</div>
+      <div style="display:inline-flex;align-items:center;border:1.5px solid var(--pk-200);border-radius:30px;overflow:hidden;">
         <button id="qtyMinus" onclick="mudaQtySheet(-1)" style="
-          background:none;border:none;width:44px;height:44px;
-          font-size:20px;font-weight:700;color:var(--pk-500);
+          background:none;border:none;width:48px;height:48px;
+          font-size:22px;font-weight:700;color:var(--pk-500);
           cursor:pointer;display:flex;align-items:center;justify-content:center;
         ">−</button>
         <input id="qtyInput" type="number" value="1" min="1" max="99" style="
-          width:48px;text-align:center;border:none;
+          width:52px;text-align:center;border:none;
           border-left:1px solid var(--pk-200);border-right:1px solid var(--pk-200);
           font-size:16px;font-weight:700;color:var(--pk-dark);
-          outline:none;-moz-appearance:textfield;background:#fff;height:44px;
+          outline:none;-moz-appearance:textfield;background:#fff;height:48px;
         " />
         <button id="qtyPlus" onclick="mudaQtySheet(1)" style="
-          background:none;border:none;width:44px;height:44px;
-          font-size:20px;font-weight:700;color:var(--pk-500);
+          background:none;border:none;width:48px;height:48px;
+          font-size:22px;font-weight:700;color:var(--pk-500);
           cursor:pointer;display:flex;align-items:center;justify-content:center;
         ">+</button>
       </div>
@@ -1601,23 +1666,20 @@ window.saveProfileData = async function() {
     <!-- subtotal -->
     <div id="qtySubtotal" style="font-size:13px;color:var(--pk-soft);"></div>
 
-    <!-- botões -->
+    <!-- botão -->
     <button id="qtyAddBtn" onclick="confirmAddQty()" style="
       width:100%;background:var(--pk-500);color:#fff;
-      border:none;border-radius:22px;padding:14px 0;
-      font-size:15px;font-weight:800;cursor:pointer;
+      border:none;border-radius:22px;padding:16px 0;
+      font-size:16px;font-weight:800;cursor:pointer;
       display:flex;align-items:center;justify-content:center;gap:8px;
       transition:background .15s;
     ">
       <i class="ti ti-shopping-cart"></i> Adicionar ao carrinho
     </button>
-    <button id="qtyDetalhesBtn" onclick="verProdutoSheet()" style="
-      width:100%;background:none;color:var(--pk-500);
-      border:1.5px solid var(--pk-200);border-radius:22px;padding:12px 0;
-      font-size:13px;font-weight:700;cursor:pointer;
-      transition:background .15s;
-    ">Ver detalhes da peça</button>
   </div>
 </div>
+
+<!-- compatibilidade — thumb oculto usado pelo código legado -->
+<div id="qtySheetThumb" style="display:none;"></div>
 </body>
 </html>
