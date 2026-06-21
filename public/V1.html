@@ -97,9 +97,10 @@
 .carousel-slide--gold .carousel-media-icon { color:rgba(160,100,0,.12); }
 .carousel-slide--mint .carousel-media-icon { color:rgba(0,140,100,.10); }
 
-/* ── Slide com foto de fundo (full-bleed) ── */
+/* ── Slide com foto de fundo (full-bleed centralizado) ── */
 .carousel-slide--bg-img {
   background-color:#111;
+  justify-content:center;
 }
 .carousel-bg-img {
   position:absolute;inset:0;
@@ -108,13 +109,14 @@
 }
 .carousel-bg-overlay {
   position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(0,0,0,.68) 0%,rgba(0,0,0,.38) 55%,rgba(0,0,0,.08) 100%);
+  background:linear-gradient(0deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.38) 55%,rgba(0,0,0,.18) 100%);
   z-index:1;
 }
-.carousel-slide--bg-img .carousel-content { position:relative;z-index:2;max-width:560px; }
+.carousel-slide--bg-img .carousel-content { position:relative;z-index:2;max-width:680px;text-align:center; }
+.carousel-slide--bg-img .carousel-btns   { justify-content:center; }
 .carousel-slide--bg-img .carousel-eyebrow { color:#FFD0EC; }
-.carousel-slide--bg-img .carousel-title   { color:#fff; text-shadow:0 2px 12px rgba(0,0,0,.35); }
-.carousel-slide--bg-img .carousel-sub     { color:rgba(255,255,255,.88); }
+.carousel-slide--bg-img .carousel-title   { color:#fff; text-shadow:0 2px 16px rgba(0,0,0,.45); }
+.carousel-slide--bg-img .carousel-sub     { color:rgba(255,255,255,.88);max-width:520px;margin-left:auto;margin-right:auto; }
 
 /* Setas */
 .carousel-arrow {
@@ -153,10 +155,9 @@
   .carousel-arrow { width:34px;height:34px;font-size:16px; }
   .carousel-arrow--prev { left:6px; }
   .carousel-arrow--next { right:6px; }
-  /* Full-bleed mobile: gradiente de baixo, texto no rodapé */
-  .carousel-slide--bg-img { min-height:380px;flex-direction:column;justify-content:flex-end;padding-bottom:44px; }
-  .carousel-bg-overlay { background:linear-gradient(0deg,rgba(0,0,0,.75) 0%,rgba(0,0,0,.4) 55%,rgba(0,0,0,.05) 100%); }
-  .carousel-slide--bg-img .carousel-content { max-width:100%; }
+  /* Full-bleed mobile: centralizado */
+  .carousel-slide--bg-img { min-height:380px;flex-direction:column;justify-content:center;padding:32px 24px 52px; }
+  .carousel-slide--bg-img .carousel-content { max-width:100%;text-align:center; }
 }
 @media (max-width:480px) {
   .carousel-title { font-size:19px; }
