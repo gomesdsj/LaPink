@@ -92,14 +92,29 @@
   flex:0 0 340px;height:300px;
   display:flex;align-items:center;justify-content:center;z-index:2;
 }
-.carousel-media img {
-  width:100%;height:100%;object-fit:cover;
-  border-radius:22px;box-shadow:0 16px 56px rgba(212,83,126,.22);
-}
 .carousel-media-icon { font-size:140px;line-height:1;color:rgba(240,74,134,.15); }
 .carousel-slide--dark .carousel-media-icon { color:rgba(255,255,255,.10); }
 .carousel-slide--gold .carousel-media-icon { color:rgba(160,100,0,.12); }
 .carousel-slide--mint .carousel-media-icon { color:rgba(0,140,100,.10); }
+
+/* ── Slide com foto de fundo (full-bleed) ── */
+.carousel-slide--bg-img {
+  background-color:#111;
+}
+.carousel-bg-img {
+  position:absolute;inset:0;
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+  z-index:0;
+}
+.carousel-bg-overlay {
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(0,0,0,.68) 0%,rgba(0,0,0,.38) 55%,rgba(0,0,0,.08) 100%);
+  z-index:1;
+}
+.carousel-slide--bg-img .carousel-content { position:relative;z-index:2;max-width:560px; }
+.carousel-slide--bg-img .carousel-eyebrow { color:#FFD0EC; }
+.carousel-slide--bg-img .carousel-title   { color:#fff; text-shadow:0 2px 12px rgba(0,0,0,.35); }
+.carousel-slide--bg-img .carousel-sub     { color:rgba(255,255,255,.88); }
 
 /* Setas */
 .carousel-arrow {
@@ -138,6 +153,10 @@
   .carousel-arrow { width:34px;height:34px;font-size:16px; }
   .carousel-arrow--prev { left:6px; }
   .carousel-arrow--next { right:6px; }
+  /* Full-bleed mobile: gradiente de baixo, texto no rodapé */
+  .carousel-slide--bg-img { min-height:380px;flex-direction:column;justify-content:flex-end;padding-bottom:44px; }
+  .carousel-bg-overlay { background:linear-gradient(0deg,rgba(0,0,0,.75) 0%,rgba(0,0,0,.4) 55%,rgba(0,0,0,.05) 100%); }
+  .carousel-slide--bg-img .carousel-content { max-width:100%; }
 }
 @media (max-width:480px) {
   .carousel-title { font-size:19px; }
@@ -1063,16 +1082,25 @@ if (installBtn) {
   }
 
   function renderSlide(s) {
-    var media = '';
+    var bgLayer = '';
+    var media   = '';
+    var extraClass = '';
+
     if (s.imagem) {
-      media = '<div class="carousel-media"><img src="' + esc(s.imagem) + '" alt="' + esc(s.titulo) + '" loading="lazy"></div>';
+      // Foto cobre todo o slide como fundo
+      extraClass = ' carousel-slide--bg-img';
+      bgLayer = '<div class="carousel-bg-img" style="background-image:url(\'' + esc(s.imagem) + '\')"></div>' +
+                '<div class="carousel-bg-overlay"></div>';
     } else if (s.icone) {
       media = '<div class="carousel-media"><i class="ti ' + esc(s.icone) + ' carousel-media-icon"></i></div>';
     }
+
     var b1 = s.btn1Txt ? '<button class="btn-primary" onclick="carouselAcao(\'' + esc(s.btn1Acao) + '\')">' + esc(s.btn1Txt) + '</button>' : '';
     var b2 = s.btn2Txt ? '<button class="btn-secondary" onclick="carouselAcao(\'' + esc(s.btn2Acao) + '\')">' + esc(s.btn2Txt) + '</button>' : '';
     var titulo = esc(s.titulo).replace(/\n/g, '<br>');
-    return '<div class="carousel-slide carousel-slide--' + esc(s.cor || 'pink') + '" role="group" aria-label="' + esc(s.titulo.replace(/\n/,'')) + '">' +
+
+    return '<div class="carousel-slide carousel-slide--' + esc(s.cor || 'pink') + extraClass + '" role="group" aria-label="' + esc(s.titulo.replace(/\n/,'')) + '">' +
+      bgLayer +
       '<div class="carousel-content">' +
         (s.eyebrow ? '<div class="carousel-eyebrow">' + esc(s.eyebrow) + '</div>' : '') +
         '<div class="carousel-title">' + titulo + '</div>' +
