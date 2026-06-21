@@ -8,117 +8,282 @@
 <meta name="robots" content="noindex" />
 <meta name="theme-color" content="#D4537E" />
 <link rel="manifest" href="manifest.json" />
-<link rel="stylesheet" href="css/Principal.css" />
-<link rel="stylesheet" href="css/componentes.css" />
-<link rel="stylesheet" href="css/PrincipalPublica.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 <style>
-* { box-sizing: border-box; }
-body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; color: #1a1a2e; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Header */
-.co-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: #fff; border-bottom: 1.5px solid #F4C0D1; }
-.co-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #D4537E; font-size: 22px; font-weight: 900; letter-spacing: -.01em; }
-.co-logo i { font-size: 24px; }
-.co-back { font-size: 13px; font-weight: 700; color: #993556; text-decoration: none; display: flex; align-items: center; gap: 5px; }
-.co-back:hover { text-decoration: underline; }
+:root {
+  --pk-50:  #fff5f8;
+  --pk-100: #fce7ef;
+  --pk-200: #F4C0D1;
+  --pk-300: #e88fab;
+  --pk-400: #D4537E;
+  --pk-500: #D4537E;
+  --pk-600: #b93d65;
+  --pk-dark: #1a1a2e;
+  --pk-soft: #8a8a9a;
+  --r: 16px;
+  --shadow: 0 4px 24px rgba(212,83,126,.10);
+  --shadow-lg: 0 12px 40px rgba(212,83,126,.14);
+}
 
-/* Layout */
-.co-page { max-width: 860px; margin: 32px auto; padding: 0 20px; display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
-.co-left  { flex: 1; min-width: 300px; }
-.co-right { flex: 0 0 300px; }
+body {
+  background: #f8f0f4;
+  font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+  color: var(--pk-dark);
+  min-height: 100vh;
+}
 
-/* Títulos de seção */
-.co-section-title { font-size: 18px; font-weight: 800; color: #1a1a2e; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
-.co-section-title i { color: #D4537E; }
+/* ── Header ── */
+.co-header {
+  background: #fff;
+  border-bottom: 1.5px solid var(--pk-200);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.co-logo {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; color: var(--pk-500);
+  font-size: 20px; font-weight: 900; letter-spacing: -.01em;
+}
+.co-logo i { font-size: 22px; }
+.co-back {
+  font-size: 13px; font-weight: 700; color: var(--pk-600);
+  text-decoration: none; display: flex; align-items: center; gap: 5px;
+  padding: 6px 14px; border-radius: 30px;
+  border: 1.5px solid var(--pk-200);
+  transition: background .15s;
+}
+.co-back:hover { background: var(--pk-50); }
 
-/* Card */
-.co-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(212,83,126,.08); margin-bottom: 20px; }
+/* ── Layout principal ── */
+.co-page {
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 0 20px 60px;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.co-left  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.co-right { flex: 0 0 310px; position: sticky; top: 80px; }
 
-/* Items */
-.cart-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f7e0e9; }
-.cart-item:last-child { border-bottom: none; }
-.cart-item-img { width: 56px; height: 56px; border-radius: 10px; background: #fff0f5; display: flex; align-items: center; justify-content: center; color: #D4537E; font-size: 24px; overflow: hidden; flex-shrink: 0; }
-.cart-item-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
-.cart-item-info { flex: 1; }
-.cart-item-name { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
-.cart-item-price { font-size: 13px; color: #D4537E; font-weight: 700; }
-.cart-item-sub { font-size: 12px; color: #888; }
-.cart-item-controls { display: flex; align-items: center; gap: 8px; }
-.qty-btn { width: 28px; height: 28px; border: 1.5px solid #F4C0D1; border-radius: 6px; background: #fff; color: #993556; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: background .15s; }
-.qty-btn:hover { background: #fff0f5; }
-.qty-val { font-size: 14px; font-weight: 800; min-width: 20px; text-align: center; color: #1a1a2e; }
-.cart-item-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 18px; padding: 4px; line-height: 1; transition: color .15s; }
+/* ── Card base ── */
+.co-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+/* ── Título de seção ── */
+.co-section-title {
+  font-size: 15px; font-weight: 800; color: var(--pk-dark);
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 18px;
+}
+.co-section-title i { color: var(--pk-500); font-size: 18px; }
+
+/* ── Carrinho vazio ── */
+.co-empty {
+  text-align: center;
+  padding: 56px 24px;
+}
+.co-empty-icon {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--pk-50);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 36px; color: var(--pk-300);
+}
+.co-empty p { font-size: 15px; color: var(--pk-soft); margin-bottom: 24px; }
+.co-empty a {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--pk-500); color: #fff;
+  border-radius: 30px; padding: 12px 28px;
+  font-size: 14px; font-weight: 700; text-decoration: none;
+  transition: background .15s;
+}
+.co-empty a:hover { background: var(--pk-600); }
+
+/* ── Itens do carrinho ── */
+.cart-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--pk-100);
+}
+.cart-item:last-child { border-bottom: none; padding-bottom: 0; }
+.cart-item:first-child { padding-top: 0; }
+
+.cart-item-img {
+  width: 68px; height: 68px; border-radius: 12px;
+  background: var(--pk-50);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--pk-300); font-size: 26px;
+  overflow: hidden; flex-shrink: 0;
+}
+.cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
+
+.cart-item-info { flex: 1; min-width: 0; }
+.cart-item-name {
+  font-size: 14px; font-weight: 700; color: var(--pk-dark);
+  margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cart-item-price { font-size: 16px; font-weight: 900; color: var(--pk-500); }
+.cart-item-sub   { font-size: 11px; color: var(--pk-soft); margin-top: 2px; }
+
+.cart-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+
+.cart-item-controls {
+  display: flex; align-items: center;
+  border: 1.5px solid var(--pk-200); border-radius: 30px; overflow: hidden;
+}
+.qty-btn {
+  width: 34px; height: 34px;
+  background: none; border: none;
+  font-size: 18px; font-weight: 700; color: var(--pk-500);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.qty-btn:hover { background: var(--pk-50); }
+.qty-val {
+  min-width: 30px; text-align: center;
+  font-size: 14px; font-weight: 800; color: var(--pk-dark);
+  border-left: 1px solid var(--pk-200); border-right: 1px solid var(--pk-200);
+  height: 34px; display: flex; align-items: center; justify-content: center;
+}
+.cart-item-remove {
+  background: none; border: none;
+  color: var(--pk-200); cursor: pointer;
+  font-size: 16px; padding: 4px;
+  transition: color .15s;
+}
 .cart-item-remove:hover { color: #e74c3c; }
 
-/* Empty cart */
-.co-empty { text-align: center; padding: 48px 24px; color: #bbb; }
-.co-empty i { font-size: 56px; display: block; margin-bottom: 14px; color: #F4C0D1; }
-.co-empty p { font-size: 15px; margin-bottom: 20px; }
-.co-empty a { display: inline-block; background: #D4537E; color: #fff; border-radius: 30px; padding: 12px 28px; font-size: 14px; font-weight: 700; text-decoration: none; }
-.co-empty a:hover { background: #b93d65; }
-
-/* Formulário */
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; font-size: 12px; font-weight: 700; color: #666; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .06em; }
-.form-group input { width: 100%; padding: 11px 14px; border: 1.5px solid #F4C0D1; border-radius: 10px; font-size: 14px; color: #1a1a2e; background: #fdf5f8; outline: none; transition: border-color .18s; }
-.form-group input:focus { border-color: #D4537E; background: #fff; }
-
-/* Resumo */
-.co-summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #555; margin-bottom: 10px; }
-.co-summary-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; color: #1a1a2e; border-top: 2px solid #F4C0D1; padding-top: 14px; margin-top: 6px; }
-.co-summary-total span:last-child { color: #D4537E; }
-
-/* Botão confirmar */
-.btn-confirm { display: block; width: 100%; background: #25D366; color: #fff; border: none; border-radius: 30px; padding: 15px 0; font-size: 16px; font-weight: 800; cursor: pointer; letter-spacing: .02em; transition: background .18s; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.btn-confirm:hover { background: #1ebc59; }
-.btn-confirm:disabled { background: #ccc; cursor: not-allowed; }
-
-/* Tela de confirmação */
-.co-success { display: none; text-align: center; padding: 40px 24px; }
-.co-success-icon { font-size: 64px; color: #2E8B5A; margin-bottom: 16px; }
-.co-success h2 { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 8px; }
-.co-success p { font-size: 14px; color: #666; margin-bottom: 24px; line-height: 1.6; }
-.co-success a { display: inline-block; background: #D4537E; color: #fff; border-radius: 30px; padding: 12px 28px; font-size: 14px; font-weight: 700; text-decoration: none; }
-.co-success a:hover { background: #b93d65; }
+/* ── Formulário ── */
+.form-group { margin-bottom: 14px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label {
+  font-size: 11px; font-weight: 700; color: var(--pk-soft);
+  text-transform: uppercase; letter-spacing: .07em;
+  display: block; margin-bottom: 6px;
+}
+.form-input-wrap { position: relative; }
+.form-input-wrap i {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 16px; color: var(--pk-300); pointer-events: none;
+}
+.form-input {
+  width: 100%; padding: 12px 14px 12px 40px;
+  border: 1.5px solid var(--pk-200); border-radius: 12px;
+  font-size: 14px; color: var(--pk-dark); background: var(--pk-50);
+  outline: none; transition: border-color .18s, background .18s;
+}
+.form-input:focus { border-color: var(--pk-500); background: #fff; }
+.form-input.error { border-color: #e74c3c; }
 
 /* ── Formas de pagamento ── */
-.co-payment-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
-.co-payment-opt  {
-  display: flex; align-items: flex-start; gap: 12px;
-  border: 1.5px solid #F4C0D1; border-radius: 12px; padding: 14px;
+.co-payment-opts { display: flex; flex-direction: column; gap: 10px; }
+.co-payment-opt {
+  display: flex; align-items: center; gap: 12px;
+  border: 1.5px solid var(--pk-200); border-radius: 14px; padding: 14px 16px;
   cursor: pointer; transition: border-color .15s, background .15s;
 }
-.co-payment-opt:has(input:checked), .co-payment-opt.selected {
-  border-color: #D4537E; background: #fff5f8;
+.co-payment-opt:has(input:checked),
+.co-payment-opt.selected { border-color: var(--pk-500); background: var(--pk-50); }
+.co-payment-opt input[type=radio] { accent-color: var(--pk-500); flex-shrink: 0; width: 16px; height: 16px; }
+.co-payment-opt-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--pk-50); display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--pk-500); flex-shrink: 0;
 }
-.co-payment-opt input[type=radio] { margin-top: 2px; accent-color: #D4537E; flex-shrink: 0; }
-.co-payment-opt-icon { font-size: 22px; flex-shrink: 0; }
-.co-payment-opt-body { flex: 1; }
-.co-payment-opt-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
-.co-payment-opt-sub   { font-size: 12px; color: #888; }
+.co-payment-opt-title { font-size: 14px; font-weight: 700; color: var(--pk-dark); }
+.co-payment-opt-sub   { font-size: 12px; color: var(--pk-soft); margin-top: 2px; }
 
-/* ── Caixa de info de pagamento ── */
+/* ── Info pagamento ── */
 .co-pay-info-box {
-  margin-top: 12px; border-radius: 10px; padding: 14px 16px;
-  font-size: 13px; line-height: 1.6;
+  margin-top: 14px; border-radius: 12px; padding: 14px 16px;
+  font-size: 13px; line-height: 1.65;
 }
-.co-pay-info-box.pix  { background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; }
-.co-pay-info-box.transf { background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; }
-.co-pay-info-box.dinheiro { background: #f7fee7; border: 1.5px solid #a3e635; color: #3f6212; }
+.co-pay-info-box.pix     { background: #f0fdf4; border: 1.5px solid #86efac; color: #166534; }
+.co-pay-info-box.transf  { background: #eff6ff; border: 1.5px solid #93c5fd; color: #1e40af; }
+.co-pay-info-box.dinheiro{ background: #f7fee7; border: 1.5px solid #a3e635; color: #3f6212; }
+.co-pay-info-box.cartao  { background: #f5f3ff; border: 1.5px solid #c4b5fd; color: #4c1d95; }
 .co-pix-chave {
-  font-family: monospace; font-size: 15px; letter-spacing: .04em;
+  font-family: monospace; font-size: 14px; letter-spacing: .04em;
   font-weight: 700; display: flex; align-items: center; gap: 8px; margin: 6px 0;
 }
 .co-copy-btn {
-  background: none; border: none; cursor: pointer; font-size: 13px;
-  color: #16a34a; display: flex; align-items: center; gap: 4px;
+  background: none; border: none; cursor: pointer; font-size: 12px;
+  color: #16a34a; display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 6px; border: 1px solid #86efac;
+  transition: background .12s;
 }
+.co-copy-btn:hover { background: #dcfce7; }
 
-/* Mobile */
-@media (max-width: 640px) {
-  .co-page { gap: 0; }
-  .co-right { flex: 1 1 100%; }
+/* ── Resumo ── */
+.co-summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 14px; color: var(--pk-soft); padding: 8px 0;
+  border-bottom: 1px solid var(--pk-100);
+}
+.co-summary-row:last-of-type { border-bottom: none; }
+.co-summary-total {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 20px; font-weight: 900; color: var(--pk-dark);
+  border-top: 2px solid var(--pk-200); padding-top: 16px; margin-top: 8px;
+}
+.co-summary-total span:last-child { color: var(--pk-500); }
+
+/* ── Botão confirmar ── */
+.btn-confirm {
+  display: flex; width: 100%;
+  background: #25D366; color: #fff;
+  border: none; border-radius: 30px; padding: 16px 0;
+  font-size: 15px; font-weight: 800; cursor: pointer;
+  align-items: center; justify-content: center; gap: 8px;
+  transition: background .18s, transform .12s;
+  margin-top: 20px; letter-spacing: .01em;
+}
+.btn-confirm:hover   { background: #1ebc59; transform: translateY(-1px); }
+.btn-confirm:active  { transform: translateY(0); }
+.btn-confirm:disabled{ background: #ccc; cursor: not-allowed; transform: none; }
+
+/* ── Tela de sucesso ── */
+.co-success { display: none; text-align: center; padding: 48px 24px; }
+.co-success-icon {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: #f0fdf4; border: 2px solid #86efac;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 36px; color: #22c55e;
+}
+.co-success h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+.co-success p  { font-size: 14px; color: var(--pk-soft); line-height: 1.6; margin-bottom: 28px; }
+.co-success a  {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--pk-500); color: #fff;
+  border-radius: 30px; padding: 13px 30px;
+  font-size: 14px; font-weight: 700; text-decoration: none;
+  transition: background .15s;
+}
+.co-success a:hover { background: var(--pk-600); }
+
+/* ── Divider de seção ── */
+.co-divider { height: 1px; background: var(--pk-100); margin: 4px 0; }
+
+/* ── Mobile ── */
+@media (max-width: 700px) {
+  .co-page  { flex-direction: column; margin: 16px auto; padding: 0 12px 48px; gap: 12px; }
+  .co-right { position: static; flex: none; width: 100%; }
+  .co-card  { padding: 18px; border-radius: 16px; }
+  .cart-item-img { width: 58px; height: 58px; }
 }
 </style>
 </head>
@@ -130,39 +295,45 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
     LaPink
   </a>
   <a class="co-back" href="V1.html">
-    <i class="ti ti-arrow-left"></i> Voltar à loja
+    <i class="ti ti-arrow-left"></i> Continuar comprando
   </a>
 </header>
 
 <div class="co-page" id="co-page">
 
-  <!-- Coluna esquerda: carrinho + formulário -->
+  <!-- ── Coluna esquerda ── -->
   <div class="co-left">
 
     <!-- Carrinho vazio -->
     <div class="co-card co-empty" id="co-empty" style="display:none;">
-      <i class="ti ti-shopping-cart"></i>
+      <div class="co-empty-icon"><i class="ti ti-shopping-cart"></i></div>
       <p>Seu carrinho está vazio.</p>
       <a href="V1.html"><i class="ti ti-arrow-left"></i> Ver produtos</a>
     </div>
 
     <!-- Lista de itens -->
     <div class="co-card" id="co-cart-section" style="display:none;">
-      <h2 class="co-section-title"><i class="ti ti-shopping-cart"></i> Seu carrinho</h2>
+      <h2 class="co-section-title"><i class="ti ti-shopping-bag"></i> Meu carrinho</h2>
       <div id="co-items-list"></div>
     </div>
 
-    <!-- Formulário -->
+    <!-- Seus dados -->
     <div class="co-card" id="co-form-section" style="display:none;">
-      <h2 class="co-section-title"><i class="ti ti-user"></i> Seus dados</h2>
+      <h2 class="co-section-title"><i class="ti ti-user-circle"></i> Seus dados</h2>
       <form id="co-form" novalidate>
         <div class="form-group">
-          <label for="co-nome">Nome completo</label>
-          <input type="text" id="co-nome" placeholder="Digite seu nome completo" autocomplete="name" required />
+          <label class="form-label" for="co-nome">Nome completo</label>
+          <div class="form-input-wrap">
+            <i class="ti ti-user"></i>
+            <input class="form-input" type="text" id="co-nome" placeholder="Digite seu nome" autocomplete="name" required />
+          </div>
         </div>
         <div class="form-group">
-          <label for="co-whatsapp">WhatsApp</label>
-          <input type="tel" id="co-whatsapp" placeholder="(11) 99999-9999" autocomplete="tel" required />
+          <label class="form-label" for="co-whatsapp">WhatsApp</label>
+          <div class="form-input-wrap">
+            <i class="ti ti-brand-whatsapp"></i>
+            <input class="form-input" type="tel" id="co-whatsapp" placeholder="(11) 99999-9999" autocomplete="tel" required />
+          </div>
         </div>
       </form>
     </div>
@@ -174,7 +345,7 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
       <div id="co-pay-info"></div>
     </div>
 
-    <!-- Tela de sucesso -->
+    <!-- Sucesso -->
     <div class="co-card co-success" id="co-success">
       <div class="co-success-icon"><i class="ti ti-circle-check"></i></div>
       <h2>Pedido enviado!</h2>
@@ -184,29 +355,32 @@ body { background: #fdf5f8; font-family: 'Segoe UI', Arial, sans-serif; margin: 
 
   </div>
 
-  <!-- Coluna direita: resumo + botão -->
+  <!-- ── Coluna direita — resumo ── -->
   <div class="co-right">
     <div class="co-card" id="co-summary-section" style="display:none;">
       <h2 class="co-section-title"><i class="ti ti-receipt"></i> Resumo</h2>
+
       <div class="co-summary-row">
         <span id="co-count-label">Itens</span>
-        <span id="co-subtotal">R$ 0,00</span>
+        <span id="co-subtotal" style="font-weight:700;color:var(--pk-dark);">R$ 0,00</span>
       </div>
       <div class="co-summary-row">
         <span>Frete</span>
-        <span style="color:#2E8B5A;font-weight:700;">A combinar</span>
+        <span style="color:#22c55e;font-weight:700;">A combinar</span>
       </div>
+
       <div class="co-summary-total">
         <span>Total</span>
         <span id="co-total">R$ 0,00</span>
       </div>
+
       <button class="btn-confirm" id="co-btn-confirm" type="button">
-        <i class="ti ti-brand-whatsapp"></i> Confirmar pedido pelo WhatsApp
+        <i class="ti ti-brand-whatsapp"></i> Confirmar pelo WhatsApp
       </button>
     </div>
   </div>
 
-</div><!-- /co-page -->
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -224,7 +398,6 @@ function _esc(s) {
     return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
   }
 
-  /* ── Pagamentos configurados ── */
   function getPayConfig() {
     try { return JSON.parse(localStorage.getItem('lapinkPaymentConfig') || 'null') || {}; } catch(e) { return {}; }
   }
@@ -232,10 +405,10 @@ function _esc(s) {
   function renderPaymentOpts() {
     var cfg  = getPayConfig();
     var opts = [];
-    if (cfg.pix   && cfg.pix.ativo   && cfg.pix.chave)    opts.push('pix');
-    if (cfg.cartao && cfg.cartao.ativo)                    opts.push('cartao');
+    if (cfg.pix          && cfg.pix.ativo          && cfg.pix.chave)       opts.push('pix');
+    if (cfg.cartao       && cfg.cartao.ativo)                               opts.push('cartao');
     if (cfg.transferencia && cfg.transferencia.ativo && cfg.transferencia.banco) opts.push('transf');
-    if (cfg.dinheiro && cfg.dinheiro.ativo)                opts.push('dinheiro');
+    if (cfg.dinheiro     && cfg.dinheiro.ativo)                             opts.push('dinheiro');
 
     var sec  = document.getElementById('co-payment-section');
     var cont = document.getElementById('co-payment-opts');
@@ -243,12 +416,16 @@ function _esc(s) {
 
     var labels = { pix:'PIX', cartao:'Cartão de crédito/débito', transf:'Transferência bancária', dinheiro:'Dinheiro / na entrega' };
     var icons  = { pix:'ti-qrcode', cartao:'ti-credit-card', transf:'ti-building-bank', dinheiro:'ti-cash' };
+    var subs   = { pix:'Pagamento instantâneo', cartao:'Maquininha na entrega', transf:'Transferência bancária', dinheiro:'Pagamento na entrega' };
 
     cont.innerHTML = opts.map(function(k, i) {
       return '<label class="co-payment-opt">' +
         '<input type="radio" name="payMethod" value="' + k + '"' + (i === 0 ? ' checked' : '') + ' onchange="renderPayInfo()" />' +
-        '<i class="ti ' + icons[k] + ' co-payment-opt-icon"></i>' +
-        '<div class="co-payment-opt-body"><div class="co-payment-opt-title">' + labels[k] + '</div></div>' +
+        '<div class="co-payment-opt-icon"><i class="ti ' + icons[k] + '"></i></div>' +
+        '<div class="co-payment-opt-body">' +
+          '<div class="co-payment-opt-title">' + labels[k] + '</div>' +
+          '<div class="co-payment-opt-sub">'   + subs[k]   + '</div>' +
+        '</div>' +
       '</label>';
     }).join('');
 
@@ -256,7 +433,7 @@ function _esc(s) {
     renderPayInfo();
   }
 
-  function renderPayInfo() {
+  window.renderPayInfo = function() {
     var cfg = getPayConfig();
     var sel = document.querySelector('input[name="payMethod"]:checked');
     var box = document.getElementById('co-pay-info');
@@ -268,7 +445,7 @@ function _esc(s) {
       var tipoLabel = { cpf:'CPF', cnpj:'CNPJ', email:'E-mail', telefone:'Telefone', aleatoria:'Chave aleatória' }[cfg.pix.tipoChave] || cfg.pix.tipoChave;
       html = '<div class="co-pay-info-box pix">' +
         '<strong><i class="ti ti-qrcode"></i> Pagar via PIX</strong><br>' +
-        '<span>Tipo: ' + _esc(tipoLabel) + '</span><br>' +
+        '<span>Tipo de chave: ' + _esc(tipoLabel) + '</span><br>' +
         '<span class="co-pix-chave">' + _esc(cfg.pix.chave) +
           '<button type="button" class="co-copy-btn" onclick="navigator.clipboard.writeText(\'' + _esc(cfg.pix.chave) + '\')"><i class="ti ti-copy"></i> copiar</button>' +
         '</span>' +
@@ -276,10 +453,10 @@ function _esc(s) {
         (cfg.pix.instrucao ? '<p style="margin-top:8px;font-size:12px;">' + _esc(cfg.pix.instrucao) + '</p>' : '') +
       '</div>';
     } else if (k === 'cartao' && cfg.cartao) {
-      html = '<div class="co-pay-info-box" style="background:#f5f3ff;border:1.5px solid #c4b5fd;color:#4c1d95;">' +
+      html = '<div class="co-pay-info-box cartao">' +
         '<strong><i class="ti ti-credit-card"></i> Cartão</strong><br>' +
         'Pagamento via maquininha no momento da entrega/retirada.' +
-        (cfg.cartao.parcelaMax > 1 ? '<br>Parcelamento em até ' + cfg.cartao.parcelaMax + 'x.' : '') +
+        (cfg.cartao.parcelaMax > 1 ? '<br>Parcelamento em até ' + cfg.cartao.parcelaMax + 'x sem juros.' : '') +
       '</div>';
     } else if (k === 'transf' && cfg.transferencia) {
       var tr = cfg.transferencia;
@@ -296,7 +473,7 @@ function _esc(s) {
       '</div>';
     }
     box.innerHTML = html;
-  }
+  };
 
   function getSelectedPayMethod() {
     var sel = document.querySelector('input[name="payMethod"]:checked');
@@ -305,7 +482,7 @@ function _esc(s) {
   }
 
   function render() {
-    var cart = getCart();
+    var cart       = getCart();
     var emptyEl    = document.getElementById('co-empty');
     var cartSec    = document.getElementById('co-cart-section');
     var formSec    = document.getElementById('co-form-section');
@@ -330,7 +507,6 @@ function _esc(s) {
     summarySec.style.display = '';
     renderPaymentOpts();
 
-    // Renderiza itens
     itemsList.innerHTML = cart.map(function(item) {
       var imgHtml = item.imagem
         ? '<img src="' + _esc(item.imagem) + '" alt="' + _esc(item.nome) + '" />'
@@ -342,23 +518,23 @@ function _esc(s) {
           '<div class="cart-item-price">' + fmtMoeda(item.preco) + '</div>' +
           '<div class="cart-item-sub">Subtotal: ' + fmtMoeda(item.preco * item.qty) + '</div>' +
         '</div>' +
-        '<div class="cart-item-controls">' +
-          '<button class="qty-btn" data-action="dec" data-id="' + item.id + '" aria-label="Diminuir quantidade">−</button>' +
-          '<span class="qty-val">' + item.qty + '</span>' +
-          '<button class="qty-btn" data-action="inc" data-id="' + item.id + '" aria-label="Aumentar quantidade">+</button>' +
+        '<div class="cart-item-right">' +
+          '<button class="cart-item-remove" data-action="remove" data-id="' + item.id + '" aria-label="Remover"><i class="ti ti-trash"></i></button>' +
+          '<div class="cart-item-controls">' +
+            '<button class="qty-btn" data-action="dec" data-id="' + item.id + '" aria-label="Diminuir">−</button>' +
+            '<span class="qty-val">' + item.qty + '</span>' +
+            '<button class="qty-btn" data-action="inc" data-id="' + item.id + '" aria-label="Aumentar">+</button>' +
+          '</div>' +
         '</div>' +
-        '<button class="cart-item-remove" data-action="remove" data-id="' + item.id + '" aria-label="Remover item"><i class="ti ti-trash"></i></button>' +
       '</div>';
     }).join('');
 
-    // Atualiza resumo
     var total = getCartTotal();
     var count = getCartCount();
     document.getElementById('co-count-label').textContent = count + (count === 1 ? ' item' : ' itens');
     document.getElementById('co-subtotal').textContent    = fmtMoeda(total);
     document.getElementById('co-total').textContent       = fmtMoeda(total);
 
-    // Eventos dos botões de quantidade e remoção
     document.querySelectorAll('[data-action]').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var id     = btn.dataset.id;
@@ -366,8 +542,7 @@ function _esc(s) {
         var cart2  = getCart();
         var idx    = cart2.findIndex(function(i) { return String(i.id) === String(id); });
         if (action === 'inc' && idx >= 0) {
-          cart2[idx].qty += 1;
-          saveCart(cart2);
+          cart2[idx].qty += 1; saveCart(cart2);
         } else if (action === 'dec' && idx >= 0) {
           if (cart2[idx].qty > 1) { cart2[idx].qty -= 1; saveCart(cart2); }
           else { removeFromCart(id); }
@@ -379,45 +554,38 @@ function _esc(s) {
     });
   }
 
-  // Confirmar pedido
   document.getElementById('co-btn-confirm').addEventListener('click', function() {
     var nome     = document.getElementById('co-nome').value.trim();
     var whatsapp = document.getElementById('co-whatsapp').value.trim();
+    var nomeInp  = document.getElementById('co-nome');
+    var wppInp   = document.getElementById('co-whatsapp');
 
-    if (!nome) {
-      document.getElementById('co-nome').focus();
-      document.getElementById('co-nome').style.borderColor = '#e74c3c';
-      return;
-    }
-    if (!whatsapp) {
-      document.getElementById('co-whatsapp').focus();
-      document.getElementById('co-whatsapp').style.borderColor = '#e74c3c';
-      return;
-    }
+    nomeInp.classList.remove('error');
+    wppInp.classList.remove('error');
+
+    if (!nome)     { nomeInp.classList.add('error'); nomeInp.focus(); return; }
+    if (!whatsapp) { wppInp.classList.add('error');  wppInp.focus();  return; }
 
     var cart  = getCart();
     var total = getCartTotal();
 
-    // Número do pedido — contador persistente, nunca repete
     var _cnt = parseInt(localStorage.getItem('lapinkPedidoCounter') || '999') + 1;
     localStorage.setItem('lapinkPedidoCounter', String(_cnt));
     var numPedido = 'LP' + String(_cnt).padStart(4, '0');
 
-    // Captura e-mail do cliente logado (se houver)
     var _lc = (typeof getLoggedClient === 'function') ? getLoggedClient() : null;
     var _clienteEmail = _lc ? (_lc.email || '') : '';
 
-    // Salva pedido em lapinkPedidos
     var pedido = {
-      id:          Date.now(),
-      numero:      numPedido,
+      id:           Date.now(),
+      numero:       numPedido,
       clienteEmail: _clienteEmail,
-      cliente:     { name: nome, email: _clienteEmail, whatsapp: whatsapp },
-      itens:   cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
-      total:   total,
-      status:  'aguardando',
-      data:    new Date().toISOString(),
-      obs:     ''
+      cliente:      { name: nome, email: _clienteEmail, whatsapp: whatsapp },
+      itens:    cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
+      total:    total,
+      status:   'aguardando',
+      data:     new Date().toISOString(),
+      obs:      ''
     };
 
     try {
@@ -426,19 +594,15 @@ function _esc(s) {
       localStorage.setItem('lapinkPedidos', JSON.stringify(pedidos));
     } catch(e) {}
 
-    // Decrementa estoque dos produtos vendidos
     try {
       var prods = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]');
       cart.forEach(function(item) {
         var idx = prods.findIndex(function(p) { return String(p.id) === String(item.id); });
-        if (idx >= 0) {
-          prods[idx].estoque = Math.max(0, (Number(prods[idx].estoque) || 0) - item.qty);
-        }
+        if (idx >= 0) prods[idx].estoque = Math.max(0, (Number(prods[idx].estoque) || 0) - item.qty);
       });
       localStorage.setItem('lapinkProdutos', JSON.stringify(prods));
     } catch(e) {}
 
-    // Monta mensagem WhatsApp
     var itensMsg = cart.map(function(i) {
       return '- ' + i.nome + ' x' + i.qty + ' — ' + fmtMoeda(i.preco) + ' cada';
     }).join('\n');
@@ -453,7 +617,6 @@ function _esc(s) {
       (payLabel ? '*Pagamento:* ' + payLabel + '\n' : '') +
       '\nAguardando confirmação.';
 
-    // Número WhatsApp da loja — lido das configurações
     var wpp = '';
     try {
       var cfg = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}');
@@ -464,21 +627,20 @@ function _esc(s) {
       return;
     }
 
-    // Limpa carrinho e mostra sucesso
     clearCart();
 
     document.getElementById('co-cart-section').style.display    = 'none';
     document.getElementById('co-form-section').style.display    = 'none';
     document.getElementById('co-summary-section').style.display = 'none';
     document.getElementById('co-empty').style.display           = 'none';
-    document.getElementById('co-success').style.display         = '';
+    if (document.getElementById('co-payment-section'))
+      document.getElementById('co-payment-section').style.display = 'none';
+    document.getElementById('co-success').style.display = '';
 
-    // Abre WhatsApp
     var waUrl = 'https://wa.me/' + wpp.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
     setTimeout(function() { window.open(waUrl, '_blank'); }, 300);
   });
 
-  // Inicializa
   render();
 
 })();
