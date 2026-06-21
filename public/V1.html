@@ -1073,8 +1073,8 @@ if (installBtn) {
     try {
       var s = JSON.parse(localStorage.getItem('lapinkCarrossel') || 'null');
       if (!s || !s.length) return DEFAULTS;
-      // Migração: se só tem 1 slide sem imagem e sem conteúdo próprio → restaura 4 defaults
-      if (s.length === 1 && !s[0].imagem) return DEFAULTS;
+      // Migração: 1 slide → carrossel estático (timer fica em loop no mesmo slide); restaura 4 defaults
+      if (s.length < 2) return DEFAULTS;
       return s;
     } catch(e) { return DEFAULTS; }
   }
