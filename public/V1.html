@@ -958,7 +958,7 @@ window.abrirQty = function(event, card) {
   var backdrop = document.getElementById('qty-backdrop');
   var sheet    = document.getElementById('qty-sheet');
   backdrop.style.display = 'block';
-  sheet.style.display    = 'block';
+  sheet.classList.add('open'); // display:flex via CSS
   requestAnimationFrame(function() {
     backdrop.style.opacity = '1';
     sheet.style.opacity    = '1';
@@ -999,7 +999,7 @@ window.fecharQty = function() {
   clearTimeout(_fecharQtyTimer);
   _fecharQtyTimer = setTimeout(function() {
     backdrop.style.display = 'none';
-    sheet.style.display    = 'none';
+    sheet.classList.remove('open');
     document.body.style.overflow = '';
     _qtyProduto = null;
   }, 280);
@@ -1590,96 +1590,49 @@ window.saveProfileData = async function() {
 </script>
 
 <!-- ── Modal de detalhes do produto ── -->
-<div id="qty-backdrop" onclick="fecharQty()" style="
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,.55); z-index:1100;
-  opacity:0; transition:opacity .25s;
-"></div>
+<div id="qty-backdrop" class="prod-modal-backdrop" onclick="fecharQty()"></div>
 
-<div id="qty-sheet" role="dialog" aria-modal="true" aria-label="Detalhes do produto" style="
-  display:none; position:fixed;
-  top:50%; left:50%; transform:translate(-50%,-50%) scale(.95);
-  width:min(480px,calc(100vw - 32px));
-  background:#fff; border-radius:20px;
-  z-index:1101;
-  box-shadow:0 20px 60px rgba(0,0,0,.22);
-  transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .28s;
-  opacity:0;
-  max-height:90vh; overflow-y:auto;
-">
+<div id="qty-sheet" class="prod-modal" role="dialog" aria-modal="true" aria-label="Detalhes do produto">
   <!-- imagem -->
-  <div id="qtySheetImg" style="
-    width:100%; height:220px;
-    background:var(--pk-50);
-    display:flex;align-items:center;justify-content:center;
-    border-radius:20px 20px 0 0; overflow:hidden; position:relative;
-  ">
-    <button onclick="fecharQty()" aria-label="Fechar" style="
-      position:absolute;top:12px;right:12px;
-      background:rgba(255,255,255,.85);border:none;border-radius:50%;
-      width:36px;height:36px;cursor:pointer;font-size:18px;
-      color:var(--pk-dark);display:flex;align-items:center;justify-content:center;
-      backdrop-filter:blur(4px);
-    "><i class="ti ti-x"></i></button>
+  <div id="qtySheetImg" class="prod-modal-img">
+    <button onclick="fecharQty()" class="prod-modal-close" aria-label="Fechar">
+      <i class="ti ti-x"></i>
+    </button>
   </div>
 
-  <div style="padding:20px 20px 28px;display:flex;flex-direction:column;gap:16px;">
-    <!-- categoria + nome -->
-    <div>
-      <div id="qtySheetCat" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--pk-400);margin-bottom:6px;"></div>
-      <div id="qtySheetNome" style="font-size:20px;font-weight:800;color:var(--pk-dark);line-height:1.25;"></div>
-      <div id="qtySheetCodigo" style="font-size:11px;color:#aaa;font-family:monospace;margin-top:4px;"></div>
+  <!-- info -->
+  <div class="prod-modal-body">
+    <div class="prod-modal-header">
+      <div id="qtySheetCat"    class="prod-modal-cat"></div>
+      <div id="qtySheetNome"   class="prod-modal-name"></div>
+      <div id="qtySheetCodigo" class="prod-modal-code"></div>
     </div>
 
-    <!-- preço -->
-    <div>
-      <div id="qtySheetPreco" style="font-size:26px;font-weight:900;color:var(--pk-500);line-height:1;"></div>
-      <div id="qtySheetPrecoRef" style="font-size:12px;color:#999;margin-top:3px;"></div>
+    <div class="prod-modal-price-block">
+      <div id="qtySheetPreco"    class="prod-modal-price"></div>
+      <div id="qtySheetPrecoRef" class="prod-modal-price-ref"></div>
     </div>
 
-    <!-- estoque -->
-    <div id="qtySheetEstoque" style="font-size:13px;color:#666;display:flex;align-items:center;gap:6px;"></div>
+    <div id="qtySheetEstoque" class="prod-modal-stock"></div>
 
-    <!-- quantidade -->
-    <div>
-      <div style="font-size:11px;font-weight:700;color:var(--pk-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Quantidade</div>
-      <div style="display:inline-flex;align-items:center;border:1.5px solid var(--pk-200);border-radius:30px;overflow:hidden;">
-        <button id="qtyMinus" onclick="mudaQtySheet(-1)" style="
-          background:none;border:none;width:48px;height:48px;
-          font-size:22px;font-weight:700;color:var(--pk-500);
-          cursor:pointer;display:flex;align-items:center;justify-content:center;
-        ">−</button>
-        <input id="qtyInput" type="number" value="1" min="1" max="99" style="
-          width:52px;text-align:center;border:none;
-          border-left:1px solid var(--pk-200);border-right:1px solid var(--pk-200);
-          font-size:16px;font-weight:700;color:var(--pk-dark);
-          outline:none;-moz-appearance:textfield;background:#fff;height:48px;
-        " />
-        <button id="qtyPlus" onclick="mudaQtySheet(1)" style="
-          background:none;border:none;width:48px;height:48px;
-          font-size:22px;font-weight:700;color:var(--pk-500);
-          cursor:pointer;display:flex;align-items:center;justify-content:center;
-        ">+</button>
+    <div class="prod-modal-qty-wrap">
+      <div class="prod-modal-qty-label">Quantidade</div>
+      <div class="prod-modal-qty">
+        <button id="qtyMinus" onclick="mudaQtySheet(-1)" class="qty-btn">−</button>
+        <input  id="qtyInput" type="number" value="1" min="1" max="99" class="qty-input" />
+        <button id="qtyPlus"  onclick="mudaQtySheet(1)"  class="qty-btn">+</button>
       </div>
     </div>
 
-    <!-- subtotal -->
-    <div id="qtySubtotal" style="font-size:13px;color:var(--pk-soft);"></div>
+    <div id="qtySubtotal" class="prod-modal-subtotal"></div>
 
-    <!-- botão -->
-    <button id="qtyAddBtn" onclick="confirmAddQty()" style="
-      width:100%;background:var(--pk-500);color:#fff;
-      border:none;border-radius:22px;padding:16px 0;
-      font-size:16px;font-weight:800;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;gap:8px;
-      transition:background .15s;
-    ">
+    <button id="qtyAddBtn" onclick="confirmAddQty()" class="prod-modal-add-btn">
       <i class="ti ti-shopping-cart"></i> Adicionar ao carrinho
     </button>
   </div>
 </div>
 
-<!-- compatibilidade — thumb oculto usado pelo código legado -->
+<!-- compatibilidade legado -->
 <div id="qtySheetThumb" style="display:none;"></div>
 </body>
 </html>

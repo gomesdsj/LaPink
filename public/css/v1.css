@@ -605,3 +605,116 @@ body {
 @media (max-width: 480px) {
   .btn-primary, .btn-secondary { padding: 9px 14px; font-size: 11px; }
 }
+
+/* ── Modal de detalhes do produto ─────────────────────────── */
+.prod-modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.55); z-index: 1100;
+  opacity: 0; transition: opacity .25s;
+}
+
+.prod-modal {
+  display: none; position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%) scale(.95);
+  width: min(680px, calc(100vw - 24px));
+  background: #fff; border-radius: 20px;
+  z-index: 1101;
+  box-shadow: 0 20px 60px rgba(0,0,0,.22);
+  transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .28s;
+  opacity: 0;
+  max-height: 90vh;
+  overflow: hidden;
+  /* layout lado a lado no desktop */
+  display: none;
+  flex-direction: row;
+}
+
+/* quando aberto JS troca display:none → flex */
+.prod-modal.open {
+  display: flex;
+}
+
+.prod-modal-img {
+  flex: 0 0 280px;
+  background: var(--pk-50);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  border-radius: 20px 0 0 20px;
+  min-height: 360px;
+}
+.prod-modal-img img { width: 100%; height: 100%; object-fit: cover; }
+.prod-modal-img i   { font-size: 70px; color: var(--pk-300); }
+
+.prod-modal-close {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(255,255,255,.85); border: none; border-radius: 50%;
+  width: 36px; height: 36px; cursor: pointer; font-size: 18px;
+  color: var(--pk-dark);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); z-index: 2;
+}
+.prod-modal-close:hover { background: #fff; }
+
+.prod-modal-body {
+  flex: 1; padding: 28px 24px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.prod-modal-cat  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--pk-400); }
+.prod-modal-name { font-size: 22px; font-weight: 800; color: var(--pk-dark); line-height: 1.2; margin-top: 4px; }
+.prod-modal-code { font-size: 11px; color: #aaa; font-family: monospace; margin-top: 3px; }
+
+.prod-modal-price     { font-size: 28px; font-weight: 900; color: var(--pk-500); line-height: 1; }
+.prod-modal-price-ref { font-size: 12px; color: #999; margin-top: 3px; }
+
+.prod-modal-stock { font-size: 13px; display: flex; align-items: center; gap: 6px; }
+
+.prod-modal-qty-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--pk-soft); margin-bottom: 10px; }
+.prod-modal-qty {
+  display: inline-flex; align-items: center;
+  border: 1.5px solid var(--pk-200); border-radius: 30px; overflow: hidden;
+}
+.qty-btn {
+  background: none; border: none; width: 48px; height: 48px;
+  font-size: 22px; font-weight: 700; color: var(--pk-500);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.qty-input {
+  width: 52px; text-align: center; border: none;
+  border-left: 1px solid var(--pk-200); border-right: 1px solid var(--pk-200);
+  font-size: 16px; font-weight: 700; color: var(--pk-dark);
+  outline: none; -moz-appearance: textfield; background: #fff; height: 48px;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.prod-modal-subtotal { font-size: 13px; color: var(--pk-soft); }
+
+.prod-modal-add-btn {
+  width: 100%; background: var(--pk-500); color: #fff;
+  border: none; border-radius: 22px; padding: 16px 0;
+  font-size: 16px; font-weight: 800; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .15s; margin-top: auto;
+}
+.prod-modal-add-btn:hover { background: var(--pk-600); }
+
+/* ── Mobile: layout empilhado ── */
+@media (max-width: 600px) {
+  .prod-modal {
+    width: calc(100vw - 24px);
+    max-height: 92vh;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .prod-modal-img {
+    flex: none;
+    width: 100%; height: 200px;
+    border-radius: 20px 20px 0 0;
+    min-height: unset;
+  }
+  .prod-modal-body { padding: 18px 18px 24px; }
+  .prod-modal-name { font-size: 19px; }
+  .prod-modal-price { font-size: 24px; }
+}
