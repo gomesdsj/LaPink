@@ -1,5 +1,5 @@
-/* LaPink — Service Worker v4 */
-var CACHE = 'lapink-v4';
+/* LaPink — Service Worker v5 */
+var CACHE = 'lapink-v5';
 
 /* Arquivos essenciais pré-cacheados na instalação */
 var PRECACHE = [
@@ -42,7 +42,7 @@ self.addEventListener('activate', function(e) {
   );
 });
 
-/* ── Fetch: cache-first para shell, network-first para dados ── */
+/* ── Fetch: network-first para HTML e dados, cache-first para assets ── */
 self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
 
@@ -51,8 +51,8 @@ self.addEventListener('fetch', function(e) {
   /* Ignora requisições de outras origens (CDN, APIs externas) */
   if (!url.startsWith(self.location.origin)) return;
 
-  /* Dados dinâmicos (JSON, admin): network-first */
-  if (url.includes('/data/') || url.includes('/admin/')) {
+  /* HTML (navegação) e dados dinâmicos: network-first para garantir versão atual */
+  if (e.request.mode === 'navigate' || url.includes('/data/') || url.includes('/admin/')) {
     e.respondWith(
       fetch(e.request)
         .then(function(res) {
@@ -62,16 +62,20 @@ self.addEventListener('fetch', function(e) {
           }
           return res;
         })
-        .catch(function() { return caches.match(e.request); })
+        .catch(function() {
+          /* Offline: retorna versão cacheada */
+          return caches.match(e.request).then(function(cached) {
+            return cached || caches.match('./V1.html');
+          });
+        })
     );
     return;
   }
 
-  /* Assets estáticos: cache-first, depois network */
+  /* Assets estáticos (CSS, JS, imagens): cache-first, atualiza em background */
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       if (cached) {
-        /* Atualiza em background sem bloquear */
         fetch(e.request).then(function(res) {
           if (res && res.ok) {
             caches.open(CACHE).then(function(c) { c.put(e.request, res); });
@@ -85,12 +89,7 @@ self.addEventListener('fetch', function(e) {
           caches.open(CACHE).then(function(c) { c.put(e.request, clone); });
         }
         return res;
-      }).catch(function() {
-        /* Offline fallback: retorna V1.html para navegações */
-        if (e.request.mode === 'navigate') {
-          return caches.match('./V1.html');
-        }
-      });
+      }).catch(function() {});
     })
   );
 });
