@@ -558,6 +558,7 @@
             <div style="display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;">
               <button class="btn btn-secondary" onclick="adicionarSlide()"><i class="ti ti-plus"></i> Novo slide</button>
               <button class="btn btn-secondary" id="btn-remover-slide" onclick="removerUltimoSlide()" style="color:var(--red-400); display:none;"><i class="ti ti-trash"></i> Remover último</button>
+              <button class="btn btn-secondary" onclick="restaurarSlidesDefault()" style="margin-left:auto;" title="Restaura os 4 slides padrão"><i class="ti ti-refresh"></i> Restaurar padrões</button>
             </div>
             <p style="font-size:11px; color:var(--gray-400); margin-top:10px; display:flex; align-items:flex-start; gap:5px;">
               <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
@@ -886,7 +887,10 @@ var slidesData = [];
 function getCarrossel() {
   try {
     var s = JSON.parse(localStorage.getItem('lapinkCarrossel') || 'null');
-    return (s && s.length) ? s : JSON.parse(JSON.stringify(SLIDE_DEFAULTS));
+    if (!s || !s.length) return JSON.parse(JSON.stringify(SLIDE_DEFAULTS));
+    // Migração: 1 slide sem imagem = estado anterior inválido → restaura 4 defaults
+    if (s.length === 1 && !s[0].imagem) return JSON.parse(JSON.stringify(SLIDE_DEFAULTS));
+    return s;
   } catch(e) { return JSON.parse(JSON.stringify(SLIDE_DEFAULTS)); }
 }
 
@@ -980,6 +984,13 @@ function adicionarSlide() {
   if (slidesData.length >= 6) { showToast('Máximo de 6 slides.', 'erro'); return; }
   slidesData.push({ eyebrow:'', titulo:'Novo slide', subtitulo:'', btn1Txt:'Ver coleção', btn1Acao:'colecao', btn2Txt:'', btn2Acao:'', imagem:'', icone:'ti-diamond', cor:'pink' });
   renderCarrossel();
+}
+
+function restaurarSlidesDefault() {
+  if (!confirm('Restaurar os ' + SLIDE_DEFAULTS.length + ' slides padrão? Os slides atuais serão substituídos.')) return;
+  slidesData = JSON.parse(JSON.stringify(SLIDE_DEFAULTS));
+  renderCarrossel();
+  showToast('Slides restaurados! Clique em Publicar para salvar.');
 }
 
 function removerUltimoSlide() {

@@ -1072,7 +1072,10 @@ if (installBtn) {
   function getSlides() {
     try {
       var s = JSON.parse(localStorage.getItem('lapinkCarrossel') || 'null');
-      return (s && s.length) ? s : DEFAULTS;
+      if (!s || !s.length) return DEFAULTS;
+      // Migração: se só tem 1 slide sem imagem e sem conteúdo próprio → restaura 4 defaults
+      if (s.length === 1 && !s[0].imagem) return DEFAULTS;
+      return s;
     } catch(e) { return DEFAULTS; }
   }
 
