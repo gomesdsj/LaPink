@@ -624,21 +624,19 @@
         badgeHtml = '<span class="prod-badge">' + esc(badge) + '</span>';
       }
 
-      var varejo   = Number(p.precoVarejo  || 0);
-      var atacado  = Number(p.precoAtacado || 0);
-      var preco    = 'R$ ' + varejo.toFixed(2).replace('.', ',');
-      var atacadoHtml = (atacado > 0 && atacado < varejo)
-        ? '<div style="font-size:11px;color:#888;margin-top:1px;">Atacado: R$ ' + atacado.toFixed(2).replace('.', ',') + '</div>'
-        : '';
-      var favHtml  = esgotado ? '' : '<i class="ti ti-heart prod-fav"></i>';
+      var varejo        = Number(p.precoVarejo  || 0);
+      var atacado       = Number(p.precoAtacado || 0);
+      var precoPrincipal = atacado > 0 ? atacado : varejo;
+      var preco         = 'R$ ' + precoPrincipal.toFixed(2).replace('.', ',');
+      var favHtml       = esgotado ? '' : '<i class="ti ti-heart prod-fav"></i>';
 
       return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '"' +
-          ' data-id="' + esc(String(p.id)) + '" data-nome="' + esc(p.nome) + '" data-preco="' + varejo + '" data-imagem="' + esc(p.imagem || '') + '"' +
+          ' data-id="' + esc(String(p.id)) + '" data-nome="' + esc(p.nome) + '" data-preco="' + precoPrincipal + '" data-imagem="' + esc(p.imagem || '') + '"' +
           (esgotado ? '' : ' onclick="abrirQty(event,this)"') + '>' +
         '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
-          '<div><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span>' + atacadoHtml + '</div>' +
+          '<div><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span></div>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -1257,10 +1255,9 @@ function renderDrawerCategories() {
   if (!catNames.length) catNames = CAT_FALLBACK;
 
   submenu.innerHTML = catNames.map(function(cat) {
-    var icon    = CAT_ICONS[cat] || 'ti-tag';
-    var count   = cats[cat] ? '<span class="drawer-cat-badge">' + cats[cat] + '</span>' : '';
-    var catEsc  = cat.replace(/'/g, "\\'");
-    return '<a role="menuitem" onclick="drawerNav(function(){filtrarCategoria(\'' + catEsc + '\')})"><i class="ti ' + icon + '"></i> ' + cat + count + '</a>';
+    var icon   = CAT_ICONS[cat] || 'ti-tag';
+    var catEsc = cat.replace(/'/g, "\\'");
+    return '<a role="menuitem" onclick="drawerNav(function(){filtrarCategoria(\'' + catEsc + '\')})"><i class="ti ' + icon + '"></i> ' + cat + '</a>';
   }).join('');
 }
 
