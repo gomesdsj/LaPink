@@ -115,11 +115,12 @@ body {
 /* ── Itens do carrinho ── */
 .cart-item {
   display: flex; align-items: center; gap: 16px;
-  padding: 16px 0;
+  height: 100px;
   border-bottom: 1px solid var(--pk-100);
+  overflow: hidden;
 }
-.cart-item:last-child { border-bottom: none; padding-bottom: 0; }
-.cart-item:first-child { padding-top: 0; }
+.cart-item:last-child { border-bottom: none; }
+.cart-item:first-child { }
 
 .cart-item-img {
   width: 80px; height: 80px; border-radius: 14px;
@@ -187,6 +188,17 @@ body {
 }
 .form-input:focus { border-color: var(--pk-500); background: #fff; }
 .form-input.error { border-color: #e74c3c; }
+.form-textarea {
+  width: 100%; padding: 12px 14px;
+  border: 1.5px solid var(--pk-200); border-radius: 12px;
+  font-size: 14px; color: var(--pk-dark); background: var(--pk-50);
+  outline: none; resize: vertical; min-height: 80px;
+  font-family: inherit; line-height: 1.5;
+  transition: border-color .18s, background .18s;
+}
+.form-textarea:focus { border-color: var(--pk-500); background: #fff; }
+.form-row { display: flex; gap: 12px; }
+.form-row .form-group { flex: 1; }
 
 /* ── Formas de pagamento ── */
 .co-payment-opts { display: flex; flex-direction: column; gap: 10px; }
@@ -283,11 +295,13 @@ body {
   .co-page  { flex-direction: column; margin: 16px auto; padding: 0 12px 48px; gap: 12px; }
   .co-right { position: static; flex: none; width: 100%; }
   .co-card  { padding: 18px; border-radius: 16px; }
-  .cart-item-img { width: 72px; height: 72px; font-size: 28px; }
+  .cart-item { height: 90px; }
+  .cart-item-img { width: 68px; height: 68px; font-size: 26px; }
   .cart-item-name { font-size: 14px; }
   .cart-item-price { font-size: 16px; }
-  .qty-btn { width: 38px; height: 38px; }
-  .qty-val { height: 38px; }
+  .qty-btn { width: 36px; height: 36px; }
+  .qty-val { height: 36px; }
+  .form-row { flex-direction: column; gap: 0; }
 }
 </style>
 </head>
@@ -326,18 +340,31 @@ body {
       <h2 class="co-section-title"><i class="ti ti-user-circle"></i> Seus dados</h2>
       <form id="co-form" novalidate>
         <div class="form-group">
-          <label class="form-label" for="co-nome">Nome completo</label>
+          <label class="form-label" for="co-nome">Nome completo <span style="color:#e74c3c">*</span></label>
           <div class="form-input-wrap">
             <i class="ti ti-user"></i>
             <input class="form-input" type="text" id="co-nome" placeholder="Digite seu nome" autocomplete="name" required />
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="co-whatsapp">WhatsApp</label>
-          <div class="form-input-wrap">
-            <i class="ti ti-brand-whatsapp"></i>
-            <input class="form-input" type="tel" id="co-whatsapp" placeholder="(11) 99999-9999" autocomplete="tel" required />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="co-whatsapp">WhatsApp <span style="color:#e74c3c">*</span></label>
+            <div class="form-input-wrap">
+              <i class="ti ti-brand-whatsapp"></i>
+              <input class="form-input" type="tel" id="co-whatsapp" placeholder="(11) 99999-9999" autocomplete="tel" required />
+            </div>
           </div>
+          <div class="form-group">
+            <label class="form-label" for="co-email">E-mail <span style="color:var(--pk-soft);font-weight:400;">(opcional)</span></label>
+            <div class="form-input-wrap">
+              <i class="ti ti-mail"></i>
+              <input class="form-input" type="email" id="co-email" placeholder="seu@email.com" autocomplete="email" />
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="co-obs">Observação <span style="color:var(--pk-soft);font-weight:400;">(opcional)</span></label>
+          <textarea class="form-textarea" id="co-obs" placeholder="Ex: entregar à tarde, presente, cor preferida…"></textarea>
         </div>
       </form>
     </div>
@@ -353,7 +380,7 @@ body {
     <div class="co-card co-success" id="co-success">
       <div class="co-success-icon"><i class="ti ti-circle-check"></i></div>
       <h2>Pedido enviado!</h2>
-      <p>Seu pedido foi registrado e a mensagem foi aberta no WhatsApp.<br>Nossa equipe entrará em contato para confirmar.</p>
+      <p id="co-success-msg">Seu pedido foi registrado e a mensagem foi aberta no WhatsApp.<br>Nossa equipe entrará em contato para confirmar.</p>
       <a href="V1.html"><i class="ti ti-arrow-left"></i> Continuar comprando</a>
     </div>
 
@@ -561,6 +588,8 @@ function _esc(s) {
   document.getElementById('co-btn-confirm').addEventListener('click', function() {
     var nome     = document.getElementById('co-nome').value.trim();
     var whatsapp = document.getElementById('co-whatsapp').value.trim();
+    var email    = document.getElementById('co-email').value.trim();
+    var obs      = document.getElementById('co-obs').value.trim();
     var nomeInp  = document.getElementById('co-nome');
     var wppInp   = document.getElementById('co-whatsapp');
 
@@ -577,19 +606,16 @@ function _esc(s) {
     localStorage.setItem('lapinkPedidoCounter', String(_cnt));
     var numPedido = 'LP' + String(_cnt).padStart(4, '0');
 
-    var _lc = (typeof getLoggedClient === 'function') ? getLoggedClient() : null;
-    var _clienteEmail = _lc ? (_lc.email || '') : '';
-
     var pedido = {
       id:           Date.now(),
       numero:       numPedido,
-      clienteEmail: _clienteEmail,
-      cliente:      { name: nome, email: _clienteEmail, whatsapp: whatsapp },
+      clienteEmail: email,
+      cliente:      { name: nome, email: email, whatsapp: whatsapp },
       itens:    cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
       total:    total,
       status:   'aguardando',
       data:     new Date().toISOString(),
-      obs:      ''
+      obs:      obs
     };
 
     try {
@@ -608,18 +634,22 @@ function _esc(s) {
     } catch(e) {}
 
     var itensMsg = cart.map(function(i) {
-      return '- ' + i.nome + ' x' + i.qty + ' — ' + fmtMoeda(i.preco) + ' cada';
+      return '- ' + i.nome + ' x' + i.qty + ' — ' + fmtMoeda(i.preco * i.qty);
     }).join('\n');
 
     var payLabel = getSelectedPayMethod();
     var msg =
       '*Novo Pedido LaPink* 🛍\n' +
       '*Nº:* ' + numPedido + '\n' +
-      '*Nome:* ' + nome + '\n\n' +
-      '*Itens:*\n' + itensMsg + '\n\n' +
+      '*Data:* ' + new Date().toLocaleDateString('pt-BR') + '\n\n' +
+      '*Cliente:* ' + nome + '\n' +
+      '*WhatsApp:* ' + whatsapp + '\n' +
+      (email ? '*E-mail:* ' + email + '\n' : '') +
+      '\n*Itens:*\n' + itensMsg + '\n\n' +
       '*Total:* ' + fmtMoeda(total) + '\n' +
       (payLabel ? '*Pagamento:* ' + payLabel + '\n' : '') +
-      '\nAguardando confirmação.';
+      (obs ? '\n*Obs:* ' + obs + '\n' : '') +
+      '\n_Status: Aguardando confirmação_';
 
     var wpp = '';
     try {
@@ -640,6 +670,9 @@ function _esc(s) {
     if (document.getElementById('co-payment-section'))
       document.getElementById('co-payment-section').style.display = 'none';
     document.getElementById('co-success').style.display = 'block';
+    document.getElementById('co-success-msg').innerHTML =
+      'Pedido <strong>' + numPedido + '</strong> registrado com sucesso!<br>' +
+      'A mensagem foi aberta no WhatsApp — nossa equipe entrará em contato para confirmar.';
 
     var waUrl = 'https://wa.me/' + wpp.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
     setTimeout(function() { window.open(waUrl, '_blank'); }, 300);
