@@ -11,7 +11,7 @@
 <script src="js/storage.js"></script>
 <script>
   function checkAuth(roles) {
-    var s = getSession();
+    var s = getLoggedClient();
     if (!s || !s.email) { location.href = 'login.html'; return; }
     if (roles && roles.length && roles.indexOf(s.role || 'client') === -1) {
       location.href = 'login.html';

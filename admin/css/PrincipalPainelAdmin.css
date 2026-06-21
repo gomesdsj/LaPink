@@ -316,8 +316,24 @@
   .calc-inputs { flex-direction: column; }
   .calc-result { flex-direction: column; }
 
-  /* Tab buttons mobile */
-  .tab-btn { padding: 12px 14px; font-size: 12px; }
+  /* Tab buttons mobile — scroll horizontal */
+  .page-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    padding: 0 12px;
+    scrollbar-width: none;
+  }
+  .page-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 12px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
 }
 
 /* ── Modal: Editar produto ── */

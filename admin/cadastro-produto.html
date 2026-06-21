@@ -609,49 +609,48 @@
       }
     }
 
-    var _MIME_VALIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    var _MAX_IMG_SIZE = 5 * 1024 * 1024; // 5 MB antes de comprimir
+    var _MIME_VALIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic', 'image/heif'];
+    var _MAX_IMG_SIZE = 15 * 1024 * 1024; // 15 MB
 
     function _validarArquivoImagem(file) {
-      if (!_MIME_VALIDOS.includes(file.type)) {
-        showToast('Formato inválido. Use JPEG, PNG, WebP ou GIF.', 'erro');
+      var ext = (file.name || '').split('.').pop().toLowerCase();
+      var extOk = ['jpg','jpeg','png','webp','gif','avif','heic','heif'].indexOf(ext) !== -1;
+      if (!_MIME_VALIDOS.includes(file.type) && !extOk) {
+        showToast('Formato inválido. Use JPEG, PNG, WebP, AVIF ou HEIF.', 'erro');
         return false;
       }
       if (file.size > _MAX_IMG_SIZE) {
-        showToast('Imagem muito grande. Máximo 5 MB.', 'erro');
+        showToast('Imagem muito grande. Máximo 15 MB.', 'erro');
         return false;
       }
       return true;
     }
 
-    /* Comprime para máx 600×600px, qualidade 72%, resultado ≤ 500 KB */
+    /* Comprime para máx 900×900px, qualidade 88% WebP — alta qualidade para produtos */
     function _comprimirImagem(file) {
       return new Promise(function(resolve, reject) {
-        var reader = new FileReader();
-        reader.onerror = reject;
-        reader.onload = function(e) {
-          var img = new Image();
-          img.onerror = reject;
-          img.onload = function() {
-            var MAX = 600, q = 0.72;
-            var w = img.width, h = img.height;
-            if (w > MAX || h > MAX) {
-              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-              else       { w = Math.round(w * MAX / h); h = MAX; }
-            }
-            var canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            var base64 = canvas.toDataURL('image/jpeg', q);
-            // Se ainda > 500 KB, reduz qualidade
-            if (base64.length > 500 * 1024 * 4 / 3) {
-              base64 = canvas.toDataURL('image/jpeg', 0.5);
-            }
-            resolve(base64);
-          };
-          img.src = e.target.result;
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Erro ao carregar imagem.')); };
+        img.onload = function() {
+          URL.revokeObjectURL(url);
+          var maxW = 900, maxH = 900, q = 0.88;
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if (w > maxW || h > maxH) {
+            var ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          var result = canvas.toDataURL('image/webp', q);
+          if (result.indexOf('data:image/webp') === -1) {
+            result = canvas.toDataURL('image/jpeg', q);
+          }
+          resolve(result);
         };
-        reader.readAsDataURL(file);
+        img.src = url;
       });
     }
 

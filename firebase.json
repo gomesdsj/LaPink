@@ -12,12 +12,17 @@
       "*.md",
       "*.log",
       "dev-server.js",
+      "serve.js",
+      "verify.js",
+      "verify_with_server.js",
+      "check_getsession.js",
       "package.json",
       "package-lock.json",
       "lapink-insomnia.json",
       "AGENTES_STATUS.md",
       "**/node_modules/**",
       "data/**",
+      "screenshots/**",
       ".env"
     ],
     "rewrites": [

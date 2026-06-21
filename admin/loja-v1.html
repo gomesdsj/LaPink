@@ -622,6 +622,7 @@ var DEFAULT_CONFIG = {
     { texto: 'Virei revendedora e as minhas clientes amam! Produtos de altíssima qualidade.',      autor: 'Juliana R. — Curitiba' }
   ],
   newsletter: {
+  
     titulo: 'Receba novidades e ofertas exclusivas',
     sub:    'Cadastre seu e-mail e ganhe 10% de desconto na primeira compra',
     btn:    'Quero desconto'
@@ -648,38 +649,67 @@ function thumbHtml(p) {
 }
 function precoFmt(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
 
-var _MIME_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-var _TAMANHO_MAX_IMG = 2 * 1024 * 1024; // 2 MB
+var _MIME_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic', 'image/heif'];
+var _TAMANHO_MAX_IMG = 15 * 1024 * 1024; // 15 MB
 
 function _validarImagem(file) {
-  if (!_MIME_PERMITIDOS.includes(file.type)) {
-    showToast('Formato inválido. Use JPEG, PNG, WebP ou GIF.', 'erro');
+  var ext = (file.name || '').split('.').pop().toLowerCase();
+  var extOk = ['jpg','jpeg','png','webp','gif','avif','heic','heif'].indexOf(ext) !== -1;
+  if (!_MIME_PERMITIDOS.includes(file.type) && !extOk) {
+    showToast('Formato inválido. Use JPEG, PNG, WebP, AVIF ou HEIF.', 'erro');
     return false;
   }
   if (file.size > _TAMANHO_MAX_IMG) {
-    showToast('Imagem muito grande. Máximo 2 MB.', 'erro');
+    showToast('Imagem muito grande. Máximo 15 MB.', 'erro');
     return false;
   }
   return true;
+}
+
+// Comprime via Canvas → WebP. maxW/maxH em px, quality 0-1.
+function _comprimirImagem(file, maxW, maxH, quality) {
+  return new Promise(function(resolve, reject) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if (w > maxW || h > maxH) {
+        var ratio = Math.min(maxW / w, maxH / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var webp = canvas.toDataURL('image/webp', quality);
+      // Fallback para jpeg se browser não suportar webp em toDataURL
+      if (webp.indexOf('data:image/webp') === -1) {
+        webp = canvas.toDataURL('image/jpeg', quality);
+      }
+      resolve(webp);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('Erro ao carregar imagem.')); };
+    img.src = url;
+  });
 }
 
 function atualizarFotoProduto(id, input) {
   var file = input.files[0];
   if (!file) return;
   if (!_validarImagem(file)) { input.value = ''; return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
+  showToast('Processando imagem...', 'info');
+  _comprimirImagem(file, 900, 900, 0.88).then(function(dataUrl) {
     var produtos = getProdutos();
     var idx = produtos.findIndex(function(p) { return p.id === id; });
     if (idx === -1) { showToast('Produto não encontrado.', 'erro'); return; }
-    produtos[idx].imagem = e.target.result;
+    produtos[idx].imagem = dataUrl;
     localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
     renderCatalogo();
     renderDestaque();
     atualizarPreviewCatalogo();
     showToast('Foto de "' + escHtml(produtos[idx].nome) + '" atualizada!');
-  };
-  reader.readAsDataURL(file);
+  }).catch(function(e) { showToast('Erro ao processar imagem.', 'erro'); });
 }
 
 var destaqueList = [];
@@ -950,13 +980,12 @@ function atualizarFotoSlide(idx, input) {
   var file = input.files[0];
   if (!file) return;
   if (!_validarImagem(file)) { input.value = ''; return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    slidesData[idx].imagem = e.target.result;
+  showToast('Processando imagem...', 'info');
+  _comprimirImagem(file, 1920, 1080, 0.92).then(function(dataUrl) {
+    slidesData[idx].imagem = dataUrl;
     renderCarrossel();
     showToast('Foto do slide ' + (idx+1) + ' atualizada!');
-  };
-  reader.readAsDataURL(file);
+  }).catch(function() { showToast('Erro ao processar imagem.', 'erro'); });
 }
 
 function salvarCarrossel() {
