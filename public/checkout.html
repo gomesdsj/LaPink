@@ -635,7 +635,7 @@ function _esc(s) {
     document.getElementById('co-empty').style.display           = 'none';
     if (document.getElementById('co-payment-section'))
       document.getElementById('co-payment-section').style.display = 'none';
-    document.getElementById('co-success').style.display = '';
+    document.getElementById('co-success').style.display = 'block';
 
     var waUrl = 'https://wa.me/' + wpp.replace(/\D/g, '') + '?text=' + encodeURIComponent(msg);
     setTimeout(function() { window.open(waUrl, '_blank'); }, 300);
