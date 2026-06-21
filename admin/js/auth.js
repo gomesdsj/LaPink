@@ -46,10 +46,10 @@ function _hashPassword(str) {
 }
 
 // ── Seed dos Super Admins fixos ───────────────────────────
-// Senha padrão inicial: 123456
-// SHA-256('123456') = 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
+// Senha do super admin: 267267
+// SHA-256('267267') = 5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a
 (function _seedSuperAdmins() {
-  var DEFAULT_HASH = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
+  var DEFAULT_HASH = '5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a';
   var FIXED = [
     { email: 'alexandrej529@hotmail.com', name: 'Alexandre', role: 'superadmin' }
   ];
@@ -58,16 +58,12 @@ function _hashPassword(str) {
   FIXED.forEach(function(sa) {
     var idx = users.findIndex(function(u) { return u.email.toLowerCase() === sa.email.toLowerCase(); });
     if (idx === -1) {
-      // Conta nova: cria com senha padrão
       users.push({ email: sa.email, password: DEFAULT_HASH, role: sa.role, name: sa.name, address: '', createdAt: new Date().toISOString() });
       changed = true;
     } else {
-      // Conta existente: garante role mas NÃO sobrescreve senha já definida pelo usuário
       if (users[idx].role !== 'superadmin') { users[idx].role = 'superadmin'; changed = true; }
-      // Só reseta senha se for btoa legado (não tem 64 chars hex) ou estiver vazia
-      var pw = users[idx].password || '';
-      var isSha256 = /^[0-9a-f]{64}$/.test(pw);
-      if (!isSha256) { users[idx].password = DEFAULT_HASH; changed = true; }
+      // Sempre mantém a senha fixa definida para o super admin
+      if (users[idx].password !== DEFAULT_HASH) { users[idx].password = DEFAULT_HASH; changed = true; }
     }
   });
   if (changed) _saveUsers(users);
