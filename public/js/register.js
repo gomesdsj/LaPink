@@ -66,18 +66,19 @@ async function _doRegister() {
     return;
   }
 
-  clients.push({
+  var newClient = {
     name:       name,
     email:      email,
     whatsapp:   whatsapp,
     password:   hash,
     totalSpent: 0,
     purchases:  []
-  });
+  };
+  clients.push(newClient);
   saveClients(clients);
 
-  try { sessionStorage.setItem('referrerPage', 'minha-conta.html'); } catch (e) {}
+  setLoggedClient({ name: name, email: email, role: 'client' });
 
-  setRegisterMessage('Cadastro realizado! Redirecionando...', true);
-  setTimeout(function() { location.href = 'login.html'; }, 1200);
+  setRegisterMessage('Cadastro realizado! Entrando na loja...', true);
+  setTimeout(function() { location.href = 'V1.html'; }, 900);
 }
