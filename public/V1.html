@@ -387,25 +387,10 @@
   <div class="section bg-white">
     <div class="section-header">
       <span class="section-title">Categorias</span>
-      <a class="section-link" onclick="limparFiltro()" style="cursor:pointer;">Ver todas →</a>
+      <a class="section-link" id="btn-ver-todas-cats" onclick="toggleVerTodasCats()" style="cursor:pointer;display:none;">Ver todas →</a>
     </div>
-    <div class="cat-grid">
-      <div class="cat-card" id="cat-aneis"    onclick="filtrarCategoria('Anéis')">
-        <div class="cat-icon"><i class="ti ti-circle"></i></div>
-        <div class="cat-name">Anéis</div>
-      </div>
-      <div class="cat-card" id="cat-colares"  onclick="filtrarCategoria('Colares')">
-        <div class="cat-icon"><i class="ti ti-link"></i></div>
-        <div class="cat-name">Colares</div>
-      </div>
-      <div class="cat-card" id="cat-brincos"  onclick="filtrarCategoria('Brincos')">
-        <div class="cat-icon"><i class="ti ti-star"></i></div>
-        <div class="cat-name">Brincos</div>
-      </div>
-      <div class="cat-card" id="cat-bolsas"   onclick="filtrarCategoria('Bolsas')">
-        <div class="cat-icon"><i class="ti ti-briefcase"></i></div>
-        <div class="cat-name">Bolsas</div>
-      </div>
+    <div class="cat-grid" id="cat-grid-main">
+      <!-- populado por renderCatGridMain() -->
     </div>
   </div>
 
@@ -653,6 +638,7 @@
     var searchInput = document.getElementById('v1-search');
     if (searchInput) searchInput.value = '';
     atualizarProdutos();
+    if (typeof renderCatGridMain === 'function') renderCatGridMain();
     document.getElementById('v1-prod-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   window.limparFiltro = function() {
@@ -661,6 +647,7 @@
     var searchInput = document.getElementById('v1-search');
     if (searchInput) searchInput.value = '';
     atualizarProdutos();
+    if (typeof renderCatGridMain === 'function') renderCatGridMain();
   };
   window.buscarProdutos = function(termo) {
     window._v1BuscaFiltro = termo.toLowerCase();
@@ -845,6 +832,7 @@
   // Atualiza vitrine quando o JSON da pasta data/ carregar (seed v3 assíncrono)
   document.addEventListener('lapinkProdutosAtualizados', function() {
     atualizarProdutos();
+    if (typeof window.renderCatGridMain === 'function') window.renderCatGridMain();
     var secao = document.getElementById('secao-catalogo');
     if (secao && secao.style.display !== 'none') renderCatalogoCompleto();
   });
@@ -1235,6 +1223,62 @@ var CAT_ICONS = {
   'Outros':    'ti-tag'
 };
 var CAT_FALLBACK = ['Anéis','Brincos','Colares','Bolsas','Pulseiras','Conjuntos','Berloques','Chokers'];
+
+// ── Grade de categorias principal (dinâmica) ──────────────────
+var _catGridExpandida = false;
+var CAT_GRID_LIMIT    = 4;
+
+window.renderCatGridMain = function() {
+  var grid    = document.getElementById('cat-grid-main');
+  var btnLink = document.getElementById('btn-ver-todas-cats');
+  if (!grid) return;
+
+  var produtos = (typeof getProdutos === 'function') ? getProdutos() : [];
+  var cats = [], seen = {};
+  produtos.forEach(function(p) {
+    var c = (p.categoria || '').trim();
+    if (c && !seen[c]) { seen[c] = true; cats.push(c); }
+  });
+  if (!cats.length) cats = CAT_FALLBACK.slice();
+
+  var visiveis = (_catGridExpandida || cats.length <= CAT_GRID_LIMIT)
+    ? cats : cats.slice(0, CAT_GRID_LIMIT);
+
+  var catAtiva = window._v1CatFiltro;
+  var escFn = typeof esc === 'function' ? esc : function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  grid.innerHTML = visiveis.map(function(cat) {
+    var icon   = CAT_ICONS[cat] || 'ti-tag';
+    var catEsc = cat.replace(/'/g, "\\'");
+    var ativo  = cat === catAtiva ? ' active' : '';
+    return '<div class="cat-card' + ativo + '" onclick="filtrarCategoria(\'' + catEsc + '\')">' +
+      '<div class="cat-icon"><i class="ti ' + icon + '"></i></div>' +
+      '<div class="cat-name">' + escFn(cat) + '</div>' +
+    '</div>';
+  }).join('');
+
+  if (btnLink) {
+    if (cats.length > CAT_GRID_LIMIT) {
+      btnLink.style.display = '';
+      btnLink.textContent = _catGridExpandida
+        ? 'Ver menos ←'
+        : 'Ver todas (' + cats.length + ') →';
+    } else {
+      btnLink.style.display = 'none';
+    }
+  }
+};
+
+window.toggleVerTodasCats = function() {
+  _catGridExpandida = !_catGridExpandida;
+  window.renderCatGridMain();
+};
+
+// Renderiza na carga da página
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.renderCatGridMain);
+} else {
+  window.renderCatGridMain();
+}
 
 function renderDrawerCategories() {
   var submenu = document.getElementById('drawerCatSubmenu');
