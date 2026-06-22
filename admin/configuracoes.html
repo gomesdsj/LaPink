@@ -486,33 +486,105 @@
               </div>
             </div>
 
-            <!-- Tabela de frete por peso -->
+            <!-- Frete pelos Correios -->
             <div class="section-card">
-              <h3><i class="ti ti-weight" style="color:var(--pink-500)"></i> Tabela de frete por peso</h3>
-              <p>Defina o valor do frete para cada faixa de peso (em gramas). O sistema soma o peso de todos os itens do carrinho e aplica a faixa correspondente.</p>
-              <p style="font-size:12px;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-100);border-radius:8px;padding:8px 12px;margin-bottom:14px;">
-                <i class="ti ti-info-circle"></i> Cadastre o <strong>Peso para envio (g)</strong> em cada produto para que o cálculo funcione automaticamente.
-              </p>
+              <h3><i class="ti ti-package" style="color:var(--pink-500)"></i> Frete pelos Correios (PAC e SEDEX)</h3>
+              <p>Configure os valores por faixa de peso para PAC e SEDEX. O sistema calcula automaticamente com base no peso total dos itens no carrinho e oferece ambas as opções ao cliente.</p>
 
-              <div style="overflow-x:auto;">
-                <table style="width:100%;border-collapse:collapse;font-size:13px;" id="tabela-peso-table">
-                  <thead>
-                    <tr style="background:var(--gray-50);">
-                      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Até (gramas)</th>
-                      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Frete (R$)</th>
-                      <th style="padding:8px 4px;border-bottom:1px solid var(--gray-200);width:36px;"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="tabela-peso-body"></tbody>
-                </table>
+              <!-- Info box: caixas Correios -->
+              <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+                <div style="font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                  <i class="ti ti-box" style="color:var(--pink-400);"></i> Caixas Correios — referência de embalagem
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;font-size:11px;">
+                  <div style="background:#fff;border:1px solid var(--gray-200);border-radius:8px;padding:8px 10px;">
+                    <div style="font-weight:700;color:var(--gray-800);margin-bottom:2px;">Caixa P</div>
+                    <div style="color:var(--gray-500);">24 × 16 × 8 cm</div>
+                    <div style="color:var(--pink-500);font-weight:600;">até ~500 g</div>
+                  </div>
+                  <div style="background:#fff;border:1px solid var(--gray-200);border-radius:8px;padding:8px 10px;">
+                    <div style="font-weight:700;color:var(--gray-800);margin-bottom:2px;">Caixa M</div>
+                    <div style="color:var(--gray-500);">30 × 22 × 13 cm</div>
+                    <div style="color:var(--pink-500);font-weight:600;">até ~5 kg</div>
+                  </div>
+                  <div style="background:#fff;border:1px solid var(--gray-200);border-radius:8px;padding:8px 10px;">
+                    <div style="font-weight:700;color:var(--gray-800);margin-bottom:2px;">Caixa G</div>
+                    <div style="color:var(--gray-500);">36 × 28 × 28 cm</div>
+                    <div style="color:var(--pink-500);font-weight:600;">até 30 kg</div>
+                  </div>
+                </div>
+                <div style="font-size:11px;color:var(--gray-400);margin-top:8px;">
+                  Limites Correios: máx 100 cm por lado · soma dos 3 lados ≤ 200 cm · peso máx 30 kg
+                </div>
               </div>
 
-              <button type="button" onclick="adicionarFaixaPeso()" style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-200);border-radius:8px;padding:7px 14px;cursor:pointer;">
-                <i class="ti ti-plus"></i> Adicionar faixa
-              </button>
+              <p style="font-size:12px;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-100);border-radius:8px;padding:8px 12px;margin-bottom:18px;">
+                <i class="ti ti-info-circle"></i> Cadastre o <strong>Peso para envio (g)</strong> em cada produto para que o cálculo seja aplicado no carrinho.
+                Os preços abaixo são baseados nas tabelas dos Correios 2025 (médias nacionais) — ajuste conforme sua região.
+              </p>
 
-              <div class="form-actions" style="margin-top:16px;">
-                <button class="btn-save-form" type="button" onclick="salvarEntrega()"><i class="ti ti-device-floppy"></i> Salvar entrega</button>
+              <!-- PAC -->
+              <div style="margin-bottom:22px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="background:var(--green-50);color:var(--green-400);border:1px solid #86efac;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;">PAC</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--gray-700);">Encomenda PAC <span style="font-size:11px;font-weight:400;color:var(--gray-400);">— 5 a 10 dias úteis</span></div>
+                  </div>
+                  <label class="toggle-switch" title="Habilitar PAC">
+                    <input type="checkbox" id="ent-pac-ativo" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div style="overflow-x:auto;">
+                  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                      <tr style="background:var(--gray-50);">
+                        <th style="padding:7px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Até (g)</th>
+                        <th style="padding:7px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Caixa</th>
+                        <th style="padding:7px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">PAC (R$)</th>
+                        <th style="padding:7px 4px;border-bottom:1px solid var(--gray-200);width:32px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="tabela-pac-body"></tbody>
+                  </table>
+                </div>
+                <button type="button" onclick="adicionarFaixa('pac')" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--green-400);background:var(--green-50);border:1px solid #86efac;border-radius:6px;padding:5px 12px;cursor:pointer;">
+                  <i class="ti ti-plus"></i> Adicionar faixa PAC
+                </button>
+              </div>
+
+              <!-- SEDEX -->
+              <div style="margin-bottom:18px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="background:var(--pink-50);color:var(--pink-600);border:1px solid var(--pink-200);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;">SEDEX</div>
+                    <div style="font-size:13px;font-weight:700;color:var(--gray-700);">SEDEX <span style="font-size:11px;font-weight:400;color:var(--gray-400);">— 1 a 3 dias úteis</span></div>
+                  </div>
+                  <label class="toggle-switch" title="Habilitar SEDEX">
+                    <input type="checkbox" id="ent-sedex-ativo" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div style="overflow-x:auto;">
+                  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                      <tr style="background:var(--gray-50);">
+                        <th style="padding:7px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Até (g)</th>
+                        <th style="padding:7px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Caixa</th>
+                        <th style="padding:7px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">SEDEX (R$)</th>
+                        <th style="padding:7px 4px;border-bottom:1px solid var(--gray-200);width:32px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="tabela-sedex-body"></tbody>
+                  </table>
+                </div>
+                <button type="button" onclick="adicionarFaixa('sedex')" style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-200);border-radius:6px;padding:5px 12px;cursor:pointer;">
+                  <i class="ti ti-plus"></i> Adicionar faixa SEDEX
+                </button>
+              </div>
+
+              <div class="form-actions" style="margin-top:4px;">
+                <button class="btn-save-form" type="button" onclick="salvarEntrega()"><i class="ti ti-device-floppy"></i> Salvar frete Correios</button>
               </div>
             </div>
 
@@ -751,54 +823,118 @@
     showToast('Integrações salvas com sucesso!');
   }
 
-  // ─── TABELA DE FRETE POR PESO ─────────────────────────────
-  var _TABELA_PESO_DEFAULT = [
-    { ateG: 100,  preco: 10.00 },
-    { ateG: 200,  preco: 14.00 },
-    { ateG: 500,  preco: 18.00 },
-    { ateG: 1000, preco: 22.00 },
-    { ateG: 2000, preco: 28.00 },
+  // ─── TABELAS DE FRETE CORREIOS (PAC + SEDEX) ──────────────
+  var _CAIXAS = [
+    { label: 'Caixa P',  ateG: 500  },
+    { label: 'Caixa M',  ateG: 5000 },
+    { label: 'Caixa G',  ateG: 30000 },
   ];
-  var _tabelaPeso = [];
 
-  function renderTabelaPeso() {
-    var tbody = document.getElementById('tabela-peso-body');
+  // Preços médios nacionais Correios 2025
+  var _PAC_DEFAULT = [
+    { ateG:  100, caixa:'Caixa P', preco: 21.70 },
+    { ateG:  200, caixa:'Caixa P', preco: 24.70 },
+    { ateG:  300, caixa:'Caixa P', preco: 26.90 },
+    { ateG:  500, caixa:'Caixa P', preco: 29.90 },
+    { ateG:  700, caixa:'Caixa M', preco: 32.40 },
+    { ateG: 1000, caixa:'Caixa M', preco: 35.60 },
+    { ateG: 1500, caixa:'Caixa M', preco: 39.80 },
+    { ateG: 2000, caixa:'Caixa M', preco: 44.10 },
+    { ateG: 3000, caixa:'Caixa M', preco: 52.60 },
+    { ateG: 5000, caixa:'Caixa M', preco: 67.40 },
+    { ateG: 7000, caixa:'Caixa G', preco: 81.20 },
+    { ateG:10000, caixa:'Caixa G', preco:100.50 },
+    { ateG:15000, caixa:'Caixa G', preco:132.00 },
+    { ateG:20000, caixa:'Caixa G', preco:161.00 },
+    { ateG:30000, caixa:'Caixa G', preco:215.00 },
+  ];
+
+  var _SEDEX_DEFAULT = [
+    { ateG:  100, caixa:'Caixa P', preco:  34.50 },
+    { ateG:  200, caixa:'Caixa P', preco:  40.20 },
+    { ateG:  300, caixa:'Caixa P', preco:  45.60 },
+    { ateG:  500, caixa:'Caixa P', preco:  53.20 },
+    { ateG:  700, caixa:'Caixa M', preco:  58.90 },
+    { ateG: 1000, caixa:'Caixa M', preco:  65.40 },
+    { ateG: 1500, caixa:'Caixa M', preco:  77.50 },
+    { ateG: 2000, caixa:'Caixa M', preco:  89.50 },
+    { ateG: 3000, caixa:'Caixa M', preco: 111.00 },
+    { ateG: 5000, caixa:'Caixa M', preco: 148.50 },
+    { ateG: 7000, caixa:'Caixa G', preco: 182.50 },
+    { ateG:10000, caixa:'Caixa G', preco: 236.50 },
+    { ateG:15000, caixa:'Caixa G', preco: 320.00 },
+    { ateG:20000, caixa:'Caixa G', preco: 400.00 },
+    { ateG:30000, caixa:'Caixa G', preco: 557.00 },
+  ];
+
+  var _tabelaPAC   = [];
+  var _tabelaSEDEX = [];
+  // mantém retrocompatibilidade com tabelaPeso antiga
+  var _tabelaPeso  = [];
+
+  function _caixaSelect(val) {
+    return '<select style="border:1px solid var(--gray-200);border-radius:6px;padding:4px 6px;font-size:12px;background:#fff;" onchange="void(0)">' +
+      ['Caixa P','Caixa M','Caixa G','Envelope'].map(function(c) {
+        return '<option value="' + c + '"' + (val === c ? ' selected' : '') + '>' + c + '</option>';
+      }).join('') +
+    '</select>';
+  }
+
+  function renderTabela(service) {
+    var data  = service === 'pac' ? _tabelaPAC : _tabelaSEDEX;
+    var tbody = document.getElementById('tabela-' + service + '-body');
     if (!tbody) return;
-    tbody.innerHTML = _tabelaPeso.map(function(r, i) {
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="padding:12px;text-align:center;color:var(--gray-400);font-size:12px;">Nenhuma faixa. Clique em "Adicionar faixa" para começar.</td></tr>';
+      return;
+    }
+    var s = service; // capture
+    tbody.innerHTML = data.map(function(r, i) {
       return '<tr>' +
-        '<td style="padding:6px 12px;">' +
-          '<input type="number" min="1" step="1" value="' + (r.ateG || '') + '" ' +
-            'oninput="_tabelaPeso[' + i + '].ateG=parseInt(this.value)||0" ' +
-            'style="width:90px;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:13px;" placeholder="100" />' +
+        '<td style="padding:5px 12px;">' +
+          '<input type="number" min="1" step="1" value="' + (r.ateG||'') + '" ' +
+            'oninput="' + (s==='pac'?'_tabelaPAC':'_tabelaSEDEX') + '[' + i + '].ateG=parseInt(this.value)||0" ' +
+            'style="width:80px;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:12px;" />' +
         '</td>' +
-        '<td style="padding:6px 12px;">' +
-          '<input type="number" min="0" step="0.01" value="' + (r.preco != null ? r.preco : '') + '" ' +
-            'oninput="_tabelaPeso[' + i + '].preco=parseFloat(this.value)||0" ' +
-            'style="width:90px;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:13px;" placeholder="10.00" />' +
+        '<td style="padding:5px 12px;">' +
+          '<select style="border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:12px;background:#fff;" ' +
+            'onchange="' + (s==='pac'?'_tabelaPAC':'_tabelaSEDEX') + '[' + i + '].caixa=this.value">' +
+            ['Caixa P','Caixa M','Caixa G','Envelope'].map(function(c) {
+              return '<option value="' + c + '"' + (r.caixa===c?' selected':'') + '>' + c + '</option>';
+            }).join('') +
+          '</select>' +
         '</td>' +
-        '<td style="padding:6px 4px;text-align:center;">' +
-          '<button type="button" onclick="removerFaixaPeso(' + i + ')" ' +
-            'style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:16px;padding:2px 4px;" title="Remover faixa">' +
+        '<td style="padding:5px 12px;">' +
+          '<input type="number" min="0" step="0.01" value="' + (r.preco!=null?r.preco:'') + '" ' +
+            'oninput="' + (s==='pac'?'_tabelaPAC':'_tabelaSEDEX') + '[' + i + '].preco=parseFloat(this.value)||0" ' +
+            'style="width:85px;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:12px;" />' +
+        '</td>' +
+        '<td style="padding:5px 4px;text-align:center;">' +
+          '<button type="button" onclick="removerFaixa(\'' + s + '\',' + i + ')" ' +
+            'style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:15px;padding:2px 4px;" title="Remover">' +
             '<i class="ti ti-trash"></i>' +
           '</button>' +
         '</td>' +
       '</tr>';
     }).join('');
-    if (!_tabelaPeso.length) {
-      tbody.innerHTML = '<tr><td colspan="3" style="padding:12px;text-align:center;color:var(--gray-400);font-size:12px;">Nenhuma faixa cadastrada. Clique em "Adicionar faixa" para começar.</td></tr>';
-    }
   }
 
-  function adicionarFaixaPeso() {
-    var ultimo = _tabelaPeso.length ? _tabelaPeso[_tabelaPeso.length - 1].ateG : 0;
-    _tabelaPeso.push({ ateG: ultimo ? ultimo * 2 : 100, preco: 0 });
-    renderTabelaPeso();
+  function adicionarFaixa(service) {
+    var data   = service === 'pac' ? _tabelaPAC : _tabelaSEDEX;
+    var ultimo = data.length ? data[data.length - 1].ateG : 0;
+    data.push({ ateG: ultimo ? Math.round(ultimo * 1.5) : 100, caixa:'Caixa P', preco: 0 });
+    renderTabela(service);
   }
 
-  function removerFaixaPeso(i) {
-    _tabelaPeso.splice(i, 1);
-    renderTabelaPeso();
+  function removerFaixa(service, i) {
+    var data = service === 'pac' ? _tabelaPAC : _tabelaSEDEX;
+    data.splice(i, 1);
+    renderTabela(service);
   }
+
+  // retrocompatibilidade: funções antigas ainda chamadas
+  function adicionarFaixaPeso() { adicionarFaixa('pac'); }
+  function removerFaixaPeso(i)   { removerFaixa('pac', i); }
 
   // ─── ABA ENTREGA ──────────────────────────────────────────
   function toggleEntregaSection(key) {
@@ -828,10 +964,21 @@
 
     document.getElementById('ent-obs').value = cfg.obs || '';
 
-    _tabelaPeso = (cfg.tabelaPeso && cfg.tabelaPeso.length)
-      ? cfg.tabelaPeso.map(function(r) { return { ateG: r.ateG, preco: r.preco }; })
-      : _TABELA_PESO_DEFAULT.slice();
-    renderTabelaPeso();
+    // PAC
+    document.getElementById('ent-pac-ativo').checked = cfg.pac ? !!cfg.pac.ativo : true;
+    _tabelaPAC = (cfg.pac && cfg.pac.tabela && cfg.pac.tabela.length)
+      ? cfg.pac.tabela.slice()
+      : (cfg.tabelaPeso && cfg.tabelaPeso.length
+          ? cfg.tabelaPeso.map(function(r) { return { ateG:r.ateG, caixa:'Caixa P', preco:r.preco }; })
+          : _PAC_DEFAULT.slice());
+    renderTabela('pac');
+
+    // SEDEX
+    document.getElementById('ent-sedex-ativo').checked = cfg.sedex ? !!cfg.sedex.ativo : false;
+    _tabelaSEDEX = (cfg.sedex && cfg.sedex.tabela && cfg.sedex.tabela.length)
+      ? cfg.sedex.tabela.slice()
+      : _SEDEX_DEFAULT.slice();
+    renderTabela('sedex');
 
     toggleEntregaSection('retirada');
     toggleEntregaSection('local');
@@ -855,10 +1002,17 @@
         ativo:  document.getElementById('ent-gratis-ativo').checked,
         minimo: parseFloat(document.getElementById('ent-gratis-minimo').value) || 0
       },
-      obs:        document.getElementById('ent-obs').value.trim(),
-      tabelaPeso: _tabelaPeso
-        .filter(function(r) { return r.ateG > 0; })
-        .sort(function(a, b) { return a.ateG - b.ateG; })
+      obs: document.getElementById('ent-obs').value.trim(),
+      pac: {
+        ativo:  document.getElementById('ent-pac-ativo').checked,
+        tabela: _tabelaPAC.filter(function(r){ return r.ateG>0; }).sort(function(a,b){ return a.ateG-b.ateG; })
+      },
+      sedex: {
+        ativo:  document.getElementById('ent-sedex-ativo').checked,
+        tabela: _tabelaSEDEX.filter(function(r){ return r.ateG>0; }).sort(function(a,b){ return a.ateG-b.ateG; })
+      },
+      // mantém tabelaPeso para retrocompatibilidade com versões anteriores
+      tabelaPeso: _tabelaPAC.filter(function(r){ return r.ateG>0; }).sort(function(a,b){ return a.ateG-b.ateG; })
     };
     localStorage.setItem('lapinkEntregaConfig', JSON.stringify(cfg));
     showToast('Configurações de entrega salvas!');

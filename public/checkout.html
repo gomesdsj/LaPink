@@ -444,24 +444,23 @@ function _esc(s) {
       });
     }
 
-    // Frete calculado por peso
-    var pesoCalc = calcularFretePorPeso();
-    if (pesoCalc) {
-      var gratisPorPeso = gAtivo && sub >= minimo;
-      var taxaPeso      = gratisPorPeso ? 0 : (pesoCalc.preco != null ? pesoCalc.preco : null);
+    // Frete pelos Correios (PAC / SEDEX)
+    var servicos = calcularFreteCorreios();
+    servicos.forEach(function(srv) {
+      var gratis    = gAtivo && sub >= minimo;
+      var taxa      = gratis ? 0 : (srv.preco != null ? srv.preco : null);
+      var aCombinar = !gratis && taxa === null;
       opts.push({
-        key:      'correios',
-        icon:     'ti-package',
-        taxa:      taxaPeso != null ? taxaPeso : 0,
-        aCombinar: taxaPeso === null,
-        label:    'Entrega — ' + pesoCalc.pesoLabel,
-        sub:       gratisPorPeso
-          ? 'Frete grátis aplicado ao seu pedido!'
-          : (pesoCalc.preco != null
-              ? 'Calculado pelo peso total do pedido'
-              : 'Peso acima da tabela — entre em contato para combinar')
+        key:      srv.key,
+        icon:     srv.key === 'sedex' ? 'ti-bolt' : 'ti-package',
+        taxa:      aCombinar ? 0 : (taxa || 0),
+        aCombinar: aCombinar,
+        label:    srv.servico + (srv.caixa ? ' — ' + srv.caixa : '') + ' · ' + fmtPeso(srv.pesoG),
+        sub:       gratis
+          ? 'Frete grátis aplicado!'
+          : (srv.prazo ? srv.prazo + (aCombinar ? ' · A combinar — entre em contato' : '') : (aCombinar ? 'A combinar — entre em contato' : ''))
       });
-    }
+    });
 
     // Frete grátis autônomo: quando nenhuma opção acima já cobre (sem entrega local nem tabela)
     if (gAtivo && sub >= minimo) {
@@ -569,30 +568,55 @@ function _esc(s) {
     return g >= 1000 ? (g / 1000).toFixed(1).replace('.', ',') + ' kg' : g + ' g';
   }
 
-  function calcularFretePorPeso() {
-    var cfg    = getEntregaConfig();
-    var tabela = cfg.tabelaPeso || [];
-    if (!tabela.length) return null;
-
+  function _pesoTotalCarrinho() {
     var cart  = getCart();
     var prods = [];
     try { prods = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) {}
-
-    var pesoTotal = cart.reduce(function(s, item) {
+    return cart.reduce(function(s, item) {
       var p = prods.find(function(x) { return String(x.id) === String(item.id); });
       return s + ((p && p.pesoEnvioGramas) ? p.pesoEnvioGramas * item.qty : 0);
     }, 0);
+  }
 
-    if (pesoTotal <= 0) return null;
-
-    var ordenada = tabela.slice().sort(function(a, b) { return a.ateG - b.ateG; });
-    var faixa    = ordenada.find(function(f) { return pesoTotal <= f.ateG; });
-
+  function _consultarTabela(tabela, pesoG) {
+    var ord   = tabela.slice().sort(function(a, b) { return a.ateG - b.ateG; });
+    var faixa = ord.find(function(f) { return pesoG <= f.ateG; });
     return {
-      pesoTotal: pesoTotal,
-      preco:     faixa ? faixa.preco : null,
-      pesoLabel: fmtPeso(pesoTotal)
+      preco: faixa ? faixa.preco : null,
+      caixa: faixa ? (faixa.caixa || '') : 'Caixa G'
     };
+  }
+
+  function calcularFreteCorreios() {
+    var cfg   = getEntregaConfig();
+    var pesoG = _pesoTotalCarrinho();
+    if (pesoG <= 0) return [];
+
+    var servicos = [];
+
+    if (cfg.pac && cfg.pac.ativo && cfg.pac.tabela && cfg.pac.tabela.length) {
+      var r = _consultarTabela(cfg.pac.tabela, pesoG);
+      servicos.push({ key:'pac', servico:'PAC', prazo:'5 a 10 dias úteis', pesoG: pesoG, preco: r.preco, caixa: r.caixa });
+    }
+    if (cfg.sedex && cfg.sedex.ativo && cfg.sedex.tabela && cfg.sedex.tabela.length) {
+      var r2 = _consultarTabela(cfg.sedex.tabela, pesoG);
+      servicos.push({ key:'sedex', servico:'SEDEX', prazo:'1 a 3 dias úteis', pesoG: pesoG, preco: r2.preco, caixa: r2.caixa });
+    }
+
+    // Fallback: tabelaPeso legado (sem PAC/SEDEX separados)
+    if (!servicos.length && cfg.tabelaPeso && cfg.tabelaPeso.length) {
+      var r3 = _consultarTabela(cfg.tabelaPeso, pesoG);
+      servicos.push({ key:'correios', servico:'Correios', prazo:'', pesoG: pesoG, preco: r3.preco, caixa: r3.caixa || '' });
+    }
+
+    return servicos;
+  }
+
+  // mantém função antiga como alias
+  function calcularFretePorPeso() {
+    var s = calcularFreteCorreios();
+    if (!s.length) return null;
+    return { pesoTotal: s[0].pesoG, preco: s[0].preco, pesoLabel: fmtPeso(s[0].pesoG) };
   }
 
   function renderPaymentBadges() {
