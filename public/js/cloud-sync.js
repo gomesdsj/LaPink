@@ -9,7 +9,7 @@
 // carga de página admin e sobrescreveria o Firestore, apagando admins extras.
 
 (function () {
-  var SYNC_KEYS = ['lapinkClients', 'lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkApiConfig', 'lapinkPaymentConfig', 'lapinkPedidoCounter'];
+  var SYNC_KEYS = ['lapinkClients', 'lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkApiConfig', 'lapinkPaymentConfig', 'lapinkEntregaConfig', 'lapinkPedidoCounter'];
   var MAX_RETRIES = 20; // 20 × 300ms = 6s máximo de espera pelo Firebase
 
   // ── Firestore helpers ─────────────────────────────────────────

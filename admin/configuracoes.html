@@ -113,6 +113,7 @@
             <button class="config-tab" onclick="mudarAba('notificacoes', this)"><i class="ti ti-bell"></i> Notificações</button>
             <button class="config-tab" onclick="mudarAba('armazenamento', this)"><i class="ti ti-database"></i> Armazenamento</button>
             <button class="config-tab" onclick="mudarAba('integracoes', this)"><i class="ti ti-plug"></i> Integrações</button>
+            <button class="config-tab" onclick="mudarAba('entrega', this)"><i class="ti ti-truck-delivery"></i> Entrega</button>
           </div>
 
           <!-- ── ABA: LOJA ── -->
@@ -402,6 +403,105 @@
           </div>
           <!-- /panel-integracoes -->
 
+          <!-- ── ABA: ENTREGA ── -->
+          <div class="config-panel" id="panel-entrega">
+
+            <!-- Retirada no local -->
+            <div class="section-card">
+              <h3><i class="ti ti-map-pin" style="color:var(--pink-500)"></i> Retirada no local</h3>
+              <p>O cliente retira o pedido pessoalmente. Aparece como opção gratuita no carrinho.</p>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Habilitar retirada no local</div>
+                  <div class="toggle-sub">Exibe essa opção gratuitamente no carrinho</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="ent-retirada-ativo" onchange="toggleEntregaSection('retirada')" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div id="ent-retirada-fields" style="display:none;margin-top:14px;">
+                <div class="form-group">
+                  <label>Endereço / ponto de retirada</label>
+                  <input type="text" id="ent-retirada-end" placeholder="Rua das Rosas, 123 — São Paulo, SP" />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>Horário de atendimento</label>
+                  <input type="text" id="ent-retirada-hora" placeholder="Seg–Sex 9h–18h / Sáb 9h–13h" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Entrega local -->
+            <div class="section-card">
+              <h3><i class="ti ti-motorbike" style="color:var(--pink-500)"></i> Entrega local (motoboy)</h3>
+              <p>Entrega realizada pela própria loja com taxa fixa. O valor é adicionado ao total no carrinho.</p>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Habilitar entrega local</div>
+                  <div class="toggle-sub">Exibe a taxa de entrega no carrinho</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="ent-local-ativo" onchange="toggleEntregaSection('local')" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div id="ent-local-fields" style="display:none;margin-top:14px;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Taxa de entrega (R$)</label>
+                    <input type="number" id="ent-local-taxa" placeholder="10,00" min="0" step="0.01" />
+                  </div>
+                  <div class="form-group">
+                    <label>Prazo estimado</label>
+                    <input type="text" id="ent-local-prazo" placeholder="Mesmo dia" />
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>Área de cobertura (opcional)</label>
+                  <input type="text" id="ent-local-area" placeholder="Ex: São Paulo — Zona Sul e Centro" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Frete grátis -->
+            <div class="section-card">
+              <h3><i class="ti ti-gift" style="color:var(--pink-500)"></i> Frete grátis</h3>
+              <p>Aplica frete grátis automaticamente quando o subtotal do pedido atingir o valor mínimo configurado.</p>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Habilitar frete grátis por valor mínimo</div>
+                  <div class="toggle-sub">Substitui a entrega local quando aplicável</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="ent-gratis-ativo" onchange="toggleEntregaSection('gratis')" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div id="ent-gratis-fields" style="display:none;margin-top:14px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label>Valor mínimo do pedido (R$)</label>
+                  <input type="number" id="ent-gratis-minimo" placeholder="150,00" min="0" step="0.01" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Observação geral -->
+            <div class="section-card">
+              <h3><i class="ti ti-info-circle" style="color:var(--pink-500)"></i> Observação de entrega</h3>
+              <p>Texto informativo exibido ao cliente no carrinho abaixo das opções de entrega.</p>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Observação (opcional)</label>
+                <textarea id="ent-obs" rows="3" placeholder="Ex: Entregas realizadas de segunda a sábado, das 9h às 18h. Entre em contato para regiões especiais."></textarea>
+              </div>
+              <div class="form-actions" style="margin-top:16px;">
+                <button class="btn-save-form" type="button" onclick="salvarEntrega()"><i class="ti ti-device-floppy"></i> Salvar configurações de entrega</button>
+              </div>
+            </div>
+
+          </div>
+          <!-- /panel-entrega -->
+
         </section>
       </main>
     </div>
@@ -621,11 +721,67 @@
     showToast('Integrações salvas com sucesso!');
   }
 
+  // ─── ABA ENTREGA ──────────────────────────────────────────
+  function toggleEntregaSection(key) {
+    var ativo  = document.getElementById('ent-' + key + '-ativo').checked;
+    var fields = document.getElementById('ent-' + key + '-fields');
+    if (fields) fields.style.display = ativo ? '' : 'none';
+  }
+
+  function carregarEntrega() {
+    var cfg = getObj('lapinkEntregaConfig');
+    var r   = cfg.retirada || {};
+    var l   = cfg.local    || {};
+    var g   = cfg.gratis   || {};
+
+    document.getElementById('ent-retirada-ativo').checked = !!r.ativo;
+    document.getElementById('ent-retirada-end').value     = r.endereco || '';
+    document.getElementById('ent-retirada-hora').value    = r.horario  || '';
+
+    document.getElementById('ent-local-ativo').checked = !!l.ativo;
+    document.getElementById('ent-local-taxa').value    = l.taxa  != null ? l.taxa  : '';
+    document.getElementById('ent-local-prazo').value   = l.prazo || '';
+    document.getElementById('ent-local-area').value    = l.area  || '';
+
+    document.getElementById('ent-gratis-ativo').checked = !!g.ativo;
+    document.getElementById('ent-gratis-minimo').value  = g.minimo != null ? g.minimo : '';
+
+    document.getElementById('ent-obs').value = cfg.obs || '';
+
+    toggleEntregaSection('retirada');
+    toggleEntregaSection('local');
+    toggleEntregaSection('gratis');
+  }
+
+  function salvarEntrega() {
+    var cfg = {
+      retirada: {
+        ativo:    document.getElementById('ent-retirada-ativo').checked,
+        endereco: document.getElementById('ent-retirada-end').value.trim(),
+        horario:  document.getElementById('ent-retirada-hora').value.trim()
+      },
+      local: {
+        ativo:  document.getElementById('ent-local-ativo').checked,
+        taxa:   parseFloat(document.getElementById('ent-local-taxa').value)   || 0,
+        prazo:  document.getElementById('ent-local-prazo').value.trim(),
+        area:   document.getElementById('ent-local-area').value.trim()
+      },
+      gratis: {
+        ativo:  document.getElementById('ent-gratis-ativo').checked,
+        minimo: parseFloat(document.getElementById('ent-gratis-minimo').value) || 0
+      },
+      obs: document.getElementById('ent-obs').value.trim()
+    };
+    localStorage.setItem('lapinkEntregaConfig', JSON.stringify(cfg));
+    showToast('Configurações de entrega salvas!');
+  }
+
   // ─── Init ─────────────────────────────────────────────────
   carregarLoja();
   carregarConta();
   carregarNotificacoes();
   carregarIntegracoes();
+  carregarEntrega();
   </script>
   <script src="js/sidebar.js"></script>
 </body>

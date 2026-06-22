@@ -307,6 +307,13 @@ body { background: var(--gray-50); min-height: 100vh; }
       </form>
     </div>
 
+    <!-- Entrega -->
+    <div class="card" id="co-delivery-section" style="display:none;">
+      <h2 class="co-section-title"><i class="ti ti-truck-delivery"></i> Entrega</h2>
+      <div class="co-payment-opts" id="co-delivery-opts"></div>
+      <div id="co-delivery-obs"></div>
+    </div>
+
     <!-- Forma de pagamento -->
     <div class="card" id="co-payment-section" style="display:none;">
       <h2 class="co-section-title"><i class="ti ti-credit-card"></i> Forma de pagamento</h2>
@@ -338,9 +345,9 @@ body { background: var(--gray-50); min-height: 100vh; }
         <span id="co-count-label">Itens</span>
         <span id="co-subtotal" style="font-weight:700;color:var(--gray-800);">R$ 0,00</span>
       </div>
-      <div class="co-summary-row">
-        <span>Frete</span>
-        <span style="color:var(--green-400);font-weight:700;">A combinar</span>
+      <div class="co-summary-row" id="co-frete-row">
+        <span id="co-frete-label">Frete</span>
+        <span id="co-frete-valor" style="color:var(--green-400);font-weight:700;">A combinar</span>
       </div>
 
       <div class="co-summary-total">
@@ -379,6 +386,88 @@ function _esc(s) {
 
   function getPayConfig() {
     try { return JSON.parse(localStorage.getItem('lapinkPaymentConfig') || 'null') || {}; } catch(e) { return {}; }
+  }
+
+  function getEntregaConfig() {
+    try { return JSON.parse(localStorage.getItem('lapinkEntregaConfig') || 'null') || {}; } catch(e) { return {}; }
+  }
+
+  function renderDeliveryOpts() {
+    var cfg  = getEntregaConfig();
+    var sec  = document.getElementById('co-delivery-section');
+    var cont = document.getElementById('co-delivery-opts');
+    var obsEl= document.getElementById('co-delivery-obs');
+    if (!sec || !cont) return;
+
+    var total = getCartTotal();
+    var opts  = [];
+
+    if (cfg.retirada && cfg.retirada.ativo) {
+      opts.push({ key:'retirada', label:'Retirada no local',
+        sub: (cfg.retirada.horario || '') + (cfg.retirada.endereco ? ' — ' + cfg.retirada.endereco : ''),
+        taxa: 0, icon:'ti-map-pin' });
+    }
+    if (cfg.local && cfg.local.ativo) {
+      var gratuito = cfg.gratis && cfg.gratis.ativo && total >= (cfg.gratis.minimo || 0);
+      opts.push({ key:'local', label:'Entrega local' + (cfg.local.prazo ? ' — ' + cfg.local.prazo : ''),
+        sub: cfg.local.area || '',
+        taxa: gratuito ? 0 : (cfg.local.taxa || 0),
+        gratis: gratuito, icon:'ti-motorbike' });
+    }
+
+    if (!opts.length) { sec.style.display = 'none'; atualizarFrete(0, 'A combinar', true); return; }
+
+    cont.innerHTML = opts.map(function(o, i) {
+      var taxaLabel = o.taxa > 0 ? fmtMoeda(o.taxa) : '<span style="color:var(--green-400)">Grátis</span>';
+      return '<label class="co-payment-opt">' +
+        '<input type="radio" name="delivMethod" value="' + o.key + '"' + (i === 0 ? ' checked' : '') + ' onchange="window.atualizarFreteOpt()" />' +
+        '<div class="co-payment-opt-icon"><i class="ti ' + o.icon + '"></i></div>' +
+        '<div class="co-payment-opt-body" style="flex:1;">' +
+          '<div class="co-payment-opt-title">' + _esc(o.label) + '</div>' +
+          (o.sub ? '<div class="co-payment-opt-sub">' + _esc(o.sub) + '</div>' : '') +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:700;white-space:nowrap;">' + taxaLabel + '</div>' +
+      '</label>';
+    }).join('');
+
+    if (obsEl && cfg.obs) {
+      obsEl.innerHTML = '<p style="font-size:11px;color:var(--gray-400);margin-top:10px;line-height:1.6;">' + _esc(cfg.obs) + '</p>';
+    }
+
+    sec.style.display = '';
+    window._deliveryOpts = opts;
+    window.atualizarFreteOpt();
+  }
+
+  window.atualizarFreteOpt = function() {
+    var opts  = window._deliveryOpts || [];
+    var sel   = document.querySelector('input[name="delivMethod"]:checked');
+    if (!sel || !opts.length) { atualizarFrete(0, 'A combinar', true); return; }
+    var opt   = opts.find(function(o) { return o.key === sel.value; });
+    if (!opt)  { atualizarFrete(0, 'A combinar', true); return; }
+    atualizarFrete(opt.taxa, opt.taxa > 0 ? fmtMoeda(opt.taxa) : 'Grátis', opt.taxa === 0);
+  };
+
+  function atualizarFrete(taxa, label, isGratis) {
+    var labelEl = document.getElementById('co-frete-label');
+    var valorEl = document.getElementById('co-frete-valor');
+    var totalEl = document.getElementById('co-total');
+    if (labelEl) labelEl.textContent = 'Frete';
+    if (valorEl) {
+      valorEl.innerHTML = label;
+      valorEl.style.color = isGratis ? 'var(--green-400)' : 'var(--gray-800)';
+    }
+    if (totalEl) {
+      var sub = getCartTotal();
+      totalEl.textContent = fmtMoeda(sub + (taxa || 0));
+    }
+  }
+
+  function getSelectedDelivery() {
+    var opts = window._deliveryOpts || [];
+    var sel  = document.querySelector('input[name="delivMethod"]:checked');
+    if (!sel || !opts.length) return null;
+    return opts.find(function(o) { return o.key === sel.value; }) || null;
   }
 
   function renderPaymentBadges() {
@@ -494,11 +583,14 @@ function _esc(s) {
     var successEl  = document.getElementById('co-success');
     var itemsList  = document.getElementById('co-items-list');
 
+    var delivSec = document.getElementById('co-delivery-section');
+
     if (cart.length === 0) {
       emptyEl.style.display    = '';
       cartSec.style.display    = 'none';
       formSec.style.display    = 'none';
       if (paymentSec) paymentSec.style.display = 'none';
+      if (delivSec)   delivSec.style.display   = 'none';
       summarySec.style.display = 'none';
       successEl.style.display  = 'none';
       return;
@@ -538,6 +630,7 @@ function _esc(s) {
     document.getElementById('co-count-label').textContent = count + (count === 1 ? ' item' : ' itens');
     document.getElementById('co-subtotal').textContent    = fmtMoeda(total);
     document.getElementById('co-total').textContent       = fmtMoeda(total);
+    renderDeliveryOpts();
 
     document.querySelectorAll('[data-action]').forEach(function(btn) {
       btn.addEventListener('click', function() {
@@ -578,8 +671,11 @@ function _esc(s) {
     if (!email)    { emailInp.classList.add('error'); emailInp.focus(); return; }
     if (!obs)      { obsInp.classList.add('error');   obsInp.focus();   return; }
 
-    var cart  = getCart();
-    var total = getCartTotal();
+    var cart      = getCart();
+    var subtotal  = getCartTotal();
+    var delivery  = getSelectedDelivery();
+    var freteTaxa = delivery ? (delivery.taxa || 0) : 0;
+    var total     = subtotal + freteTaxa;
 
     var _cnt = parseInt(localStorage.getItem('lapinkPedidoCounter') || '999') + 1;
     localStorage.setItem('lapinkPedidoCounter', String(_cnt));
@@ -590,11 +686,14 @@ function _esc(s) {
       numero:       numPedido,
       clienteEmail: email,
       cliente:      { name: nome, email: email, whatsapp: whatsapp },
-      itens:    cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
-      total:    total,
-      status:   'aguardando',
-      data:     new Date().toISOString(),
-      obs:      obs
+      itens:        cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
+      subtotal:     subtotal,
+      frete:        freteTaxa,
+      entrega:      delivery ? delivery.label : 'A combinar',
+      total:        total,
+      status:       'aguardando',
+      data:         new Date().toISOString(),
+      obs:          obs
     };
 
     try {
@@ -616,7 +715,10 @@ function _esc(s) {
       return '- ' + i.nome + ' x' + i.qty + ' — ' + fmtMoeda(i.preco * i.qty);
     }).join('\n');
 
-    var payLabel = getSelectedPayMethod();
+    var payLabel  = getSelectedPayMethod();
+    var delivLine = delivery
+      ? ('*Entrega:* ' + delivery.label + (freteTaxa > 0 ? ' — ' + fmtMoeda(freteTaxa) : ' — Grátis') + '\n')
+      : '';
     var msg =
       '*Novo Pedido LaPink* 🛍\n' +
       '*Nº:* ' + numPedido + '\n' +
@@ -625,6 +727,8 @@ function _esc(s) {
       '*WhatsApp:* ' + whatsapp + '\n' +
       (email ? '*E-mail:* ' + email + '\n' : '') +
       '\n*Itens:*\n' + itensMsg + '\n\n' +
+      '*Subtotal:* ' + fmtMoeda(subtotal) + '\n' +
+      delivLine +
       '*Total:* ' + fmtMoeda(total) + '\n' +
       (payLabel ? '*Pagamento:* ' + payLabel + '\n' : '') +
       (obs ? '\n*Obs:* ' + obs + '\n' : '') +
@@ -647,7 +751,9 @@ function _esc(s) {
     document.getElementById('co-summary-section').style.display = 'none';
     document.getElementById('co-empty').style.display           = 'none';
     if (document.getElementById('co-payment-section'))
-      document.getElementById('co-payment-section').style.display = 'none';
+      document.getElementById('co-payment-section').style.display  = 'none';
+    if (document.getElementById('co-delivery-section'))
+      document.getElementById('co-delivery-section').style.display = 'none';
     document.getElementById('co-success').style.display = 'block';
     document.getElementById('co-success-msg').innerHTML =
       'Pedido <strong>' + numPedido + '</strong> registrado com sucesso!<br>' +
