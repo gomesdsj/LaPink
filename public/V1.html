@@ -27,6 +27,81 @@
 .search-result-bar { font-size:12px;color:#B08898;margin-bottom:10px;display:flex;align-items:center;gap:8px; }
 .search-result-bar strong { color:#D4537E; }
 .search-result-bar .btn-limpar { background:none;border:none;color:#D4537E;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0; }
+/* ── Mini-carrinho ── */
+.cart-panel-overlay {
+  display:none; position:fixed; inset:0; background:rgba(42,21,32,.45);
+  z-index:1100; backdrop-filter:blur(2px);
+}
+.cart-panel-overlay.open { display:block; }
+.cart-panel {
+  position:fixed; top:0; right:0; bottom:0; width:min(100vw,400px);
+  background:#fff; z-index:1101; display:flex; flex-direction:column;
+  transform:translateX(100%); transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:-6px 0 32px rgba(42,21,32,.18);
+}
+.cart-panel.open { transform:translateX(0); }
+.cart-panel-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px 14px; border-bottom:1px solid var(--pk-200);
+  background:var(--pk-50); flex-shrink:0;
+}
+.cart-panel-head h2 { font-size:15px; font-weight:800; color:var(--pk-dark); display:flex; align-items:center; gap:8px; }
+.cart-panel-close {
+  width:32px; height:32px; border:none; background:none; cursor:pointer;
+  font-size:18px; color:#B08898; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s,color .15s;
+}
+.cart-panel-close:hover { background:var(--pk-100); color:var(--pk-500); }
+.cart-panel-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+.cp-empty { text-align:center; padding:40px 20px; color:#B08898; }
+.cp-empty i { font-size:40px; display:block; margin-bottom:12px; color:var(--pk-300); }
+.cp-item {
+  display:flex; align-items:center; gap:10px;
+  background:#fff; border:1px solid var(--pk-100); border-radius:12px; padding:10px;
+}
+.cp-item-img {
+  width:52px; height:52px; border-radius:8px; overflow:hidden; flex-shrink:0;
+  background:var(--pk-50); display:flex; align-items:center; justify-content:center;
+  font-size:20px; color:var(--pk-300);
+}
+.cp-item-img img { width:100%; height:100%; object-fit:cover; }
+.cp-item-info { flex:1; min-width:0; }
+.cp-item-name { font-size:12px; font-weight:700; color:var(--pk-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cp-item-price { font-size:13px; font-weight:800; color:var(--pk-500); margin-top:2px; }
+.cp-item-ctrl { display:flex; align-items:center; gap:4px; margin-top:6px; }
+.cp-qty-btn { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--pk-200); background:#fff; color:var(--pk-500); font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+.cp-qty-btn:hover { background:var(--pk-50); }
+.cp-qty-val { font-size:12px; font-weight:700; color:var(--pk-dark); min-width:22px; text-align:center; }
+.cp-remove { margin-left:auto; background:none; border:none; font-size:15px; color:#B08898; cursor:pointer; padding:4px; }
+.cp-remove:hover { color:#e05555; }
+.cp-divider { border:none; border-top:1px solid var(--pk-100); margin:4px 0; }
+/* Entrega no mini-cart */
+.cp-shipping { background:var(--pk-50); border:1px solid var(--pk-200); border-radius:12px; padding:12px 14px; }
+.cp-shipping-title { font-size:11px; font-weight:700; color:var(--pk-dark); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.cp-ship-opt { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--pk-100); }
+.cp-ship-opt:last-child { border-bottom:none; padding-bottom:0; }
+.cp-ship-opt input[type=radio] { accent-color:var(--pk-500); width:15px; height:15px; flex-shrink:0; cursor:pointer; }
+.cp-ship-opt-info { flex:1; }
+.cp-ship-opt-label { font-size:12px; font-weight:700; color:var(--pk-dark); }
+.cp-ship-opt-sub { font-size:10px; color:#B08898; }
+.cp-ship-opt-price { font-size:12px; font-weight:800; color:var(--pk-500); white-space:nowrap; }
+.cp-ship-opt-price.gratis { color:#2E8B5A; }
+/* Totais */
+.cart-panel-foot { padding:14px 16px; border-top:1px solid var(--pk-200); flex-shrink:0; }
+.cp-totals { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
+.cp-tot-row { display:flex; justify-content:space-between; font-size:12px; color:#7A5B6A; }
+.cp-tot-total { display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:var(--pk-dark); margin-top:4px; padding-top:8px; border-top:1px solid var(--pk-200); }
+.cp-tot-total span:last-child { color:var(--pk-500); }
+.cp-btn-checkout {
+  display:block; width:100%; text-align:center;
+  background:var(--pk-500); color:#fff; border:none; border-radius:14px;
+  padding:14px 0; font-size:14px; font-weight:800; cursor:pointer;
+  text-decoration:none; transition:background .15s;
+}
+.cp-btn-checkout:hover { background:var(--pk-600); }
+@media (max-width:480px) { .cart-panel { width:100vw; } }
+
 /* Frete grátis strip */
 .frete-strip {
   display:none; align-items:center; justify-content:center; gap:8px;
@@ -359,10 +434,10 @@
       <button class="nav-icon" id="mobileSearchBtn" aria-label="Buscar" title="Buscar" onclick="(function(){var b=document.querySelector('.search-bar');b.classList.toggle('search-bar-open');if(b.classList.contains('search-bar-open'))b.querySelector('input').focus();})()">
         <i class="ti ti-search"></i>
       </button>
-      <a class="cart-nav-btn nav-icon" href="checkout.html" title="Carrinho" aria-label="Carrinho" style="position:relative;">
+      <button class="cart-nav-btn nav-icon" onclick="abrirCarrinhoPanel()" title="Carrinho" aria-label="Carrinho" style="position:relative;background:none;border:none;cursor:pointer;">
         <i class="ti ti-shopping-cart"></i>
         <span class="cart-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#D4537E;color:#fff;border-radius:50%;width:17px;height:17px;font-size:10px;font-weight:800;align-items:center;justify-content:center;line-height:17px;text-align:center;">0</span>
-      </a>
+      </button>
       <button class="nav-icon" id="navHeartBtn" onclick="showToast('Em breve: lista de favoritos!')" aria-label="Favoritos" title="Favoritos">
         <i class="ti ti-heart"></i>
       </button>
@@ -1649,8 +1724,243 @@ window.saveProfileData = async function() {
   </div>
 </div>
 
+<!-- ── Painel mini-carrinho ── -->
+<div class="cart-panel-overlay" id="cartPanelOverlay" onclick="fecharCarrinhoPanel()"></div>
+<aside class="cart-panel" id="cartPanel" role="dialog" aria-label="Carrinho">
+
+  <div class="cart-panel-head">
+    <h2><i class="ti ti-shopping-cart" style="color:var(--pk-500)"></i> Meu Carrinho <span id="cp-count-badge" style="font-size:11px;background:var(--pk-500);color:#fff;border-radius:20px;padding:1px 8px;font-weight:700;"></span></h2>
+    <button class="cart-panel-close" onclick="fecharCarrinhoPanel()" aria-label="Fechar carrinho"><i class="ti ti-x"></i></button>
+  </div>
+
+  <div class="cart-panel-body" id="cpBody">
+    <!-- renderizado por JS -->
+  </div>
+
+  <div class="cart-panel-foot" id="cpFoot" style="display:none;">
+    <div class="cp-totals">
+      <div class="cp-tot-row"><span>Subtotal</span><span id="cp-subtotal">R$ 0,00</span></div>
+      <div class="cp-tot-row"><span id="cp-frete-label">Frete</span><span id="cp-frete-val">A combinar</span></div>
+    </div>
+    <div class="cp-tot-total"><span>Total</span><span id="cp-total">R$ 0,00</span></div>
+    <a href="checkout.html" class="cp-btn-checkout" style="margin-top:14px;">
+      <i class="ti ti-brand-whatsapp"></i> Finalizar pedido
+    </a>
+  </div>
+
+</aside>
+
 <!-- compatibilidade legado -->
 <div id="qtySheetThumb" style="display:none;"></div>
+
+<script>
+// ── Mini-carrinho panel ────────────────────────────────────
+(function() {
+
+  function _cfg()  { try { return JSON.parse(localStorage.getItem('lapinkEntregaConfig')||'{}'); } catch(e){return{};} }
+  function _prods(){ try { return JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');       } catch(e){return[];} }
+  function fmtR(v) { return 'R$ '+Number(v).toFixed(2).replace('.',','); }
+  function fmtPeso(g){ return g>=1000?(g/1000).toFixed(1).replace('.',',')+' kg':g+' g'; }
+
+  function _pesoTotal() {
+    var cart=getCart(); var prods=_prods();
+    return cart.reduce(function(s,i){
+      var p=prods.find(function(x){return String(x.id)===String(i.id);});
+      return s+((p&&p.pesoEnvioGramas)?p.pesoEnvioGramas*i.qty:0);
+    },0);
+  }
+
+  function _consultarTabela(tabela, pesoG) {
+    var ord=tabela.slice().sort(function(a,b){return a.ateG-b.ateG;});
+    var f=ord.find(function(r){return pesoG<=r.ateG;});
+    return f?{preco:f.preco,caixa:f.caixa||''}:{preco:null,caixa:''};
+  }
+
+  function calcularEnvios() {
+    var cfg=_cfg(); var pesoG=_pesoTotal();
+    var sub=getCartTotal();
+    var gAtivo=cfg.gratis&&cfg.gratis.ativo;
+    var minimo=gAtivo?(cfg.gratis.minimo!=null?Number(cfg.gratis.minimo):300):0;
+    var envios=[];
+
+    if(gAtivo&&sub>=minimo) {
+      envios.push({key:'gratis',label:'Frete grátis',sub:'Parabéns! Pedido qualifica para frete grátis.',preco:0,gratis:true});
+      return envios;
+    }
+
+    if(pesoG>0) {
+      if(cfg.pac&&cfg.pac.ativo&&cfg.pac.tabela&&cfg.pac.tabela.length){
+        var r=_consultarTabela(cfg.pac.tabela,pesoG);
+        envios.push({key:'pac',label:'PAC'+(r.caixa?' — '+r.caixa:''),sub:'5 a 10 dias úteis · '+fmtPeso(pesoG),preco:r.preco});
+      }
+      if(cfg.sedex&&cfg.sedex.ativo&&cfg.sedex.tabela&&cfg.sedex.tabela.length){
+        var r2=_consultarTabela(cfg.sedex.tabela,pesoG);
+        envios.push({key:'sedex',label:'SEDEX'+(r2.caixa?' — '+r2.caixa:''),sub:'1 a 3 dias úteis · '+fmtPeso(pesoG),preco:r2.preco});
+      }
+      if(!envios.length&&cfg.tabelaPeso&&cfg.tabelaPeso.length){
+        var r3=_consultarTabela(cfg.tabelaPeso,pesoG);
+        envios.push({key:'correios',label:'Correios',sub:fmtPeso(pesoG),preco:r3.preco});
+      }
+    }
+
+    if(!envios.length) {
+      if(cfg.retirada&&cfg.retirada.ativo)
+        envios.push({key:'retirada',label:'Retirada no local',sub:cfg.retirada.horario||'',preco:0});
+      if(cfg.local&&cfg.local.ativo)
+        envios.push({key:'local',label:'Entrega local',sub:cfg.local.prazo||'',preco:cfg.local.taxa||0});
+      if(!envios.length)
+        envios.push({key:'acombinar',label:'Frete',sub:'A combinar',preco:null});
+    }
+
+    return envios;
+  }
+
+  var _selectedShip = null;
+
+  function renderCP() {
+    var cart   = getCart();
+    var body   = document.getElementById('cpBody');
+    var foot   = document.getElementById('cpFoot');
+    var badge  = document.getElementById('cp-count-badge');
+    if(!body) return;
+
+    var count = getCartCount();
+    if(badge) badge.textContent = count > 0 ? count : '';
+
+    if(!cart.length) {
+      body.innerHTML = '<div class="cp-empty"><i class="ti ti-shopping-cart"></i><p>Seu carrinho está vazio.</p></div>';
+      if(foot) foot.style.display='none';
+      return;
+    }
+
+    var prods=_prods();
+    body.innerHTML = cart.map(function(item){
+      var p=prods.find(function(x){return String(x.id)===String(item.id);});
+      var img=p&&p.imagem
+        ?'<img src="'+item.imagem+'" alt="'+item.nome+'" />'
+        :'<i class="ti ti-diamond"></i>';
+      return '<div class="cp-item">' +
+        '<div class="cp-item-img">'+img+'</div>' +
+        '<div class="cp-item-info">' +
+          '<div class="cp-item-name">'+item.nome+'</div>' +
+          '<div class="cp-item-price">'+fmtR(item.preco)+'</div>' +
+          '<div class="cp-item-ctrl">' +
+            '<button class="cp-qty-btn" onclick="cpQty(\''+item.id+'\',\'dec\')">−</button>' +
+            '<span class="cp-qty-val">'+item.qty+'</span>' +
+            '<button class="cp-qty-btn" onclick="cpQty(\''+item.id+'\',\'inc\')">+</button>' +
+          '</div>' +
+        '</div>' +
+        '<button class="cp-remove" onclick="cpRemove(\''+item.id+'\')" aria-label="Remover"><i class="ti ti-trash"></i></button>' +
+      '</div>';
+    }).join('');
+
+    // Faixa de progresso frete grátis
+    var cfg=_cfg(); var sub=getCartTotal();
+    var gAtivo=cfg.gratis&&cfg.gratis.ativo;
+    var minimo=gAtivo?(cfg.gratis.minimo!=null?Number(cfg.gratis.minimo):300):0;
+    if(gAtivo&&minimo&&sub<minimo){
+      var faltam=minimo-sub;
+      var pct=Math.max(2,Math.min(99,Math.round((sub/minimo)*100)));
+      body.innerHTML+='<div style="background:var(--pk-50);border:1px solid var(--pk-100);border-radius:10px;padding:10px 12px;font-size:11px;">' +
+        '<div style="color:#7A5B6A;margin-bottom:6px;">Faltam <strong style="color:var(--pk-500);">'+fmtR(faltam)+'</strong> para frete grátis</div>' +
+        '<div style="height:5px;border-radius:99px;background:var(--pk-100);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:var(--pk-500);border-radius:99px;transition:width .4s;"></div></div>' +
+      '</div>';
+    }
+
+    // Seção de entrega
+    var envios=calcularEnvios();
+    if(!_selectedShip||!envios.find(function(e){return e.key===_selectedShip;}))
+      _selectedShip=envios[0]&&envios[0].key;
+
+    var envHtml='<div class="cp-shipping">' +
+      '<div class="cp-shipping-title"><i class="ti ti-truck-delivery"></i> Entrega</div>';
+    envios.forEach(function(e){
+      var priceHtml=e.preco===null
+        ?' <span style="font-size:10px;color:#B08898;">A combinar</span>'
+        :'<span class="cp-ship-opt-price'+(e.preco===0?' gratis':'')+'">'+fmtR(e.preco)+'</span>';
+      envHtml+='<label class="cp-ship-opt" style="cursor:pointer;">' +
+        '<input type="radio" name="cpShip" value="'+e.key+'"'+(e.key===_selectedShip?' checked':'')+
+          ' onchange="cpSelectShip(\''+e.key+'\')" />' +
+        '<div class="cp-ship-opt-info">' +
+          '<div class="cp-ship-opt-label">'+e.label+'</div>' +
+          (e.sub?'<div class="cp-ship-opt-sub">'+e.sub+'</div>':'') +
+        '</div>' +
+        priceHtml +
+      '</label>';
+    });
+    envHtml+='</div>';
+    body.innerHTML+=envHtml;
+
+    // Totais
+    atualizarTotaisCP();
+    if(foot) foot.style.display='';
+  }
+
+  function atualizarTotaisCP() {
+    var cfg=_cfg(); var sub=getCartTotal();
+    var gAtivo=cfg.gratis&&cfg.gratis.ativo;
+    var minimo=gAtivo?(cfg.gratis.minimo!=null?Number(cfg.gratis.minimo):300):0;
+    var frete=0; var freteLabel='A combinar'; var freteIsGratis=false;
+
+    if(gAtivo&&sub>=minimo){ frete=0; freteLabel='Grátis'; freteIsGratis=true; }
+    else {
+      var envios=calcularEnvios();
+      var sel=envios.find(function(e){return e.key===_selectedShip;})||envios[0];
+      if(sel){ frete=sel.preco||0; freteLabel=sel.preco===null?'A combinar':fmtR(sel.preco); freteIsGratis=sel.preco===0; }
+    }
+
+    var total=sub+(typeof frete==='number'?frete:0);
+    var flEl=document.getElementById('cp-frete-label');
+    var fvEl=document.getElementById('cp-frete-val');
+    var stEl=document.getElementById('cp-subtotal');
+    var ttEl=document.getElementById('cp-total');
+    if(stEl) stEl.textContent=fmtR(sub);
+    if(flEl) flEl.textContent='Frete';
+    if(fvEl){ fvEl.textContent=freteLabel; fvEl.style.color=freteIsGratis?'#2E8B5A':''; }
+    if(ttEl) ttEl.textContent=fmtR(total);
+  }
+
+  window.cpSelectShip=function(key){ _selectedShip=key; atualizarTotaisCP(); };
+
+  window.cpQty=function(id,action){
+    var cart=getCart();
+    var idx=cart.findIndex(function(i){return String(i.id)===String(id);});
+    if(idx<0) return;
+    if(action==='inc'){ cart[idx].qty+=1; saveCart(cart); }
+    else if(action==='dec'){
+      if(cart[idx].qty>1){ cart[idx].qty-=1; saveCart(cart); }
+      else removeFromCart(id);
+    }
+    renderCP();
+  };
+
+  window.cpRemove=function(id){ removeFromCart(id); renderCP(); };
+
+  window.abrirCarrinhoPanel=function(){
+    renderCP();
+    document.getElementById('cartPanelOverlay').classList.add('open');
+    document.getElementById('cartPanel').classList.add('open');
+    document.body.style.overflow='hidden';
+  };
+
+  window.fecharCarrinhoPanel=function(){
+    document.getElementById('cartPanelOverlay').classList.remove('open');
+    document.getElementById('cartPanel').classList.remove('open');
+    document.body.style.overflow='';
+  };
+
+  // Fecha com Esc
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') fecharCarrinhoPanel(); });
+
+  // Reabre automaticamente após addToCart para dar feedback
+  var _orig=window.addToCart;
+  if(_orig) window.addToCart=function(p,q){
+    _orig(p,q);
+    setTimeout(function(){ abrirCarrinhoPanel(); },150);
+  };
+
+})();
+</script>
 
 <script>
 (function() {
