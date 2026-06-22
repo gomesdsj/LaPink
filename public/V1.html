@@ -27,6 +27,15 @@
 .search-result-bar { font-size:12px;color:#B08898;margin-bottom:10px;display:flex;align-items:center;gap:8px; }
 .search-result-bar strong { color:#D4537E; }
 .search-result-bar .btn-limpar { background:none;border:none;color:#D4537E;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;padding:0; }
+/* Frete grátis strip */
+.frete-strip {
+  display:none; align-items:center; justify-content:center; gap:8px;
+  padding:8px 16px;
+  background:linear-gradient(90deg,var(--pk-light,#fdf4f8),#fff);
+  border-bottom:.5px solid #f5d5e4;
+  font-size:12px; font-weight:700; color:#b5336a;
+}
+.frete-strip i { color:#DE8FAE; font-size:15px; }
 /* Newsletter feedback */
 .nl-msg { margin-top:10px;font-size:13px;font-weight:600;min-height:20px; }
 .nl-msg.ok  { color:#2E8B5A; }
@@ -371,6 +380,12 @@
         <i class="ti ti-download"></i>
       </button>
     </div>
+  </div>
+
+  <!-- Strip de frete grátis -->
+  <div class="frete-strip" id="frete-strip" role="status" aria-live="polite">
+    <i class="ti ti-truck-delivery"></i>
+    <span id="frete-strip-msg">Frete grátis em compras acima de R$ 300</span>
   </div>
 
   <!-- Carrossel -->
@@ -1636,5 +1651,30 @@ window.saveProfileData = async function() {
 
 <!-- compatibilidade legado -->
 <div id="qtySheetThumb" style="display:none;"></div>
+
+<script>
+(function() {
+  function initFreteStrip() {
+    try {
+      var cfg    = JSON.parse(localStorage.getItem('lapinkEntregaConfig') || '{}');
+      var g      = cfg.gratis || {};
+      var ativo  = g.ativo !== undefined ? !!g.ativo : true;
+      var minimo = g.minimo != null ? Number(g.minimo) : 300;
+      if (!ativo || !minimo) return;
+      var el  = document.getElementById('frete-strip');
+      var msg = document.getElementById('frete-strip-msg');
+      if (!el || !msg) return;
+      var val = minimo % 1 === 0 ? minimo.toFixed(0) : minimo.toFixed(2).replace('.', ',');
+      msg.textContent = 'Frete grátis em compras acima de R$ ' + val;
+      el.style.display = 'flex';
+    } catch(e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFreteStrip);
+  } else {
+    initFreteStrip();
+  }
+})();
+</script>
 </body>
 </html>

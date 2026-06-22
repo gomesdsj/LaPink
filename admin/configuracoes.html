@@ -481,7 +481,7 @@
               <div id="ent-gratis-fields" style="display:none;margin-top:14px;">
                 <div class="form-group" style="margin-bottom:0;">
                   <label>Valor mínimo do pedido (R$)</label>
-                  <input type="number" id="ent-gratis-minimo" placeholder="150,00" min="0" step="0.01" />
+                  <input type="number" id="ent-gratis-minimo" placeholder="300" min="0" step="0.01" />
                 </div>
               </div>
             </div>
@@ -743,8 +743,9 @@
     document.getElementById('ent-local-prazo').value   = l.prazo || '';
     document.getElementById('ent-local-area').value    = l.area  || '';
 
-    document.getElementById('ent-gratis-ativo').checked = !!g.ativo;
-    document.getElementById('ent-gratis-minimo').value  = g.minimo != null ? g.minimo : '';
+    var semConfig = !localStorage.getItem('lapinkEntregaConfig');
+    document.getElementById('ent-gratis-ativo').checked = g.ativo !== undefined ? !!g.ativo : semConfig;
+    document.getElementById('ent-gratis-minimo').value  = g.minimo != null ? g.minimo : (semConfig ? 300 : '');
 
     document.getElementById('ent-obs').value = cfg.obs || '';
 

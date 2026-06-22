@@ -205,6 +205,26 @@ body { background: var(--gray-50); min-height: 100vh; }
 .co-pay-badge:hover { background: var(--pink-100); }
 .co-pay-badge i { font-size: 13px; color: var(--pink-400); }
 
+/* ── Progresso frete grátis ── */
+.co-frete-progress-wrap { padding: 10px 0 4px; }
+.co-frete-progress-label { font-size: 11px; color: var(--gray-500); margin-bottom: 6px; }
+.co-frete-progress-label strong { color: var(--pink-600); }
+.co-frete-bar-bg {
+  height: 5px; border-radius: 99px;
+  background: var(--gray-100); overflow: hidden;
+}
+.co-frete-bar-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--pink-300), var(--pink-500));
+  transition: width .4s ease;
+}
+.co-frete-ok {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; color: var(--green-400);
+  padding: 8px 0 2px;
+}
+.co-frete-ok i { font-size: 14px; }
+
 /* ── Tela de sucesso ── */
 .co-success { display: none; text-align: center; padding: 48px 24px; }
 .co-success-icon {
@@ -345,6 +365,8 @@ body { background: var(--gray-50); min-height: 100vh; }
         <span id="co-count-label">Itens</span>
         <span id="co-subtotal" style="font-weight:700;color:var(--gray-800);">R$ 0,00</span>
       </div>
+      <div id="co-frete-progress" style="display:none;"></div>
+
       <div class="co-summary-row" id="co-frete-row">
         <span id="co-frete-label">Frete</span>
         <span id="co-frete-valor" style="color:var(--green-400);font-weight:700;">A combinar</span>
@@ -393,32 +415,60 @@ function _esc(s) {
   }
 
   function renderDeliveryOpts() {
-    var cfg  = getEntregaConfig();
-    var sec  = document.getElementById('co-delivery-section');
-    var cont = document.getElementById('co-delivery-opts');
-    var obsEl= document.getElementById('co-delivery-obs');
+    var cfg   = getEntregaConfig();
+    var sec   = document.getElementById('co-delivery-section');
+    var cont  = document.getElementById('co-delivery-opts');
+    var obsEl = document.getElementById('co-delivery-obs');
     if (!sec || !cont) return;
 
-    var total = getCartTotal();
-    var opts  = [];
+    var sub    = getCartTotal();
+    var gAtivo = cfg.gratis && cfg.gratis.ativo;
+    var minimo = gAtivo ? (cfg.gratis.minimo != null ? cfg.gratis.minimo : 300) : 0;
+    var opts   = [];
 
     if (cfg.retirada && cfg.retirada.ativo) {
-      opts.push({ key:'retirada', label:'Retirada no local',
-        sub: (cfg.retirada.horario || '') + (cfg.retirada.endereco ? ' — ' + cfg.retirada.endereco : ''),
-        taxa: 0, icon:'ti-map-pin' });
-    }
-    if (cfg.local && cfg.local.ativo) {
-      var gratuito = cfg.gratis && cfg.gratis.ativo && total >= (cfg.gratis.minimo || 0);
-      opts.push({ key:'local', label:'Entrega local' + (cfg.local.prazo ? ' — ' + cfg.local.prazo : ''),
-        sub: cfg.local.area || '',
-        taxa: gratuito ? 0 : (cfg.local.taxa || 0),
-        gratis: gratuito, icon:'ti-motorbike' });
+      opts.push({
+        key: 'retirada', icon: 'ti-map-pin', taxa: 0,
+        label: 'Retirada no local',
+        sub: [cfg.retirada.horario, cfg.retirada.endereco].filter(Boolean).join(' — ')
+      });
     }
 
-    if (!opts.length) { sec.style.display = 'none'; atualizarFrete(0, 'A combinar', true); return; }
+    if (cfg.local && cfg.local.ativo) {
+      var gratuito = gAtivo && sub >= minimo;
+      opts.push({
+        key: 'local', icon: 'ti-motorbike',
+        taxa: gratuito ? 0 : (cfg.local.taxa || 0),
+        label: 'Entrega local' + (cfg.local.prazo ? ' — ' + cfg.local.prazo : ''),
+        sub: cfg.local.area || ''
+      });
+    }
+
+    // Frete grátis autônomo: quando nenhuma opção acima já cobre (sem entrega local configurada)
+    if (gAtivo && sub >= minimo) {
+      var jaTemGratis = opts.some(function(o) { return o.taxa === 0 && o.key !== 'retirada'; });
+      if (!jaTemGratis) {
+        opts.push({
+          key: 'fretegratis', icon: 'ti-gift', taxa: 0,
+          label: 'Frete grátis',
+          sub: 'Seu pedido atingiu o valor mínimo para frete grátis!'
+        });
+      }
+    }
+
+    // Barra de progresso no resumo
+    atualizarFreteProgress(sub, minimo, gAtivo);
+
+    if (!opts.length) {
+      sec.style.display = 'none';
+      atualizarFrete(0, 'A combinar', true);
+      return;
+    }
 
     cont.innerHTML = opts.map(function(o, i) {
-      var taxaLabel = o.taxa > 0 ? fmtMoeda(o.taxa) : '<span style="color:var(--green-400)">Grátis</span>';
+      var taxaLabel = o.taxa > 0
+        ? fmtMoeda(o.taxa)
+        : '<span style="color:var(--green-400)">Grátis</span>';
       return '<label class="co-payment-opt">' +
         '<input type="radio" name="delivMethod" value="' + o.key + '"' + (i === 0 ? ' checked' : '') + ' onchange="window.atualizarFreteOpt()" />' +
         '<div class="co-payment-opt-icon"><i class="ti ' + o.icon + '"></i></div>' +
@@ -430,13 +480,33 @@ function _esc(s) {
       '</label>';
     }).join('');
 
-    if (obsEl && cfg.obs) {
-      obsEl.innerHTML = '<p style="font-size:11px;color:var(--gray-400);margin-top:10px;line-height:1.6;">' + _esc(cfg.obs) + '</p>';
+    if (obsEl) {
+      obsEl.innerHTML = cfg.obs
+        ? '<p style="font-size:11px;color:var(--gray-400);margin-top:10px;line-height:1.6;">' + _esc(cfg.obs) + '</p>'
+        : '';
     }
 
     sec.style.display = '';
     window._deliveryOpts = opts;
     window.atualizarFreteOpt();
+  }
+
+  function atualizarFreteProgress(sub, minimo, ativo) {
+    var el = document.getElementById('co-frete-progress');
+    if (!el) return;
+    if (!ativo || !minimo) { el.style.display = 'none'; return; }
+    if (sub >= minimo) {
+      el.innerHTML = '<div class="co-frete-ok"><i class="ti ti-circle-check"></i> Você ganhou frete grátis!</div>';
+    } else {
+      var faltam = minimo - sub;
+      var pct    = Math.max(2, Math.min(99, Math.round((sub / minimo) * 100)));
+      el.innerHTML =
+        '<div class="co-frete-progress-wrap">' +
+          '<div class="co-frete-progress-label">Faltam <strong>' + fmtMoeda(faltam) + '</strong> para frete grátis</div>' +
+          '<div class="co-frete-bar-bg"><div class="co-frete-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>';
+    }
+    el.style.display = '';
   }
 
   window.atualizarFreteOpt = function() {
