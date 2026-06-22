@@ -195,7 +195,7 @@ body {
   outline: none; transition: border-color .18s, background .18s;
 }
 .form-input:focus { border-color: var(--pk-500); background: #fff; }
-.form-input.error { border-color: #e74c3c; }
+.form-input.error, .form-textarea.error { border-color: #e74c3c; }
 .form-textarea {
   width: 100%; padding: 12px 14px;
   border: 1.5px solid var(--pk-200); border-radius: 12px;
@@ -318,17 +318,37 @@ body {
 
 /* ── Mobile ── */
 @media (max-width: 700px) {
-  .co-header-inner { padding: 0 12px; }
-  .co-page  { flex-direction: column; margin: 16px auto; padding: 0 12px 48px; gap: 12px; }
+  /* Header vira card — mesma largura que os demais */
+  .co-header {
+    background: #f8f0f4;
+    border-bottom: none;
+    height: auto;
+    padding: 12px 16px 0;
+  }
+  .co-header-inner {
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid var(--pk-200);
+    box-shadow: var(--shadow);
+    padding: 0 16px;
+    height: 56px;
+    max-width: none;
+    margin: 0;
+  }
+
+  .co-page  { flex-direction: column; margin: 12px auto; padding: 0 16px 48px; gap: 16px; }
   .co-right { position: static; flex: none; width: 100%; }
-  .co-card  { padding: 18px; border-radius: 16px; }
+  .co-card  { padding: 20px; border-radius: 16px; }
   .cart-item { height: 90px; }
   .cart-item-img { width: 68px; height: 68px; font-size: 26px; }
   .cart-item-name { font-size: 14px; }
   .cart-item-price { font-size: 16px; }
   .qty-btn { width: 36px; height: 36px; }
   .qty-val { height: 36px; }
-  .form-row { flex-direction: column; gap: 0; }
+  .form-group { margin-bottom: 18px; }
+  .form-row { flex-direction: column; gap: 18px; }
+  .form-row .form-group { margin-bottom: 0; }
+  .btn-confirm { margin-top: 24px; padding: 15px 0; }
 }
 </style>
 </head>
@@ -384,16 +404,16 @@ body {
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="co-email">E-mail <span style="color:var(--pk-soft);font-weight:400;">(opcional)</span></label>
+            <label class="form-label" for="co-email">E-mail <span style="color:#e74c3c">*</span></label>
             <div class="form-input-wrap">
               <i class="ti ti-mail"></i>
-              <input class="form-input" type="email" id="co-email" placeholder="seu@email.com" autocomplete="email" />
+              <input class="form-input" type="email" id="co-email" placeholder="seu@email.com" autocomplete="email" required />
             </div>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="co-obs">Observação <span style="color:var(--pk-soft);font-weight:400;">(opcional)</span></label>
-          <textarea class="form-textarea" id="co-obs" placeholder="Ex: entregar à tarde, presente, cor preferida…"></textarea>
+          <label class="form-label" for="co-obs">Observação <span style="color:#e74c3c">*</span></label>
+          <textarea class="form-textarea" id="co-obs" placeholder="Ex: entregar à tarde, presente, cor preferida…" required></textarea>
         </div>
       </form>
     </div>
@@ -651,12 +671,18 @@ function _esc(s) {
     var obs      = document.getElementById('co-obs').value.trim();
     var nomeInp  = document.getElementById('co-nome');
     var wppInp   = document.getElementById('co-whatsapp');
+    var emailInp = document.getElementById('co-email');
+    var obsInp   = document.getElementById('co-obs');
 
     nomeInp.classList.remove('error');
     wppInp.classList.remove('error');
+    emailInp.classList.remove('error');
+    obsInp.classList.remove('error');
 
-    if (!nome)     { nomeInp.classList.add('error'); nomeInp.focus(); return; }
-    if (!whatsapp) { wppInp.classList.add('error');  wppInp.focus();  return; }
+    if (!nome)     { nomeInp.classList.add('error');  nomeInp.focus();  return; }
+    if (!whatsapp) { wppInp.classList.add('error');   wppInp.focus();   return; }
+    if (!email)    { emailInp.classList.add('error'); emailInp.focus(); return; }
+    if (!obs)      { obsInp.classList.add('error');   obsInp.focus();   return; }
 
     var cart  = getCart();
     var total = getCartTotal();
