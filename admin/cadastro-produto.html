@@ -186,6 +186,12 @@
                 </div>
 
                 <div class="form-group">
+                  <label for="peso-envio-g">Peso para envio <span class="unit-tag">g</span></label>
+                  <input id="peso-envio-g" type="number" min="0" step="1" placeholder="120" />
+                  <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Peso do produto já embalado — usado para calcular o frete no carrinho.</div>
+                </div>
+
+                <div class="form-group">
                   <label for="descricao">Descrição</label>
                   <textarea id="descricao" placeholder="Descrição do produto" oninput="atualizarPreview()"></textarea>
                 </div>
@@ -533,6 +539,12 @@
           </div>
 
           <div class="form-group" style="margin-top:12px;">
+            <label for="modal-peso-envio-g">Peso para envio <span class="unit-tag">g</span></label>
+            <input id="modal-peso-envio-g" type="number" min="0" step="1" placeholder="120" />
+            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Peso do produto já embalado — usado para calcular o frete no carrinho.</div>
+          </div>
+
+          <div class="form-group">
             <label for="modal-descricao">Descrição</label>
             <textarea id="modal-descricao" rows="3" placeholder="Descrição do produto"></textarea>
           </div>
@@ -847,7 +859,8 @@
       document.getElementById('modal-descricao').value = p.descricao || '';
 
       document.getElementById('modal-preco-bruto').value  = p.precoBruto     ? p.precoBruto.toFixed(2).replace('.', ',')  : '';
-      document.getElementById('modal-peso-bruto-g').value = p.pesoBrutoGramas ? String(p.pesoBrutoGramas)                  : '';
+      document.getElementById('modal-peso-bruto-g').value  = p.pesoBrutoGramas  ? String(p.pesoBrutoGramas)  : '';
+      document.getElementById('modal-peso-envio-g').value  = p.pesoEnvioGramas  ? String(p.pesoEnvioGramas)  : '';
       document.getElementById('modal-valor-banho').value  = p.valorBanho     ? p.valorBanho.toFixed(2).replace('.', ',')  : '';
       document.getElementById('modal-margem').value       = p.margemLucro    || '';
       if (p.precoBruto || p.valorBanho) {
@@ -938,11 +951,12 @@
         descricao:     document.getElementById('modal-descricao').value.trim(),
         imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : old.imagem,
         precoBruto:      precoBruto  || undefined,
-        pesoBrutoGramas: pesoBrutoG  || undefined,
-        valorBanho:      valorBanho  || undefined,
-        margemLucro:     margemV     || undefined,
-        custoTotal:      custoTot    || undefined,
-        lucroUnitario:   lucroUn,
+        pesoBrutoGramas:  pesoBrutoG  || undefined,
+        pesoEnvioGramas:  parseInt(document.getElementById('modal-peso-envio-g').value) || undefined,
+        valorBanho:       valorBanho  || undefined,
+        margemLucro:      margemV     || undefined,
+        custoTotal:       custoTot    || undefined,
+        lucroUnitario:    lucroUn,
       });
 
       saveProdutos(todos);
@@ -959,9 +973,10 @@
       document.getElementById('descricao').value     = '';
       document.getElementById('imagem').value        = '';
       document.getElementById('p-preco-bruto').value  = '';
-      document.getElementById('p-peso-bruto-g').value = '';
-      document.getElementById('p-valor-banho').value  = '';
-      document.getElementById('p-margem').value       = '';
+      document.getElementById('p-peso-bruto-g').value  = '';
+      document.getElementById('peso-envio-g').value    = '';
+      document.getElementById('p-valor-banho').value   = '';
+      document.getElementById('p-margem').value        = '';
       document.getElementById('cost-result-bar').style.display = 'none';
       document.getElementById('preview-img-photo').style.display = 'none';
       document.getElementById('preview-img-icon').style.display  = '';
@@ -999,11 +1014,12 @@
         imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : null,
         icone:           'ti-diamond',
         precoBruto:      precoBruto  || undefined,
-        pesoBrutoGramas: pesoBrutoG  || undefined,
-        valorBanho:      valorBanho  || undefined,
-        margemLucro:     margemV     || undefined,
-        custoTotal:       custoTot          || undefined,
-        lucroUnitario:    lucroUn,
+        pesoBrutoGramas:  pesoBrutoG  || undefined,
+        pesoEnvioGramas:  parseInt(document.getElementById('peso-envio-g').value) || undefined,
+        valorBanho:       valorBanho  || undefined,
+        margemLucro:      margemV     || undefined,
+        custoTotal:        custoTot          || undefined,
+        lucroUnitario:     lucroUn,
       };
 
       var todos = getProdutos();

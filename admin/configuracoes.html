@@ -486,6 +486,36 @@
               </div>
             </div>
 
+            <!-- Tabela de frete por peso -->
+            <div class="section-card">
+              <h3><i class="ti ti-weight" style="color:var(--pink-500)"></i> Tabela de frete por peso</h3>
+              <p>Defina o valor do frete para cada faixa de peso (em gramas). O sistema soma o peso de todos os itens do carrinho e aplica a faixa correspondente.</p>
+              <p style="font-size:12px;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-100);border-radius:8px;padding:8px 12px;margin-bottom:14px;">
+                <i class="ti ti-info-circle"></i> Cadastre o <strong>Peso para envio (g)</strong> em cada produto para que o cálculo funcione automaticamente.
+              </p>
+
+              <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;" id="tabela-peso-table">
+                  <thead>
+                    <tr style="background:var(--gray-50);">
+                      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Até (gramas)</th>
+                      <th style="padding:8px 12px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--gray-200);">Frete (R$)</th>
+                      <th style="padding:8px 4px;border-bottom:1px solid var(--gray-200);width:36px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabela-peso-body"></tbody>
+                </table>
+              </div>
+
+              <button type="button" onclick="adicionarFaixaPeso()" style="margin-top:12px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-200);border-radius:8px;padding:7px 14px;cursor:pointer;">
+                <i class="ti ti-plus"></i> Adicionar faixa
+              </button>
+
+              <div class="form-actions" style="margin-top:16px;">
+                <button class="btn-save-form" type="button" onclick="salvarEntrega()"><i class="ti ti-device-floppy"></i> Salvar entrega</button>
+              </div>
+            </div>
+
             <!-- Observação geral -->
             <div class="section-card">
               <h3><i class="ti ti-info-circle" style="color:var(--pink-500)"></i> Observação de entrega</h3>
@@ -721,6 +751,55 @@
     showToast('Integrações salvas com sucesso!');
   }
 
+  // ─── TABELA DE FRETE POR PESO ─────────────────────────────
+  var _TABELA_PESO_DEFAULT = [
+    { ateG: 100,  preco: 10.00 },
+    { ateG: 200,  preco: 14.00 },
+    { ateG: 500,  preco: 18.00 },
+    { ateG: 1000, preco: 22.00 },
+    { ateG: 2000, preco: 28.00 },
+  ];
+  var _tabelaPeso = [];
+
+  function renderTabelaPeso() {
+    var tbody = document.getElementById('tabela-peso-body');
+    if (!tbody) return;
+    tbody.innerHTML = _tabelaPeso.map(function(r, i) {
+      return '<tr>' +
+        '<td style="padding:6px 12px;">' +
+          '<input type="number" min="1" step="1" value="' + (r.ateG || '') + '" ' +
+            'oninput="_tabelaPeso[' + i + '].ateG=parseInt(this.value)||0" ' +
+            'style="width:90px;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:13px;" placeholder="100" />' +
+        '</td>' +
+        '<td style="padding:6px 12px;">' +
+          '<input type="number" min="0" step="0.01" value="' + (r.preco != null ? r.preco : '') + '" ' +
+            'oninput="_tabelaPeso[' + i + '].preco=parseFloat(this.value)||0" ' +
+            'style="width:90px;border:1px solid var(--gray-200);border-radius:6px;padding:5px 8px;font-size:13px;" placeholder="10.00" />' +
+        '</td>' +
+        '<td style="padding:6px 4px;text-align:center;">' +
+          '<button type="button" onclick="removerFaixaPeso(' + i + ')" ' +
+            'style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:16px;padding:2px 4px;" title="Remover faixa">' +
+            '<i class="ti ti-trash"></i>' +
+          '</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+    if (!_tabelaPeso.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="padding:12px;text-align:center;color:var(--gray-400);font-size:12px;">Nenhuma faixa cadastrada. Clique em "Adicionar faixa" para começar.</td></tr>';
+    }
+  }
+
+  function adicionarFaixaPeso() {
+    var ultimo = _tabelaPeso.length ? _tabelaPeso[_tabelaPeso.length - 1].ateG : 0;
+    _tabelaPeso.push({ ateG: ultimo ? ultimo * 2 : 100, preco: 0 });
+    renderTabelaPeso();
+  }
+
+  function removerFaixaPeso(i) {
+    _tabelaPeso.splice(i, 1);
+    renderTabelaPeso();
+  }
+
   // ─── ABA ENTREGA ──────────────────────────────────────────
   function toggleEntregaSection(key) {
     var ativo  = document.getElementById('ent-' + key + '-ativo').checked;
@@ -749,6 +828,11 @@
 
     document.getElementById('ent-obs').value = cfg.obs || '';
 
+    _tabelaPeso = (cfg.tabelaPeso && cfg.tabelaPeso.length)
+      ? cfg.tabelaPeso.map(function(r) { return { ateG: r.ateG, preco: r.preco }; })
+      : _TABELA_PESO_DEFAULT.slice();
+    renderTabelaPeso();
+
     toggleEntregaSection('retirada');
     toggleEntregaSection('local');
     toggleEntregaSection('gratis');
@@ -771,7 +855,10 @@
         ativo:  document.getElementById('ent-gratis-ativo').checked,
         minimo: parseFloat(document.getElementById('ent-gratis-minimo').value) || 0
       },
-      obs: document.getElementById('ent-obs').value.trim()
+      obs:        document.getElementById('ent-obs').value.trim(),
+      tabelaPeso: _tabelaPeso
+        .filter(function(r) { return r.ateG > 0; })
+        .sort(function(a, b) { return a.ateG - b.ateG; })
     };
     localStorage.setItem('lapinkEntregaConfig', JSON.stringify(cfg));
     showToast('Configurações de entrega salvas!');

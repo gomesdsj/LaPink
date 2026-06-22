@@ -444,9 +444,28 @@ function _esc(s) {
       });
     }
 
-    // Frete grátis autônomo: quando nenhuma opção acima já cobre (sem entrega local configurada)
+    // Frete calculado por peso
+    var pesoCalc = calcularFretePorPeso();
+    if (pesoCalc) {
+      var gratisPorPeso = gAtivo && sub >= minimo;
+      var taxaPeso      = gratisPorPeso ? 0 : (pesoCalc.preco != null ? pesoCalc.preco : null);
+      opts.push({
+        key:      'correios',
+        icon:     'ti-package',
+        taxa:      taxaPeso != null ? taxaPeso : 0,
+        aCombinar: taxaPeso === null,
+        label:    'Entrega — ' + pesoCalc.pesoLabel,
+        sub:       gratisPorPeso
+          ? 'Frete grátis aplicado ao seu pedido!'
+          : (pesoCalc.preco != null
+              ? 'Calculado pelo peso total do pedido'
+              : 'Peso acima da tabela — entre em contato para combinar')
+      });
+    }
+
+    // Frete grátis autônomo: quando nenhuma opção acima já cobre (sem entrega local nem tabela)
     if (gAtivo && sub >= minimo) {
-      var jaTemGratis = opts.some(function(o) { return o.taxa === 0 && o.key !== 'retirada'; });
+      var jaTemGratis = opts.some(function(o) { return (o.taxa === 0 || o.aCombinar === false) && o.key !== 'retirada'; });
       if (!jaTemGratis) {
         opts.push({
           key: 'fretegratis', icon: 'ti-gift', taxa: 0,
@@ -466,9 +485,11 @@ function _esc(s) {
     }
 
     cont.innerHTML = opts.map(function(o, i) {
-      var taxaLabel = o.taxa > 0
-        ? fmtMoeda(o.taxa)
-        : '<span style="color:var(--green-400)">Grátis</span>';
+      var taxaLabel = o.aCombinar
+        ? '<span style="color:var(--gray-400)">A combinar</span>'
+        : (o.taxa > 0
+            ? fmtMoeda(o.taxa)
+            : '<span style="color:var(--green-400)">Grátis</span>');
       return '<label class="co-payment-opt">' +
         '<input type="radio" name="delivMethod" value="' + o.key + '"' + (i === 0 ? ' checked' : '') + ' onchange="window.atualizarFreteOpt()" />' +
         '<div class="co-payment-opt-icon"><i class="ti ' + o.icon + '"></i></div>' +
@@ -515,7 +536,11 @@ function _esc(s) {
     if (!sel || !opts.length) { atualizarFrete(0, 'A combinar', true); return; }
     var opt   = opts.find(function(o) { return o.key === sel.value; });
     if (!opt)  { atualizarFrete(0, 'A combinar', true); return; }
-    atualizarFrete(opt.taxa, opt.taxa > 0 ? fmtMoeda(opt.taxa) : 'Grátis', opt.taxa === 0);
+    if (opt.aCombinar) {
+      atualizarFrete(0, 'A combinar', true);
+    } else {
+      atualizarFrete(opt.taxa, opt.taxa > 0 ? fmtMoeda(opt.taxa) : 'Grátis', opt.taxa === 0);
+    }
   };
 
   function atualizarFrete(taxa, label, isGratis) {
@@ -538,6 +563,36 @@ function _esc(s) {
     var sel  = document.querySelector('input[name="delivMethod"]:checked');
     if (!sel || !opts.length) return null;
     return opts.find(function(o) { return o.key === sel.value; }) || null;
+  }
+
+  function fmtPeso(g) {
+    return g >= 1000 ? (g / 1000).toFixed(1).replace('.', ',') + ' kg' : g + ' g';
+  }
+
+  function calcularFretePorPeso() {
+    var cfg    = getEntregaConfig();
+    var tabela = cfg.tabelaPeso || [];
+    if (!tabela.length) return null;
+
+    var cart  = getCart();
+    var prods = [];
+    try { prods = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) {}
+
+    var pesoTotal = cart.reduce(function(s, item) {
+      var p = prods.find(function(x) { return String(x.id) === String(item.id); });
+      return s + ((p && p.pesoEnvioGramas) ? p.pesoEnvioGramas * item.qty : 0);
+    }, 0);
+
+    if (pesoTotal <= 0) return null;
+
+    var ordenada = tabela.slice().sort(function(a, b) { return a.ateG - b.ateG; });
+    var faixa    = ordenada.find(function(f) { return pesoTotal <= f.ateG; });
+
+    return {
+      pesoTotal: pesoTotal,
+      preco:     faixa ? faixa.preco : null,
+      pesoLabel: fmtPeso(pesoTotal)
+    };
   }
 
   function renderPaymentBadges() {
@@ -744,7 +799,7 @@ function _esc(s) {
     var cart      = getCart();
     var subtotal  = getCartTotal();
     var delivery  = getSelectedDelivery();
-    var freteTaxa = delivery ? (delivery.taxa || 0) : 0;
+    var freteTaxa = delivery && !delivery.aCombinar ? (delivery.taxa || 0) : 0;
     var total     = subtotal + freteTaxa;
 
     var _cnt = parseInt(localStorage.getItem('lapinkPedidoCounter') || '999') + 1;
@@ -787,7 +842,7 @@ function _esc(s) {
 
     var payLabel  = getSelectedPayMethod();
     var delivLine = delivery
-      ? ('*Entrega:* ' + delivery.label + (freteTaxa > 0 ? ' — ' + fmtMoeda(freteTaxa) : ' — Grátis') + '\n')
+      ? ('*Entrega:* ' + delivery.label + (delivery.aCombinar ? ' — A combinar' : (freteTaxa > 0 ? ' — ' + fmtMoeda(freteTaxa) : ' — Grátis')) + '\n')
       : '';
     var msg =
       '*Novo Pedido LaPink* 🛍\n' +
