@@ -659,9 +659,11 @@ function _esc(s) {
     var icons  = { pix:'ti-qrcode', cartao:'ti-credit-card', transf:'ti-building-bank', dinheiro:'ti-cash' };
     var subs   = { pix:'Pagamento instantâneo', cartao:'Maquininha na entrega', transf:'Transferência bancária', dinheiro:'Pagamento na entrega' };
 
-    cont.innerHTML = opts.map(function(k, i) {
+    var preselPay = (function(){ try{ return localStorage.getItem('lapinkCartPayment')||''; }catch(e){ return ''; } })();
+    var defaultPay = (preselPay && opts.indexOf(preselPay) !== -1) ? preselPay : opts[0];
+    cont.innerHTML = opts.map(function(k) {
       return '<label class="co-payment-opt">' +
-        '<input type="radio" name="payMethod" value="' + k + '"' + (i === 0 ? ' checked' : '') + ' onchange="renderPayInfo()" />' +
+        '<input type="radio" name="payMethod" value="' + k + '"' + (k === defaultPay ? ' checked' : '') + ' onchange="renderPayInfo()" />' +
         '<div class="co-payment-opt-icon"><i class="ti ' + icons[k] + '"></i></div>' +
         '<div class="co-payment-opt-body">' +
           '<div class="co-payment-opt-title">' + labels[k] + '</div>' +

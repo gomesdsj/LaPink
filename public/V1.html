@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <base href="/public/">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>LaPink — Loja</title>
 <meta name="description" content="LaPink — Semijoias banhadas a ouro. Anéis, colares, brincos e bolsas com qualidade e preço justo." />
 <meta property="og:title" content="LaPink — Semijoias" />
@@ -35,6 +35,7 @@
 .cart-panel-overlay.open { display:block; }
 .cart-panel {
   position:fixed; top:0; right:0; bottom:0; width:min(100vw,400px);
+  max-width:100vw; overflow:hidden; box-sizing:border-box;
   background:#fff; z-index:1101; display:flex; flex-direction:column;
   transform:translateX(100%); transition:transform .3s cubic-bezier(.4,0,.2,1);
   box-shadow:-6px 0 32px rgba(42,21,32,.18);
@@ -53,7 +54,7 @@
   transition:background .15s,color .15s;
 }
 .cart-panel-close:hover { background:var(--pk-100); color:var(--pk-500); }
-.cart-panel-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+.cart-panel-body { flex:1; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
 .cp-empty { text-align:center; padding:40px 20px; color:#B08898; }
 .cp-empty i { font-size:40px; display:block; margin-bottom:12px; color:var(--pk-300); }
 .cp-item {
@@ -79,16 +80,25 @@
 /* Entrega no mini-cart */
 .cp-shipping { background:var(--pk-50); border:1px solid var(--pk-200); border-radius:12px; padding:12px 14px; }
 .cp-shipping-title { font-size:11px; font-weight:700; color:var(--pk-dark); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
-.cp-ship-opt { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--pk-100); }
+.cp-ship-opt { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--pk-100); flex-wrap:wrap; }
 .cp-ship-opt:last-child { border-bottom:none; padding-bottom:0; }
 .cp-ship-opt input[type=radio] { accent-color:var(--pk-500); width:15px; height:15px; flex-shrink:0; cursor:pointer; }
-.cp-ship-opt-info { flex:1; }
-.cp-ship-opt-label { font-size:12px; font-weight:700; color:var(--pk-dark); }
+.cp-ship-opt-info { flex:1; min-width:0; }
+.cp-ship-opt-label { font-size:12px; font-weight:700; color:var(--pk-dark); overflow-wrap:break-word; word-break:break-word; }
 .cp-ship-opt-sub { font-size:10px; color:#B08898; }
-.cp-ship-opt-price { font-size:12px; font-weight:800; color:var(--pk-500); white-space:nowrap; }
+.cp-ship-opt-price { font-size:12px; font-weight:800; color:var(--pk-500); white-space:nowrap; margin-left:auto; }
 .cp-ship-opt-price.gratis { color:#2E8B5A; }
+/* Pagamento no mini-cart */
+.cp-payment { background:#fff; border:1px solid var(--pk-200); border-radius:12px; padding:12px 14px; }
+.cp-pay-opt { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--pk-100); }
+.cp-pay-opt:last-child { border-bottom:none; padding-bottom:0; }
+.cp-pay-opt input[type=radio] { accent-color:var(--pk-500); width:15px; height:15px; flex-shrink:0; cursor:pointer; }
+.cp-pay-opt-icon { width:26px; height:26px; border-radius:7px; background:var(--pk-50); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--pk-500); flex-shrink:0; }
+.cp-pay-opt-info { flex:1; min-width:0; }
+.cp-pay-opt-label { font-size:12px; font-weight:700; color:var(--pk-dark); }
+.cp-pay-opt-sub { font-size:10px; color:#B08898; }
 /* Totais */
-.cart-panel-foot { padding:14px 16px; border-top:1px solid var(--pk-200); flex-shrink:0; }
+.cart-panel-foot { padding:14px 16px; padding-bottom:calc(14px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--pk-200); flex-shrink:0; }
 .cp-totals { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
 .cp-tot-row { display:flex; justify-content:space-between; font-size:12px; color:#7A5B6A; }
 .cp-tot-total { display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:var(--pk-dark); margin-top:4px; padding-top:8px; border-top:1px solid var(--pk-200); }
@@ -100,7 +110,21 @@
   text-decoration:none; transition:background .15s;
 }
 .cp-btn-checkout:hover { background:var(--pk-600); }
-@media (max-width:480px) { .cart-panel { width:100vw; } }
+@media (max-width:480px) {
+  .cart-panel { width:100vw; max-width:100vw; }
+  .cart-panel-head { padding:12px 14px 10px; }
+  .cart-panel-body { padding:10px 12px; gap:8px; }
+  .cart-panel-foot { padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px)); }
+  .cp-item { padding:8px; gap:8px; }
+  .cp-item-img { width:44px; height:44px; }
+  .cp-item-name { font-size:11px; }
+  .cp-item-price { font-size:12px; }
+  .cp-shipping { padding:10px 11px; }
+  .cp-payment { padding:10px 11px; }
+  .cp-ship-opt-price { font-size:11px; }
+  .cp-tot-total { font-size:15px; }
+  .cp-btn-checkout { padding:13px 0; border-radius:12px; }
+}
 
 /* Frete grátis strip */
 .frete-strip {
@@ -1757,10 +1781,33 @@ window.saveProfileData = async function() {
 // ── Mini-carrinho panel ────────────────────────────────────
 (function() {
 
-  function _cfg()  { try { return JSON.parse(localStorage.getItem('lapinkEntregaConfig')||'{}'); } catch(e){return{};} }
-  function _prods(){ try { return JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');       } catch(e){return[];} }
-  function fmtR(v) { return 'R$ '+Number(v).toFixed(2).replace('.',','); }
-  function fmtPeso(g){ return g>=1000?(g/1000).toFixed(1).replace('.',',')+' kg':g+' g'; }
+  function _cfg()     { try { return JSON.parse(localStorage.getItem('lapinkEntregaConfig')||'{}');  } catch(e){return{};} }
+  function _payCfg()  { try { return JSON.parse(localStorage.getItem('lapinkPaymentConfig')||'{}'); } catch(e){return{};} }
+  function _prods()   { try { return JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');       } catch(e){return[];} }
+  function fmtR(v)    { return 'R$ '+Number(v).toFixed(2).replace('.',','); }
+  function fmtPeso(g) { return g>=1000?(g/1000).toFixed(1).replace('.',',')+' kg':g+' g'; }
+
+  var _PAY_META = {
+    pix:     { icon:'ti-qrcode',       label:'PIX',                    sub:'Pagamento instantâneo' },
+    cartao:  { icon:'ti-credit-card',  label:'Cartão de crédito/débito', sub:'Maquininha na entrega' },
+    transf:  { icon:'ti-building-bank',label:'Transferência bancária',  sub:'Transferência bancária' },
+    dinheiro:{ icon:'ti-cash',         label:'Dinheiro / na entrega',   sub:'Pagamento na entrega'  }
+  };
+
+  function calcularPagamentos() {
+    var c = _payCfg(); var opts = [];
+    ['pix','cartao','transf','dinheiro'].forEach(function(k){
+      var m = c[k];
+      if(m && m.ativo) {
+        var meta = _PAY_META[k];
+        var sub = meta.sub;
+        if(k==='cartao' && m.parcelaMax>1) sub='Parcelamento em até '+m.parcelaMax+'x sem juros';
+        opts.push({ key:k, icon:meta.icon, label:meta.label, sub:sub });
+      }
+    });
+    if(!opts.length) opts.push({ key:'acombinar', icon:'ti-cash', label:'Pagamento', sub:'A combinar com o vendedor' });
+    return opts;
+  }
 
   function _pesoTotal() {
     var cart=getCart(); var prods=_prods();
@@ -1816,6 +1863,7 @@ window.saveProfileData = async function() {
   }
 
   var _selectedShip = null;
+  var _selectedPay  = null;
 
   function renderCP() {
     var cart   = getCart();
@@ -1891,6 +1939,30 @@ window.saveProfileData = async function() {
     envHtml+='</div>';
     body.innerHTML+=envHtml;
 
+    // Seção de pagamento
+    var pagamentos=calcularPagamentos();
+    if(!_selectedPay||!pagamentos.find(function(p){return p.key===_selectedPay;}))
+      _selectedPay=pagamentos[0]&&pagamentos[0].key;
+
+    var payHtml='<div class="cp-payment">' +
+      '<div class="cp-shipping-title"><i class="ti ti-credit-card"></i> Pagamento</div>';
+    pagamentos.forEach(function(p){
+      payHtml+='<label class="cp-pay-opt" style="cursor:pointer;">' +
+        '<input type="radio" name="cpPay" value="'+p.key+'"'+(p.key===_selectedPay?' checked':'')+
+          ' onchange="cpSelectPay(\''+p.key+'\')" />' +
+        '<div class="cp-pay-opt-icon"><i class="ti '+p.icon+'"></i></div>' +
+        '<div class="cp-pay-opt-info">' +
+          '<div class="cp-pay-opt-label">'+p.label+'</div>' +
+          '<div class="cp-pay-opt-sub">'+p.sub+'</div>' +
+        '</div>' +
+      '</label>';
+    });
+    payHtml+='</div>';
+    body.innerHTML+=payHtml;
+
+    // Persiste escolha para o checkout
+    if(_selectedPay) try{ localStorage.setItem('lapinkCartPayment',_selectedPay); }catch(e){}
+
     // Totais
     atualizarTotaisCP();
     if(foot) foot.style.display='';
@@ -1921,6 +1993,11 @@ window.saveProfileData = async function() {
   }
 
   window.cpSelectShip=function(key){ _selectedShip=key; atualizarTotaisCP(); };
+
+  window.cpSelectPay=function(key){
+    _selectedPay=key;
+    try{ localStorage.setItem('lapinkCartPayment',key); }catch(e){}
+  };
 
   window.cpQty=function(id,action){
     var cart=getCart();
