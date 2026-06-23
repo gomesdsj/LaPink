@@ -1767,8 +1767,8 @@ window.saveProfileData = async function() {
       <div class="cp-tot-row"><span id="cp-frete-label">Frete</span><span id="cp-frete-val">A combinar</span></div>
     </div>
     <div class="cp-tot-total"><span>Total</span><span id="cp-total">R$ 0,00</span></div>
-    <a href="checkout.html" class="cp-btn-checkout" style="margin-top:14px;">
-      <i class="ti ti-brand-whatsapp"></i> Finalizar pedido
+    <a href="pagamento.html" class="cp-btn-checkout" style="margin-top:14px;">
+      <i class="ti ti-lock"></i> Finalizar pedido
     </a>
   </div>
 
@@ -1919,6 +1919,7 @@ window.saveProfileData = async function() {
     var envios=calcularEnvios();
     if(!_selectedShip||!envios.find(function(e){return e.key===_selectedShip;}))
       _selectedShip=envios[0]&&envios[0].key;
+    if(_selectedShip) try{ localStorage.setItem('lapinkCartShipping',_selectedShip); }catch(e){}
 
     var envHtml='<div class="cp-shipping">' +
       '<div class="cp-shipping-title"><i class="ti ti-truck-delivery"></i> Entrega</div>';
@@ -1992,7 +1993,11 @@ window.saveProfileData = async function() {
     if(ttEl) ttEl.textContent=fmtR(total);
   }
 
-  window.cpSelectShip=function(key){ _selectedShip=key; atualizarTotaisCP(); };
+  window.cpSelectShip=function(key){
+    _selectedShip=key;
+    try{ localStorage.setItem('lapinkCartShipping',key); }catch(e){}
+    atualizarTotaisCP();
+  };
 
   window.cpSelectPay=function(key){
     _selectedPay=key;

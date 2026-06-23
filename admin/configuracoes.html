@@ -310,6 +310,11 @@
                 <label>Public Key <small style="color:var(--gray-400)">(prefixo APP_USR-…, segura para expor)</small></label>
                 <input type="text" id="int-mp-pk" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
               </div>
+              <div class="form-group">
+                <label>Link de pagamento <small style="color:var(--gray-400)">(URL do Checkout Pro ou Link de Cobrança MP)</small></label>
+                <input type="url" id="int-mp-link" placeholder="https://mpago.la/xxxxxxxxxxxx" autocomplete="off" />
+                <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Crie em <strong>mercadopago.com.br → Cobranças → Links de pagamento</strong>. Este link aparece no botão "Pagar com Mercado Pago" na página de pagamento da loja.</div>
+              </div>
               <div class="form-row" style="align-items:center;">
                 <div class="form-group" style="flex:0 0 auto;">
                   <label>Modo</label>
@@ -793,6 +798,7 @@
   function carregarIntegracoes() {
     var cfg = getObj('lapinkApiConfig');
     document.getElementById('int-mp-pk').value       = cfg.mpPublicKey    || '';
+    document.getElementById('int-mp-link').value     = cfg.mpPaymentLink  || '';
     document.getElementById('int-mp-modo').value     = cfg.mpModo         || 'sandbox';
     document.getElementById('int-mp-wpp').value      = cfg.mpWhatsapp     || '';
     document.getElementById('int-ejs-pk').value      = cfg.emailjsPk      || '';
@@ -807,9 +813,10 @@
 
   function salvarIntegracoes() {
     var cfg = {
-      mpPublicKey: document.getElementById('int-mp-pk').value.trim(),
-      mpModo:      document.getElementById('int-mp-modo').value,
-      mpWhatsapp:  document.getElementById('int-mp-wpp').value.trim(),
+      mpPublicKey:    document.getElementById('int-mp-pk').value.trim(),
+      mpPaymentLink:  document.getElementById('int-mp-link').value.trim(),
+      mpModo:         document.getElementById('int-mp-modo').value,
+      mpWhatsapp:     document.getElementById('int-mp-wpp').value.trim(),
       emailjsPk:   document.getElementById('int-ejs-pk').value.trim(),
       emailjsSid:  document.getElementById('int-ejs-sid').value.trim(),
       emailjsTid:  document.getElementById('int-ejs-tid').value.trim(),
