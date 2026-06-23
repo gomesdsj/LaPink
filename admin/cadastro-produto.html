@@ -122,7 +122,8 @@
                 <div class="form-row">
                   <div class="form-group">
                     <label for="categoria">Categoria</label>
-                    <select id="categoria" onchange="atualizarPreview()">
+                    <select id="categoria" required onchange="atualizarPreview()">
+                      <option value="">-- Selecione --</option>
                       <option>Anéis</option>
                       <option>Brincos</option>
                       <option>Berloques</option>
@@ -987,6 +988,8 @@
       e.preventDefault();
       var nome = document.getElementById('nome').value.trim();
       if (!nome) { showToast('Preencha o nome do produto.', 'erro'); return; }
+      var cat = document.getElementById('categoria').value;
+      if (!cat) { showToast('Selecione uma categoria.', 'erro'); document.getElementById('categoria').focus(); return; }
 
       function parsePreco(v) {
         return parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;

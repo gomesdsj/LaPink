@@ -626,13 +626,34 @@
     el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
   }
 
+  // ─── Dirty flag por aba ───────────────────────────────────
+  var _abaAtual = 'loja';
+  var _abaDirty = false;
+
+  function marcarDirty() { _abaDirty = true; }
+
+  function setupDirtyListeners(panelId) {
+    var panel = document.getElementById(panelId);
+    if (!panel) return;
+    panel.querySelectorAll('input,select,textarea').forEach(function(el) {
+      el.addEventListener('change', marcarDirty);
+      el.addEventListener('input',  marcarDirty);
+    });
+  }
+
   // ─── Abas ─────────────────────────────────────────────────
   function mudarAba(aba, btn) {
+    if (_abaDirty && aba !== _abaAtual) {
+      if (!confirm('Há alterações não salvas na aba atual. Deseja descartar e continuar?')) return;
+    }
+    _abaDirty  = false;
+    _abaAtual  = aba;
     document.querySelectorAll('.config-panel').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.config-tab').forEach(function(b) { b.classList.remove('active'); });
     document.getElementById('panel-' + aba).classList.add('active');
     btn.classList.add('active');
     if (aba === 'armazenamento') renderArmazenamento();
+    setupDirtyListeners('panel-' + aba);
   }
 
   // ─── Helpers localStorage ─────────────────────────────────
@@ -659,6 +680,7 @@
   }
 
   function salvarLoja() {
+    _abaDirty = false;
     var cfg = {
       nomeLoja: document.getElementById('cfg-nome-loja').value.trim() || 'LaPink',
       cnpj: document.getElementById('cfg-cnpj').value.trim(),
@@ -683,6 +705,10 @@
   }
 
   async function salvarConta() {
+    _abaDirty = false;
+    var saveBtn = document.querySelector('#panel-conta .btn-save-form');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .9s linear infinite"></i> Salvando...'; }
+    try {
     var nome       = document.getElementById('cfg-admin-nome').value.trim();
     var senhaAtual = document.getElementById('cfg-senha-atual').value;
     var senhaNova  = document.getElementById('cfg-senha-nova').value;
@@ -717,6 +743,11 @@
     document.getElementById('cfg-senha-nova').value  = '';
     document.getElementById('cfg-senha-conf').value  = '';
     showToast('Conta atualizada!');
+    } catch(e) {
+      showToast('Erro ao salvar conta.', 'erro');
+    } finally {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="ti ti-user-check"></i> Atualizar conta'; }
+    }
   }
 
   // ─── ABA NOTIFICAÇÕES ─────────────────────────────────────
@@ -728,6 +759,7 @@
   }
 
   function salvarNotificacoes() {
+    _abaDirty = false;
     var cfg = {
       pedidoNovo: document.getElementById('notif-pedido').checked,
       estoqueCritico: document.getElementById('notif-estoque').checked,
@@ -812,6 +844,7 @@
   }
 
   function salvarIntegracoes() {
+    _abaDirty = false;
     var cfg = {
       mpPublicKey:    document.getElementById('int-mp-pk').value.trim(),
       mpPaymentLink:  document.getElementById('int-mp-link').value.trim(),
@@ -993,6 +1026,7 @@
   }
 
   function salvarEntrega() {
+    _abaDirty = false;
     var cfg = {
       retirada: {
         ativo:    document.getElementById('ent-retirada-ativo').checked,
@@ -1031,6 +1065,8 @@
   carregarNotificacoes();
   carregarIntegracoes();
   carregarEntrega();
+  // Setup dirty listeners na aba inicial
+  setTimeout(function() { setupDirtyListeners('panel-loja'); }, 100);
   </script>
   <script src="js/sidebar.js"></script>
 </body>

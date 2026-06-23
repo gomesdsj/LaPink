@@ -172,6 +172,8 @@ body { background:var(--gray-50); min-height:100vh; }
 .pg-delivery-badge strong { color:var(--gray-800); }
 
 /* ── Sucesso ── */
+@keyframes spin { to { transform:rotate(360deg); } }
+.pg-frete-aviso { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 12px; font-size:11px; color:#92400e; margin-top:8px; display:flex; align-items:center; gap:6px; }
 .pg-success { display:none; text-align:center; padding:48px 20px; }
 .pg-success-icon { width:72px; height:72px; border-radius:50%; background:#dcfce7; border:1px solid #86efac; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:32px; color:#166534; }
 .pg-success h2 { font-size:20px; font-weight:800; color:var(--gray-800); margin-bottom:8px; }
@@ -379,10 +381,16 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
           (delivery.aCombinar?'A combinar':frete===0?'Grátis':fmtR(frete))+'</span>' +
         '</span>')
       :'';
+    var aCombinar = delivery && delivery.aCombinar;
+    var avisoHtml = aCombinar
+      ? '<div class="pg-frete-aviso"><i class="ti ti-info-circle"></i> O frete será calculado e combinado após o pedido.</div>'
+      : '';
+    var totalLabel = aCombinar ? 'Subtotal (+ frete a combinar)' : 'Total';
     totEl.innerHTML=
       '<span class="pg-tot-row"><span>Subtotal</span><span>'+fmtR(sub)+'</span></span>' +
       freteHtml +
-      '<span class="pg-tot-row bold"><span>Total</span><span>'+fmtR(total)+'</span></span>';
+      '<span class="pg-tot-row bold"><span>'+totalLabel+'</span><span>'+fmtR(total)+'</span></span>' +
+      avisoHtml;
     return true;
   }
 
@@ -408,17 +416,20 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
     if(!saved||!opts.find(function(o){return o.key===saved;})) saved=opts[0]&&opts[0].key||'';
     _selPay=saved;
 
-    document.getElementById('pgPayMethods').innerHTML=opts.map(function(o){
+    var pgPayEl=document.getElementById('pgPayMethods');
+    pgPayEl.innerHTML=opts.map(function(o){
       return '<label class="pg-pay-method">' +
-        '<input type="radio" name="pgPay" value="'+o.key+'"'+(o.key===_selPay?' checked':'')+
-          ' onchange="selectPay(\''+o.key+'\')" />' +
-        '<div class="pg-pay-method-icon"><i class="ti '+o.icon+'"></i></div>' +
+        '<input type="radio" name="pgPay" value="'+_esc(o.key)+'"'+(o.key===_selPay?' checked':'')+' />' +
+        '<div class="pg-pay-method-icon"><i class="ti '+_esc(o.icon)+'"></i></div>' +
         '<div class="pg-pay-method-info">' +
           '<div class="pg-pay-method-label">'+_esc(o.label)+'</div>' +
           '<div class="pg-pay-method-sub">'+_esc(o.sub)+'</div>' +
         '</div>' +
       '</label>';
     }).join('');
+    pgPayEl.querySelectorAll('input[name="pgPay"]').forEach(function(inp){
+      inp.addEventListener('change',function(){ if(this.checked) selectPay(this.value); });
+    });
 
     renderPayAction();
   }
@@ -505,7 +516,11 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
   };
 
   // ── Confirmar pedido ──────────────────────────────────────
+  var _confirmando = false;
+
   window.confirmarPedido=function(){
+    if(_confirmando) return;
+
     var nome=document.getElementById('pgNome').value.trim();
     var wpp=document.getElementById('pgWpp').value.trim();
     var ok=true;
@@ -518,22 +533,44 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
     var cart=getCart();
     if(!cart.length){ alert('Seu carrinho está vazio.'); return; }
 
+    // ── Validar estoque antes de confirmar
+    try{
+      var prods=JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');
+      var semEstoque=[];
+      cart.forEach(function(item){
+        var p=prods.find(function(x){return String(x.id)===String(item.id);});
+        if(p && Number(p.estoque)>=0 && item.qty > Number(p.estoque)){
+          semEstoque.push(item.nome+' (disponível: '+p.estoque+')');
+        }
+      });
+      if(semEstoque.length){
+        alert('Estoque insuficiente para:\n'+semEstoque.join('\n')+'\n\nAjuste as quantidades no carrinho.');
+        return;
+      }
+    }catch(e){}
+
     var delivery=_getDelivery();
     var sub=getCartTotal();
-    var frete=delivery&&!delivery.aCombinar?(delivery.taxa||0):0;
+    var freteACombinar=!delivery||delivery.aCombinar;
+    var frete=freteACombinar?0:(delivery.taxa||0);
     var total=sub+frete;
 
     var sc=_storeCfg();
     var lojaWpp=(sc.whatsapp||'').replace(/\D/g,'');
     if(!lojaWpp){ alert('WhatsApp da loja não configurado. Peça ao administrador.'); return; }
 
-    // Salvar pedido
+    // ── Proteção duplo clique
+    _confirmando=true;
+    var btn=document.getElementById('pgBtnConfirm');
+    if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Confirmando...'; }
+
+    // ── Número de pedido único (timestamp + random)
     var numPedido=(function(){
       try{
-        var n=parseInt(localStorage.getItem('lapinkPedidoCounter')||'0')+1;
-        localStorage.setItem('lapinkPedidoCounter',String(n));
-        return String(n).padStart(4,'0');
-      }catch(e){return 'N/A';}
+        var ts=Date.now().toString(36).toUpperCase();
+        var rnd=Math.random().toString(36).slice(2,5).toUpperCase();
+        return ts+'-'+rnd;
+      }catch(e){return 'PED-'+Date.now();}
     })();
 
     var payOpts=getPayOpts();
@@ -542,7 +579,7 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
     var pedido={
       numero:numPedido, cliente:nome, whatsapp:wpp,
       itens:cart.map(function(i){return{nome:i.nome,qty:i.qty,preco:i.preco};}),
-      subtotal:sub, frete:frete,
+      subtotal:sub, frete:freteACombinar?null:frete,
       entrega:delivery?delivery.label:'A combinar',
       pagamento:payLabel, total:total,
       status:'aguardando', data:new Date().toISOString()
@@ -553,21 +590,24 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
       localStorage.setItem('lapinkPedidos',JSON.stringify(pedidos));
     }catch(e){}
 
-    // Baixar estoque
+    // ── Baixar estoque após validação
     try{
-      var prods=JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');
+      var prodsAtual=JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');
       cart.forEach(function(item){
-        var idx=prods.findIndex(function(p){return String(p.id)===String(item.id);});
-        if(idx>=0) prods[idx].estoque=Math.max(0,(Number(prods[idx].estoque)||0)-item.qty);
+        var idx=prodsAtual.findIndex(function(p){return String(p.id)===String(item.id);});
+        if(idx>=0) prodsAtual[idx].estoque=Math.max(0,(Number(prodsAtual[idx].estoque)||0)-item.qty);
       });
-      localStorage.setItem('lapinkProdutos',JSON.stringify(prods));
+      localStorage.setItem('lapinkProdutos',JSON.stringify(prodsAtual));
     }catch(e){}
 
-    // Montar mensagem WhatsApp
+    // ── Montar mensagem WhatsApp
     var itensMsg=cart.map(function(i){return '- '+i.nome+' x'+i.qty+' — '+fmtR(i.preco*i.qty);}).join('\n');
     var delivLine=delivery
-      ?('*Entrega:* '+delivery.label+(delivery.aCombinar?' — A combinar':frete===0?' — Grátis':' — '+fmtR(frete))+'\n')
+      ?('*Entrega:* '+delivery.label+(freteACombinar?' — A combinar':frete===0?' — Grátis':' — '+fmtR(frete))+'\n')
       :'';
+    var totalLine=freteACombinar
+      ?'*Subtotal:* '+fmtR(sub)+'\n*Frete:* A combinar\n'
+      :'*Subtotal:* '+fmtR(sub)+'\n';
     var msg=
       '*Novo Pedido LaPink* 🛍\n' +
       '*Nº:* '+numPedido+'\n' +
@@ -575,15 +615,13 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
       '*Cliente:* '+nome+'\n' +
       '*WhatsApp:* '+wpp+'\n\n' +
       '*Itens:*\n'+itensMsg+'\n\n' +
-      '*Subtotal:* '+fmtR(sub)+'\n' +
+      totalLine+
       delivLine+
-      '*Total:* '+fmtR(total)+'\n' +
+      '*Total:* '+fmtR(total)+(freteACombinar?' _(+ frete a combinar)_':'')+'\n' +
       (payLabel?'*Pagamento:* '+payLabel+'\n':'') +
       '\n_Status: Aguardando confirmação_';
 
     clearCart();
-    localStorage.removeItem('lapinkCartPayment');
-    localStorage.removeItem('lapinkCartShipping');
 
     document.getElementById('pgPage').style.display='none';
     var suc=document.getElementById('pgSuccess');
@@ -592,7 +630,7 @@ function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
       'Pedido <strong>'+numPedido+'</strong> registrado!<br>Sua mensagem foi aberta no WhatsApp.';
 
     var waUrl='https://wa.me/'+lojaWpp+'?text='+encodeURIComponent(msg);
-    setTimeout(function(){ window.open(waUrl,'_blank'); },300);
+    setTimeout(function(){ window.open(waUrl,'_blank'); _confirmando=false; },300);
   };
 
   // ── Pré-preencher dados salvos ────────────────────────────

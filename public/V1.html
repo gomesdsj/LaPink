@@ -71,11 +71,11 @@
 .cp-item-name { font-size:12px; font-weight:700; color:var(--pk-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cp-item-price { font-size:13px; font-weight:800; color:var(--pk-500); margin-top:2px; }
 .cp-item-ctrl { display:flex; align-items:center; gap:4px; margin-top:6px; }
-.cp-qty-btn { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--pk-200); background:#fff; color:var(--pk-500); font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+.cp-qty-btn { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--pk-200); background:#fff; color:var(--pk-500); font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; flex-shrink:0; }
 .cp-qty-btn:hover { background:var(--pk-50); }
-.cp-qty-val { font-size:12px; font-weight:700; color:var(--pk-dark); min-width:22px; text-align:center; }
-.cp-remove { margin-left:auto; background:none; border:none; font-size:15px; color:#B08898; cursor:pointer; padding:4px; }
-.cp-remove:hover { color:#e05555; }
+.cp-qty-val { font-size:13px; font-weight:700; color:var(--pk-dark); min-width:24px; text-align:center; }
+.cp-remove { margin-left:auto; background:none; border:none; font-size:16px; color:#B08898; cursor:pointer; padding:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; flex-shrink:0; }
+.cp-remove:hover { color:#e05555; background:rgba(224,85,85,.08); }
 .cp-divider { border:none; border-top:1px solid var(--pk-100); margin:4px 0; }
 /* Entrega no mini-cart */
 .cp-shipping { background:var(--pk-50); border:1px solid var(--pk-200); border-radius:12px; padding:12px 14px; }
@@ -970,6 +970,16 @@ function assinarNewsletter() {
     msg.className   = 'nl-msg err';
     return;
   }
+  // Rate limit: 1 envio por minuto por browser
+  try {
+    var lastNl = parseInt(localStorage.getItem('lapinkNlLast') || '0', 10);
+    if (Date.now() - lastNl < 60000) {
+      msg.textContent = 'Aguarde um minuto antes de tentar novamente.';
+      msg.className   = 'nl-msg err';
+      return;
+    }
+    localStorage.setItem('lapinkNlLast', String(Date.now()));
+  } catch(e) {}
   try {
     var lista = JSON.parse(localStorage.getItem('lapinkNewsletter') || '[]');
     if (lista.indexOf(email) === -1) lista.push(email);
@@ -1290,6 +1300,7 @@ if (installBtn) {
 
   function startTimer() {
     clearInterval(timer);
+    if (window.innerWidth < 768) return; // mobile: sem autoplay
     timer = setInterval(function() { goTo(cur + 1); }, 5000);
   }
 
@@ -1520,6 +1531,8 @@ window.toggleDrawerCat = function() {
 
 <script>
 // ── Modal Minha Conta ─────────────────────────────────────
+var _profileDirty = false;
+
 window.openProfileModal = function() {
   var overlay = document.getElementById('profileOverlay');
   var sheet   = document.getElementById('profileSheet');
@@ -1555,6 +1568,11 @@ window.openProfileModal = function() {
     });
   }
 
+  _profileDirty = false;
+  sheet.querySelectorAll('input').forEach(function(inp) {
+    inp.addEventListener('input', function() { _profileDirty = true; }, { once: false });
+  });
+
   overlay.classList.add('open');
   sheet.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1562,7 +1580,11 @@ window.openProfileModal = function() {
   setTimeout(function() { document.getElementById('profileNome').focus(); }, 320);
 };
 
-window.closeProfileModal = function() {
+window.closeProfileModal = function(force) {
+  if (!force && _profileDirty) {
+    if (!confirm('Você tem alterações não salvas. Deseja fechar mesmo assim?')) return;
+  }
+  _profileDirty = false;
   var overlay = document.getElementById('profileOverlay');
   var sheet   = document.getElementById('profileSheet');
   if (overlay) overlay.classList.remove('open');
@@ -1696,7 +1718,8 @@ window.saveProfileData = async function() {
     if (typeof updateAuthUI    === 'function') updateAuthUI();
 
     showToast('Perfil atualizado!');
-    closeProfileModal();
+    _profileDirty = false;
+    closeProfileModal(true);
   } catch(e) {
     showToast('Erro ao salvar. Tente novamente.');
   } finally {
@@ -1882,23 +1905,25 @@ window.saveProfileData = async function() {
     }
 
     var prods=_prods();
+    function cpEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     body.innerHTML = cart.map(function(item){
       var p=prods.find(function(x){return String(x.id)===String(item.id);});
       var img=p&&p.imagem
-        ?'<img src="'+item.imagem+'" alt="'+item.nome+'" />'
+        ?'<img src="'+cpEsc(item.imagem)+'" alt="'+cpEsc(item.nome)+'" />'
         :'<i class="ti ti-diamond"></i>';
+      var sid=cpEsc(String(item.id));
       return '<div class="cp-item">' +
         '<div class="cp-item-img">'+img+'</div>' +
         '<div class="cp-item-info">' +
-          '<div class="cp-item-name">'+item.nome+'</div>' +
+          '<div class="cp-item-name">'+cpEsc(item.nome)+'</div>' +
           '<div class="cp-item-price">'+fmtR(item.preco)+'</div>' +
           '<div class="cp-item-ctrl">' +
-            '<button class="cp-qty-btn" onclick="cpQty(\''+item.id+'\',\'dec\')">−</button>' +
+            '<button class="cp-qty-btn" onclick="cpQty(\''+sid+'\',\'dec\')">−</button>' +
             '<span class="cp-qty-val">'+item.qty+'</span>' +
-            '<button class="cp-qty-btn" onclick="cpQty(\''+item.id+'\',\'inc\')">+</button>' +
+            '<button class="cp-qty-btn" onclick="cpQty(\''+sid+'\',\'inc\')">+</button>' +
           '</div>' +
         '</div>' +
-        '<button class="cp-remove" onclick="cpRemove(\''+item.id+'\')" aria-label="Remover"><i class="ti ti-trash"></i></button>' +
+        '<button class="cp-remove" onclick="cpRemove(\''+sid+'\')" aria-label="Remover"><i class="ti ti-trash"></i></button>' +
       '</div>';
     }).join('');
 
