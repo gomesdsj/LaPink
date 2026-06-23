@@ -9,6 +9,28 @@
 <meta property="og:title" content="LaPink — Semijoias" />
 <meta property="og:description" content="Compre semijoias banhadas a ouro com qualidade e elegância." />
 <meta property="og:type" content="website" />
+<meta property="og:url" content="https://lapink-82a39.web.app/public/V1.html" />
+<meta property="og:image" content="https://lapink-82a39.web.app/public/assets/icon.svg" />
+<meta property="og:image:alt" content="LaPink — Semijoias banhadas a ouro" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="LaPink — Semijoias" />
+<meta name="twitter:description" content="Compre semijoias banhadas a ouro com qualidade e elegância." />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "JewelryStore",
+  "name": "LaPink",
+  "description": "Semijoias e acessórios banhados a ouro com qualidade e preço justo.",
+  "url": "https://lapink-82a39.web.app/public/V1.html",
+  "logo": "https://lapink-82a39.web.app/public/assets/icon.svg",
+  "image": "https://lapink-82a39.web.app/public/assets/icon.svg",
+  "priceRange": "$$",
+  "currenciesAccepted": "BRL",
+  "paymentAccepted": "PIX, Cartão de crédito, Transferência, Dinheiro",
+  "areaServed": "BR",
+  "sameAs": []
+}
+</script>
 <meta name="theme-color" content="#F04A86" />
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/icon.svg">
@@ -399,6 +421,9 @@
 .profile-btn-save { background:#D4537E; color:#fff; }
 .profile-btn-save:hover { background:#BF3F6A; }
 .profile-btn-save:disabled { opacity:.6; cursor:wait; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
 </style>
 </head>
 <body>
@@ -413,7 +438,7 @@
   <div class="drawer-overlay" id="drawerOverlay"></div>
   <div class="nav-drawer" id="navDrawer" role="dialog" aria-label="Menu">
     <div class="drawer-header">
-      <div class="logo"><i class="ti ti-diamond"></i> LaPink</div>
+      <div class="logo"><i class="ti ti-diamond" aria-hidden="true"></i> LaPink</div>
       <button class="drawer-close" id="drawerClose" aria-label="Fechar menu"><i class="ti ti-x"></i></button>
     </div>
     <nav class="drawer-links">
@@ -713,8 +738,8 @@
       var baixo      = est > 0 && est <= 5;
 
       var thumb = p.imagem
-        ? '<img src="' + p.imagem + '" alt="' + esc(p.nome) + '" style="width:100%;height:100%;object-fit:cover;" />'
-        : '<i class="ti ' + esc(p.icone || 'ti-diamond') + '"></i>';
+        ? '<img src="' + p.imagem + '" alt="' + esc(p.nome) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />'
+        : '<i class="ti ' + esc(p.icone || 'ti-diamond') + '" aria-hidden="true"></i>';
 
       var badgeHtml = '';
       if (esgotado) {
@@ -729,7 +754,7 @@
       var atacado       = Number(p.precoAtacado || 0);
       var precoPrincipal = atacado > 0 ? atacado : varejo;
       var preco         = 'R$ ' + precoPrincipal.toFixed(2).replace('.', ',');
-      var favHtml       = esgotado ? '' : '<i class="ti ti-heart prod-fav"></i>';
+      var favHtml       = esgotado ? '' : '<i class="ti ti-heart prod-fav" aria-hidden="true"></i>';
 
       return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '"' +
           ' data-id="' + esc(String(p.id)) + '" data-nome="' + esc(p.nome) + '" data-preco="' + precoPrincipal + '" data-imagem="' + esc(p.imagem || '') + '"' +
