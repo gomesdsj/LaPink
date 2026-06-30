@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Pedidos</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../public/js/firebase-init.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
 <link rel="stylesheet" href="css/Principal.css" />
@@ -24,6 +27,14 @@
 .pedido-itens li { padding: 3px 0; }
 .pedido-footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: .5px solid var(--gray-100); }
 .pedido-status-select { border: .5px solid var(--gray-200); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: var(--gray-700); background: var(--white); cursor: pointer; }
+.pedido-check { display: inline-flex; align-items: center; margin: 0 2px 0 0; cursor: pointer; }
+.pedido-check input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--pink-500); }
+.pedido-seltools { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 4px; }
+.pedido-selall { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-600); cursor: pointer; width: fit-content; }
+.pedido-selall input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--pink-500); }
+.bulk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--pink-50); border: 1px solid var(--pink-200); border-radius: 12px; padding: 10px 16px; flex-wrap: wrap; }
+.bulk-bar .bulk-info { font-size: 13px; color: var(--gray-700); }
+.bulk-bar .bulk-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .status-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0; }
 .status-tab { background: var(--gray-100); border: none; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--gray-500); cursor: pointer; transition: all .2s; }
 .status-tab.active { background: var(--pink-500); color: #fff; }
@@ -102,16 +113,45 @@
           <div class="status-tabs" id="statusTabs">
             <button class="status-tab active" data-status="todos" onclick="filtrarStatus('todos', this)">Todos</button>
             <button class="status-tab" data-status="aguardando" onclick="filtrarStatus('aguardando', this)">Aguardando</button>
-            <button class="status-tab" data-status="preparando" onclick="filtrarStatus('preparando', this)">Em preparo</button>
-            <button class="status-tab" data-status="enviado" onclick="filtrarStatus('enviado', this)">Enviado</button>
-            <button class="status-tab" data-status="concluido" onclick="filtrarStatus('concluido', this)">Concluído</button>
+            <button class="status-tab" data-status="pagamento_analise" onclick="filtrarStatus('pagamento_analise', this)">Pagamento em análise</button>
+            <button class="status-tab" data-status="pedido_analise" onclick="filtrarStatus('pedido_analise', this)">Pedido em análise</button>
+            <button class="status-tab" data-status="pago" onclick="filtrarStatus('pago', this)">Pago</button>
+            <button class="status-tab" data-status="nota_fiscal" onclick="filtrarStatus('nota_fiscal', this)">Nota fiscal</button>
+            <button class="status-tab" data-status="separacao" onclick="filtrarStatus('separacao', this)">Separação</button>
+            <button class="status-tab" data-status="transporte" onclick="filtrarStatus('transporte', this)">Transporte</button>
+            <button class="status-tab" data-status="negado" onclick="filtrarStatus('negado', this)">Negado</button>
             <button class="status-tab" data-status="cancelado" onclick="filtrarStatus('cancelado', this)">Cancelado</button>
+          </div>
+
+          <!-- Carrinhos abandonados -->
+          <div id="abandonadosWrap" style="display:none;margin-bottom:22px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <i class="ti ti-shopping-cart-x" style="color:#e67e22;"></i>
+              <strong style="font-size:14px;color:var(--gray-800);">Carrinhos abandonados</strong>
+              <span id="abandonadosCount" style="font-size:11px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 9px;border-radius:20px;"></span>
+            </div>
+            <div class="pedido-grid" id="abandonadosList"></div>
           </div>
 
           <!-- Search -->
           <div class="search-bar-admin">
             <i class="ti ti-search"></i>
             <input type="text" id="searchInput" placeholder="Buscar por cliente ou nº do pedido…" oninput="renderPedidos()" />
+          </div>
+
+          <!-- Seleção em massa -->
+          <div class="pedido-seltools">
+            <label class="pedido-selall"><input type="checkbox" id="sel-all-ped" onclick="toggleSelectAllPed(this)" /> Selecionar todos</label>
+            <div class="bulk-bar" id="bulk-bar-ped" style="display:none;">
+              <span class="bulk-info"><strong id="bulk-count-ped">0</strong> pedido(s)</span>
+              <div class="bulk-actions">
+                <select id="bulk-status-ped" class="pedido-status-select">
+                  <option value="">Alterar status para…</option>
+                </select>
+                <button type="button" class="btn btn-secondary" onclick="aplicarStatusSelecionados()">Aplicar</button>
+                <button type="button" class="btn btn-danger" onclick="excluirPedidosSelecionados()"><i class="ti ti-trash"></i> Excluir</button>
+              </div>
+            </div>
           </div>
 
           <!-- Lista de pedidos -->
@@ -197,10 +237,185 @@
     return 'LP' + String(cnt).padStart(4, '0');
   }
 
+  // ── Regra de negócio: status do pedido (ordem do fluxo) ──
+  var STATUS_PEDIDO = [
+    { key: 'aguardando',        label: 'Aguardando',           badge: 'badge-pink'  },
+    { key: 'pagamento_analise', label: 'Pagamento em análise', badge: 'badge-amber' },
+    { key: 'pedido_analise',    label: 'Pedido em análise',    badge: 'badge-amber' },
+    { key: 'pago',              label: 'Pago',                 badge: 'badge-green' },
+    { key: 'nota_fiscal',       label: 'Nota fiscal',          badge: 'badge-blue'  },
+    { key: 'separacao',         label: 'Separação',            badge: 'badge-blue'  },
+    { key: 'transporte',        label: 'Transporte',           badge: 'badge-blue'  },
+    { key: 'negado',            label: 'Negado',               badge: 'badge-red'   },
+    { key: 'cancelado',         label: 'Cancelado',            badge: 'badge-red'   }
+  ];
+  // Mapeia status antigos (já gravados) para os novos, para exibição/filtro
+  var STATUS_LEGADO = {
+    aguardando_pagamento:  'pagamento_analise',
+    aguardando_confirmacao:'pagamento_analise',
+    preparando:            'separacao',
+    enviado:               'transporte',
+    concluido:             'pago'
+  };
+  function _statusInfo(status) {
+    var k = status;
+    for (var i = 0; i < STATUS_PEDIDO.length; i++) { if (STATUS_PEDIDO[i].key === k) return STATUS_PEDIDO[i]; }
+    if (STATUS_LEGADO[k]) {
+      var nk = STATUS_LEGADO[k];
+      for (var j = 0; j < STATUS_PEDIDO.length; j++) { if (STATUS_PEDIDO[j].key === nk) return STATUS_PEDIDO[j]; }
+    }
+    return { key: k, label: k || '—', badge: 'badge' };
+  }
   function badgeStatus(status) {
-    var map = { aguardando: 'badge-pink', preparando: 'badge-amber', enviado: 'badge-blue', concluido: 'badge-green', cancelado: 'badge-red' };
-    var labels = { aguardando: 'Aguardando', preparando: 'Em preparo', enviado: 'Enviado', concluido: 'Concluído', cancelado: 'Cancelado' };
-    return '<span class="badge ' + (map[status] || 'badge') + '">' + escHtml(labels[status] || status) + '</span>';
+    var info = _statusInfo(status);
+    return '<span class="badge ' + info.badge + '">' + escHtml(info.label) + '</span>';
+  }
+
+  // ─── Pedidos do Firestore (novos, via MP) ─────────────────
+  var _pedidosFirestore = [];
+
+  function carregarPedidosFirestore() {
+    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!firestore) return;
+    firestore.collection('pedidos').orderBy('createdAt', 'desc').limit(100).get()
+      .then(function(snap) {
+        _pedidosFirestore = [];
+        snap.forEach(function(doc) {
+          var d = doc.data();
+          d._id = doc.id;
+          d._fonte = 'firestore';
+          _pedidosFirestore.push(d);
+        });
+        renderStats();
+        renderPedidos();
+      })
+      .catch(function(e) { console.warn('[pedidos] Firestore load error:', e); });
+  }
+
+  // ─── Carrinhos abandonados ────────────────────────────────
+  var _abandonados = [];
+  function carregarAbandonados() {
+    // local primeiro (fallback), depois Firestore (fonte cross-device)
+    try { _abandonados = JSON.parse(localStorage.getItem('lapinkAbandonados') || '[]') || []; } catch(e) { _abandonados = []; }
+    renderAbandonados();
+    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!firestore) return;
+    firestore.collection('abandonados').limit(100).get().then(function(snap) {
+      var remotos = [];
+      snap.forEach(function(doc) { var d = doc.data(); d.id = d.id || doc.id; remotos.push(d); });
+      // mescla por id (Firestore prioritário)
+      var ids = {};
+      remotos.forEach(function(a) { ids[a.id] = a; });
+      _abandonados.forEach(function(a) { if (!ids[a.id]) remotos.push(a); });
+      _abandonados = remotos;
+      renderAbandonados();
+    }).catch(function(e) { console.warn('[abandonados]', e); });
+  }
+
+  function _msgWhatsAbandono(a) {
+    var nome = (a.nome || '').split(' ')[0] || 'Olá';
+    var itens = (a.itens || []).map(function(i){ return i.qty + 'x ' + i.nome; }).join(', ');
+    return 'Oi ' + nome + '! 💖 Vi que você deixou itens no carrinho da LaPink' +
+      (itens ? ' (' + itens + ')' : '') + '. Posso te ajudar a finalizar a compra? Qualquer dúvida estou por aqui!';
+  }
+
+  window.chamarWhatsAbandono = function(id) {
+    var a = _abandonados.find(function(x){ return x.id === id; });
+    if (!a || !a.celular) return;
+    var num = a.celular.replace(/\D/g,'');
+    if (num.length <= 11) num = '55' + num;
+    window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(_msgWhatsAbandono(a)), '_blank');
+    // marca como contatado
+    a.status = 'contatado';
+    _persistAbandono(a);
+    renderAbandonados();
+  };
+  window.descartarAbandono = function(id) {
+    var a = _abandonados.find(function(x){ return x.id === id; });
+    if (!a) return;
+    if (!confirm('Remover este carrinho abandonado da lista?')) return;
+    a.status = 'descartado';
+    _persistAbandono(a);
+    _abandonados = _abandonados.filter(function(x){ return x.id !== id; });
+    renderAbandonados();
+  };
+  function _persistAbandono(a) {
+    try {
+      var arr = JSON.parse(localStorage.getItem('lapinkAbandonados') || '[]');
+      var i = arr.findIndex(function(x){ return x.id === a.id; });
+      if (i >= 0) arr[i] = a; else arr.push(a);
+      localStorage.setItem('lapinkAbandonados', JSON.stringify(arr));
+    } catch(e) {}
+    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (firestore) firestore.collection('abandonados').doc(a.id).set({ status: a.status, updatedAt: Date.now() }, { merge: true }).catch(function(){});
+  }
+
+  function renderAbandonados() {
+    var wrap = document.getElementById('abandonadosWrap');
+    var list = document.getElementById('abandonadosList');
+    var countEl = document.getElementById('abandonadosCount');
+    if (!wrap || !list) return;
+    // mostra só os ainda em aberto/contatados (não convertidos/descartados)
+    var ativos = (_abandonados || []).filter(function(a){ return a.status === 'aberto' || a.status === 'contatado'; })
+      .sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+    if (!ativos.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    if (countEl) countEl.textContent = ativos.length;
+    list.innerHTML = ativos.map(function(a) {
+      var itensHtml = (a.itens || []).map(function(it){ return '<li>' + escHtml(it.nome) + ' &times; ' + escHtml(String(it.qty)) + '</li>'; }).join('');
+      var contatado = a.status === 'contatado';
+      return '<div class="pedido-card">' +
+        '<div class="pedido-header">' +
+          '<span class="pedido-num"><i class="ti ti-shopping-cart-x" style="color:#e67e22"></i> ' + escHtml(a.nome || 'Cliente') + '</span>' +
+          (contatado ? '<span class="badge badge-amber">Contatado</span>' : '<span class="badge badge-pink">Aberto</span>') +
+          '<span class="pedido-date">' + fmtData(a.createdAt) + '</span>' +
+        '</div>' +
+        '<div class="pedido-body">' +
+          '<div style="font-size:12px;color:var(--gray-500)"><i class="ti ti-phone" style="font-size:11px"></i> ' + escHtml(a.celular || '—') + '</div>' +
+          '<div class="pedido-total">' + fmtMoeda(a.total || 0) + '</div>' +
+          '<ul class="pedido-itens open" style="max-height:none;">' + itensHtml + '</ul>' +
+        '</div>' +
+        '<div class="pedido-footer" style="margin-top:10px;">' +
+          '<a href="https://wa.me/" onclick="event.preventDefault();chamarWhatsAbandono(\'' + escHtml(a.id) + '\')" class="btn-icon wa"><i class="ti ti-brand-whatsapp"></i> Chamar no WhatsApp</a>' +
+          '<button class="btn-icon danger" type="button" onclick="descartarAbandono(\'' + escHtml(a.id) + '\')"><i class="ti ti-x"></i> Descartar</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Mescla pedidos localStorage + Firestore (Firestore tem prioridade para pedidos LPK-)
+  function getTodosPedidos() {
+    var ls = getPedidos() || [];
+    var fsIds = new Set(_pedidosFirestore.map(function(p) { return p.numero; }));
+    var lsFiltrado = ls.filter(function(p) { return !fsIds.has(p.numero); });
+    return _pedidosFirestore.concat(lsFiltrado);
+  }
+
+  // Salvar rastreio de pedido Firestore
+  function salvarRastreio(pedidoId, codigo) {
+    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!firestore) { showToast('Firebase não disponível.', 'erro'); return; }
+    firestore.collection('pedidos').doc(pedidoId).update({
+      rastreio: codigo,
+      status: 'transporte',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function() {
+      showToast('Rastreio salvo! Status → Transporte.');
+      carregarPedidosFirestore();
+    }).catch(function(e) { showToast('Erro ao salvar rastreio: ' + e.message, 'erro'); });
+  }
+
+  // Mudar status de pedido Firestore
+  function mudarStatusFirestore(pedidoId, novoStatus) {
+    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!firestore) return;
+    firestore.collection('pedidos').doc(pedidoId).update({
+      status: novoStatus,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function() {
+      showToast('Status atualizado!');
+      carregarPedidosFirestore();
+    }).catch(function(e) { showToast('Erro: ' + e.message, 'erro'); });
   }
 
   // ─── Toast ────────────────────────────────────────────────
@@ -216,16 +431,22 @@
 
   // ─── Stats ────────────────────────────────────────────────
   function renderStats() {
-    var pedidos = getPedidos() || [];
+    var pedidos = getTodosPedidos();
     var total = pedidos.length;
-    var aguardando = pedidos.filter(function(p) { return p.status === 'aguardando'; }).length;
-    var preparando = pedidos.filter(function(p) { return p.status === 'preparando'; }).length;
-    var receita = pedidos.reduce(function(acc, p) { return acc + (parseFloat(p.total) || 0); }, 0);
+    var aguardando = pedidos.filter(function(p) {
+      var st = STATUS_LEGADO[p.status] || p.status;
+      return st === 'aguardando' || st === 'pagamento_analise' || st === 'pedido_analise';
+    }).length;
+    var processando = pedidos.filter(function(p) {
+      var st = STATUS_LEGADO[p.status] || p.status;
+      return st === 'pago' || st === 'nota_fiscal' || st === 'separacao' || st === 'transporte';
+    }).length;
+    var receita = pedidos.filter(function(p) { return p.status !== 'cancelado' && p.status !== 'negado'; }).reduce(function(acc, p) { return acc + (parseFloat(p.total) || 0); }, 0);
     var grid = document.getElementById('statsGrid');
     grid.innerHTML =
       '<div class="stat-card"><div class="s-label">Total de pedidos</div><div class="s-value">' + total + '</div><div class="s-delta neutral"><i class="ti ti-shopping-cart"></i></div></div>' +
       '<div class="stat-card"><div class="s-label">Aguardando</div><div class="s-value">' + aguardando + '</div><div class="s-delta neutral"><i class="ti ti-clock"></i></div></div>' +
-      '<div class="stat-card"><div class="s-label">Em preparo</div><div class="s-value">' + preparando + '</div><div class="s-delta neutral"><i class="ti ti-tools"></i></div></div>' +
+      '<div class="stat-card"><div class="s-label">Em processamento</div><div class="s-value">' + processando + '</div><div class="s-delta neutral"><i class="ti ti-tools"></i></div></div>' +
       '<div class="stat-card"><div class="s-label">Receita total</div><div class="s-value">' + fmtMoeda(receita) + '</div><div class="s-delta up"><i class="ti ti-trending-up"></i></div></div>';
   }
 
@@ -239,19 +460,21 @@
 
   // ─── Render pedidos ───────────────────────────────────────
   function renderPedidos() {
-    var pedidos = getPedidos() || [];
+    var pedidos = getTodosPedidos();
     var busca = (document.getElementById('searchInput').value || '').toLowerCase().trim();
 
     var filtrados = pedidos.filter(function(p) {
-      var passaStatus = filtroAtual === 'todos' || p.status === filtroAtual;
-      var passaBusca = !busca ||
-        (p.cliente && p.cliente.name && p.cliente.name.toLowerCase().indexOf(busca) >= 0) ||
-        (p.numero && p.numero.indexOf(busca) >= 0);
+      var st = STATUS_LEGADO[p.status] || p.status;
+      var passaStatus = filtroAtual === 'todos' || st === filtroAtual || p.status === filtroAtual;
+      var nome = (p.cliente && (p.cliente.nome || p.cliente.name || '')).toLowerCase();
+      var passaBusca = !busca || nome.indexOf(busca) >= 0 || (p.numero || '').toLowerCase().indexOf(busca) >= 0;
       return passaStatus && passaBusca;
     });
 
     filtrados.sort(function(a, b) {
-      return (b.data || '').localeCompare(a.data || '');
+      var ta = a.createdAt ? (a.createdAt.seconds || 0) * 1000 : (a.data ? new Date(a.data).getTime() : 0);
+      var tb = b.createdAt ? (b.createdAt.seconds || 0) * 1000 : (b.data ? new Date(b.data).getTime() : 0);
+      return tb - ta;
     });
 
     var grid = document.getElementById('pedidoGrid');
@@ -262,43 +485,72 @@
     }
 
     grid.innerHTML = filtrados.map(function(p) {
+      var isFS = p._fonte === 'firestore';
+      var cardId = isFS ? p._id : String(p.id);
+      var nomeCli = (p.cliente && (p.cliente.nome || p.cliente.name)) || 'Cliente';
+      var telCli  = (p.cliente && (p.cliente.celular || p.cliente.whatsapp)) || '';
+      var data    = p.data || (p.createdAt && p.createdAt.seconds ? new Date(p.createdAt.seconds * 1000).toISOString() : '');
+
       var itensHtml = (p.itens || []).map(function(it) {
         return '<li>' + escHtml(it.nome) + ' &times; ' + escHtml(String(it.qty)) + ' — ' + fmtMoeda((it.preco || 0) * (it.qty || 1)) + '</li>';
       }).join('');
 
-      var obsHtml = p.obs ? '<div class="pedido-obs"><i class="ti ti-note"></i> ' + escHtml(p.obs) + '</div>' : '';
-      var waNum = (p.cliente && p.cliente.whatsapp) ? p.cliente.whatsapp.replace(/\D/g, '') : '';
-      var waMsg = 'Olá ' + (p.cliente ? p.cliente.name : '') + ', temos uma atualização sobre seu pedido #' + p.numero + '.';
-      var waLink = 'https://wa.me/55' + waNum + '?text=' + encodeURIComponent(waMsg);
-      var nItens = (p.itens || []).length;
+      var enderecoHtml = isFS && p.endereco ? '<div style="font-size:11px;color:var(--gray-400);margin-top:4px;"><i class="ti ti-map-pin" style="font-size:10px"></i> ' +
+        escHtml([p.endereco.rua, p.endereco.numero, p.endereco.bairro, p.endereco.cidade + '/' + p.endereco.estado, p.endereco.cep].filter(Boolean).join(', ')) + '</div>' : '';
 
-      return '<div class="pedido-card" id="card-' + p.id + '">' +
+      var rastreioHtml = '';
+      if (isFS) {
+        var rastreioAtual = p.rastreio || '';
+        rastreioHtml = '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<input type="text" id="rastreio-' + escHtml(cardId) + '" placeholder="Código de rastreio (ex: BR123456789BR)" value="' + escHtml(rastreioAtual) + '" ' +
+            'style="flex:1;min-width:160px;border:.5px solid var(--gray-200);border-radius:8px;padding:6px 10px;font-size:12px;font-family:monospace;" />' +
+          '<button class="btn-icon" type="button" onclick="salvarRastreioCard(\'' + escHtml(cardId) + '\')" style="background:var(--green-50);color:#16a34a;border-color:#86efac;">' +
+            '<i class="ti ti-truck-delivery"></i> Enviar rastreio' +
+          '</button>' +
+          (rastreioAtual ? '<a href="https://rastreamento.correios.com.br/app/index.php?objetos=' + encodeURIComponent(rastreioAtual) + '" target="_blank" rel="noopener" class="btn-icon" style="font-size:11px"><i class="ti ti-external-link"></i> Ver</a>' : '') +
+        '</div>';
+      }
+
+      var obsHtml = p.obs ? '<div class="pedido-obs"><i class="ti ti-note"></i> ' + escHtml(p.obs) + '</div>' : '';
+      var waNum = telCli.replace(/\D/g, '');
+      var waMsg = 'Olá ' + nomeCli + ', temos uma atualização sobre seu pedido #' + p.numero + '.';
+      var waLink = 'https://wa.me/55' + waNum + '?text=' + encodeURIComponent(waMsg);
+
+      var statusOptions = STATUS_PEDIDO.map(function(s) {
+        return '<option value="' + s.key + '"' + (p.status === s.key ? ' selected' : '') + '>' + escHtml(s.label) + '</option>';
+      }).join('');
+      // Se o pedido tem um status antigo que não está na lista nova, mostra-o como atual
+      if (STATUS_PEDIDO.every(function(s) { return s.key !== p.status; })) {
+        statusOptions = '<option value="' + escHtml(p.status) + '" selected>' + escHtml(_statusInfo(p.status).label) + ' (atual)</option>' + statusOptions;
+      }
+
+      var onChangeStatus = isFS
+        ? 'mudarStatusFirestore(\'' + escHtml(cardId) + '\', this.value)'
+        : 'mudarStatus(' + p.id + ', this.value)';
+
+      return '<div class="pedido-card" id="card-' + escHtml(cardId) + '">' +
         '<div class="pedido-header">' +
+          '<label class="pedido-check"><input type="checkbox" class="ped-check" value="' + escHtml(cardId) + '" data-fonte="' + (isFS ? 'fs' : 'local') + '" data-pid="' + escHtml(isFS ? cardId : String(p.id)) + '" onclick="onPedCheck(event)" aria-label="Selecionar pedido ' + escHtml(p.numero) + '" /></label>' +
           '<span class="pedido-num">#' + escHtml(p.numero) + '</span>' +
+          (isFS ? '<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 6px;font-weight:700;">MP</span>' : '') +
           badgeStatus(p.status) +
-          '<span class="pedido-date">' + fmtData(p.data) + '</span>' +
+          '<span class="pedido-date">' + fmtData(data) + '</span>' +
         '</div>' +
         '<div class="pedido-body">' +
-          '<div><strong>' + escHtml((p.cliente && p.cliente.name) || 'Cliente') + '</strong></div>' +
-          (p.cliente && p.cliente.whatsapp
-            ? '<div style="font-size:12px;color:var(--gray-500)"><i class="ti ti-phone" style="font-size:11px"></i> <a href="tel:' + escHtml(p.cliente.whatsapp) + '" style="color:inherit;text-decoration:none;">' + escHtml(p.cliente.whatsapp) + '</a></div>'
-            : '') +
+          '<div><strong>' + escHtml(nomeCli) + '</strong></div>' +
+          (telCli ? '<div style="font-size:12px;color:var(--gray-500)"><i class="ti ti-phone" style="font-size:11px"></i> ' + escHtml(telCli) + '</div>' : '') +
+          enderecoHtml +
           '<div class="pedido-total">' + fmtMoeda(p.total) + '</div>' +
+          (isFS && p.frete ? '<div style="font-size:11px;color:var(--gray-400)">Subtotal ' + fmtMoeda(p.subtotal) + ' + Frete ' + fmtMoeda(p.frete) + ' (' + (p.modalidadeFrete||'') + ')</div>' : '') +
           obsHtml +
         '</div>' +
-        '<button class="toggle-itens-btn" onclick="toggleItens(' + p.id + ', this)"><i class="ti ti-chevron-down"></i> Ver itens (' + nItens + ')</button>' +
-        '<ul class="pedido-itens" id="itens-' + p.id + '">' + itensHtml + '</ul>' +
-        '<div class="pedido-footer">' +
-          '<select class="pedido-status-select" onchange="mudarStatus(' + p.id + ', this.value)">' +
-            '<option value="aguardando"' + (p.status === 'aguardando' ? ' selected' : '') + '>Aguardando</option>' +
-            '<option value="preparando"' + (p.status === 'preparando' ? ' selected' : '') + '>Em preparo</option>' +
-            '<option value="enviado"' + (p.status === 'enviado' ? ' selected' : '') + '>Enviado</option>' +
-            '<option value="concluido"' + (p.status === 'concluido' ? ' selected' : '') + '>Concluído</option>' +
-            '<option value="cancelado"' + (p.status === 'cancelado' ? ' selected' : '') + '>Cancelado</option>' +
-          '</select>' +
-          '<button class="btn-icon" type="button" onclick="abrirEditarPedido(' + p.id + ')"><i class="ti ti-pencil"></i> Editar</button>' +
+        '<button class="toggle-itens-btn" onclick="toggleItens(\'' + escHtml(cardId) + '\', this)"><i class="ti ti-chevron-down"></i> Ver itens (' + (p.itens||[]).length + ')</button>' +
+        '<ul class="pedido-itens" id="itens-' + escHtml(cardId) + '">' + itensHtml + '</ul>' +
+        rastreioHtml +
+        '<div class="pedido-footer" style="margin-top:10px;">' +
+          '<select class="pedido-status-select" onchange="' + onChangeStatus + '">' + statusOptions + '</select>' +
           (waNum ? '<a href="' + waLink + '" target="_blank" rel="noopener" class="btn-icon wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>' : '') +
-          '<button class="btn-icon danger" type="button" onclick="excluirPedido(' + p.id + ')"><i class="ti ti-trash"></i> Excluir</button>' +
+          (!isFS ? '<button class="btn-icon danger" type="button" onclick="excluirPedido(' + p.id + ')"><i class="ti ti-trash"></i> Excluir</button>' : '') +
         '</div>' +
       '</div>';
     }).join('');
@@ -314,6 +566,15 @@
       var n = el.querySelectorAll('li').length;
       btn.innerHTML = '<i class="ti ti-chevron-down"></i> Ver itens (' + n + ')';
     }
+  }
+
+  // Lê código de rastreio do input e chama salvarRastreio()
+  function salvarRastreioCard(pedidoId) {
+    var inp = document.getElementById('rastreio-' + pedidoId);
+    if (!inp) return;
+    var codigo = inp.value.trim().toUpperCase();
+    if (!codigo) { showToast('Informe o código de rastreio.', 'erro'); return; }
+    salvarRastreio(pedidoId, codigo);
   }
 
   function mudarStatus(id, novoStatus) {
@@ -553,10 +814,100 @@
     showToast('Pedido #' + novo.numero + ' criado!');
   }
 
+  // ─── Seleção em massa de pedidos ──────────────────────────
+  function _checksPed() { return Array.prototype.slice.call(document.querySelectorAll('.ped-check')); }
+  function _selPed() { return _checksPed().filter(function(c) { return c.checked; }); }
+  function _atualizarBulkBarPed() {
+    var sel = _selPed();
+    var bar = document.getElementById('bulk-bar-ped');
+    var cnt = document.getElementById('bulk-count-ped');
+    if (cnt) cnt.textContent = sel.length;
+    if (bar) bar.style.display = sel.length ? 'flex' : 'none';
+    var todas = _checksPed();
+    var master = document.getElementById('sel-all-ped');
+    if (master) {
+      master.checked = todas.length > 0 && sel.length === todas.length;
+      master.indeterminate = sel.length > 0 && sel.length < todas.length;
+    }
+  }
+  function onPedCheck(event) { if (event) event.stopPropagation(); _atualizarBulkBarPed(); }
+  function toggleSelectAllPed(master) {
+    _checksPed().forEach(function(c) { c.checked = master.checked; });
+    _atualizarBulkBarPed();
+  }
+  function aplicarStatusSelecionados() {
+    var novo = (document.getElementById('bulk-status-ped') || {}).value || '';
+    if (!novo) { showToast('Escolha um status.', 'erro'); return; }
+    var alvos = _selPed().map(function(c) { return { fonte: c.getAttribute('data-fonte'), pid: c.getAttribute('data-pid') }; });
+    if (!alvos.length) return;
+    // Locais: atualiza o array uma vez só (evita re-render no meio do loop)
+    var pedidos = getPedidos() || [];
+    var mudouLocal = false;
+    alvos.forEach(function(a) {
+      if (a.fonte === 'local') {
+        var id = parseInt(a.pid);
+        for (var i = 0; i < pedidos.length; i++) { if (pedidos[i].id === id) { pedidos[i].status = novo; mudouLocal = true; break; } }
+      }
+    });
+    if (mudouLocal) setPedidos(pedidos);
+    // Firestore: atualiza cada um (recarrega ao final)
+    alvos.filter(function(a) { return a.fonte === 'fs'; }).forEach(function(a) { mudarStatusFirestore(a.pid, novo); });
+    renderStats();
+    renderPedidos();
+    _atualizarBulkBarPed();
+    showToast(alvos.length + ' pedido(s) atualizado(s).');
+  }
+  function excluirPedidosSelecionados() {
+    var alvos = _selPed().map(function(c) { return { fonte: c.getAttribute('data-fonte'), pid: c.getAttribute('data-pid') }; });
+    if (!alvos.length) return;
+    var locais = alvos.filter(function(a) { return a.fonte === 'local'; });
+    var fs = alvos.filter(function(a) { return a.fonte === 'fs'; });
+    if (!locais.length) { showToast('Pedidos do Mercado Pago (MP) não podem ser excluídos por aqui.', 'erro'); return; }
+    var msg = 'Excluir ' + locais.length + ' pedido(s) selecionado(s)?' + (fs.length ? ' (' + fs.length + ' pedido(s) MP serão ignorados.)' : '');
+    if (!confirm(msg)) return;
+    var ids = locais.map(function(a) { return parseInt(a.pid); });
+    var pedidos = getPedidos() || [];
+    // Restaura estoque dos pedidos não cancelados
+    var produtos = getProdutos();
+    pedidos.forEach(function(p) {
+      if (ids.indexOf(p.id) !== -1 && Array.isArray(p.itens)) {
+        var statusNormalizado = _statusInfo(p.status).key;
+        if (statusNormalizado !== 'cancelado' && statusNormalizado !== 'negado') {
+          p.itens.forEach(function(item) {
+            var idx = produtos.findIndex(function(pr) { return pr.nome === item.nome; });
+            if (idx >= 0) produtos[idx].estoque = (parseInt(produtos[idx].estoque) || 0) + (item.qty || 1);
+          });
+        }
+      }
+    });
+    saveProdutos(produtos);
+    setPedidos(pedidos.filter(function(p) { return ids.indexOf(p.id) === -1; }));
+    renderStats();
+    renderPedidos();
+    _atualizarBulkBarPed();
+    showToast(ids.length + ' pedido(s) excluído(s).');
+  }
+  function _initBulkStatusPed() {
+    var sel = document.getElementById('bulk-status-ped');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Alterar status para…</option>' + STATUS_PEDIDO.map(function(s) {
+      return '<option value="' + s.key + '">' + escHtml(s.label) + '</option>';
+    }).join('');
+  }
+
+  // Mantém a barra de seleção em dia após cada render da grid — wrapper após defineRenderPedidos
+  var _wrapRenderPedidos = renderPedidos;
+  renderPedidos = function() { _wrapRenderPedidos.call(this); _atualizarBulkBarPed(); };
+
   // ─── Init ─────────────────────────────────────────────────
   carregarPedidos();
+  _initBulkStatusPed();
   renderStats();
   renderPedidos();
+  // Carrega pedidos Firestore (MP) após render inicial
+  carregarPedidosFirestore();
+  // Carrega carrinhos abandonados (para chamar no WhatsApp)
+  carregarAbandonados();
   </script>
   <script src="js/sidebar.js"></script>
 </body>

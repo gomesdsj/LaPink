@@ -11,16 +11,68 @@
 <link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 <style>
-  .customer-card { padding: 22px; display: grid; gap: 14px; }
-  .customer-meta { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
-  .customer-details { display: grid; gap: 8px; }
-  .customer-details span.password { color: #6b6b6b; }
-  .customer-purchases { border-top: 1px solid #ececec; padding-top: 14px; margin-top: 14px; }
-  .customer-purchase-item { display: flex; justify-content: space-between; gap: 12px; }
-  .customer-actions { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:12px; }
-  .reset-password-form { display:none; margin-top:14px; border-top:1px solid #ececec; padding-top:14px; }
-  .reset-password-form .form-group { display:grid; gap:6px; margin-bottom:12px; }
-  .reset-password-form input { width:100%; padding:10px 12px; border:1px solid #dcdcdc; border-radius:8px; }
+  /* ── Grade de cards de clientes ── */
+  #clientGrid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important; }
+  .cli-card {
+    display: flex; align-items: center; gap: 13px; padding: 15px 16px; cursor: pointer;
+    min-width: 0; transition: box-shadow .18s, transform .15s, border-color .18s;
+  }
+  .cli-card:hover { box-shadow: 0 6px 20px rgba(212,83,126,.14); transform: translateY(-2px); border-color: var(--pink-200); }
+  .cli-avatar {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: var(--pink-100, #fce4ef); color: var(--pink-600);
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;
+  }
+  .cli-card-info { flex: 1; min-width: 0; display: grid; gap: 3px; }
+  .cli-card-name {
+    font-size: 14px; font-weight: 700; color: var(--gray-800);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px;
+  }
+  .cli-card-name span.nm { overflow: hidden; text-overflow: ellipsis; }
+  .cli-card-line {
+    font-size: 12.5px; color: var(--gray-500); display: flex; align-items: center; gap: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cli-card-line i { flex-shrink: 0; font-size: 14px; }
+  .cli-card-id { font-family: monospace; color: var(--pink-600); font-weight: 700; }
+  .cli-card-arrow { color: var(--gray-300); flex-shrink: 0; font-size: 18px; }
+
+  /* ── Modal de detalhes do cliente ── */
+  .cli-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 1200; align-items: center; justify-content: center; padding: 18px;
+  }
+  .cli-modal-overlay.open { display: flex; }
+  .cli-modal {
+    background: #fff; border-radius: 18px; width: min(520px, 100%); max-height: 90vh;
+    overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.28);
+  }
+  .cli-modal-close {
+    position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: none;
+    border-radius: 50%; background: var(--gray-100, #f1f1f1); color: var(--gray-600); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; z-index: 2;
+  }
+  .cli-modal-close:hover { background: #ffe3e3; color: var(--red-400); }
+  .cli-modal-head {
+    display: flex; align-items: center; gap: 14px; padding: 22px 22px 16px;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .cli-modal-head .cli-avatar { width: 56px; height: 56px; font-size: 22px; }
+  .cli-modal-head-info { min-width: 0; }
+  .cli-modal-name { font-size: 19px; font-weight: 800; color: var(--gray-800); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cli-modal-id { font-size: 12px; font-family: monospace; color: var(--pink-600); font-weight: 700; margin-top: 3px; }
+  .cli-modal-body { padding: 18px 22px 22px; }
+  .cli-field { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); font-size: 13.5px; }
+  .cli-field:last-of-type { border-bottom: none; }
+  .cli-field .k { color: var(--gray-500); font-weight: 600; flex-shrink: 0; }
+  .cli-field .v { color: var(--gray-800); text-align: right; word-break: break-word; }
+  .cli-section-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-500); margin: 18px 0 8px; }
+  .cli-purchase { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 7px 0; border-bottom: 1px dashed var(--gray-150, #eee); }
+  .cli-modal-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+  .cli-modal-actions .btn { flex: 1 1 auto; }
+  .reset-password-form { display: none; margin-top: 16px; border-top: 1px solid var(--gray-100); padding-top: 14px; }
+  .reset-password-form .form-group { display: grid; gap: 6px; margin-bottom: 12px; }
+  .reset-password-form input { width: 100%; padding: 10px 12px; border: 1px solid #dcdcdc; border-radius: 8px; box-sizing: border-box; }
 </style>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -181,64 +233,111 @@
       clientGrid.innerHTML = clients.map(function(client) {
         var userEntry = isSuperAdmin ? adminUsers.find(function(u) { return u.email.toLowerCase() === (client.email||'').toLowerCase(); }) : null;
         var isAdmin = userEntry && (userEntry.role === 'admin' || userEntry.role === 'superadmin');
-        var adminBadge = isAdmin ? ' <span class="badge badge-pink" style="font-size:11px;vertical-align:middle;"><i class="ti ti-shield"></i> Admin</span>' : '';
-        var adminBtn = '';
-        if (isSuperAdmin) {
-          if (isAdmin && userEntry.role !== 'superadmin') {
-            adminBtn = '<button type="button" class="btn btn-secondary" onclick="revokeClientAdmin(\'' + encodeURIComponent(client.email) + '\')"><i class="ti ti-shield-off"></i> Revogar Admin</button>';
-          } else if (!isAdmin) {
-            adminBtn = '<button type="button" class="btn btn-primary" onclick="promoteClientToAdmin(\'' + encodeURIComponent(client.email) + '\')"><i class="ti ti-shield-check"></i> Tornar Admin</button>';
-          }
+        var adminBadge = isAdmin ? '<span class="badge badge-pink" style="font-size:10px;"><i class="ti ti-shield"></i> Admin</span>' : '';
+        var inicial = (client.name || client.email || '?').trim().charAt(0).toUpperCase();
+        return '<article class="card cli-card" onclick="abrirClienteModal(\'' + encodeURIComponent(client.email) + '\')">' +
+          '<div class="cli-avatar">' + escHtml(inicial) + '</div>' +
+          '<div class="cli-card-info">' +
+            '<div class="cli-card-name"><span class="nm">' + escHtml(client.name || '—') + '</span>' + adminBadge + '</div>' +
+            '<div class="cli-card-line"><i class="ti ti-phone"></i> ' + escHtml(client.whatsapp || 'Sem telefone') + '</div>' +
+            '<div class="cli-card-line cli-card-id"><i class="ti ti-id"></i> ' + escHtml(clientCode(client)) + '</div>' +
+          '</div>' +
+          '<i class="ti ti-chevron-right cli-card-arrow"></i>' +
+        '</article>';
+      }).join('');
+    }
+
+    // Identificador estável do cliente (usa id se existir; senão deriva do e-mail)
+    function clientCode(client) {
+      if (client && client.id) return String(client.id);
+      var s = ((client && client.email) || '') + ((client && client.name) || '');
+      var h = 0;
+      for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+      return 'CLI-' + (Math.abs(h) % 1000000).toString().padStart(6, '0');
+    }
+
+    // ── Modal de detalhes do cliente ──
+    var _cliModalEmail = null;
+
+    window.abrirClienteModal = function(encodedEmail) {
+      var email = decodeURIComponent(encodedEmail);
+      var client = getClients().find(function(c) { return c.email === email; });
+      if (!client) { showToast('Cliente não encontrado.', 'erro'); return; }
+      _cliModalEmail = email;
+
+      var isSuper = (typeof getSession === 'function') && getSession() && getSession().role === 'superadmin';
+      var adminUsers = (typeof _getUsers === 'function') ? _getUsers() : [];
+      var userEntry = adminUsers.find(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
+      var isAdmin = userEntry && (userEntry.role === 'admin' || userEntry.role === 'superadmin');
+
+      var waDigits = (client.whatsapp || '').replace(/\D/g, '');
+      var waNumber = waDigits ? '55' + waDigits : '';
+      var waUrl = waNumber ? 'https://wa.me/' + waNumber + '?text=' + encodeURIComponent('Olá ' + (client.name || '') + '!') : '';
+
+      var purchases = (client.purchases && client.purchases.length)
+        ? client.purchases.map(function(p) {
+            var pid = escHtml(String(p.pedidoId || p.order || '—'));
+            var tot = typeof p.total === 'number' ? 'R$ ' + p.total.toFixed(2).replace('.',',') : '—';
+            var dt  = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '';
+            return '<div class="cli-purchase"><span>Pedido #' + pid + (dt ? ' · ' + dt : '') + '</span><span>' + tot + '</span></div>';
+          }).join('')
+        : '<div class="cli-purchase"><span>Nenhuma compra registrada</span><span>—</span></div>';
+
+      var adminBtn = '';
+      if (isSuper) {
+        if (isAdmin && userEntry.role !== 'superadmin') {
+          adminBtn = '<button type="button" class="btn btn-secondary" onclick="revokeClientAdmin(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-shield-off"></i> Revogar Admin</button>';
+        } else if (!isAdmin) {
+          adminBtn = '<button type="button" class="btn btn-primary" onclick="promoteClientToAdmin(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-shield-check"></i> Tornar Admin</button>';
         }
-        var waDigits = (client.whatsapp || '').replace(/\D/g, '');
-        var waNumber = waDigits ? '55' + waDigits : '';
-        // Fix #10: purchases usa { pedidoId, total, data } — não p.order nem p.items
-        var purchases = client.purchases && client.purchases.length > 0
-          ? client.purchases.map(function(p) {
-              var pid = escHtml(String(p.pedidoId || p.order || '—'));
-              var tot = typeof p.total === 'number' ? 'R$ ' + p.total.toFixed(2).replace('.',',') : '—';
-              return '<div class="customer-purchase-item"><span>Pedido #' + pid + '</span><span>' + tot + '</span></div>';
-            }).join('')
-          : '<div class="customer-purchase-item"><span>Nenhuma compra registrada</span><span>—</span></div>';
-        var waUrl = waNumber ? 'https://wa.me/' + waNumber + '?text=' + encodeURIComponent('Olá ' + (client.name || '') + '!') : '#';
-        return '<article class="card customer-card" data-email="' + escHtml(client.email) + '">' +
-          '<div class="customer-meta">' +
-            '<div class="customer-details">' +
-              '<strong>' + escHtml(client.name || '—') + adminBadge + '</strong>' +
-              '<span>' + escHtml(client.email || '—') + '</span>' +
-              '<span><a href="https://wa.me/' + escHtml(waNumber) + '" target="_blank" style="color:var(--green-400); font-weight:600; text-decoration:none;"><i class="ti ti-brand-whatsapp"></i> ' + escHtml(client.whatsapp || '—') + '</a></span>' +
-              '<span class="password">Senha: ' + maskPassword(client.password) + '</span>' +
-            '</div>' +
-            '<span class="badge badge-green">R$ ' + (client.totalSpent || 0).toFixed(2) + '</span>' +
+      }
+
+      var inicial = (client.name || client.email || '?').trim().charAt(0).toUpperCase();
+      var body = '' +
+        '<div class="cli-modal-head">' +
+          '<div class="cli-avatar">' + escHtml(inicial) + '</div>' +
+          '<div class="cli-modal-head-info">' +
+            '<div class="cli-modal-name">' + escHtml(client.name || '—') + (isAdmin ? ' <span class="badge badge-pink" style="font-size:11px;"><i class="ti ti-shield"></i> Admin</span>' : '') + '</div>' +
+            '<div class="cli-modal-id"><i class="ti ti-id"></i> ' + escHtml(clientCode(client)) + '</div>' +
           '</div>' +
-          '<div>' +
-            '<div><strong>Compras anteriores</strong></div>' +
-            '<div class="customer-purchases">' + purchases + '</div>' +
-          '</div>' +
-          '<div class="customer-actions">' +
-            '<button type="button" class="btn btn-secondary" onclick="editClient(\'' + encodeURIComponent(client.email) + '\')">Editar</button>' +
-            '<button type="button" class="btn btn-danger" onclick="deleteClient(\'' + encodeURIComponent(client.email) + '\')">Excluir</button>' +
-            '<button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)">Redefinir senha</button>' +
-            (waNumber ? '<button type="button" class="btn btn-secondary" onclick="window.open(\'' + escHtml(waUrl) + '\',\'_blank\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>' : '') +
+        '</div>' +
+        '<div class="cli-modal-body">' +
+          '<div class="cli-field"><span class="k">Telefone</span><span class="v">' + (waNumber ? '<a href="https://wa.me/' + escHtml(waNumber) + '" target="_blank" style="color:var(--green-400);text-decoration:none;font-weight:600;"><i class="ti ti-brand-whatsapp"></i> ' + escHtml(client.whatsapp) + '</a>' : '—') + '</span></div>' +
+          '<div class="cli-field"><span class="k">E-mail</span><span class="v">' + escHtml(client.email || '—') + '</span></div>' +
+          '<div class="cli-field"><span class="k">Endereço</span><span class="v">' + escHtml(client.address || client.endereco || '—') + '</span></div>' +
+          '<div class="cli-field"><span class="k">Senha</span><span class="v">' + maskPassword(client.password) + '</span></div>' +
+          '<div class="cli-field"><span class="k">Total gasto</span><span class="v"><span class="badge badge-green">R$ ' + (client.totalSpent || 0).toFixed(2).replace('.',',') + '</span></span></div>' +
+          '<div class="cli-field"><span class="k">Compras</span><span class="v">' + ((client.purchases && client.purchases.length) || 0) + '</span></div>' +
+          '<div class="cli-section-title">Compras anteriores</div>' +
+          purchases +
+          '<div class="cli-modal-actions">' +
+            '<button type="button" class="btn btn-secondary" onclick="editClient(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-pencil"></i> Editar</button>' +
+            (waUrl ? '<button type="button" class="btn btn-secondary" onclick="window.open(\'' + escHtml(waUrl) + '\',\'_blank\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>' : '') +
+            '<button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)"><i class="ti ti-key"></i> Redefinir senha</button>' +
             adminBtn +
+            '<button type="button" class="btn btn-danger" onclick="deleteClient(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-trash"></i> Excluir</button>' +
           '</div>' +
-          '<form class="reset-password-form" style="display:none;">' +
-            '<div class="form-group">' +
-              '<label>Nova senha</label>' +
-              '<input name="resetPassword" type="password" placeholder="Digite a nova senha" />' +
-            '</div>' +
-            '<div class="form-group">' +
-              '<label>Confirmar senha</label>' +
-              '<input name="confirmResetPassword" type="password" placeholder="Repita a nova senha" />' +
-            '</div>' +
-            '<div class="customer-actions">' +
+          '<form class="reset-password-form">' +
+            '<div class="form-group"><label>Nova senha</label><input name="resetPassword" type="password" placeholder="Digite a nova senha" /></div>' +
+            '<div class="form-group"><label>Confirmar senha</label><input name="confirmResetPassword" type="password" placeholder="Repita a nova senha" /></div>' +
+            '<div class="cli-modal-actions">' +
               '<button type="button" class="btn btn-primary" onclick="saveClientPassword(this)">Salvar senha</button>' +
               '<button type="button" class="btn btn-secondary" onclick="togglePasswordReset(this, true)">Cancelar</button>' +
             '</div>' +
           '</form>' +
-        '</article>';
-      }).join('');
-    }
+        '</div>';
+
+      document.getElementById('cliModalBody').innerHTML = body;
+      document.getElementById('cliModalOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+
+    window.fecharClienteModal = function(ev) {
+      if (ev && ev.target && ev.target.id !== 'cliModalOverlay' && !ev.target.closest('.cli-modal-close')) return;
+      document.getElementById('cliModalOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      _cliModalEmail = null;
+    };
 
     function editClient(encodedEmail) {
       var email = decodeURIComponent(encodedEmail);
@@ -250,27 +349,29 @@
       if (!confirm('Deseja excluir o cliente ' + email + '?')) return;
       var clients = getClients().filter(function(client) { return client.email !== email; });
       saveClients(clients);
+      fecharClienteModal();
       renderClients();
     }
 
     function togglePasswordReset(button, close) {
-      var card = button.closest('.customer-card');
-      var form = card.querySelector('.reset-password-form');
-      var toggleBtn = card.querySelector('.reset-password-button');
+      var scope = button.closest('.cli-modal-body') || document;
+      var form = scope.querySelector('.reset-password-form');
+      var toggleBtn = scope.querySelector('.reset-password-button');
+      if (!form) return;
       if (close || form.style.display === 'block') {
         form.style.display = 'none';
-        if (toggleBtn) toggleBtn.textContent = 'Redefinir senha';
+        if (toggleBtn) toggleBtn.innerHTML = '<i class="ti ti-key"></i> Redefinir senha';
       } else {
         form.style.display = 'block';
-        if (toggleBtn) toggleBtn.textContent = 'Fechar redefinição';
+        if (toggleBtn) toggleBtn.innerHTML = '<i class="ti ti-x"></i> Fechar redefinição';
       }
     }
 
     async function saveClientPassword(button) {
-      var card = button.closest('.customer-card');
-      var email = card.dataset.email;
-      var passwordField = card.querySelector('input[name="resetPassword"]');
-      var confirmField = card.querySelector('input[name="confirmResetPassword"]');
+      var scope = button.closest('.cli-modal-body') || document;
+      var email = _cliModalEmail;
+      var passwordField = scope.querySelector('input[name="resetPassword"]');
+      var confirmField = scope.querySelector('input[name="confirmResetPassword"]');
       var password = passwordField.value;
       var confirmVal = confirmField.value;
       if (!password || !confirmVal) {
@@ -295,8 +396,9 @@
       clients[index].password = hash;
       saveClients(clients);
       showToast('Senha atualizada com sucesso.');
-      card.querySelector('.password').textContent = 'Senha: ••••••';
       togglePasswordReset(button, true);
+      // Reabre o modal com os dados atualizados
+      abrirClienteModal(encodeURIComponent(email));
     }
 
     function promoteClientToAdmin(encodedEmail) {
@@ -308,6 +410,7 @@
       if (result.ok) {
         showToast((client.name || email) + ' agora é Admin.');
         renderClients();
+        abrirClienteModal(encodeURIComponent(email));
       } else {
         showToast(result.error, 'erro');
       }
@@ -322,6 +425,7 @@
       if (result.ok) {
         showToast('Acesso admin revogado de ' + name + '.');
         renderClients();
+        abrirClienteModal(encodeURIComponent(email));
       } else {
         showToast(result.error, 'erro');
       }
@@ -333,8 +437,19 @@
       if (buscaEl) {
         buscaEl.addEventListener('input', function() { renderClients(); });
       }
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') fecharClienteModal();
+      });
     });
   </script>
+
+  <!-- Modal de detalhes do cliente -->
+  <div class="cli-modal-overlay" id="cliModalOverlay" onclick="fecharClienteModal(event)">
+    <div class="cli-modal" role="dialog" aria-modal="true" aria-label="Detalhes do cliente">
+      <button class="cli-modal-close" onclick="fecharClienteModal()" aria-label="Fechar"><i class="ti ti-x"></i></button>
+      <div id="cliModalBody"></div>
+    </div>
+  </div>
   <script src="js/sidebar.js"></script>
 </body>
 </html>

@@ -50,6 +50,22 @@
   max-height: 460px;
   overflow-y: auto;
 }
+.catalogo-search-wrap {
+  position: relative;
+  margin-bottom: 10px;
+}
+.catalogo-search-wrap > i {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--gray-400); font-size: 16px; pointer-events: none;
+}
+.catalogo-search {
+  width: 100%; box-sizing: border-box;
+  padding: 9px 12px 9px 36px;
+  border: 1px solid var(--gray-200); border-radius: 10px;
+  font-size: 13px; color: var(--gray-800); background: #fff;
+  outline: none; transition: border-color .15s;
+}
+.catalogo-search:focus { border-color: var(--pink-300); }
 .prod-sel-item {
   display: flex;
   align-items: center;
@@ -100,6 +116,63 @@
 }
 .btn-add-dest:hover:not(:disabled) { background: var(--pink-200); }
 .btn-add-dest:disabled { opacity: .4; cursor: default; }
+
+/* Ocultar/exibir produto na loja */
+.btn-toggle-oculto {
+  background: #fff;
+  border: .5px solid var(--gray-200);
+  color: var(--gray-500);
+  border-radius: var(--radius-sm);
+  width: 30px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: all var(--transition);
+}
+.btn-toggle-oculto:hover { background: var(--pink-50); color: var(--pink-500); border-color: var(--pink-200); }
+.prod-sel-item--oculto { opacity: .55; }
+.tag-oculto {
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  background: var(--gray-200); color: var(--gray-600);
+  padding: 1px 6px; border-radius: 10px; letter-spacing: .04em;
+}
+.tag-promo {
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  background: #ffe3ef; color: var(--pink-600);
+  padding: 1px 6px; border-radius: 10px; letter-spacing: .04em;
+}
+.btn-toggle-promo {
+  background: #fff;
+  border: .5px solid var(--gray-200);
+  color: var(--gray-500);
+  border-radius: var(--radius-sm);
+  width: 30px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: all var(--transition);
+}
+.btn-toggle-promo:hover { background: var(--pink-50); color: var(--pink-500); border-color: var(--pink-200); }
+.btn-toggle-promo.on { background: var(--pink-500); color: #fff; border-color: var(--pink-500); }
+
+/* Coleções */
+.colecao-novo { background: var(--pink-50); border: .5px solid var(--pink-200); border-radius: 12px; padding: 14px; }
+.colecao-card { border: .5px solid var(--gray-200); border-radius: 12px; padding: 14px; background: #fff; }
+.colecao-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.colecao-card-title { font-size: 15px; font-weight: 800; color: var(--gray-800); display: flex; align-items: center; gap: 7px; }
+.colecao-card-title i { color: var(--pink-500); }
+.colecao-count { font-size: 11px; font-weight: 700; color: var(--pink-600); background: var(--pink-50); padding: 2px 9px; border-radius: 20px; }
+.colecao-del { background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 18px; padding: 4px; border-radius: 6px; }
+.colecao-del:hover { color: var(--red-400); background: #fff0f0; }
+.col-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.col-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600);
+  border-radius: 20px; padding: 5px 11px; font-size: 12px; cursor: pointer;
+  transition: all var(--transition); user-select: none;
+}
+.col-chip:hover { border-color: var(--pink-300); }
+.col-chip.on { background: var(--pink-500); color: #fff; border-color: var(--pink-500); }
+.col-chip.on::before { content: '\2713'; font-weight: 800; }
+.colecao-empty { font-size: 12px; color: var(--gray-400); padding: 18px; text-align: center; border: 1px dashed var(--gray-200); border-radius: 10px; }
 
 /* ── Botão câmera ── */
 /* ── Carrossel editor ── */
@@ -278,14 +351,16 @@
 .v1-preview-body {
   padding: 14px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  align-items: stretch;
   border: .5px solid var(--gray-200);
   border-top: none;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   background: var(--white);
   min-height: 80px;
 }
+.v1-mini-card { display: flex; flex-direction: column; }
 .v1-mini-card {
   background: #fff;
   border-radius: 10px;
@@ -296,7 +371,7 @@
 }
 .v1-mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(212,83,126,.12); }
 .v1-mini-thumb {
-  height: 90px;
+  height: 130px;
   background: var(--pink-50);
   display: flex;
   align-items: center;
@@ -319,9 +394,9 @@
   border-radius: 20px;
   letter-spacing: .03em;
 }
-.v1-mini-info { padding: 8px 9px 0; }
+.v1-mini-info { padding: 10px 12px 0; flex: 1; }
 .v1-mini-name {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--gray-800);
   margin-bottom: 3px;
@@ -329,7 +404,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.v1-mini-price { font-size: 11px; font-weight: 800; color: var(--pink-500); }
+.v1-mini-price { font-size: 13px; font-weight: 800; color: var(--pink-500); }
 .v1-mini-btn {
   display: block;
   width: calc(100% - 18px);
@@ -354,8 +429,29 @@
   grid-column: 1 / -1;
 }
 
+.prod-sel-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.dest-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
 @media (max-width: 960px) {
   .prod-selector { flex-direction: column; }
+}
+/* Mobile: itens do catálogo e do destaque em 2 linhas (nome legível + controles embaixo) */
+@media (max-width: 560px) {
+  .prod-sel-item { flex-wrap: wrap; row-gap: 8px; }
+  .prod-sel-name { flex: 1 1 auto; order: 2; white-space: normal; }
+  .prod-sel-thumb { order: 1; }
+  .prod-sel-price { order: 3; margin-left: auto; }
+  .prod-sel-actions { order: 4; flex-basis: 100%; justify-content: flex-end; }
+
+  /* Em destaque na loja — mesmo padrão do catálogo */
+  .dest-item { flex-wrap: wrap; row-gap: 8px; }
+  .dest-item .dest-order { order: 1; flex-direction: row; }
+  .dest-item .prod-sel-thumb { order: 2; }
+  .dest-item .prod-sel-name { order: 3; flex: 1 1 auto; white-space: normal; }
+  .dest-item .dest-actions { order: 4; flex-basis: 100%; justify-content: flex-end; }
+  .dest-item .dest-badge-input { flex: 1 1 auto; width: auto; }
+
+  .v1-preview-body { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 </head>
@@ -402,6 +498,7 @@
 
         <div class="page-tabs" style="margin-bottom:0;">
           <button class="tab-btn active" data-tab="catalogo"><i class="ti ti-package"></i> Catálogo</button>
+          <button class="tab-btn" data-tab="colecoes"><i class="ti ti-stack-2"></i> Coleções</button>
           <button class="tab-btn" data-tab="geral"><i class="ti ti-adjustments-horizontal"></i> Geral</button>
           <button class="tab-btn" data-tab="hero"><i class="ti ti-star"></i> Hero</button>
           <button class="tab-btn" data-tab="depoimentos"><i class="ti ti-message-circle"></i> Depoimentos</button>
@@ -417,12 +514,16 @@
               <span class="sub-badge">1</span>
               <div>
                 <h2>Catálogo da loja</h2>
-                <p>Escolha quais produtos aparecem em destaque. Altere a foto clicando em <i class="ti ti-camera"></i>. Clientes filtram por categoria diretamente na loja.</p>
+                <p>Escolha quais produtos aparecem em destaque. <i class="ti ti-tag"></i> marca como <strong>Promoção</strong> (aparece na aba Promoções da loja), <i class="ti ti-eye"></i> oculta/exibe o produto e <i class="ti ti-camera"></i> altera a foto.</p>
               </div>
             </div>
             <div class="prod-selector">
               <div class="prod-selector-col">
                 <h4><i class="ti ti-package"></i> Todos os produtos <span id="cat-count" style="font-weight:400; color:var(--gray-400);"></span></h4>
+                <div class="catalogo-search-wrap">
+                  <i class="ti ti-search"></i>
+                  <input type="search" id="catalogo-search" class="catalogo-search" placeholder="Buscar peça por nome, categoria ou código..." oninput="renderCatalogo()" autocomplete="off" />
+                </div>
                 <div class="prod-selector-list" id="catalogo-list">
                   <div class="sel-empty">Carregando...</div>
                 </div>
@@ -449,6 +550,45 @@
                 <div class="v1-preview-empty"><i class="ti ti-eye" style="font-size:26px; display:block; margin-bottom:8px; color:var(--gray-300);"></i>Nenhum produto em destaque.<br>Adicione produtos usando "+ Exibir".</div>
               </div>
             </div>
+          </div>
+
+          <!-- ─── TAB COLEÇÕES ─── -->
+          <div class="tab-content" id="tab-colecoes">
+            <div class="sub-section-header">
+              <span class="sub-badge"><i class="ti ti-stack-2"></i></span>
+              <div>
+                <h2>Coleções da loja</h2>
+                <p>Crie coleções por estação e ano (ex.: <strong>Inverno 2025</strong>) e selecione as peças de cada uma. Elas aparecem em "Ver coleção" na loja.</p>
+              </div>
+            </div>
+
+            <div class="colecao-novo">
+              <div class="form-row" style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                <div class="form-group" style="flex:1; min-width:150px;">
+                  <label>Estação / Nome</label>
+                  <select id="col-estacao">
+                    <option value="Verão">Verão</option>
+                    <option value="Outono">Outono</option>
+                    <option value="Inverno">Inverno</option>
+                    <option value="Primavera">Primavera</option>
+                    <option value="Especial">Especial</option>
+                    <option value="Lançamento">Lançamento</option>
+                  </select>
+                </div>
+                <div class="form-group" style="width:110px;">
+                  <label>Ano</label>
+                  <input type="number" id="col-ano" min="2024" max="2099" placeholder="2025" />
+                </div>
+                <button class="btn btn-primary" type="button" onclick="adicionarColecao()" style="height:40px;"><i class="ti ti-plus"></i> Criar coleção</button>
+              </div>
+            </div>
+
+            <div id="colecoes-list" style="margin-top:18px; display:flex; flex-direction:column; gap:14px;"></div>
+
+            <p style="font-size:11px; color:var(--gray-400); margin-top:10px; display:flex; align-items:flex-start; gap:5px;">
+              <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
+              Clique em uma peça para incluí-la/removê-la da coleção. Lembre de <strong>Publicar alterações</strong> ao final.
+            </p>
           </div>
 
           <!-- ─── TAB GERAL ─── -->
@@ -617,6 +757,7 @@ var DEFAULT_CONFIG = {
     btn2:    'Promoções'
   },
   destaque: [],
+  colecoes: [],
   depoimentos: [
     { texto: 'Qualidade incrível! Os anéis são lindos e duraram muito mais do que eu esperava.', autor: 'Ana P. — São Paulo' },
     { texto: 'Entrega rápida e embalagem super caprichada. Presente perfeito para minha mãe!',   autor: 'Carla M. — Rio de Janeiro' },
@@ -639,6 +780,7 @@ function getConfig() {
     c.newsletter  = Object.assign({}, DEFAULT_CONFIG.newsletter, c.newsletter || {});
     if (!Array.isArray(c.depoimentos) || !c.depoimentos.length) c.depoimentos = DEFAULT_CONFIG.depoimentos.map(function(d) { return Object.assign({}, d); });
     if (!Array.isArray(c.destaque)) c.destaque = [];
+    if (!Array.isArray(c.colecoes)) c.colecoes = [];
     return c;
   } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
 }
@@ -713,34 +855,87 @@ function atualizarFotoProduto(id, input) {
   }).catch(function(e) { showToast('Erro ao processar imagem.', 'erro'); });
 }
 
+// Oculta/exibe um produto na loja V1 (flag .oculto no produto)
+function toggleOcultarProduto(id) {
+  var produtos = getProdutos();
+  var idx = produtos.findIndex(function(p) { return p.id === id; });
+  if (idx === -1) { showToast('Produto não encontrado.', 'erro'); return; }
+  produtos[idx].oculto = !produtos[idx].oculto;
+  localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
+  // Se ocultou, também remove da vitrine de destaque
+  if (produtos[idx].oculto) {
+    destaqueList = destaqueList.filter(function(d) { return d.id !== id; });
+  }
+  renderCatalogo();
+  renderDestaque();
+  atualizarPreviewCatalogo();
+  showToast('"' + escHtml(produtos[idx].nome) + '" ' + (produtos[idx].oculto ? 'oculto da loja.' : 'visível na loja.'));
+}
+
+// Marca/desmarca um produto como Promoção (flag .promocao)
+function togglePromocaoProduto(id) {
+  var produtos = getProdutos();
+  var idx = produtos.findIndex(function(p) { return p.id === id; });
+  if (idx === -1) { showToast('Produto não encontrado.', 'erro'); return; }
+  produtos[idx].promocao = !produtos[idx].promocao;
+  localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
+  renderCatalogo();
+  showToast('"' + escHtml(produtos[idx].nome) + '" ' + (produtos[idx].promocao ? 'marcado como promoção.' : 'removido das promoções.'));
+}
+
 var destaqueList = [];
 
 function renderCatalogo() {
-  var produtos  = getProdutos();
+  var todos     = getProdutos();
   var container = document.getElementById('catalogo-list');
   var countEl   = document.getElementById('cat-count');
   var selIds    = destaqueList.map(function(d) { return d.id; });
 
-  if (countEl) countEl.textContent = '(' + produtos.length + ')';
+  // Filtro da barra de pesquisa (nome, categoria ou código da peça)
+  var termo = (document.getElementById('catalogo-search') || {}).value || '';
+  termo = termo.trim().toLowerCase();
+  var produtos = !termo ? todos : todos.filter(function(p) {
+    return (p.nome || '').toLowerCase().indexOf(termo) !== -1
+        || (p.categoria || '').toLowerCase().indexOf(termo) !== -1
+        || String(p.codigoPeca || '').toLowerCase().indexOf(termo) !== -1;
+  });
 
-  if (!produtos.length) {
+  if (countEl) countEl.textContent = termo ? ('(' + produtos.length + ' de ' + todos.length + ')') : ('(' + todos.length + ')');
+
+  if (!todos.length) {
     container.innerHTML = '<div class="sel-empty">Nenhum produto cadastrado.<br><a href="cadastro-produto.html" style="color:var(--pink-500); font-weight:600;">Cadastrar produtos</a></div>';
+    return;
+  }
+  if (!produtos.length) {
+    container.innerHTML = '<div class="sel-empty">Nenhuma peça encontrada para "<strong>' + escHtml(termo) + '</strong>".</div>';
     return;
   }
 
   container.innerHTML = produtos.map(function(p) {
     var sel = selIds.indexOf(p.id) !== -1;
-    return '<div class="prod-sel-item">' +
+    var oculto = !!p.oculto;
+    var promo  = !!p.promocao;
+    return '<div class="prod-sel-item' + (oculto ? ' prod-sel-item--oculto' : '') + '">' +
       '<div class="prod-sel-thumb">' + thumbHtml(p) + '</div>' +
-      '<span class="prod-sel-name" title="' + escHtml(p.nome) + '">' + escHtml(p.nome) + '</span>' +
+      '<span class="prod-sel-name" title="' + escHtml(p.nome) + '">' + escHtml(p.nome) +
+        (oculto ? ' <span class="tag-oculto">oculto</span>' : '') +
+        (promo ? ' <span class="tag-promo">promoção</span>' : '') + '</span>' +
       '<span class="prod-sel-price">' + precoFmt(p.precoVarejo) + '</span>' +
-      '<label class="btn-upload-foto" title="Alterar foto do produto">' +
-        '<i class="ti ti-camera"></i>' +
-        '<input type="file" accept="image/*" style="display:none" onchange="atualizarFotoProduto(' + p.id + ', this)" />' +
-      '</label>' +
-      '<button class="btn-add-dest" onclick="adicionarDestaque(' + p.id + ')" ' + (sel ? 'disabled' : '') + '>' +
-        (sel ? '<i class="ti ti-check"></i>' : '+ Exibir') +
-      '</button>' +
+      '<div class="prod-sel-actions">' +
+        '<label class="btn-upload-foto" title="Alterar foto do produto">' +
+          '<i class="ti ti-camera"></i>' +
+          '<input type="file" accept="image/*" style="display:none" onchange="atualizarFotoProduto(' + p.id + ', this)" />' +
+        '</label>' +
+        '<button class="btn-toggle-promo' + (promo ? ' on' : '') + '" onclick="togglePromocaoProduto(' + p.id + ')" title="' + (promo ? 'Tirar das promoções' : 'Marcar como promoção') + '">' +
+          '<i class="ti ti-tag"></i>' +
+        '</button>' +
+        '<button class="btn-toggle-oculto" onclick="toggleOcultarProduto(' + p.id + ')" title="' + (oculto ? 'Exibir na loja' : 'Ocultar da loja') + '">' +
+          '<i class="ti ' + (oculto ? 'ti-eye-off' : 'ti-eye') + '"></i>' +
+        '</button>' +
+        '<button class="btn-add-dest" onclick="adicionarDestaque(' + p.id + ')" ' + (sel || oculto ? 'disabled' : '') + '>' +
+          (sel ? '<i class="ti ti-check"></i>' : '+ Exibir') +
+        '</button>' +
+      '</div>' +
     '</div>';
   }).join('');
 }
@@ -765,12 +960,14 @@ function renderDestaque() {
       '</div>' +
       '<div class="prod-sel-thumb">' + thumbHtml(p) + '</div>' +
       '<span class="prod-sel-name" title="' + escHtml(p.nome) + '">' + escHtml(p.nome) + '</span>' +
-      '<label class="btn-upload-foto" title="Alterar foto do produto">' +
-        '<i class="ti ti-camera"></i>' +
-        '<input type="file" accept="image/*" style="display:none" onchange="atualizarFotoProduto(' + d.id + ', this)" />' +
-      '</label>' +
-      '<input class="dest-badge-input" type="text" value="' + escHtml(d.badge || '') + '" placeholder="Badge" title="Ex: Novo, -20%" oninput="atualizarBadge(' + d.id + ',this.value)" />' +
-      '<button class="btn-remove-dest" onclick="removerDestaque(' + d.id + ')" title="Remover da vitrine"><i class="ti ti-x"></i></button>' +
+      '<div class="dest-actions">' +
+        '<label class="btn-upload-foto" title="Alterar foto do produto">' +
+          '<i class="ti ti-camera"></i>' +
+          '<input type="file" accept="image/*" style="display:none" onchange="atualizarFotoProduto(' + d.id + ', this)" />' +
+        '</label>' +
+        '<input class="dest-badge-input" type="text" value="' + escHtml(d.badge || '') + '" placeholder="Badge" title="Ex: Novo, -20%" oninput="atualizarBadge(' + d.id + ',this.value)" />' +
+        '<button class="btn-remove-dest" onclick="removerDestaque(' + d.id + ')" title="Remover da vitrine"><i class="ti ti-x"></i></button>' +
+      '</div>' +
     '</div>';
   }).filter(Boolean).join('');
 }
@@ -828,6 +1025,73 @@ function moverDestaque(idx, dir) {
 function atualizarBadge(id, val) {
   var d = destaqueList.find(function(x) { return x.id === id; });
   if (d) { d.badge = val; atualizarPreviewCatalogo(); }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  COLEÇÕES (estação + ano, com peças atribuídas)
+// ══════════════════════════════════════════════════════════════
+var colecoesData = []; // [{ id, estacao, ano, produtos:[ids] }]
+
+function nomeColecao(c) { return (c.estacao || 'Coleção') + ' ' + (c.ano || ''); }
+
+function adicionarColecao() {
+  var estacao = document.getElementById('col-estacao').value;
+  var ano = parseInt(document.getElementById('col-ano').value) || new Date().getFullYear();
+  // Evita duplicar mesma estação+ano
+  if (colecoesData.some(function(c) { return c.estacao === estacao && c.ano === ano; })) {
+    showToast('Já existe a coleção ' + estacao + ' ' + ano + '.', 'erro');
+    return;
+  }
+  colecoesData.push({ id: 'col-' + Date.now().toString(36), estacao: estacao, ano: ano, produtos: [] });
+  document.getElementById('col-ano').value = '';
+  renderColecoes();
+  showToast('Coleção "' + estacao + ' ' + ano + '" criada. Selecione as peças.');
+}
+
+function removerColecao(id) {
+  var c = colecoesData.find(function(x) { return x.id === id; });
+  if (!c) return;
+  if (!confirm('Excluir a coleção "' + nomeColecao(c) + '"? As peças não são apagadas, só a coleção.')) return;
+  colecoesData = colecoesData.filter(function(x) { return x.id !== id; });
+  renderColecoes();
+  showToast('Coleção excluída.');
+}
+
+function toggleProdutoColecao(colId, prodId) {
+  var c = colecoesData.find(function(x) { return x.id === colId; });
+  if (!c) return;
+  if (!Array.isArray(c.produtos)) c.produtos = [];
+  var i = c.produtos.map(String).indexOf(String(prodId));
+  if (i === -1) c.produtos.push(prodId); else c.produtos.splice(i, 1);
+  renderColecoes();
+}
+
+function renderColecoes() {
+  var wrap = document.getElementById('colecoes-list');
+  if (!wrap) return;
+  if (!colecoesData.length) {
+    wrap.innerHTML = '<div class="colecao-empty">Nenhuma coleção criada ainda. Use o formulário acima para criar (ex.: Inverno 2025).</div>';
+    return;
+  }
+  var produtos = getProdutos();
+  wrap.innerHTML = colecoesData.map(function(c) {
+    var ids = (c.produtos || []).map(String);
+    var chips = produtos.map(function(p) {
+      var on = ids.indexOf(String(p.id)) !== -1;
+      return '<span class="col-chip' + (on ? ' on' : '') + '" onclick="toggleProdutoColecao(\'' + c.id + '\',' + p.id + ')">' + escHtml(p.nome) + '</span>';
+    }).join('');
+    if (!produtos.length) chips = '<span style="font-size:12px;color:var(--gray-400)">Cadastre produtos primeiro.</span>';
+    return '<div class="colecao-card">' +
+      '<div class="colecao-card-head">' +
+        '<span class="colecao-card-title"><i class="ti ti-stack-2"></i> ' + escHtml(nomeColecao(c)) + '</span>' +
+        '<span style="display:flex;align-items:center;gap:8px;">' +
+          '<span class="colecao-count">' + ids.length + ' peça' + (ids.length === 1 ? '' : 's') + '</span>' +
+          '<button class="colecao-del" type="button" onclick="removerColecao(\'' + c.id + '\')" title="Excluir coleção"><i class="ti ti-trash"></i></button>' +
+        '</span>' +
+      '</div>' +
+      '<div class="col-chips">' + chips + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 var depoimentosData = [];
@@ -1029,6 +1293,7 @@ function coletarConfig() {
       btn2:    document.getElementById('cfg-hero-btn2').value.trim()    || DEFAULT_CONFIG.hero.btn2,
     },
     destaque: destaqueList.map(function(d) { return { id: d.id, badge: d.badge || '' }; }),
+    colecoes: colecoesData.map(function(c) { return { id: c.id, estacao: c.estacao, ano: c.ano, produtos: (c.produtos || []).slice() }; }),
     depoimentos: depoimentosData.filter(function(d) { return d.texto || d.autor; }),
     newsletter: {
       titulo: document.getElementById('cfg-nl-titulo').value.trim() || DEFAULT_CONFIG.newsletter.titulo,
@@ -1070,6 +1335,9 @@ function publicarAlteracoes() {
   renderCatalogo();
   renderDestaque();
   atualizarPreviewCatalogo();
+
+  colecoesData = (cfg.colecoes || []).map(function(c) { return { id: c.id, estacao: c.estacao, ano: c.ano, produtos: (c.produtos || []).slice() }; });
+  renderColecoes();
 
   depoimentosData = cfg.depoimentos.map(function(d) { return { texto: d.texto, autor: d.autor }; });
   renderDepoimentos();

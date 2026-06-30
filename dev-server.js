@@ -373,7 +373,7 @@ app.listen(PORT, '0.0.0.0', () => {
   Rede   :  http://${ip}:${PORT}
 
   Loja   :  http://${ip}:${PORT}/public/V1.html
-  Admin  :  http://${ip}:${PORT}/admin/login.html
+  Login  :  http://${ip}:${PORT}/public/login.html  (cliente + admin)
   API    :  http://${ip}:${PORT}/api
 
   Insomnia: importe lapink-insomnia.json

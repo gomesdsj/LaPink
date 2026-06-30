@@ -66,6 +66,121 @@
   .admin-main { margin-left: 0 !important; }
   .tab-content { display: block !important; }
 }
+
+/* ── Filtros dos relatórios ── */
+.rel-filters {
+  background: var(--white); border: .5px solid var(--gray-200); border-radius: 14px;
+  padding: 16px; margin-bottom: 18px;
+  display: grid; grid-template-columns: 1fr auto; gap: 16px 22px; align-items: start;
+}
+.rel-filter-group { min-width: 0; }
+.rel-filter-label {
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--pink-600); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.rel-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.rel-preset {
+  background: var(--gray-50); border: .5px solid var(--gray-200); color: var(--gray-600);
+  border-radius: 20px; padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all .15s; flex: 0 0 auto;
+}
+.rel-preset:hover { background: var(--pink-50); color: var(--pink-600); border-color: var(--pink-200); }
+.rel-preset.active { background: var(--pink-500); color: #fff; border-color: var(--pink-500); }
+.rel-range { display: flex; flex-wrap: wrap; gap: 10px; }
+.rel-range label {
+  font-size: 11px; color: var(--gray-500); font-weight: 700; display: flex; flex-direction: column; gap: 4px; flex: 1 1 120px;
+}
+.rel-range input[type="date"] {
+  border: .5px solid var(--gray-200); border-radius: 8px; padding: 8px 10px; font-size: 13px;
+  color: var(--gray-800); font-family: inherit; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
+  -webkit-appearance: none; appearance: none;
+}
+.rel-range input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+.rel-select {
+  border: .5px solid var(--gray-200); border-radius: 8px; padding: 8px 34px 8px 12px; font-size: 13px;
+  color: var(--gray-800); font-family: inherit; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background: #fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 12px center;
+}
+.rel-filter-foot {
+  grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; border-top: 1px solid var(--gray-100); padding-top: 12px;
+}
+.rel-filter-info { font-size: 13px; color: var(--pink-600); font-weight: 700; }
+.rel-filter-clear {
+  background: var(--gray-50); border: .5px solid var(--gray-200); color: var(--gray-600);
+  border-radius: 20px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+}
+.rel-filter-clear:hover { background: #fff0f0; color: var(--red-400); border-color: #f5c6cb; }
+
+/* ── Mini-filtro (Produtos / Clientes / Estoque) ── */
+.rel-minifilter {
+  background: var(--white); border: .5px solid var(--gray-200); border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end;
+}
+.rel-minifilter label {
+  font-size: 11px; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .03em;
+  display: flex; flex-direction: column; gap: 5px; flex: 1 1 160px; min-width: 0;
+}
+.rel-minifilter label > span { display: flex; align-items: center; gap: 6px; }
+.rel-minifilter select {
+  border: .5px solid var(--gray-200); border-radius: 8px; padding: 8px 12px; font-size: 13px;
+  color: var(--gray-800); font-family: inherit; background: #fff; cursor: pointer; width: 100%; box-sizing: border-box;
+  text-transform: none; font-weight: 500; letter-spacing: 0;
+}
+
+/* ── Evita rolagem horizontal no mobile (layout fixo na tela) ── */
+.admin-main, .admin-page { max-width: 100%; overflow-x: hidden; }
+.table-box { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 720px) {
+  /* Filtro mais compacto e agradável no mobile */
+  .rel-filters { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
+  .rel-filter-label { font-size: 10px; margin-bottom: 6px; }
+  .rel-presets { gap: 5px; margin-bottom: 8px; }
+  .rel-preset { padding: 5px 11px; font-size: 11px; }
+  .rel-range { gap: 8px; }
+  .rel-range label { font-size: 10px; gap: 3px; }
+  .rel-range input[type="date"] { padding: 6px 9px; font-size: 12px; }
+  .rel-select { padding: 6px 10px; font-size: 12px; }
+  .rel-filter-foot { padding-top: 10px; }
+  .rel-filter-info { font-size: 12px; }
+  .rel-filter-clear { padding: 5px 11px; font-size: 11px; }
+  /* Mini-filtros (Produtos / Clientes / Estoque) */
+  .rel-minifilter { padding: 10px 12px; gap: 8px 12px; }
+  .rel-minifilter label { font-size: 10px; }
+  .rel-minifilter select { padding: 6px 10px; font-size: 12px; }
+  /* abas roláveis dentro do próprio bloco, sem empurrar a página */
+  .page-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+  .page-tabs::-webkit-scrollbar { display: none; }
+  .page-tabs .tab-btn { flex: 0 0 auto; white-space: nowrap; }
+  /* Datas empilhadas — uma embaixo da outra */
+  .rel-range { flex-direction: column; }
+  .rel-range label { flex: 1 1 auto; width: 100%; min-width: 0; }
+  .rel-range input[type="date"] { min-width: 0; max-width: 100%; }
+
+  /* Cards de resumo no mobile: 1 coluna de LARGURA TOTAL (mais largos),
+     sempre dentro da tela. Layout compacto: rótulo+valor à esquerda,
+     indicador à direita — largo, porém sem ficar alto demais. */
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    align-items: stretch;
+  }
+  .stat-card {
+    width: 100%; box-sizing: border-box;
+    padding: 14px 18px !important;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "label delta" "value delta";
+    align-items: center; column-gap: 12px;
+    min-width: 0;
+  }
+  .stat-card .s-label { grid-area: label; font-size: 11px; margin-bottom: 2px; }
+  .stat-card .s-value { grid-area: value; font-size: 22px; line-height: 1.1; word-break: break-word; }
+  .stat-card .s-delta { grid-area: delta; font-size: 11px; white-space: nowrap; justify-self: end; }
+}
 </style>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -125,6 +240,46 @@
         ══════════════════════════════ -->
         <div class="tab-content active" id="tab-vendas">
 
+          <!-- Filtros -->
+          <div class="rel-filters">
+            <!-- Modalidade: por Data -->
+            <div class="rel-filter-group">
+              <div class="rel-filter-label"><i class="ti ti-calendar"></i> Por data</div>
+              <div class="rel-presets">
+                <button class="rel-preset" data-preset="hoje" onclick="aplicarPreset('hoje',this)">Hoje</button>
+                <button class="rel-preset" data-preset="7d" onclick="aplicarPreset('7d',this)">7 dias</button>
+                <button class="rel-preset" data-preset="30d" onclick="aplicarPreset('30d',this)">30 dias</button>
+                <button class="rel-preset" data-preset="mes" onclick="aplicarPreset('mes',this)">Este mês</button>
+                <button class="rel-preset active" data-preset="tudo" onclick="aplicarPreset('tudo',this)">Tudo</button>
+              </div>
+              <div class="rel-range">
+                <label>De<input type="date" id="rel-data-inicio" onchange="aplicarPeriodoManual()" /></label>
+                <label>Até<input type="date" id="rel-data-fim" onchange="aplicarPeriodoManual()" /></label>
+              </div>
+            </div>
+
+            <!-- Modalidade: por Status -->
+            <div class="rel-filter-group">
+              <div class="rel-filter-label"><i class="ti ti-flag"></i> Por status</div>
+              <select id="rel-status" class="rel-select" onchange="aplicarStatus()">
+                <option value="">Todos os status</option>
+                <option value="aguardando_pagamento">Aguardando pagamento</option>
+                <option value="aguardando_confirmacao">Confirmando pagamento</option>
+                <option value="pago">Pago</option>
+                <option value="preparando">Em preparo</option>
+                <option value="enviado">Enviado</option>
+                <option value="concluido">Concluído</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+
+            <!-- Resumo + limpar -->
+            <div class="rel-filter-foot">
+              <span class="rel-filter-info" id="rel-data-info">Mostrando todos os pedidos</span>
+              <button class="rel-filter-clear" onclick="limparFiltros()"><i class="ti ti-rotate"></i> Limpar filtros</button>
+            </div>
+          </div>
+
           <div class="rel-section-title"><i class="ti ti-chart-pie"></i> Resumo de vendas</div>
           <div class="stat-grid">
             <div class="stat-card">
@@ -183,12 +338,26 @@
         ══════════════════════════════ -->
         <div class="tab-content" id="tab-produtos">
 
+          <div class="rel-minifilter">
+            <label><span><i class="ti ti-category"></i> Categoria</span>
+              <select id="prod-cat" onchange="renderProdutos()"><option value="">Todas as categorias</option></select>
+            </label>
+            <label><span><i class="ti ti-stack"></i> Situação de estoque</span>
+              <select id="prod-estoque" onchange="renderProdutos()">
+                <option value="">Todas</option>
+                <option value="em">Em estoque</option>
+                <option value="baixo">Estoque baixo (≤ 5)</option>
+                <option value="zero">Esgotado</option>
+              </select>
+            </label>
+          </div>
+
           <div class="rel-section-title"><i class="ti ti-coins"></i> Resumo financeiro dos produtos</div>
           <div class="stat-grid">
             <div class="stat-card">
               <div class="s-label">Valor total em estoque</div>
               <div class="s-value" id="p-valor-estoque">—</div>
-              <div class="s-delta neutral"><i class="ti ti-coins"></i> a preço varejo</div>
+              <div class="s-delta neutral"><i class="ti ti-coins"></i> a preço de atacado</div>
             </div>
             <div class="stat-card">
               <div class="s-label">Lucro potencial</div>
@@ -198,7 +367,7 @@
             <div class="stat-card">
               <div class="s-label">Margem média</div>
               <div class="s-value" id="p-margem-media">—</div>
-              <div class="s-delta neutral"><i class="ti ti-percentage"></i> sobre preço varejo</div>
+              <div class="s-delta neutral"><i class="ti ti-percentage"></i> sobre preço de atacado</div>
             </div>
             <div class="stat-card">
               <div class="s-label">Total de produtos</div>
@@ -242,7 +411,6 @@
                   <th>Produto</th>
                   <th>Categoria</th>
                   <th>Custo</th>
-                  <th>Preço Varejo</th>
                   <th>Preço Atacado</th>
                   <th>Lucro/un</th>
                   <th>Margem</th>
@@ -259,6 +427,23 @@
              TAB CLIENTES
         ══════════════════════════════ -->
         <div class="tab-content" id="tab-clientes">
+
+          <div class="rel-minifilter">
+            <label><span><i class="ti ti-filter"></i> Atividade</span>
+              <select id="cli-atividade" onchange="renderClientes()">
+                <option value="">Todos os clientes</option>
+                <option value="com">Com compras</option>
+                <option value="sem">Sem compras</option>
+              </select>
+            </label>
+            <label><span><i class="ti ti-sort-descending"></i> Ordenar por</span>
+              <select id="cli-ordem" onchange="renderClientes()">
+                <option value="gasto">Maior gasto</option>
+                <option value="compras">Mais compras</option>
+                <option value="nome">Nome (A-Z)</option>
+              </select>
+            </label>
+          </div>
 
           <div class="rel-section-title"><i class="ti ti-users"></i> Resumo de clientes</div>
           <div class="stat-grid">
@@ -317,6 +502,20 @@
         ══════════════════════════════ -->
         <div class="tab-content" id="tab-estoque">
 
+          <div class="rel-minifilter">
+            <label><span><i class="ti ti-stack"></i> Situação</span>
+              <select id="estq-nivel" onchange="renderEstoque()">
+                <option value="">Todas</option>
+                <option value="em">Em estoque (&gt; 5)</option>
+                <option value="baixo">Estoque baixo (1–5)</option>
+                <option value="zero">Esgotado (0)</option>
+              </select>
+            </label>
+            <label><span><i class="ti ti-category"></i> Categoria</span>
+              <select id="estq-cat" onchange="renderEstoque()"><option value="">Todas as categorias</option></select>
+            </label>
+          </div>
+
           <div class="rel-section-title"><i class="ti ti-stack"></i> Resumo do estoque</div>
           <div class="stat-grid">
             <div class="stat-card">
@@ -365,7 +564,7 @@
                   <th>Produto</th>
                   <th>Categoria</th>
                   <th>Estoque</th>
-                  <th>Preço Varejo</th>
+                  <th>Preço Atacado</th>
                   <th>Valor em estoque</th>
                   <th>Situação</th>
                 </tr>
@@ -483,8 +682,116 @@ function renderTopLista(containerId, items, valFn, labelFn) {
 /* ════════════════════════════════════════
    VENDAS
 ════════════════════════════════════════ */
-function renderVendas() {
+// ── Filtros (data + status) ──────────────────────────────────
+var _relDataInicio = null; // Date (00:00) ou null
+var _relDataFim    = null; // Date (23:59:59) ou null
+var _relStatus     = '';   // '' = todos
+
+function _dataDoPedido(ped) {
+  if (ped.data) { var d = new Date(ped.data); if (!isNaN(d)) return d; }
+  if (ped.createdAt && ped.createdAt.seconds) return new Date(ped.createdAt.seconds * 1000);
+  return null;
+}
+
+// Aplica os filtros de data E status aos pedidos
+function getPedidosNoPeriodo() {
   var pedidos = getPedidos();
+  return pedidos.filter(function(p) {
+    // Status
+    if (_relStatus) {
+      var st = (p.status || '').toLowerCase();
+      // 'aguardando' legado conta como aguardando_pagamento
+      if (_relStatus === 'aguardando_pagamento' && st === 'aguardando') { /* ok */ }
+      else if (st !== _relStatus) return false;
+    }
+    // Data
+    if (_relDataInicio || _relDataFim) {
+      var d = _dataDoPedido(p);
+      if (!d) return false;
+      if (_relDataInicio && d < _relDataInicio) return false;
+      if (_relDataFim && d > _relDataFim) return false;
+    }
+    return true;
+  });
+}
+
+function _fmtDataBR(d) { return d.toLocaleDateString('pt-BR'); }
+
+var _STATUS_LABELS = {
+  aguardando_pagamento:'Aguardando pagamento', aguardando_confirmacao:'Confirmando pagamento',
+  pago:'Pago', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado'
+};
+
+function atualizarInfoPeriodo() {
+  var el = document.getElementById('rel-data-info');
+  if (!el) return;
+  var partes = [];
+  if (_relDataInicio || _relDataFim) {
+    var ini = _relDataInicio ? _fmtDataBR(_relDataInicio) : '…';
+    var fim = _relDataFim ? _fmtDataBR(_relDataFim) : '…';
+    partes.push(ini + ' até ' + fim);
+  }
+  if (_relStatus) partes.push('status: ' + (_STATUS_LABELS[_relStatus] || _relStatus));
+  el.textContent = partes.length ? ('Filtrando ' + partes.join(' · ')) : 'Mostrando todos os pedidos';
+}
+
+function _rerenderComPeriodo() {
+  atualizarInfoPeriodo();
+  renderVendas();
+}
+
+window.aplicarPreset = function(preset, btn) {
+  document.querySelectorAll('.rel-preset').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var hoje = new Date();
+  var fim = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
+  var ini = null;
+  if (preset === 'hoje') { ini = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0, 0); }
+  else if (preset === '7d')  { ini = new Date(fim); ini.setDate(ini.getDate() - 6); ini.setHours(0,0,0,0); }
+  else if (preset === '30d') { ini = new Date(fim); ini.setDate(ini.getDate() - 29); ini.setHours(0,0,0,0); }
+  else if (preset === 'mes') { ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1, 0, 0, 0, 0); }
+  else { ini = null; fim = null; } // tudo
+  _relDataInicio = ini; _relDataFim = fim;
+  var i = document.getElementById('rel-data-inicio'), f = document.getElementById('rel-data-fim');
+  if (i) i.value = ini ? _toInputDate(ini) : '';
+  if (f) f.value = fim ? _toInputDate(fim) : '';
+  _rerenderComPeriodo();
+};
+
+function _toInputDate(d) {
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + m + '-' + day;
+}
+
+window.aplicarPeriodoManual = function() {
+  var i = document.getElementById('rel-data-inicio').value;
+  var f = document.getElementById('rel-data-fim').value;
+  _relDataInicio = i ? new Date(i + 'T00:00:00') : null;
+  _relDataFim    = f ? new Date(f + 'T23:59:59.999') : null;
+  document.querySelectorAll('.rel-preset').forEach(function(b) { b.classList.remove('active'); });
+  _rerenderComPeriodo();
+};
+
+window.aplicarStatus = function() {
+  var sel = document.getElementById('rel-status');
+  _relStatus = sel ? sel.value : '';
+  _rerenderComPeriodo();
+};
+
+window.limparFiltros = function() {
+  _relDataInicio = null; _relDataFim = null; _relStatus = '';
+  var i = document.getElementById('rel-data-inicio'); if (i) i.value = '';
+  var f = document.getElementById('rel-data-fim');    if (f) f.value = '';
+  var s = document.getElementById('rel-status');       if (s) s.value = '';
+  document.querySelectorAll('.rel-preset').forEach(function(b) { b.classList.remove('active'); });
+  var tudo = document.querySelector('.rel-preset[data-preset="tudo"]');
+  if (tudo) tudo.classList.add('active');
+  _rerenderComPeriodo();
+};
+
+function renderVendas() {
+  var pedidos = getPedidosNoPeriodo();
 
   var total       = pedidos.length;
   var receitaTotal = 0;
@@ -554,8 +861,39 @@ function renderVendas() {
 /* ════════════════════════════════════════
    PRODUTOS
 ════════════════════════════════════════ */
+// Aplica os filtros do mini-filtro de produtos (categoria + situação de estoque)
+function _filtrarProdutosRel(produtos, catId, estqId) {
+  var cat = document.getElementById(catId) ? document.getElementById(catId).value : '';
+  var es  = document.getElementById(estqId) ? document.getElementById(estqId).value : '';
+  return produtos.filter(function(p) {
+    if (cat && (p.categoria || '') !== cat) return false;
+    if (es) {
+      var n = parseInt(p.estoque) || 0;
+      if (es === 'em'   && n <= 5) return false;
+      if (es === 'baixo'&& !(n >= 1 && n <= 5)) return false;
+      if (es === 'zero' && n !== 0) return false;
+    }
+    return true;
+  });
+}
+
+// Popula os selects de categoria dos relatórios (uma vez)
+function popularCategoriasRel() {
+  var cats = {};
+  getProdutos().forEach(function(p) { var c = (p.categoria || '').trim(); if (c) cats[c] = true; });
+  var nomes = Object.keys(cats).sort();
+  ['prod-cat','estq-cat'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var atual = sel.value;
+    sel.innerHTML = '<option value="">Todas as categorias</option>' +
+      nomes.map(function(c) { return '<option value="' + escHtml(c) + '">' + escHtml(c) + '</option>'; }).join('');
+    sel.value = atual;
+  });
+}
+
 function renderProdutos() {
-  var produtos = getProdutos();
+  var produtos = _filtrarProdutosRel(getProdutos(), 'prod-cat', 'prod-estoque');
 
   var valorEstoque    = 0;
   var lucroPotencial  = 0;
@@ -624,23 +962,21 @@ function renderProdutos() {
   // Tabela
   var tbody = document.getElementById('tabela-produtos-body');
   if (!produtos.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum produto cadastrado. <a href="cadastro-produto.html" style="color:var(--pink-500);">Cadastrar agora</a></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--gray-400);">Nenhum produto cadastrado. <a href="cadastro-produto.html" style="color:var(--pink-500);">Cadastrar agora</a></td></tr>';
     return;
   }
   tbody.innerHTML = produtos.map(function(p) {
-    var varejo  = parseBRL(String(p.precoVarejo||0));
-    var atacado = parseBRL(String(p.precoAtacado||0));
+    var preco   = parseBRL(String(p.precoAtacado||0)) || parseBRL(String(p.precoVarejo||0));
     var custo   = parseBRL(String(p.custoTotal||0));
     var lucro   = getLucro(p);
     var margem  = getMargem(p);
     var est     = parseInt(p.estoque) || 0;
-    var valorTotal = varejo * est;
+    var valorTotal = preco * est;
     return '<tr>' +
       '<td>' + escHtml(p.nome||'—') + '</td>' +
       '<td>' + escHtml(p.categoria||'—') + '</td>' +
       '<td>' + (custo   ? formatBRL(custo)  : '—') + '</td>' +
-      '<td>' + (varejo  ? formatBRL(varejo) : '—') + '</td>' +
-      '<td>' + (atacado ? formatBRL(atacado): '—') + '</td>' +
+      '<td>' + (preco   ? formatBRL(preco)  : '—') + '</td>' +
       '<td>' + (lucro   ? formatBRL(lucro)  : '—') + '</td>' +
       '<td>' + (margem  ? margem.toFixed(1)+'%' : '—') + '</td>' +
       '<td>' + est + '</td>' +
@@ -654,6 +990,18 @@ function renderProdutos() {
 ════════════════════════════════════════ */
 function renderClientes() {
   var clientes = getClientes();
+
+  // Filtro por atividade
+  var ativ = document.getElementById('cli-atividade') ? document.getElementById('cli-atividade').value : '';
+  if (ativ === 'com') clientes = clientes.filter(function(c) { return (c.purchases || []).length > 0 || (c.totalSpent || 0) > 0; });
+  else if (ativ === 'sem') clientes = clientes.filter(function(c) { return !((c.purchases || []).length > 0 || (c.totalSpent || 0) > 0); });
+  // Ordenação
+  var ordem = document.getElementById('cli-ordem') ? document.getElementById('cli-ordem').value : 'gasto';
+  clientes = clientes.slice().sort(function(a, b) {
+    if (ordem === 'compras') return (b.purchases || []).length - (a.purchases || []).length;
+    if (ordem === 'nome')    return (a.name || '').localeCompare(b.name || '');
+    return (b.totalSpent || 0) - (a.totalSpent || 0);
+  });
 
   var total       = clientes.length;
   var gastoTotal  = clientes.reduce(function(s,c){ return s + (c.totalSpent||0); }, 0);
@@ -697,7 +1045,7 @@ function renderClientes() {
    ESTOQUE
 ════════════════════════════════════════ */
 function renderEstoque() {
-  var produtos = getProdutos();
+  var produtos = _filtrarProdutosRel(getProdutos(), 'estq-cat', 'estq-nivel');
 
   var totalUn  = 0;
   var ativos   = 0;
@@ -777,10 +1125,58 @@ function renderEstoque() {
 }
 
 /* ── Init ── */
+// Renderiza imediatamente com dados do localStorage
+popularCategoriasRel();
 renderVendas();
 renderProdutos();
 renderClientes();
 renderEstoque();
+
+// Sobrescreve getPedidos localmente para mesclar localStorage + Firestore
+var _pedidosFS = [];
+var _getPedidosOrig = getPedidos;
+getPedidos = function() {
+  var ls = _getPedidosOrig() || [];
+  if (!_pedidosFS.length) return ls;
+  var fsNumeros = new Set(_pedidosFS.map(function(p) { return p.numero; }));
+  var lsFiltrado = ls.filter(function(p) { return !fsNumeros.has(p.numero); });
+  return _pedidosFS.concat(lsFiltrado);
+};
+
+// Carrega pedidos do Firestore (coleção 'pedidos' = pedidos via MP)
+(function carregarPedidosFS() {
+  function tryLoad(retries) {
+    retries = retries || 0;
+    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!firestore) {
+      if (retries < 20) { setTimeout(function() { tryLoad(retries + 1); }, 300); }
+      return;
+    }
+    firestore.collection('pedidos').limit(200).get().then(function(snap) {
+      _pedidosFS = [];
+      snap.forEach(function(doc) {
+        var d = doc.data();
+        d._id = doc.id;
+        // Normaliza campos para compatibilidade com renderVendas/renderClientes
+        d.total = d.total || 0;
+        d.cliente = d.cliente || {};
+        d.cliente.name = d.cliente.nome || d.cliente.name || '';
+        d.cliente.whatsapp = d.cliente.celular || d.cliente.whatsapp || '';
+        // Data unificada (Firestore usa createdAt timestamp)
+        if (!d.data && d.createdAt && d.createdAt.seconds) {
+          d.data = new Date(d.createdAt.seconds * 1000).toISOString();
+        }
+        _pedidosFS.push(d);
+      });
+      if (_pedidosFS.length) {
+        renderVendas();
+        renderEstoque();
+        renderClientes();
+      }
+    }).catch(function(e) { console.warn('[relatorios] Firestore pedidos:', e); });
+  }
+  tryLoad(0);
+})();
 </script>
 <script src="js/sidebar.js"></script>
 </body>

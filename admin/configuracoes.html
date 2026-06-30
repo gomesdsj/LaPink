@@ -305,15 +305,29 @@
             <!-- Mercado Pago -->
             <div class="section-card">
               <h3><i class="ti ti-credit-card"></i> Mercado Pago</h3>
-              <p>Integração de pagamento. Obtenha as chaves em <strong>mercadopago.com.br → Credenciais</strong>. <strong>Atenção:</strong> cole apenas a <em>Public Key</em> (começa com APP_USR-). O Access Token secreto deve ser configurado no servidor, não aqui.</p>
+              <p>Integração de pagamento via <strong>Checkout Pro</strong>. Obtenha as chaves em <strong>mercadopago.com.br → Sua conta → Credenciais</strong>.</p>
+
+              <!-- Access Token (salvo no Firestore, lido pelas Functions) -->
+              <div class="form-group" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+                <label style="color:#92400e;font-weight:700;"><i class="ti ti-key"></i> Access Token (secreto — usado pelo servidor)</label>
+                <input type="password" id="int-mp-token" placeholder="APP_USR-xxxx..." autocomplete="new-password"
+                  style="font-family:monospace;" />
+                <div style="font-size:11px;color:#92400e;margin-top:6px;">
+                  ⚠️ Cole aqui o seu <strong>Access Token de Produção</strong> (começa com APP_USR-). Ele é salvo de forma segura no banco de dados e nunca aparece no código do site.<br>
+                  Encontre em: mercadopago.com.br → <strong>Meu negócio → Configurações → Credenciais → Produção</strong>.
+                </div>
+                <button type="button" onclick="salvarMPToken()" class="btn-save-form" style="margin-top:10px;background:#d97706;">
+                  <i class="ti ti-lock"></i> Salvar Access Token com segurança
+                </button>
+              </div>
+
               <div class="form-group">
-                <label>Public Key <small style="color:var(--gray-400)">(prefixo APP_USR-…, segura para expor)</small></label>
+                <label>Public Key <small style="color:var(--gray-400)">(começa com APP_USR-, usada no front-end)</small></label>
                 <input type="text" id="int-mp-pk" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
               </div>
               <div class="form-group">
-                <label>Link de pagamento <small style="color:var(--gray-400)">(URL do Checkout Pro ou Link de Cobrança MP)</small></label>
+                <label>Link de pagamento estático <small style="color:var(--gray-400)">(opcional — fallback se Functions indisponível)</small></label>
                 <input type="url" id="int-mp-link" placeholder="https://mpago.la/xxxxxxxxxxxx" autocomplete="off" />
-                <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Crie em <strong>mercadopago.com.br → Cobranças → Links de pagamento</strong>. Este link aparece no botão "Pagar com Mercado Pago" na página de pagamento da loja.</div>
               </div>
               <div class="form-row" style="align-items:center;">
                 <div class="form-group" style="flex:0 0 auto;">
@@ -336,7 +350,7 @@
             <!-- EmailJS -->
             <div class="section-card">
               <h3><i class="ti ti-mail-forward"></i> EmailJS — Recuperação de senha</h3>
-              <p>Configure o serviço de envio de e-mail para a função "Esqueci minha senha" dos clientes. Crie sua conta gratuita em <strong>emailjs.com</strong> (200 e-mails/mês grátis), crie um serviço de e-mail e um template com as variáveis <code>{{to_email}}</code>, <code>{{to_name}}</code> e <code>{{temp_password}}</code>.</p>
+              <p>Configure o serviço de envio de e-mail para a função "Esqueci minha senha" dos clientes. Crie sua conta gratuita em <strong>emailjs.com</strong> (200 e-mails/mês grátis), crie um serviço de e-mail e um template com as variáveis <code>{{to_email}}</code>, <code>{{to_name}}</code>, <code>{{temp_password}}</code> e (opcional) <code>{{from_email}}</code>/<code>{{reply_to}}</code>.</p>
               <div class="form-row">
                 <div class="form-group">
                   <label>Public Key <small style="color:var(--gray-400)">(Conta → API Keys)</small></label>
@@ -347,9 +361,15 @@
                   <input type="text" id="int-ejs-sid" placeholder="service_xxxxxxx" autocomplete="off" />
                 </div>
               </div>
-              <div class="form-group">
-                <label>Template ID <small style="color:var(--gray-400)">(ex.: template_xxxxxxx)</small></label>
-                <input type="text" id="int-ejs-tid" placeholder="template_xxxxxxx" autocomplete="off" />
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Template ID <small style="color:var(--gray-400)">(ex.: template_xxxxxxx)</small></label>
+                  <input type="text" id="int-ejs-tid" placeholder="template_xxxxxxx" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label>E-mail remetente <small style="color:var(--gray-400)">(de onde sai a recuperação)</small></label>
+                  <input type="email" id="int-ejs-from" placeholder="loja@seudominio.com" autocomplete="off" />
+                </div>
               </div>
               <div class="form-actions" style="margin-top:8px;">
                 <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar EmailJS</button>
@@ -389,7 +409,7 @@
             <!-- WhatsApp Business API -->
             <div class="section-card">
               <h3><i class="ti ti-brand-whatsapp"></i> WhatsApp Business API</h3>
-              <p>IDs públicos para integração com a Meta Cloud API. O <strong>Bearer Token</strong> deve ficar exclusivamente no servidor.</p>
+              <p>Integração com a Meta Cloud API — usada no envio automático para <strong>carrinhos abandonados</strong> (requer plano Blaze). O token é salvo de forma segura (leitura pública bloqueada).</p>
               <div class="form-row">
                 <div class="form-group">
                   <label>Phone Number ID</label>
@@ -400,8 +420,14 @@
                   <input type="text" id="int-wba-biz-id" placeholder="1234567890" autocomplete="off" />
                 </div>
               </div>
+              <div class="form-group" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-top:6px;">
+                <label style="color:#92400e;font-weight:700;"><i class="ti ti-key"></i> Bearer Token (secreto)</label>
+                <input type="password" id="int-wba-token" placeholder="EAAG..." autocomplete="new-password" style="font-family:monospace;" />
+                <div style="font-size:11px;color:#92400e;margin-top:6px;">Salvo no banco com leitura bloqueada. Usado apenas pelo servidor (Functions) para enviar as mensagens.</div>
+                <button type="button" onclick="salvarWhatsToken()" class="btn-save-form" style="margin-top:10px;background:#16a34a;"><i class="ti ti-lock"></i> Salvar token com segurança</button>
+              </div>
               <div class="form-actions" style="margin-top:8px;">
-                <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar WhatsApp Business</button>
+                <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar IDs</button>
               </div>
             </div>
 
@@ -836,11 +862,59 @@
     document.getElementById('int-ejs-pk').value      = cfg.emailjsPk      || '';
     document.getElementById('int-ejs-sid').value     = cfg.emailjsSid     || '';
     document.getElementById('int-ejs-tid').value     = cfg.emailjsTid     || '';
+    document.getElementById('int-ejs-from').value    = cfg.emailjsFrom    || '';
     document.getElementById('int-dns-url').value     = cfg.dnsUrl         || '';
     document.getElementById('int-dns-admin').value   = cfg.dnsAdmin       || '';
     document.getElementById('int-ga-id').value       = cfg.gaId           || '';
     document.getElementById('int-wba-phone-id').value= cfg.wbaPhoneId     || '';
     document.getElementById('int-wba-biz-id').value  = cfg.wbaBizId       || '';
+  }
+
+  // Salva Access Token do MP diretamente no Firestore (sem passar pelo localStorage)
+  function salvarMPToken() {
+    var token = (document.getElementById('int-mp-token').value || '').trim();
+    if (!token) { showToast('Cole o Access Token antes de salvar.', 'erro'); return; }
+    if (!token.startsWith('APP_USR-') && !token.startsWith('TEST-')) {
+      showToast('Token inválido. Deve começar com APP_USR- (produção) ou TEST- (sandbox).', 'erro'); return;
+    }
+    var btn = document.querySelector('button[onclick="salvarMPToken()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .9s linear infinite"></i> Salvando...'; }
+
+    function restore() {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-lock"></i> Salvar Access Token com segurança'; }
+    }
+
+    var db = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!db) { showToast('Firebase não disponível.', 'erro'); restore(); return; }
+
+    // Grava direto com merge (sem ler antes — o doc apiConfig tem leitura
+    // pública bloqueada nas regras; merge preserva outros campos de data.*)
+    db.collection('lapink').doc('apiConfig')
+      .set({ data: { mpAccessToken: token }, updatedAt: Date.now() }, { merge: true })
+      .then(function() {
+        showToast('Access Token salvo com segurança no banco de dados!');
+        document.getElementById('int-mp-token').value = '';
+        restore();
+      }).catch(function(e) {
+        showToast('Erro ao salvar: ' + e.message, 'erro');
+        restore();
+      });
+  }
+
+  // Salva o token do WhatsApp Business + Phone ID no apiConfig (leitura bloqueada)
+  function salvarWhatsToken() {
+    var token = (document.getElementById('int-wba-token').value || '').trim();
+    var phoneId = (document.getElementById('int-wba-phone-id').value || '').trim();
+    if (!token) { showToast('Cole o Bearer Token do WhatsApp.', 'erro'); return; }
+    var db = (typeof firebase !== 'undefined' && firebase.apps.length) ? firebase.firestore() : null;
+    if (!db) { showToast('Firebase não disponível.', 'erro'); return; }
+    db.collection('lapink').doc('apiConfig')
+      .set({ data: { wbaToken: token, wbaPhoneId: phoneId }, updatedAt: Date.now() }, { merge: true })
+      .then(function () {
+        showToast('Token do WhatsApp salvo com segurança!');
+        document.getElementById('int-wba-token').value = '';
+      })
+      .catch(function (e) { showToast('Erro ao salvar: ' + e.message, 'erro'); });
   }
 
   function salvarIntegracoes() {
@@ -853,6 +927,7 @@
       emailjsPk:   document.getElementById('int-ejs-pk').value.trim(),
       emailjsSid:  document.getElementById('int-ejs-sid').value.trim(),
       emailjsTid:  document.getElementById('int-ejs-tid').value.trim(),
+      emailjsFrom: document.getElementById('int-ejs-from').value.trim(),
       dnsUrl:      document.getElementById('int-dns-url').value.trim(),
       dnsAdmin:    document.getElementById('int-dns-admin').value.trim(),
       gaId:        document.getElementById('int-ga-id').value.trim(),

@@ -337,6 +337,35 @@
 .drawer-submenu a i { font-size:15px; color:#DE8FAE; flex-shrink:0; }
 .drawer-cat-badge { font-size:10px; font-weight:700; color:#D4537E; background:#FCF0F5; padding:1px 7px; border-radius:20px; margin-left:auto; }
 
+/* ── Painel de Categorias (sobrepõe o menu inteiro) ── */
+.drawer-cat-panel {
+  position:absolute; inset:0; background:#fff; z-index:6;
+  display:flex; flex-direction:column;
+  transform:translateX(100%); visibility:hidden;
+  transition:transform .28s cubic-bezier(.4,0,.2,1), visibility .28s;
+}
+.drawer-cat-panel.open { transform:translateX(0); visibility:visible; }
+.drawer-cat-panel-head {
+  display:flex; align-items:center; gap:10px; padding:18px 20px;
+  border-bottom:1px solid #F5D5E4; flex-shrink:0;
+  font-size:16px; font-weight:800; color:#4A1E30;
+}
+.drawer-cat-panel-head > span { display:flex; align-items:center; gap:8px; }
+.drawer-cat-panel-head > span i { color:#DE8FAE; }
+.drawer-cat-back {
+  background:none; border:none; color:#D4537E; font-size:22px; cursor:pointer;
+  padding:0; display:flex; align-items:center; flex-shrink:0;
+}
+.drawer-cat-panel-list { flex:1; overflow-y:auto; padding:6px 0; -webkit-overflow-scrolling:touch; }
+.drawer-cat-panel-list a {
+  display:flex; align-items:center; gap:12px;
+  padding:14px 22px; font-size:15px; font-weight:600;
+  color:#4A1E30; text-decoration:none; cursor:pointer;
+  border-left:3px solid transparent; transition:background .13s, color .13s;
+}
+.drawer-cat-panel-list a:hover, .drawer-cat-panel-list a:active { background:#FDF4F8; color:#D4537E; border-left-color:#D4537E; }
+.drawer-cat-panel-list a i { font-size:18px; color:#DE8FAE; flex-shrink:0; }
+
 /* ── Drawer: botão Minha conta ── */
 .drawer-btn-profile {
   display:none; width:100%; align-items:center; gap:8px;
@@ -444,24 +473,35 @@
     <nav class="drawer-links">
       <a onclick="drawerNav(limparFiltro)"><i class="ti ti-home"></i> Início</a>
 
-      <!-- Categorias accordion (populado dinamicamente) -->
-      <button class="drawer-section-toggle" onclick="toggleDrawerCat()" id="drawerCatToggle" aria-expanded="false">
+      <!-- Categorias: abre painel que sobrepõe o menu (todas as categorias) -->
+      <button class="drawer-section-toggle" onclick="toggleDrawerCat()" id="drawerCatToggle" aria-haspopup="true">
         <span><i class="ti ti-layout-grid"></i> Categorias</span>
-        <i class="ti ti-chevron-right drawer-toggle-chevron" id="drawerCatChevron"></i>
+        <i class="ti ti-chevron-right drawer-toggle-chevron"></i>
       </button>
-      <div class="drawer-submenu" id="drawerCatSubmenu" role="menu"></div>
 
-      <a onclick="drawerNav(limparFiltro)"><i class="ti ti-tag"></i> Promoções</a>
+      <a onclick="drawerNav(abrirColecoes)"><i class="ti ti-stack-2"></i> Coleções</a>
+      <a onclick="drawerNav(abrirFavoritos)"><i class="ti ti-heart"></i> Favoritos <span class="fav-count-badge drawer-cat-badge" style="display:none;">0</span></a>
+      <a onclick="drawerNav(abrirPromocoes)"><i class="ti ti-tag"></i> Promoções</a>
       <a href="checkout.html"><i class="ti ti-shopping-cart"></i> Carrinho</a>
+
+      <!-- Conta / atalhos (apenas no menu) -->
+      <a id="drawerProfileBtn" onclick="closeDrawer(); openProfileModal();" style="display:none"><i class="ti ti-user-circle"></i> Minha conta</a>
+      <a id="drawerOrdersBtn" href="meus-pedidos.html" style="display:none"><i class="ti ti-package"></i> Meus pedidos</a>
+      <a id="drawerPanelBtn" href="../admin/admin.html" style="display:none"><i class="ti ti-layout-dashboard"></i> Ir para o Painel</a>
     </nav>
     <div class="drawer-footer">
       <span class="drawer-user" id="drawerUser"></span>
-      <button class="drawer-btn drawer-btn-profile" id="drawerProfileBtn" onclick="closeDrawer(); openProfileModal();">
-        <i class="ti ti-user-circle"></i> Minha conta
-      </button>
-      <a href="../admin/admin.html" class="drawer-btn drawer-btn-in" id="drawerPanelBtn" style="display:none"><i class="ti ti-layout-dashboard"></i> Ir para o Painel</a>
-      <a href="login.html" class="drawer-btn drawer-btn-in" id="drawerLoginBtn"><i class="ti ti-user"></i> Entrar / Cadastrar</a>
+      <a href="login.html" class="drawer-btn drawer-btn-in" id="drawerLoginBtn" onclick="try{sessionStorage.setItem('referrerPage','V1.html');}catch(e){}"><i class="ti ti-user"></i> Entrar / Cadastrar</a>
       <button class="drawer-btn drawer-btn-out" id="drawerLogoutBtn" onclick="clearLoggedClient();updateAuthUI();closeDrawer();"><i class="ti ti-power"></i> Sair da conta</button>
+    </div>
+
+    <!-- Painel de Categorias — sobrepõe todo o menu, lista TODAS as categorias -->
+    <div class="drawer-cat-panel" id="drawerCatPanel" aria-hidden="true">
+      <div class="drawer-cat-panel-head">
+        <button class="drawer-cat-back" onclick="fecharDrawerCat()" aria-label="Voltar"><i class="ti ti-chevron-left"></i></button>
+        <span><i class="ti ti-layout-grid"></i> Categorias</span>
+      </div>
+      <div class="drawer-cat-panel-list" id="drawerCatPanelList" role="menu"></div>
     </div>
   </div>
 
@@ -476,25 +516,26 @@
     <div class="nav-links">
       <a onclick="filtrarCategoria('Anéis')" style="cursor:pointer;">Semijoias</a>
       <a onclick="filtrarCategoria('Bolsas')" style="cursor:pointer;">Bolsas</a>
-      <a onclick="filtrarCategoria('Brincos')" style="cursor:pointer;">Acessórios</a>
-      <a onclick="limparFiltro()" style="cursor:pointer;">Promoções</a>
+      <a onclick="abrirColecoes()" style="cursor:pointer;">Coleções</a>
+      <a onclick="abrirPromocoes()" style="cursor:pointer;">Promoções</a>
     </div>
     <div class="nav-actions">
-      <button class="nav-icon" id="mobileSearchBtn" aria-label="Buscar" title="Buscar" onclick="(function(){var b=document.querySelector('.search-bar');b.classList.toggle('search-bar-open');if(b.classList.contains('search-bar-open'))b.querySelector('input').focus();})()">
+      <button class="nav-icon" id="mobileSearchBtn" aria-label="Buscar" title="Buscar" onclick="toggleMobileSearch(this)">
         <i class="ti ti-search"></i>
       </button>
       <button class="cart-nav-btn nav-icon" onclick="abrirCarrinhoPanel()" title="Carrinho" aria-label="Carrinho" style="position:relative;background:none;border:none;cursor:pointer;">
         <i class="ti ti-shopping-cart"></i>
         <span class="cart-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#D4537E;color:#fff;border-radius:50%;width:17px;height:17px;font-size:10px;font-weight:800;align-items:center;justify-content:center;line-height:17px;text-align:center;">0</span>
       </button>
-      <button class="nav-icon" id="navHeartBtn" onclick="showToast('Em breve: lista de favoritos!')" aria-label="Favoritos" title="Favoritos">
+      <button class="nav-icon" id="navHeartBtn" onclick="abrirFavoritos()" aria-label="Favoritos" title="Favoritos" style="position:relative;">
         <i class="ti ti-heart"></i>
+        <span class="fav-count-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:#e0397a;color:#fff;border-radius:50%;min-width:16px;height:16px;font-size:9px;font-weight:800;line-height:16px;text-align:center;padding:0 3px;">0</span>
       </button>
       <span class="nav-user" id="navUser"></span>
       <a href="../admin/admin.html" id="panelBtn" class="panel-nav-btn" title="Ir para o Painel Admin">
         <i class="ti ti-layout-dashboard"></i> Painel
       </a>
-      <button class="nav-icon" id="navUserBtn" aria-label="Minha conta" title="Minha conta" onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(c&&c.email){openProfileModal();}else{location.href='login.html';}})()">
+      <button class="nav-icon" id="navUserBtn" aria-label="Minha conta" title="Minha conta" onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(c&&c.email){openProfileModal();}else{try{sessionStorage.setItem('referrerPage','V1.html');}catch(e){}location.href='login.html';}})()">
         <i class="ti ti-user"></i>
       </button>
       <button class="nav-icon logout-btn" id="logoutBtn" title="Sair da conta" aria-label="Sair">
@@ -594,11 +635,55 @@
 
   <!-- Rodapé -->
   <div class="footer">
-    <div class="footer-col"><h4>LaPink</h4><a>Quem somos</a><a>Blog</a><a>Seja revendedora</a><a>Contato</a></div>
-    <div class="footer-col"><h4>Ajuda</h4><a>Trocas e devoluções</a><a>Rastrear pedido</a><a>Formas de pagamento</a><a>Frete e prazo</a></div>
-    <div class="footer-col"><h4>Siga-nos</h4><a>Instagram</a><a>Pinterest</a><a>WhatsApp</a></div>
+    <div class="footer-col"><h4>LaPink</h4>
+      <a href="register.html">Seja revendedora</a>
+      <a href="login.html">Minha conta</a>
+      <a class="foot-wa" href="#" rel="noopener">Fale conosco</a>
+    </div>
+    <div class="footer-col"><h4>Ajuda</h4>
+      <a href="meus-pedidos.html">Rastrear pedido</a>
+      <a class="foot-wa" href="#" rel="noopener">Trocas e devoluções</a>
+      <a class="foot-wa" href="#" rel="noopener">Formas de pagamento</a>
+      <a class="foot-wa" href="#" rel="noopener">Frete e prazo</a>
+    </div>
+    <div class="footer-col"><h4>Siga-nos</h4>
+      <a class="foot-wa" href="#" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> WhatsApp</a>
+      <a class="foot-insta" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-instagram" aria-hidden="true"></i> Instagram</a>
+    </div>
   </div>
-  <div class="footer-bottom"><span>© 2025 LaPink · Todos os direitos reservados · CNPJ 00.000.000/0001-00</span></div>
+  <div class="footer-bottom"><span id="foot-bottom">© <span id="foot-year"></span> LaPink · Todos os direitos reservados</span></div>
+  <script>
+  (function () {
+    // Ano atual dinâmico
+    var y = document.getElementById('foot-year'); if (y) y.textContent = new Date().getFullYear();
+    var store = {};
+    try { store = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}'); } catch (e) {}
+    // Links de WhatsApp (Fale conosco / ajuda) — usa o número configurado
+    var wa = (store.whatsapp || '').replace(/\D/g, '');
+    if (wa) {
+      if (wa.length <= 11) wa = '55' + wa;
+      var waUrl = 'https://wa.me/' + wa;
+      document.querySelectorAll('.foot-wa').forEach(function (a) {
+        a.href = waUrl + '?text=' + encodeURIComponent('Olá! Tenho uma dúvida sobre a LaPink.');
+        a.target = '_blank';
+      });
+    }
+    // Instagram — usa o @ configurado (se houver), senão esconde o link
+    var ig = store.instagram || '';
+    var igEl = document.querySelector('.foot-insta');
+    if (igEl) {
+      if (ig) { igEl.href = ig.indexOf('http') === 0 ? ig : ('https://instagram.com/' + ig.replace('@', '')); }
+      else { igEl.style.display = 'none'; }
+    }
+    // CNPJ real (se cadastrado em Configurações) — não exibe placeholder falso
+    var cnpj = (store.cnpj || '').trim();
+    var cnpjDigits = cnpj.replace(/\D/g, '');
+    if (cnpjDigits.length === 14 && cnpjDigits !== '00000000000100') {
+      var fb = document.getElementById('foot-bottom');
+      if (fb) fb.appendChild(document.createTextNode(' · CNPJ ' + cnpj));
+    }
+  })();
+  </script>
 
 </div><!-- /site -->
 
@@ -610,6 +695,9 @@
     <button class="profile-close-btn" onclick="closeProfileModal()" aria-label="Fechar"><i class="ti ti-x"></i></button>
   </div>
   <div class="profile-body">
+    <a href="meus-pedidos.html" class="profile-orders-link" style="display:flex;align-items:center;gap:8px;justify-content:center;background:#FDF4F8;border:1.5px solid #F5D5E4;border-radius:12px;padding:11px;color:#D4537E;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:14px;">
+      <i class="ti ti-package"></i> Ver meus pedidos
+    </a>
     <div class="profile-field">
       <label>Nome completo</label>
       <input type="text" id="profileNome" placeholder="Seu nome completo" autocomplete="name" />
@@ -716,8 +804,108 @@
     } catch { return DEFAULT; }
   }
   function getProdutos() {
-    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; } catch { return []; }
+    try {
+      var arr = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || [];
+      // Não exibe na loja: produtos ocultos no editor admin OU sem estoque
+      return arr.filter(function(p) {
+        var est = parseInt(p.estoque) || 0;
+        return !p.oculto && est > 0;
+      });
+    } catch { return []; }
   }
+
+  // ── Favoritos (localStorage: lapinkFavoritos = [ids]) ──
+  function getFavoritos() {
+    try { return JSON.parse(localStorage.getItem('lapinkFavoritos') || '[]') || []; } catch { return []; }
+  }
+  function setFavoritos(arr) {
+    try { localStorage.setItem('lapinkFavoritos', JSON.stringify(arr)); } catch (e) {}
+    atualizarBadgeFavoritos();
+  }
+  window.isFavorito = function(id) {
+    return getFavoritos().map(String).indexOf(String(id)) !== -1;
+  };
+  window.toggleFavorito = function(event, id) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    var favs = getFavoritos().map(String);
+    var sid = String(id);
+    var i = favs.indexOf(sid);
+    var agoraFav;
+    if (i === -1) { favs.push(sid); agoraFav = true; }
+    else { favs.splice(i, 1); agoraFav = false; }
+    setFavoritos(favs);
+
+    if (window._v1FavMode) {
+      // Na view de favoritos, remover atualiza a lista
+      atualizarProdutos();
+    } else if (event && event.currentTarget) {
+      // Atualiza só o ícone clicado
+      var btn = event.currentTarget;
+      btn.classList.toggle('is-fav', agoraFav);
+      var ic = btn.querySelector('i');
+      if (ic) ic.className = 'ti ' + (agoraFav ? 'ti-heart-filled' : 'ti-heart');
+    }
+    if (typeof showToast === 'function') {
+      showToast(agoraFav ? 'Adicionado aos favoritos ♥' : 'Removido dos favoritos');
+    }
+  };
+  function atualizarBadgeFavoritos() {
+    var n = getFavoritos().length;
+    document.querySelectorAll('.fav-count-badge').forEach(function(el) {
+      el.textContent = n;
+      el.style.display = n > 0 ? '' : 'none';
+    });
+  }
+  window.abrirFavoritos = function() {
+    window._v1FavMode = true;
+    window._v1CatFiltro = null;
+    window._v1BuscaFiltro = '';
+    var s = document.getElementById('v1-search'); if (s) s.value = '';
+    atualizarProdutos();
+    var grid = document.getElementById('v1-prod-grid');
+    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  window.abrirPromocoes = function() {
+    window._v1PromoMode = true;
+    window._v1FavMode = false;
+    window._v1CatFiltro = null;
+    window._v1BuscaFiltro = '';
+    var s = document.getElementById('v1-search'); if (s) s.value = '';
+    atualizarProdutos();
+    var grid = document.getElementById('v1-prod-grid');
+    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // ── Coleções ──
+  function getColecoes() {
+    try { return (getConfig().colecoes || []); } catch (e) { return []; }
+  }
+  // Abre a lista de coleções (Inverno 2025, Verão 2026...)
+  window.abrirColecoes = function() {
+    window._v1ColMode = true;
+    window._v1ColId = null;
+    window._v1PromoMode = false;
+    window._v1FavMode = false;
+    window._v1CatFiltro = null;
+    window._v1BuscaFiltro = '';
+    var s = document.getElementById('v1-search'); if (s) s.value = '';
+    atualizarProdutos();
+    var grid = document.getElementById('v1-prod-grid');
+    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  // Abre uma coleção específica (mostra as peças dela)
+  window.abrirColecao = function(id) {
+    window._v1ColMode = true;
+    window._v1ColId = id;
+    window._v1PromoMode = false;
+    window._v1FavMode = false;
+    window._v1CatFiltro = null;
+    window._v1BuscaFiltro = '';
+    atualizarProdutos();
+    var grid = document.getElementById('v1-prod-grid');
+    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // ── Escape helper ──
   function esc(s) {
@@ -735,17 +923,32 @@
       var badge      = item.badge || '';
       var est        = parseInt(p.estoque) || 0;
       var esgotado   = est <= 0;
-      var baixo      = est > 0 && est <= 5;
 
-      var thumb = p.imagem
-        ? '<img src="' + p.imagem + '" alt="' + esc(p.nome) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;" />'
-        : '<i class="ti ' + esc(p.icone || 'ti-diamond') + '" aria-hidden="true"></i>';
+      // Mini-carrossel: 1 a 3 fotos (novo formato p.imagens, compat com p.imagem)
+      var imgs = (Array.isArray(p.imagens) && p.imagens.length) ? p.imagens : (p.imagem ? [p.imagem] : []);
+      var thumb;
+      if (imgs.length) {
+        var slides = imgs.map(function(src) {
+          return '<div class="pc-slide"><img src="' + src + '" alt="' + esc(p.nome) + '" loading="lazy" /></div>';
+        }).join('');
+        thumb = '<div class="pc-track" onscroll="pcSync(this)">' + slides + '</div>';
+        if (imgs.length > 1) {
+          thumb += '<button type="button" class="pc-nav pc-prev" aria-label="Foto anterior" onclick="pcScroll(event,this,-1)"><i class="ti ti-chevron-left"></i></button>' +
+                   '<button type="button" class="pc-nav pc-next" aria-label="Próxima foto" onclick="pcScroll(event,this,1)"><i class="ti ti-chevron-right"></i></button>' +
+                   '<div class="pc-dots">' +
+                     imgs.map(function(_, i) { return '<span class="pc-dot' + (i === 0 ? ' active' : '') + '" onclick="pcGoto(event,this,' + i + ')"></span>'; }).join('') +
+                   '</div>';
+        }
+      } else {
+        thumb = '<div class="pc-slide pc-slide--icon"><i class="ti ' + esc(p.icone || 'ti-diamond') + '" aria-hidden="true"></i></div>';
+      }
 
+      // Não exibimos quantidade de estoque para o cliente; só "Esgotado", "Promoção" ou badge personalizado
       var badgeHtml = '';
       if (esgotado) {
         badgeHtml = '<span class="prod-badge prod-badge--esgotado">Esgotado</span>';
-      } else if (baixo) {
-        badgeHtml = '<span class="prod-badge prod-badge--estoque-baixo">Últimas ' + est + ' unid.</span>';
+      } else if (p.promocao) {
+        badgeHtml = '<span class="prod-badge prod-badge--promo">Promoção</span>';
       } else if (badge) {
         badgeHtml = '<span class="prod-badge">' + esc(badge) + '</span>';
       }
@@ -754,7 +957,8 @@
       var atacado       = Number(p.precoAtacado || 0);
       var precoPrincipal = atacado > 0 ? atacado : varejo;
       var preco         = 'R$ ' + precoPrincipal.toFixed(2).replace('.', ',');
-      var favHtml       = esgotado ? '' : '<i class="ti ti-heart prod-fav" aria-hidden="true"></i>';
+      var fav           = (typeof isFavorito === 'function') && isFavorito(p.id);
+      var favHtml       = '<button type="button" class="prod-fav' + (fav ? ' is-fav' : '') + '" aria-label="' + (fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '" onclick="toggleFavorito(event, \'' + esc(String(p.id)) + '\')"><i class="ti ' + (fav ? 'ti-heart-filled' : 'ti-heart') + '"></i></button>';
 
       return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '"' +
           ' data-id="' + esc(String(p.id)) + '" data-nome="' + esc(p.nome) + '" data-preco="' + precoPrincipal + '" data-imagem="' + esc(p.imagem || '') + '"' +
@@ -763,19 +967,47 @@
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
           '<div><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span></div>' +
+          (esgotado ? '' : '<button type="button" class="prod-add-cart" onclick="addCardCart(event,this)" aria-label="Adicionar ao carrinho"><i class="ti ti-shopping-cart-plus"></i> Adicionar</button>') +
         '</div>' +
       '</div>';
     }).join('');
   }
 
+  // ── Carrossel de fotos do card (1-3 fotos) ──
+  window.pcScroll = function(ev, btn, dir) {
+    ev.stopPropagation();
+    var track = btn.parentNode.querySelector('.pc-track');
+    if (track) track.scrollBy({ left: dir * track.clientWidth, behavior: 'smooth' });
+  };
+  window.pcGoto = function(ev, dot, idx) {
+    ev.stopPropagation();
+    // .pc-dots → container (.prod-img ou .prod-modal-img) → .pc-track
+    var wrap = (dot.parentNode && dot.parentNode.parentNode) || dot.closest('.prod-img');
+    var track = wrap && wrap.querySelector('.pc-track');
+    if (track) track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+  };
+  window.pcSync = function(track) {
+    var idx = Math.round(track.scrollLeft / track.clientWidth);
+    var dots = track.parentNode.querySelectorAll('.pc-dot');
+    for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('active', i === idx);
+  };
+
   // ── Estado de filtro ──
   window._v1CatFiltro   = null;  // categoria ativa
   window._v1BuscaFiltro = '';    // texto de busca
+  window._v1FavMode     = false; // view de favoritos
+  window._v1PromoMode   = false; // view de promoções
+  window._v1ColMode     = false; // view de coleções
+  window._v1ColId       = null;  // coleção específica aberta
 
   // ── Aplica filtro de categoria ──
   window.filtrarCategoria = function(cat) {
     window._v1CatFiltro   = cat;
     window._v1BuscaFiltro = '';
+    window._v1FavMode     = false;
+    window._v1PromoMode   = false;
+    window._v1ColMode     = false;
+    window._v1ColId       = null;
     var searchInput = document.getElementById('v1-search');
     if (searchInput) searchInput.value = '';
     atualizarProdutos();
@@ -785,6 +1017,10 @@
   window.limparFiltro = function() {
     window._v1CatFiltro   = null;
     window._v1BuscaFiltro = '';
+    window._v1FavMode     = false;
+    window._v1PromoMode   = false;
+    window._v1ColMode     = false;
+    window._v1ColId       = null;
     var searchInput = document.getElementById('v1-search');
     if (searchInput) searchInput.value = '';
     atualizarProdutos();
@@ -793,7 +1029,29 @@
   window.buscarProdutos = function(termo) {
     window._v1BuscaFiltro = termo.toLowerCase();
     window._v1CatFiltro   = null;
+    window._v1FavMode     = false;
+    window._v1PromoMode   = false;
+    window._v1ColMode     = false;
+    window._v1ColId       = null;
     atualizarProdutos();
+  };
+
+  // ── Busca mobile: barra ocupa o lugar do hamburguer + logo ──
+  window.toggleMobileSearch = function(btn) {
+    var nav = document.querySelector('.nav');
+    var bar = document.querySelector('.search-bar');
+    if (!nav) return;
+    var ativo = nav.classList.toggle('nav-searching');
+    var icon = btn && btn.querySelector('i');
+    if (ativo) {
+      if (icon) icon.className = 'ti ti-x';
+      if (btn) btn.setAttribute('aria-label', 'Fechar busca');
+      if (bar) { var inp = bar.querySelector('input'); if (inp) setTimeout(function(){ inp.focus(); }, 50); }
+    } else {
+      if (icon) icon.className = 'ti ti-search';
+      if (btn) btn.setAttribute('aria-label', 'Buscar');
+      if (bar) { var inp2 = bar.querySelector('input'); if (inp2) { inp2.value = ''; if (typeof limparFiltro === 'function') limparFiltro(); } }
+    }
   };
 
   function atualizarProdutos() {
@@ -812,6 +1070,99 @@
       var catMap = { 'Anéis': 'cat-aneis', 'Colares': 'cat-colares', 'Brincos': 'cat-brincos', 'Bolsas': 'cat-bolsas' };
       var catEl = document.getElementById(catMap[cat]);
       if (catEl) catEl.classList.add('active');
+    }
+
+    if (window._v1FavMode) {
+      // ── Modo Favoritos ──
+      titleEl.textContent  = 'Meus favoritos';
+      linkEl.style.display = 'none';
+      backEl.style.display = '';
+
+      var barOld = document.getElementById('v1-result-bar');
+      if (barOld) barOld.remove();
+
+      var favIds = (typeof getFavoritos === 'function') ? getFavoritos().map(String) : [];
+      var favProdutos = produtos.filter(function(p) { return favIds.indexOf(String(p.id)) !== -1; });
+      var favLista = favProdutos.map(function(p) { return { produto: p, badge: '' }; });
+      var favEmpty = 'Você ainda não favoritou nenhuma peça.<br>Toque no <i class="ti ti-heart" aria-hidden="true"></i> dos produtos para salvá-los aqui.<br><button class="btn-limpar-busca" onclick="limparFiltro()">Ver produtos</button>';
+      prodGrid.innerHTML = renderCards(favLista, favEmpty);
+      return;
+    }
+
+    if (window._v1PromoMode) {
+      // ── Modo Promoções ──
+      titleEl.textContent  = 'Promoções';
+      linkEl.style.display = 'none';
+      backEl.style.display = '';
+
+      var barOldP = document.getElementById('v1-result-bar');
+      if (barOldP) barOldP.remove();
+
+      var promoProdutos = produtos.filter(function(p) { return !!p.promocao; });
+      var promoLista = promoProdutos.map(function(p) { return { produto: p, badge: 'Promoção' }; });
+      var promoEmpty = 'Nenhuma promoção no momento. 💖<br>Volte em breve para conferir as ofertas!<br><button class="btn-limpar-busca" onclick="limparFiltro()">Ver todos os produtos</button>';
+      prodGrid.innerHTML = renderCards(promoLista, promoEmpty);
+      return;
+    }
+
+    if (window._v1ColMode) {
+      var barOldC = document.getElementById('v1-result-bar');
+      if (barOldC) barOldC.remove();
+      var colecoes = (typeof getColecoes === 'function') ? getColecoes() : [];
+
+      if (!window._v1ColId) {
+        // ── Lista de coleções (Inverno 2025, Verão 2026...) ──
+        titleEl.textContent  = 'Coleções';
+        linkEl.style.display = 'none';
+        backEl.style.display = '';
+
+        // Só coleções que têm pelo menos uma peça disponível
+        var idsDisp = produtos.map(function(p) { return String(p.id); });
+        var colsValidas = colecoes.filter(function(c) {
+          return (c.produtos || []).some(function(pid) { return idsDisp.indexOf(String(pid)) !== -1; });
+        });
+
+        if (!colsValidas.length) {
+          prodGrid.innerHTML = '<div class="prod-empty"><i class="ti ti-stack-2"></i>Nenhuma coleção disponível no momento.<br><button class="btn-limpar-busca" onclick="limparFiltro()">Ver todos os produtos</button></div>';
+          return;
+        }
+
+        prodGrid.innerHTML = colsValidas.map(function(c) {
+          var nome = (c.estacao || 'Coleção') + ' ' + (c.ano || '');
+          var qtd = (c.produtos || []).filter(function(pid) { return idsDisp.indexOf(String(pid)) !== -1; }).length;
+          // capa: imagem da 1ª peça disponível da coleção
+          var capa = null;
+          for (var i = 0; i < (c.produtos || []).length; i++) {
+            var pp = produtos.filter(function(x) { return String(x.id) === String(c.produtos[i]); })[0];
+            if (pp) { capa = (Array.isArray(pp.imagens) && pp.imagens[0]) || pp.imagem || null; break; }
+          }
+          var media = capa
+            ? '<img src="' + capa + '" alt="' + esc(nome) + '" loading="lazy" />'
+            : '<i class="ti ti-stack-2" aria-hidden="true"></i>';
+          return '<div class="colecao-tile" onclick="abrirColecao(\'' + esc(String(c.id)) + '\')">' +
+            '<div class="colecao-tile-media">' + media + '</div>' +
+            '<div class="colecao-tile-info">' +
+              '<div class="colecao-tile-name">' + esc(nome) + '</div>' +
+              '<div class="colecao-tile-count">' + qtd + ' peça' + (qtd === 1 ? '' : 's') + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+        return;
+      }
+
+      // ── Peças de uma coleção específica ──
+      var col = colecoes.filter(function(c) { return String(c.id) === String(window._v1ColId); })[0];
+      var nomeCol = col ? ((col.estacao || 'Coleção') + ' ' + (col.ano || '')) : 'Coleção';
+      titleEl.textContent  = nomeCol;
+      linkEl.style.display = 'none';
+      backEl.style.display = '';
+
+      var colIds = col ? (col.produtos || []).map(String) : [];
+      var colProdutos = produtos.filter(function(p) { return colIds.indexOf(String(p.id)) !== -1; });
+      var colLista = colProdutos.map(function(p) { return { produto: p, badge: '' }; });
+      var colEmpty = 'Esta coleção ainda não tem peças disponíveis.<br><button class="btn-limpar-busca" onclick="abrirColecoes()">Ver coleções</button>';
+      prodGrid.innerHTML = renderCards(colLista, colEmpty);
+      return;
     }
 
     if (cat || busca) {
@@ -954,6 +1305,7 @@
 
   // Renderiza produtos em destaque
   atualizarProdutos();
+  atualizarBadgeFavoritos();
 
   // Toggle do catálogo completo por categoria
   window.toggleCatalogo = function() {
@@ -1043,24 +1395,33 @@ window.abrirQty = function(event, card) {
   var precoPrincipal = atacado > 0 ? atacado : varejo;
   var estoque = Number(prod.estoque || 0);
 
-  _qtyProduto = { id: id, nome: nome, precoVarejo: precoPrincipal, imagem: imagem || undefined };
+  _qtyProduto = { id: id, nome: nome, precoAtacado: precoPrincipal, precoVarejo: precoPrincipal, imagem: imagem || undefined };
 
-  // Imagem
+  // Imagem(ns) — carrossel de 1 a 3 fotos (igual ao card)
   var imgEl = document.getElementById('qtySheetImg');
   if (imgEl) {
-    var existingClose = imgEl.querySelector('button');
-    imgEl.innerHTML = imagem
-      ? '<img src="' + imagem + '" alt="' + nome + '" style="width:100%;height:100%;object-fit:cover;">'
-      : '<i class="ti ti-diamond" style="font-size:60px;color:var(--pk-300);"></i>';
-    if (existingClose) imgEl.appendChild(existingClose);
-    else {
-      var closeBtn = document.createElement('button');
-      closeBtn.setAttribute('onclick','fecharQty()');
-      closeBtn.setAttribute('aria-label','Fechar');
-      closeBtn.innerHTML = '<i class="ti ti-x"></i>';
-      closeBtn.style.cssText = 'position:absolute;top:12px;right:12px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;color:var(--pk-dark);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
-      imgEl.appendChild(closeBtn);
+    var imgsModal = (Array.isArray(prod.imagens) && prod.imagens.length)
+      ? prod.imagens
+      : ((imagem || prod.imagem) ? [imagem || prod.imagem] : []);
+
+    var closeBtnHtml = '<button onclick="fecharQty()" class="prod-modal-close" aria-label="Fechar"><i class="ti ti-x"></i></button>';
+    var inner;
+    if (imgsModal.length) {
+      var slidesM = imgsModal.map(function(src) {
+        return '<div class="pc-slide"><img src="' + src + '" alt="' + (nome || '') + '" /></div>';
+      }).join('');
+      inner = '<div class="pc-track" onscroll="pcSync(this)">' + slidesM + '</div>';
+      if (imgsModal.length > 1) {
+        inner += '<button type="button" class="pc-nav pc-prev" aria-label="Foto anterior" onclick="pcScroll(event,this,-1)"><i class="ti ti-chevron-left"></i></button>' +
+                 '<button type="button" class="pc-nav pc-next" aria-label="Próxima foto" onclick="pcScroll(event,this,1)"><i class="ti ti-chevron-right"></i></button>' +
+                 '<div class="pc-dots">' +
+                   imgsModal.map(function(_, i) { return '<span class="pc-dot' + (i === 0 ? ' active' : '') + '" onclick="pcGoto(event,this,' + i + ')"></span>'; }).join('') +
+                 '</div>';
+      }
+    } else {
+      inner = '<i class="ti ti-diamond"></i>';
     }
+    imgEl.innerHTML = inner + closeBtnHtml;
   }
 
   // Categoria
@@ -1077,27 +1438,18 @@ window.abrirQty = function(event, card) {
   // Preço principal
   document.getElementById('qtySheetPreco').textContent = 'R$ ' + precoPrincipal.toFixed(2).replace('.', ',');
 
-  // Preço de referência (varejo) — exibe só se há diferença
+  // Loja só de atacado: sem preço de referência riscado.
   var refEl = document.getElementById('qtySheetPrecoRef');
-  if (refEl) {
-    if (atacado > 0 && varejo > 0 && varejo !== atacado) {
-      refEl.textContent = 'De R$ ' + varejo.toFixed(2).replace('.', ',');
-    } else {
-      refEl.textContent = '';
-    }
-  }
+  if (refEl) refEl.textContent = '';
 
-  // Estoque
+  // Disponibilidade — sem mostrar a quantidade em estoque ao cliente
   var estoqueEl = document.getElementById('qtySheetEstoque');
   if (estoqueEl) {
     if (estoque <= 0) {
       estoqueEl.innerHTML = '<i class="ti ti-alert-circle" style="color:#c0392b"></i> Esgotado';
       estoqueEl.style.color = '#c0392b';
-    } else if (estoque <= 3) {
-      estoqueEl.innerHTML = '<i class="ti ti-clock" style="color:#e67e22"></i> Últimas ' + estoque + ' unid.';
-      estoqueEl.style.color = '#e67e22';
     } else {
-      estoqueEl.innerHTML = '<i class="ti ti-check" style="color:#27ae60"></i> Em estoque (' + estoque + ' unid.)';
+      estoqueEl.innerHTML = '<i class="ti ti-check" style="color:#27ae60"></i> Disponível';
       estoqueEl.style.color = '#27ae60';
     }
   }
@@ -1122,7 +1474,8 @@ window.abrirQty = function(event, card) {
 function _atualizarSubtotal() {
   if (!_qtyProduto) return;
   var qty   = parseInt(document.getElementById('qtyInput').value) || 1;
-  var total = (_qtyProduto.precoVarejo * qty).toFixed(2).replace('.', ',');
+  var preco = _qtyProduto.precoAtacado || _qtyProduto.precoVarejo || 0;
+  var total = (preco * qty).toFixed(2).replace('.', ',');
   document.getElementById('qtySubtotal').textContent =
     qty > 1 ? 'Total: R$ ' + total : '';
 }
@@ -1156,17 +1509,51 @@ window.fecharQty = function() {
   }, 280);
 };
 
+// ── Adiciona ao carrinho direto do card (sem abrir o modal) ──
+window.addCardCart = function(event, btn) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  var card = btn.closest('.prod-card');
+  if (!card) return;
+  var id = card.dataset.id;
+  var prods = [];
+  try { prods = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; } catch (e) {}
+  var prod = prods.find(function(p) { return String(p.id) === String(id); });
+  if (!prod) { showToast('Produto indisponível. Recarregue a página.', 'erro'); return; }
+  if ((parseInt(prod.estoque) || 0) <= 0) { showToast('Produto esgotado.', 'erro'); return; }
+  if (typeof addToCart !== 'function') { showToast('Carrinho indisponível. Recarregue a página.', 'erro'); return; }
+
+  var precoPrincipal = Number(prod.precoAtacado || 0) || Number(prod.precoVarejo || 0);
+  var item = {
+    id: prod.id, nome: prod.nome,
+    precoAtacado: precoPrincipal, precoVarejo: precoPrincipal,
+    imagem: (Array.isArray(prod.imagens) && prod.imagens[0]) || prod.imagem || null
+  };
+  var res = addToCart(item, 1);
+  if (res && res.added <= 0) { showToast('Você já tem toda a quantidade disponível no carrinho.', 'erro'); return; }
+  if (res && res.capped) { showToast('Adicionamos apenas ' + res.finalQty + ' un. — é o que temos em estoque.'); }
+  else { showToast('Adicionado ao carrinho!'); }
+};
+
 // ── Confirma adição ao carrinho ──
 window.confirmAddQty = function() {
   if (!_qtyProduto) return;
   var qty = parseInt(document.getElementById('qtyInput').value) || 1;
-  if (typeof addToCart === 'function') {
-    addToCart(_qtyProduto, qty);
-    showToast(qty + 'x adicionado ao carrinho!');
-    fecharQty();
-  } else {
+  if (typeof addToCart !== 'function') {
     showToast('Carrinho indisponível. Tente recarregar a página.');
+    return;
   }
+  var res = addToCart(_qtyProduto, qty);
+  if (res && res.added <= 0) {
+    // Já tinha todo o estoque disponível no carrinho
+    showToast('Você já tem toda a quantidade em estoque no carrinho.', 'erro');
+    return;
+  }
+  if (res && res.capped) {
+    showToast('Adicionamos apenas ' + res.finalQty + ' un. — é o que temos em estoque.');
+  } else {
+    showToast(qty + 'x adicionado ao carrinho!');
+  }
+  fecharQty();
 };
 
 // ── Ver detalhes a partir do sheet ──
@@ -1204,7 +1591,36 @@ window.verProdutoSheet = function() {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(function(err) { console.warn('SW:', err); });
+  // Recarrega a página uma única vez quando um novo service worker assume o
+  // controle — garante que CSS/JS atualizados sejam aplicados em qualquer fluxo
+  // (primeiro acesso, login, logout) sem ficar preso em layout antigo.
+  var _swRefreshing = false;
+  // Só recarrega quando já havia um SW antigo controlando (atualização real);
+  // no primeiro acesso (sem controlador) não há recarga desnecessária.
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      if (_swRefreshing) return;
+      _swRefreshing = true;
+      window.location.reload();
+    });
+  }
+
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    // Verifica atualização do SW logo ao abrir
+    try { reg.update(); } catch (e) {}
+    // Se já houver um SW novo esperando, ativa imediatamente
+    if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+    reg.addEventListener('updatefound', function() {
+      var nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', function() {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          // Novo SW instalado e há controlador antigo → pede para assumir já
+          nw.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+  }).catch(function(err) { console.warn('SW:', err); });
 }
 
 var deferredPrompt;
@@ -1234,7 +1650,7 @@ if (installBtn) {
       titulo: 'Elegância que\nconta sua história',
       subtitulo: 'Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.',
       btn1Txt: 'Ver coleção', btn1Acao: 'colecao',
-      btn2Txt: 'Ver promoções', btn2Acao: 'limpar',
+      btn2Txt: 'Ver promoções', btn2Acao: 'promocoes',
       imagem: '', icone: 'ti-diamond', cor: 'pink'
     },
     {
@@ -1367,7 +1783,11 @@ if (installBtn) {
   // API global (usada pelos dots e pelos botões dos slides)
   window.carouselGoTo  = function(i) { goTo(i); startTimer(); };
   window.carouselAcao  = function(acao) {
-    var map = { colecao: limparFiltro, limpar: limparFiltro,
+    var map = { colecao: function() { if (typeof abrirColecoes === 'function') abrirColecoes(); },
+                colecoes: function() { if (typeof abrirColecoes === 'function') abrirColecoes(); },
+                limpar: limparFiltro,
+                promocoes: function() { if (typeof abrirPromocoes === 'function') abrirPromocoes(); },
+                promocao:  function() { if (typeof abrirPromocoes === 'function') abrirPromocoes(); },
                 brincos: function() { filtrarCategoria('Brincos'); },
                 aneis:   function() { filtrarCategoria('Anéis'); },
                 colares: function() { filtrarCategoria('Colares'); },
@@ -1412,6 +1832,7 @@ if (installBtn) {
     drawer.classList.remove('open');
     overlay.classList.remove('open');
     document.body.style.overflow = '';
+    if (typeof fecharDrawerCat === 'function') fecharDrawerCat(); // reseta o painel de categorias
   };
   window.drawerNav = function(fn) { closeDrawer(); if (typeof fn === 'function') fn(); };
 
@@ -1437,29 +1858,42 @@ var CAT_ICONS = {
 };
 var CAT_FALLBACK = ['Anéis','Brincos','Colares','Bolsas','Pulseiras','Conjuntos','Berloques','Chokers'];
 
-// ── Grade de categorias principal (dinâmica) ──────────────────
-var _catGridExpandida = false;
-var CAT_GRID_LIMIT    = 4;
+// ── Categorias PRINCIPAIS exibidas na home (não exibe todas aqui;
+//    a lista completa fica no menu hambúrguer) ──────────────────
+var CAT_PRINCIPAIS = ['Anéis','Brincos','Colares','Bolsas'];
+var CAT_SINGULAR   = { 'Anéis':'Anel', 'Brincos':'Brinco', 'Colares':'Colar', 'Bolsas':'Bolsa' };
 
 window.renderCatGridMain = function() {
   var grid    = document.getElementById('cat-grid-main');
   var btnLink = document.getElementById('btn-ver-todas-cats');
   if (!grid) return;
 
-  var produtos = (typeof getProdutos === 'function') ? getProdutos() : [];
-  var cats = [], seen = {};
-  produtos.forEach(function(p) {
-    var c = (p.categoria || '').trim();
-    if (c && !seen[c]) { seen[c] = true; cats.push(c); }
-  });
-  if (!cats.length) cats = CAT_FALLBACK.slice();
+  // Lê produtos visíveis (em estoque e não ocultos) direto do localStorage,
+  // pois getProdutos() do catálogo é interno a outro escopo.
+  var produtos = [];
+  try {
+    produtos = (JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []).filter(function(p) {
+      return !p.oculto && (parseInt(p.estoque) || 0) > 0;
+    });
+  } catch (e) { produtos = []; }
 
-  var visiveis = (_catGridExpandida || cats.length <= CAT_GRID_LIMIT)
-    ? cats : cats.slice(0, CAT_GRID_LIMIT);
+  // Categoria está "presente" se há pelo menos um produto nela (plural ou singular)
+  function temProdutos(cat) {
+    var sing = CAT_SINGULAR[cat];
+    return produtos.some(function(p) {
+      var c = (p.categoria || '').trim();
+      return c === cat || (sing && c === sing);
+    });
+  }
+
+  // Mostra apenas as categorias PRINCIPAIS que possuem produtos.
+  // Se nenhuma principal tiver produtos, mostra todas as principais.
+  var cats = CAT_PRINCIPAIS.filter(temProdutos);
+  if (!cats.length) cats = CAT_PRINCIPAIS.slice();
 
   var catAtiva = window._v1CatFiltro;
   var escFn = typeof esc === 'function' ? esc : function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-  grid.innerHTML = visiveis.map(function(cat) {
+  grid.innerHTML = cats.map(function(cat) {
     var icon   = CAT_ICONS[cat] || 'ti-tag';
     var catEsc = cat.replace(/'/g, "\\'");
     var ativo  = cat === catAtiva ? ' active' : '';
@@ -1469,21 +1903,13 @@ window.renderCatGridMain = function() {
     '</div>';
   }).join('');
 
-  if (btnLink) {
-    if (cats.length > CAT_GRID_LIMIT) {
-      btnLink.style.display = '';
-      btnLink.textContent = _catGridExpandida
-        ? 'Ver menos ←'
-        : 'Ver todas (' + cats.length + ') →';
-    } else {
-      btnLink.style.display = 'none';
-    }
-  }
+  // A home não exibe "Ver todas" — a lista completa de categorias fica no menu
+  if (btnLink) btnLink.style.display = 'none';
 };
 
 window.toggleVerTodasCats = function() {
-  _catGridExpandida = !_catGridExpandida;
-  window.renderCatGridMain();
+  // Categorias completas ficam no menu hambúrguer (renderDrawerCategories)
+  if (typeof abrirDrawer === 'function') abrirDrawer();
 };
 
 // Renderiza na carga da página
@@ -1494,24 +1920,27 @@ if (document.readyState === 'loading') {
 }
 
 function renderDrawerCategories() {
-  var submenu = document.getElementById('drawerCatSubmenu');
-  if (!submenu) return;
+  var lista = document.getElementById('drawerCatPanelList');
+  if (!lista) return;
 
-  var produtos = (typeof getProdutos === 'function') ? getProdutos() : (function() {
+  // Mostra TODAS as categorias criadas (de todos os produtos, mesmo sem estoque)
+  // unidas às categorias padrão da loja — para nenhuma faltar no menu.
+  var produtos = (function() {
     try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; }
-    catch(e) { return []; }
+    catch (e) { return []; }
   })();
 
   var cats = {};
+  CAT_FALLBACK.forEach(function(c) { cats[c] = true; });           // padrão da loja
   produtos.forEach(function(p) {
-    var c = (p.categoria || 'Outros').trim();
-    cats[c] = (cats[c] || 0) + 1;
+    var c = (p.categoria || '').trim();
+    if (c) cats[c] = true;                                          // criadas nos produtos
   });
 
   var catNames = Object.keys(cats).sort();
   if (!catNames.length) catNames = CAT_FALLBACK;
 
-  submenu.innerHTML = catNames.map(function(cat) {
+  lista.innerHTML = catNames.map(function(cat) {
     var icon   = CAT_ICONS[cat] || 'ti-tag';
     var catEsc = cat.replace(/'/g, "\\'");
     return '<a role="menuitem" onclick="drawerNav(function(){filtrarCategoria(\'' + catEsc + '\')})"><i class="ti ' + icon + '"></i> ' + cat + '</a>';
@@ -1519,13 +1948,18 @@ function renderDrawerCategories() {
 }
 
 window.toggleDrawerCat = function() {
-  var submenu = document.getElementById('drawerCatSubmenu');
-  var chevron = document.getElementById('drawerCatChevron');
-  var toggle  = document.getElementById('drawerCatToggle');
-  if (!submenu) return;
-  var isOpen = submenu.classList.toggle('open');
-  if (chevron) chevron.classList.toggle('open', isOpen);
-  if (toggle)  toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  var panel = document.getElementById('drawerCatPanel');
+  if (!panel) return;
+  renderDrawerCategories();
+  panel.classList.add('open');
+  panel.setAttribute('aria-hidden', 'false');
+};
+
+window.fecharDrawerCat = function() {
+  var panel = document.getElementById('drawerCatPanel');
+  if (!panel) return;
+  panel.classList.remove('open');
+  panel.setAttribute('aria-hidden', 'true');
 };
 
 // Sincroniza visibilidade do botão "Minha conta" — wraps updateAuthUI após auth.js
@@ -1533,13 +1967,16 @@ window.toggleDrawerCat = function() {
   function syncProfileBtn() {
     var client = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
     var loggedIn = !!(client && client.email);
+    var isAdmin = loggedIn && (client.role === 'admin' || client.role === 'superadmin');
     var btn = document.getElementById('drawerProfileBtn');
     if (btn) btn.style.display = loggedIn ? 'flex' : 'none';
+    var ordersBtn = document.getElementById('drawerOrdersBtn');
+    if (ordersBtn) ordersBtn.style.display = loggedIn ? 'flex' : 'none';
     var navBtn = document.getElementById('navUserBtn');
     if (navBtn) {
       navBtn.title = loggedIn ? ('Olá, ' + (client.name || client.email)) : 'Entrar';
       navBtn.setAttribute('aria-label', loggedIn ? 'Minha conta' : 'Entrar');
-      navBtn.style.color = loggedIn ? 'var(--pink-500, #D4537E)' : '';
+      navBtn.style.color = loggedIn ? 'var(--pk-500, #F04A86)' : '';
     }
   }
 
@@ -1815,9 +2252,10 @@ window.saveProfileData = async function() {
       <div class="cp-tot-row"><span id="cp-frete-label">Frete</span><span id="cp-frete-val">A combinar</span></div>
     </div>
     <div class="cp-tot-total"><span>Total</span><span id="cp-total">R$ 0,00</span></div>
-    <a href="pagamento.html" class="cp-btn-checkout" style="margin-top:14px;">
-      <i class="ti ti-lock"></i> Finalizar pedido
-    </a>
+    <button type="button" class="cp-btn-checkout" style="margin-top:14px;width:100%;cursor:pointer;border:none;"
+      onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(!c){sessionStorage.setItem('referrerPage','pagamento.html');location.href='login.html';}else{location.href='pagamento.html';}})()">
+      <i class="ti ti-lock" aria-hidden="true"></i> Finalizar pedido
+    </button>
   </div>
 
 </aside>
@@ -1859,10 +2297,12 @@ window.saveProfileData = async function() {
 
   function _pesoTotal() {
     var cart=getCart(); var prods=_prods();
-    return cart.reduce(function(s,i){
+    var peso = cart.reduce(function(s,i){
       var p=prods.find(function(x){return String(x.id)===String(i.id);});
-      return s+((p&&p.pesoEnvioGramas)?p.pesoEnvioGramas*i.qty:0);
+      var unit = p ? Number(p.pesoEnvioGramas || p.pesoEnvioG || 0) : 0;
+      return s + unit*i.qty;
     },0);
+    return peso ? peso + 300 : 0; // +300g embalagem (igual ao checkout)
   }
 
   function _consultarTabela(tabela, pesoG) {
@@ -1933,8 +2373,9 @@ window.saveProfileData = async function() {
     function cpEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     body.innerHTML = cart.map(function(item){
       var p=prods.find(function(x){return String(x.id)===String(item.id);});
-      var img=p&&p.imagem
-        ?'<img src="'+cpEsc(item.imagem)+'" alt="'+cpEsc(item.nome)+'" />'
+      var thumbSrc = item.imagem || (p && ((p.imagens&&p.imagens[0]) || p.imagem)) || '';
+      var img = thumbSrc
+        ?'<img src="'+cpEsc(thumbSrc)+'" alt="'+cpEsc(item.nome)+'" />'
         :'<i class="ti ti-diamond"></i>';
       var sid=cpEsc(String(item.id));
       return '<div class="cp-item">' +
@@ -2058,9 +2499,14 @@ window.saveProfileData = async function() {
     var cart=getCart();
     var idx=cart.findIndex(function(i){return String(i.id)===String(id);});
     if(idx<0) return;
-    if(action==='inc'){ cart[idx].qty+=1; saveCart(cart); }
+    if(action==='inc'){
+      var antes=cart[idx].qty;
+      updateCartItemQty(id, antes+1); // respeita o estoque
+      var depois=(getCart().find(function(i){return String(i.id)===String(id);})||{}).qty;
+      if(depois===antes && typeof showToast==='function') showToast('Quantidade máxima em estoque atingida.');
+    }
     else if(action==='dec'){
-      if(cart[idx].qty>1){ cart[idx].qty-=1; saveCart(cart); }
+      if(cart[idx].qty>1){ updateCartItemQty(id, cart[idx].qty-1); }
       else removeFromCart(id);
     }
     renderCP();
@@ -2087,8 +2533,9 @@ window.saveProfileData = async function() {
   // Reabre automaticamente após addToCart para dar feedback
   var _orig=window.addToCart;
   if(_orig) window.addToCart=function(p,q){
-    _orig(p,q);
+    var r=_orig(p,q);
     setTimeout(function(){ abrirCarrinhoPanel(); },150);
+    return r;
   };
 
 })();

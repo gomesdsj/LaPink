@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Pedido confirmado — LaPink</title>
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#D4537E" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<style>
+body { background: var(--gray-50); min-height: 100vh; }
+
+/* ── Header ── */
+.pg-header {
+  background: #fff; border-bottom: .5px solid var(--pink-100);
+  padding: 14px 24px; display: flex; align-items: center; gap: 14px;
+  position: sticky; top: 0; z-index: 50;
+}
+.pg-header-logo {
+  font-size: 20px; font-weight: 900; color: var(--pink-500);
+  letter-spacing: -.5px; text-decoration: none;
+}
+.pg-header-back {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--pink-400); text-decoration: none;
+  background: var(--pink-50); border: 1px solid var(--pink-100); border-radius: 20px;
+  padding: 6px 14px; transition: background .15s;
+}
+.pg-header-back:hover { background: var(--pink-100); }
+
+/* ── Layout ── */
+.suc-page {
+  max-width: 560px; margin: 40px auto; padding: 0 20px 80px;
+  display: flex; flex-direction: column; gap: 20px; align-items: center;
+}
+
+/* ── Spinner ── */
+.suc-spinner {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 60px 0;
+}
+.suc-spinner-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 4px solid var(--pink-100);
+  border-top-color: var(--pink-400);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.suc-spinner p { font-size: 14px; color: var(--gray-400); }
+
+/* ── Hero ── */
+.suc-hero { text-align: center; padding: 8px 0 4px; }
+.suc-icon {
+  width: 80px; height: 80px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 18px; font-size: 36px;
+}
+.suc-icon.green { background: var(--green-50); color: var(--green-400); border: 2px solid #b8e5c9; }
+.suc-icon.yellow { background: var(--amber-50); color: var(--amber-400); border: 2px solid #f0d98a; }
+.suc-icon.red { background: var(--red-50); color: var(--red-400); border: 2px solid #f5c0c0; }
+.suc-title {
+  font-size: 22px; font-weight: 900; color: var(--gray-800); margin-bottom: 8px;
+  line-height: 1.25;
+}
+.suc-subtitle { font-size: 14px; color: var(--gray-400); line-height: 1.5; max-width: 380px; margin: 0 auto; }
+
+/* ── Polling bar ── */
+.suc-polling-bar {
+  width: 100%; background: var(--amber-50); border: 1px solid #f0d98a;
+  border-radius: 12px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--amber-400);
+}
+.suc-polling-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--amber-400);
+  flex-shrink: 0; animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+/* ── Cards ── */
+.suc-card {
+  background: #fff; border-radius: 16px; padding: 20px;
+  border: .5px solid var(--pink-100); box-shadow: 0 1px 6px rgba(212,83,126,.06);
+  width: 100%;
+}
+.suc-card-title {
+  font-size: 11px; font-weight: 700; color: var(--pink-500);
+  text-transform: uppercase; letter-spacing: .07em;
+  display: flex; align-items: center; gap: 7px;
+  padding-bottom: 12px; margin-bottom: 16px;
+  border-bottom: .5px solid var(--pink-100);
+}
+
+/* ── Itens ── */
+.suc-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: .5px solid var(--pink-50);
+}
+.suc-item:last-child { border-bottom: none; padding-bottom: 0; }
+.suc-item:first-child { padding-top: 0; }
+.suc-item-icon {
+  width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+  background: var(--pink-50); border: .5px solid var(--pink-100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--pink-300);
+}
+.suc-item-info { flex: 1; min-width: 0; }
+.suc-item-name { font-size: 13px; font-weight: 700; color: var(--gray-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.suc-item-qty  { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.suc-item-price { font-size: 14px; font-weight: 800; color: var(--pink-500); white-space: nowrap; }
+
+/* ── Totais ── */
+.suc-totals { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: .5px solid var(--pink-100); }
+.suc-tot-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); }
+.suc-tot-row.bold { font-size: 15px; font-weight: 800; color: var(--gray-800); margin-top: 4px; }
+.suc-tot-row.bold span:last-child { color: var(--pink-500); }
+
+/* ── Rastreio ── */
+.suc-tracking {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.suc-tracking-code {
+  flex: 1; font-size: 14px; font-weight: 700; color: var(--gray-800);
+  letter-spacing: .05em;
+}
+.suc-tracking-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; color: var(--blue-400); text-decoration: none;
+  background: var(--blue-50); border-radius: 20px; padding: 5px 12px;
+  transition: opacity .15s;
+}
+.suc-tracking-link:hover { opacity: .8; }
+.suc-tracking-pending { font-size: 13px; color: var(--gray-400); }
+
+/* ── Botões ── */
+.suc-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.btn-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--pink-400); color: #fff; font-size: 15px; font-weight: 700;
+  padding: 14px 20px; border-radius: 12px; border: none; cursor: pointer;
+  text-decoration: none; transition: background .15s;
+}
+.btn-primary:hover { background: var(--pink-500); }
+.btn-secondary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #fff; color: var(--pink-400); font-size: 14px; font-weight: 700;
+  padding: 12px 20px; border-radius: 12px; border: 1.5px solid var(--pink-200); cursor: pointer;
+  text-decoration: none; transition: background .15s, border-color .15s;
+}
+.btn-secondary:hover { background: var(--pink-50); border-color: var(--pink-300); }
+.btn-whatsapp {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #25D366; color: #fff; font-size: 14px; font-weight: 700;
+  padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer;
+  text-decoration: none; transition: opacity .15s;
+}
+.btn-whatsapp:hover { opacity: .88; }
+
+/* ── Número do pedido ── */
+.suc-order-number {
+  font-size: 12px; color: var(--gray-400); margin-top: 6px;
+}
+.suc-order-number strong { color: var(--pink-500); }
+
+@media (max-width: 480px) {
+  .suc-page { margin-top: 24px; }
+  .suc-title { font-size: 19px; }
+}
+</style>
+</head>
+<body>
+
+<header class="pg-header">
+  <a href="V1.html" class="pg-header-logo">LaPink</a>
+  <a href="V1.html" class="pg-header-back"><i class="ti ti-arrow-left"></i> Voltar à loja</a>
+</header>
+
+<main class="suc-page" id="sucPage">
+  <!-- Spinner inicial -->
+  <div class="suc-spinner" id="spinner">
+    <div class="suc-spinner-ring"></div>
+    <p>Consultando seu pedido…</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  /* ── helpers ── */
+  function fmtR(v) {
+    return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+  }
+  function fmtData(ts) {
+    if (!ts) return '—';
+    var d;
+    if (ts && typeof ts.toDate === 'function') d = ts.toDate();
+    else if (ts && ts.seconds) d = new Date(ts.seconds * 1000);
+    else d = new Date(ts);
+    return d.toLocaleDateString('pt-BR');
+  }
+  function qs(key) {
+    return new URLSearchParams(window.location.search).get(key);
+  }
+
+  /* ── variáveis ── */
+  var page     = document.getElementById('sucPage');
+  var orderId  = qs('pedido');
+  var pendente = qs('pendente') === '1';
+  var ehLocalOrder = qs('local') === '1';
+  var pollingTimer = null;
+  var pollingElapsed = 0;
+  var POLL_INTERVAL  = 5000;   // ms
+  var POLL_MAX_MS    = 120000; // 2 min
+
+  /* ── Limpar carrinho imediatamente ── */
+  if (typeof clearCart === 'function') {
+    try { clearCart(); } catch(e) {}
+  }
+
+  /* ── Busca no Firestore ── */
+  function fetchOrder(id, cb) {
+    firebase.firestore().collection('pedidos').doc(id).get()
+      .then(function(snap) {
+        if (snap.exists) cb(null, snap.data());
+        else cb('notfound', null);
+      })
+      .catch(function(err) { cb(err, null); });
+  }
+
+  /* ── Render do pedido ── */
+  function renderOrder(pedido) {
+    var status = (pedido.status || '').toLowerCase();
+
+    if (status === 'pago' || status === 'preparando' || status === 'enviado' || status === 'concluido') {
+      renderAprovado(pedido);
+    } else if (status === 'cancelado') {
+      renderCancelado(pedido);
+    } else {
+      renderPendente(pedido);
+    }
+  }
+
+  /* ── ESTADO APROVADO ── */
+  function renderAprovado(pedido) {
+    stopPolling();
+    var rastreio = pedido.rastreio || null;
+
+    page.innerHTML =
+      '<div class="suc-hero">' +
+        '<div class="suc-icon green"><i class="ti ti-check"></i></div>' +
+        '<h1 class="suc-title">Pagamento confirmado! 🎉</h1>' +
+        '<p class="suc-subtitle">Pedido <strong>#' + (pedido.numero || orderId) + '</strong> processado com sucesso.</p>' +
+        '<p class="suc-order-number">Data: ' + fmtData(pedido.createdAt || pedido.data) + '</p>' +
+      '</div>' +
+      renderCardDetalhes(pedido) +
+      renderCardRastreio(rastreio) +
+      '<div class="suc-actions">' +
+        '<a href="meus-pedidos.html" class="btn-primary"><i class="ti ti-list-check"></i> Ver meus pedidos</a>' +
+        '<a href="V1.html" class="btn-secondary"><i class="ti ti-shopping-bag"></i> Continuar comprando</a>' +
+      '</div>';
+  }
+
+  /* ── ESTADO PENDENTE ── */
+  function renderPendente(pedido) {
+    var numero = pedido.numero || orderId || '';
+    var titulo = ehLocalOrder ? 'Pedido recebido!' : 'Pagamento em processamento';
+    var sub = ehLocalOrder
+      ? 'Seu pedido foi registrado e está <strong>aguardando o pagamento</strong>. Em breve entraremos em contato para finalizar.'
+      : 'Aguardando confirmação do Mercado Pago. Para PIX, escaneie o QR code no app do MP.';
+
+    page.innerHTML =
+      '<div class="suc-hero">' +
+        '<div class="suc-icon yellow"><i class="ti ti-clock"></i></div>' +
+        '<h1 class="suc-title">' + titulo + '</h1>' +
+        (numero ? '<p class="suc-subtitle">Pedido <strong>#' + numero + '</strong></p>' : '') +
+        '<p class="suc-subtitle">' + sub + '</p>' +
+      '</div>' +
+      (ehLocalOrder ? '' :
+        '<div class="suc-polling-bar" id="pollingBar">' +
+          '<div class="suc-polling-dot"></div>' +
+          '<span id="pollingMsg">Verificando pagamento automaticamente…</span>' +
+        '</div>') +
+      renderCardDetalhes(pedido) +
+      '<div class="suc-actions">' +
+        '<a href="meus-pedidos.html" class="btn-secondary"><i class="ti ti-list-check"></i> Ver meus pedidos</a>' +
+        '<a href="V1.html" class="btn-primary"><i class="ti ti-shopping-bag"></i> Continuar comprando</a>' +
+      '</div>';
+
+    if (!ehLocalOrder) startPolling(pedido);
+  }
+
+  /* ── ESTADO CANCELADO ── */
+  function renderCancelado(pedido) {
+    stopPolling();
+    var cfg = {};
+    try { cfg = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}'); } catch(e) {}
+    var wa = cfg.whatsapp || '';
+    var waUrl = wa ? 'https://wa.me/55' + wa.replace(/\D/g,'') + '?text=Ol%C3%A1%2C+preciso+de+suporte+com+meu+pedido.' : '#';
+
+    page.innerHTML =
+      '<div class="suc-hero">' +
+        '<div class="suc-icon red"><i class="ti ti-x"></i></div>' +
+        '<h1 class="suc-title">Pagamento não concluído</h1>' +
+        '<p class="suc-subtitle">O pagamento foi cancelado ou recusado. Tente novamente ou escolha outra forma de pagamento.</p>' +
+      '</div>' +
+      '<div class="suc-actions">' +
+        '<a href="pagamento.html" class="btn-primary"><i class="ti ti-refresh"></i> Tentar novamente</a>' +
+        (wa ?
+          '<a href="' + waUrl + '" target="_blank" rel="noopener" class="btn-whatsapp"><i class="ti ti-brand-whatsapp"></i> Suporte no WhatsApp</a>' :
+          ''
+        ) +
+      '</div>';
+  }
+
+  /* ── ESTADO SEM PEDIDO ── */
+  function renderErro() {
+    stopPolling();
+    page.innerHTML =
+      '<div class="suc-hero">' +
+        '<div class="suc-icon red"><i class="ti ti-alert-circle"></i></div>' +
+        '<h1 class="suc-title">Pedido não encontrado</h1>' +
+        '<p class="suc-subtitle">Não conseguimos localizar seu pedido. Verifique seu e-mail ou entre em contato com o suporte.</p>' +
+      '</div>' +
+      '<div class="suc-actions">' +
+        '<a href="V1.html" class="btn-primary"><i class="ti ti-home"></i> Voltar à loja</a>' +
+      '</div>';
+  }
+
+  /* ── Card de detalhes ── */
+  function renderCardDetalhes(pedido) {
+    var itens = pedido.itens || [];
+    var itensHtml = itens.map(function(it) {
+      return '<div class="suc-item">' +
+        '<div class="suc-item-icon"><i class="ti ti-sparkles"></i></div>' +
+        '<div class="suc-item-info">' +
+          '<div class="suc-item-name">' + (it.nome || 'Produto') + '</div>' +
+          '<div class="suc-item-qty">Qtd: ' + (it.qty || 1) + '</div>' +
+        '</div>' +
+        '<div class="suc-item-price">' + fmtR((it.preco || 0) * (it.qty || 1)) + '</div>' +
+      '</div>';
+    }).join('');
+
+    var freteLabel = pedido.frete === 0
+      ? '<span style="color:var(--green-400);font-weight:700;">Grátis</span>'
+      : fmtR(pedido.frete || 0);
+
+    return '<div class="suc-card">' +
+      '<div class="suc-card-title"><i class="ti ti-shopping-bag"></i> Resumo do pedido</div>' +
+      (itensHtml || '<p style="font-size:13px;color:var(--gray-400);">Nenhum item encontrado.</p>') +
+      '<div class="suc-totals">' +
+        '<div class="suc-tot-row"><span>Subtotal</span><span>' + fmtR(pedido.subtotal || 0) + '</span></div>' +
+        '<div class="suc-tot-row"><span>Frete (' + (pedido.modalidadeFrete || '—') + ')</span><span>' + freteLabel + '</span></div>' +
+        '<div class="suc-tot-row bold"><span>Total</span><span>' + fmtR(pedido.total || 0) + '</span></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  /* ── Card de rastreio ── */
+  function renderCardRastreio(rastreio) {
+    return '<div class="suc-card">' +
+      '<div class="suc-card-title"><i class="ti ti-truck-delivery"></i> Rastreamento</div>' +
+      (rastreio ?
+        '<div class="suc-tracking">' +
+          '<span class="suc-tracking-code">' + rastreio + '</span>' +
+          '<a href="https://rastreamento.correios.com.br/app/index.php?objetos=' + encodeURIComponent(rastreio) + '" target="_blank" rel="noopener" class="suc-tracking-link"><i class="ti ti-external-link"></i> Acompanhar</a>' +
+        '</div>' :
+        '<p class="suc-tracking-pending"><i class="ti ti-clock" style="margin-right:5px;"></i>Aguardando envio pela loja</p>'
+      ) +
+    '</div>';
+  }
+
+  /* ── Polling ── */
+  function startPolling(pedidoAtual) {
+    stopPolling();
+    if (!orderId) return;
+    pollingElapsed = 0;
+
+    pollingTimer = setInterval(function() {
+      pollingElapsed += POLL_INTERVAL;
+      if (pollingElapsed >= POLL_MAX_MS) {
+        stopPolling();
+        var msgEl = document.getElementById('pollingMsg');
+        if (msgEl) msgEl.textContent = 'Verificação encerrada. Atualize a página para checar novamente.';
+        return;
+      }
+
+      fetchOrder(orderId, function(err, pedido) {
+        if (err || !pedido) return;
+        var status = (pedido.status || '').toLowerCase();
+        if (status === 'pago' || status === 'preparando' || status === 'enviado' || status === 'concluido') {
+          renderAprovado(pedido);
+        } else if (status === 'cancelado') {
+          renderCancelado(pedido);
+        }
+      });
+    }, POLL_INTERVAL);
+  }
+
+  function stopPolling() {
+    if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+  }
+
+  /* ── Busca pedido em localStorage (lapinkPedidos) por número ── */
+  function buscarPedidoLocal(numero) {
+    try {
+      var lista = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]');
+      return lista.filter(function(p) { return p.numero === numero; })[0] || null;
+    } catch (e) { return null; }
+  }
+
+  /* ── Fluxo principal ── */
+  function init() {
+    var ehLocal = qs('local') === '1';
+
+    // Pedido registrado localmente (sem backend Blaze): lê de lapinkPedidos
+    if (ehLocal && orderId) {
+      var pl = buscarPedidoLocal(orderId);
+      if (pl) { renderOrder(pl); return; }
+    }
+
+    if (orderId) {
+      fetchOrder(orderId, function(err, pedido) {
+        if (err === 'notfound' || !pedido) {
+          // Tenta localStorage (lapinkPedidos por número)
+          var local = buscarPedidoLocal(orderId);
+          if (local) renderOrder(local);
+          else renderErro();
+        } else {
+          renderOrder(pedido);
+        }
+      });
+    } else {
+      // Sem parâmetro — tenta último pedido local
+      var ultimo = localStorage.getItem('lapinkUltimoPedido');
+      var local = ultimo ? buscarPedidoLocal(ultimo) : null;
+      if (local) renderOrder(local);
+      else renderErro();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Garante que Firebase está pronto
+    if (typeof firebase !== 'undefined') {
+      init();
+    } else {
+      document.getElementById('spinner').querySelector('p').textContent = 'Erro ao carregar. Tente novamente.';
+    }
+  });
+
+  window.addEventListener('beforeunload', stopPolling);
+})();
+</script>
+</body>
+</html>

@@ -42,6 +42,13 @@
 .btn-import-confirm{background:var(--pink-600);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .15s;}
 .btn-import-confirm:hover{background:var(--pink-700);}
 .btn-import-confirm:disabled{opacity:.5;cursor:not-allowed;}
+/* Miniaturas de múltiplas fotos */
+.img-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.img-thumb{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1.5px solid var(--gray-200);background:var(--gray-50);flex:0 0 auto;}
+.img-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.img-thumb-x{position:absolute;top:2px;right:2px;width:18px;height:18px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;}
+.img-thumb-x:hover{background:#dc2626;}
+.img-thumb-cap{position:absolute;bottom:0;left:0;right:0;background:var(--pink-600);color:#fff;font-size:8px;font-weight:700;text-align:center;padding:1px 0;letter-spacing:.03em;}
 </style>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -142,12 +149,8 @@
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="preco-varejo">Preço de varejo</label>
-                    <input id="preco-varejo" type="text" placeholder="R$ 89,90" oninput="atualizarPreview()" />
-                  </div>
-                  <div class="form-group">
-                    <label for="preco-atacado">Preço de atacado</label>
-                    <input id="preco-atacado" type="text" placeholder="R$ 59,90" oninput="atualizarPreview()" />
+                    <label for="preco-varejo">Preço de atacado</label>
+                    <input id="preco-varejo" type="text" placeholder="R$ 59,90" oninput="recalcularLucro('preco')" />
                   </div>
                 </div>
                 <!-- Custo da peça -->
@@ -158,30 +161,30 @@
                   <div class="form-row">
                     <div class="form-group">
                       <label for="p-preco-bruto">Preço da peça bruta <span class="unit-tag">R$</span></label>
-                      <input id="p-preco-bruto" type="text" placeholder="5,70" oninput="calcularPrecoAutomatico()" />
+                      <input id="p-preco-bruto" type="text" placeholder="5,70" oninput="recalcularLucro('custo')" />
                     </div>
                     <div class="form-group">
                       <label for="p-peso-bruto-g">Peso da peça bruta <span class="unit-tag">g</span></label>
-                      <input id="p-peso-bruto-g" type="number" min="0" step="0.01" placeholder="8" oninput="calcularPrecoAutomatico()" />
+                      <input id="p-peso-bruto-g" type="number" min="0" step="0.01" placeholder="8" oninput="recalcularLucro('custo')" />
                     </div>
                   </div>
                   <div class="form-row">
                     <div class="form-group">
-                      <label for="p-valor-banho">Valor do banho por peça <span class="unit-tag">R$</span></label>
-                      <input id="p-valor-banho" type="text" placeholder="2,50" oninput="calcularPrecoAutomatico()" />
+                      <label for="p-valor-banho">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
+                      <input id="p-valor-banho" type="text" placeholder="0,30" oninput="recalcularLucro('custo')" />
                     </div>
                   </div>
                   <div class="form-group">
-                    <label for="p-margem">Porcentagem de lucro <span class="unit-tag">%</span></label>
-                    <input id="p-margem" type="number" min="0" max="500" placeholder="40" oninput="calcularPrecoAutomatico()" />
+                    <label for="p-margem">Margem para sugerir preço <span class="unit-tag">%</span> <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(opcional)</span></label>
+                    <input id="p-margem" type="number" min="0" max="500" placeholder="40" oninput="recalcularLucro('margem')" />
+                    <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Preencha para o sistema sugerir o preço de atacado. Ou digite o preço direto acima — o lucro aparece sozinho.</div>
                   </div>
 
                   <div class="cost-result-bar" id="cost-result-bar" style="display:none">
                     <span class="crb-item neutral"><i class="ti ti-box"></i> Bruto: <strong id="crb-bruto">—</strong></span>
                     <span class="crb-item neutral"><i class="ti ti-droplet"></i> Banho: <strong id="crb-banho">—</strong></span>
-                    <span class="crb-item neutral"><i class="ti ti-coin"></i> Total: <strong id="crb-custo">—</strong></span>
-                    <span class="crb-item green"><i class="ti ti-trending-up"></i> Varejo: <strong id="crb-varejo">—</strong></span>
-                    <span class="crb-item blue"><i class="ti ti-building-store"></i> Atacado: <strong id="crb-atacado">—</strong></span>
+                    <span class="crb-item neutral"><i class="ti ti-coin"></i> Preço pago: <strong id="crb-custo">—</strong></span>
+                    <span class="crb-item green"><i class="ti ti-building-store"></i> Atacado: <strong id="crb-varejo">—</strong></span>
                     <span class="crb-item pink"><i class="ti ti-moneybag"></i> Lucro/un: <strong id="crb-lucro">—</strong></span>
                   </div>
                 </div>
@@ -197,8 +200,9 @@
                   <textarea id="descricao" placeholder="Descrição do produto" oninput="atualizarPreview()"></textarea>
                 </div>
                 <div class="form-group">
-                  <label for="imagem">Imagem</label>
-                  <input id="imagem" type="file" accept="image/*" onchange="atualizarImagemPreview(this)" />
+                  <label for="imagem">Fotos do produto <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(até 3 — a 1ª é a capa)</span></label>
+                  <input id="imagem" type="file" accept="image/*" multiple onchange="atualizarImagensPreview(this)" />
+                  <div class="img-thumbs" id="novo-img-thumbs" style="display:none;"></div>
                 </div>
                 <div class="form-actions">
                   <button type="button" class="btn-cancel-form" onclick="limparFormulario()">Cancelar</button>
@@ -216,7 +220,6 @@
                   <div class="preview-desc" id="pv-desc">Descrição do produto aparecerá aqui.</div>
                   <div class="preview-prices">
                     <div class="retail-price" id="pv-varejo">R$ 0,00</div>
-                    <div class="wholesale-price" id="pv-atacado">Preço atacado R$ 0,00</div>
                     <div class="profit-line" id="pv-lucro">Lucro estimado —</div>
                   </div>
                   <div class="preview-stock"><i class="ti ti-stack"></i> Estoque: <span id="pv-estoque">0</span> unidades</div>
@@ -254,12 +257,8 @@
                   <span class="calc-value neutral" id="res-custo">—</span>
                 </div>
                 <div class="calc-result-item">
-                  <span class="calc-label"><i class="ti ti-tag"></i> Preço varejo sugerido</span>
+                  <span class="calc-label"><i class="ti ti-building-store"></i> Preço de atacado sugerido</span>
                   <span class="calc-value green" id="res-varejo">—</span>
-                </div>
-                <div class="calc-result-item">
-                  <span class="calc-label"><i class="ti ti-building-store"></i> Preço atacado sugerido</span>
-                  <span class="calc-value blue" id="res-atacado">—</span>
                 </div>
               </div>
             </div>
@@ -293,6 +292,14 @@
               </button>
             </div>
             <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(event)" />
+
+            <div class="bulk-bar" id="bulk-bar-prod" style="display:none;">
+              <span class="bulk-info"><strong id="bulk-count-prod">0</strong> produto(s) selecionado(s)</span>
+              <div class="bulk-actions">
+                <button type="button" class="btn btn-secondary" onclick="limparSelecaoProd()">Limpar</button>
+                <button type="button" class="btn btn-danger" onclick="excluirSelecionados()"><i class="ti ti-trash"></i> Excluir selecionados</button>
+              </div>
+            </div>
 
             <div class="prod-list" id="prod-list"></div>
 
@@ -496,11 +503,7 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="modal-varejo">Preço varejo</label>
-              <input id="modal-varejo" type="text" />
-            </div>
-            <div class="form-group">
-              <label for="modal-atacado">Preço atacado</label>
+              <label for="modal-atacado">Preço de atacado</label>
               <input id="modal-atacado" type="text" />
             </div>
           </div>
@@ -520,8 +523,8 @@
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="modal-valor-banho">Valor do banho por peça <span class="unit-tag">R$</span></label>
-                <input id="modal-valor-banho" type="text" placeholder="2,50" oninput="calcularModalPreco()" />
+                <label for="modal-valor-banho">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
+                <input id="modal-valor-banho" type="text" placeholder="0,30" oninput="calcularModalPreco()" />
               </div>
             </div>
             <div class="form-group">
@@ -532,9 +535,8 @@
             <div class="cost-result-bar" id="modal-cost-bar" style="display:none">
               <span class="crb-item neutral"><i class="ti ti-box"></i> Bruto: <strong id="modal-crb-bruto">—</strong></span>
               <span class="crb-item neutral"><i class="ti ti-droplet"></i> Banho: <strong id="modal-crb-banho">—</strong></span>
-              <span class="crb-item neutral"><i class="ti ti-coin"></i> Total: <strong id="modal-crb-custo">—</strong></span>
-              <span class="crb-item green"><i class="ti ti-trending-up"></i> Varejo: <strong id="modal-crb-varejo">—</strong></span>
-              <span class="crb-item blue"><i class="ti ti-building-store"></i> Atacado: <strong id="modal-crb-atacado">—</strong></span>
+              <span class="crb-item neutral"><i class="ti ti-coin"></i> Preço pago: <strong id="modal-crb-custo">—</strong></span>
+              <span class="crb-item green"><i class="ti ti-building-store"></i> Atacado: <strong id="modal-crb-atacado">—</strong></span>
               <span class="crb-item pink"><i class="ti ti-moneybag"></i> Lucro/un: <strong id="modal-crb-lucro">—</strong></span>
             </div>
           </div>
@@ -550,8 +552,9 @@
             <textarea id="modal-descricao" rows="3" placeholder="Descrição do produto"></textarea>
           </div>
           <div class="form-group">
-            <label for="modal-imagem">Imagem (alterar)</label>
-            <input id="modal-imagem" type="file" accept="image/*" onchange="atualizarImagemModal(this)" />
+            <label for="modal-imagem">Fotos (até 3 — a 1ª é a capa)</label>
+            <input id="modal-imagem" type="file" accept="image/*" multiple onchange="atualizarImagensModal(this)" />
+            <div class="img-thumbs" id="modal-img-thumbs" style="display:none;"></div>
           </div>
         </div>
       </div>
@@ -603,23 +606,31 @@
       const nome     = document.getElementById('nome').value || 'Nome do produto';
       const desc     = document.getElementById('descricao').value || 'Descrição do produto aparecerá aqui.';
       const varejo   = document.getElementById('preco-varejo').value || 'R$ 0,00';
-      const atacado  = document.getElementById('preco-atacado').value || 'R$ 0,00';
       const estoque  = document.getElementById('estoque-input').value || '0';
 
       document.getElementById('pv-nome').textContent    = nome;
       document.getElementById('pv-desc').textContent    = desc;
       document.getElementById('pv-varejo').textContent  = varejo;
-      document.getElementById('pv-atacado').textContent = 'Preço atacado ' + atacado;
       document.getElementById('pv-estoque').textContent = estoque;
 
-      const v = parseFloat(varejo.replace(/[^\d,]/g, '').replace(',', '.'))  || 0;
-      const a = parseFloat(atacado.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
-      if (v > 0 && a > 0 && v > a) {
-        const lucro = ((v - a) / a * 100).toFixed(0);
-        document.getElementById('pv-lucro').textContent = 'Lucro estimado +' + lucro + '%';
+      // Lucro estimado = preço de atacado − preço pago (custo), com base nos campos de custo
+      var custoTot = _custoPecaAtual();
+      var precoNum = parseFloat(varejo.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      if (custoTot > 0 && precoNum > custoTot) {
+        var lucroR = precoNum - custoTot;
+        var lucroP = (lucroR / custoTot * 100).toFixed(0);
+        document.getElementById('pv-lucro').textContent = 'Lucro de ' + formatBRL(lucroR) + ' por peça (+' + lucroP + '%)';
       } else {
         document.getElementById('pv-lucro').textContent = 'Lucro estimado —';
       }
+    }
+
+    // Custo (preço pago) atual com base nos campos: banho×peso + bruto
+    function _custoPecaAtual() {
+      var precoBruto = parseCustoG(document.getElementById('p-preco-bruto').value);
+      var valorBanho = parseCustoG(document.getElementById('p-valor-banho').value);
+      var pesoBrutoG = parseFloat(document.getElementById('p-peso-bruto-g').value) || 0;
+      return (valorBanho * pesoBrutoG) + precoBruto;
     }
 
     var _MIME_VALIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/heic', 'image/heif'];
@@ -667,15 +678,84 @@
       });
     }
 
-    function atualizarImagemPreview(input) {
-      var file = input.files[0];
-      if (!file) return;
-      if (!_validarArquivoImagem(file)) { input.value = ''; return; }
-      _comprimirImagem(file).then(function(base64) {
-        var img  = document.getElementById('preview-img-photo');
-        var icon = document.getElementById('preview-img-icon');
-        img.src = base64; img.style.display = 'block'; icon.style.display = 'none';
+    // ─────────────────────────────────────────
+    //  Múltiplas fotos (até 3) — novo produto e edição
+    // ─────────────────────────────────────────
+    var _MAX_FOTOS = 3;
+    var _novoImagens = [];
+    var _editImagens = [];
+
+    // Comprime e adiciona vários arquivos ao array, preservando a ordem
+    function _addImagens(files, arr, onDone) {
+      var slots = _MAX_FOTOS - arr.length;
+      if (slots <= 0) { showToast('Máximo de ' + _MAX_FOTOS + ' fotos por produto.', 'erro'); if (onDone) onDone(); return; }
+      var list = Array.prototype.slice.call(files, 0, slots);
+      if (!list.length) { if (onDone) onDone(); return; }
+      var results = new Array(list.length);
+      var done = 0;
+      function step() { if (++done === list.length) { results.forEach(function(r) { if (r) arr.push(r); }); if (onDone) onDone(); } }
+      list.forEach(function(file, i) {
+        if (!_validarArquivoImagem(file)) { results[i] = null; step(); return; }
+        _comprimirImagem(file).then(function(b64) { results[i] = b64; step(); })
+          .catch(function() { results[i] = null; step(); });
       });
+    }
+
+    // Renderiza a tira de miniaturas
+    function renderImgThumbs(containerId, arr, removeFn) {
+      var c = document.getElementById(containerId);
+      if (!c) return;
+      if (!arr.length) { c.innerHTML = ''; c.style.display = 'none'; return; }
+      c.style.display = 'flex';
+      c.innerHTML = arr.map(function(src, i) {
+        return '<div class="img-thumb">' +
+          '<img src="' + src + '" alt="foto ' + (i + 1) + '" />' +
+          (i === 0 ? '<span class="img-thumb-cap">Capa</span>' : '') +
+          '<button type="button" class="img-thumb-x" title="Remover" onclick="' + removeFn + '(' + i + ')"><i class="ti ti-x"></i></button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function _syncPreview(imgId, iconId, arr) {
+      var img = document.getElementById(imgId), icon = document.getElementById(iconId);
+      if (!img) return;
+      if (arr.length) { img.src = arr[0]; img.style.display = 'block'; icon.style.display = 'none'; }
+      else { img.src = ''; img.style.display = 'none'; icon.style.display = ''; }
+    }
+
+    // ── Novo produto ──
+    function atualizarImagensPreview(input) {
+      _addImagens(input.files, _novoImagens, function() {
+        input.value = '';
+        renderImgThumbs('novo-img-thumbs', _novoImagens, 'removerImagemNovo');
+        _syncPreview('preview-img-photo', 'preview-img-icon', _novoImagens);
+      });
+    }
+    function removerImagemNovo(i) {
+      _novoImagens.splice(i, 1);
+      renderImgThumbs('novo-img-thumbs', _novoImagens, 'removerImagemNovo');
+      _syncPreview('preview-img-photo', 'preview-img-icon', _novoImagens);
+    }
+
+    // ── Edição (modal) ──
+    function atualizarImagensModal(input) {
+      _addImagens(input.files, _editImagens, function() {
+        input.value = '';
+        renderImgThumbs('modal-img-thumbs', _editImagens, 'removerImagemEdit');
+        _syncPreview('modal-preview-img-photo', 'modal-preview-img-icon', _editImagens);
+      });
+    }
+    function removerImagemEdit(i) {
+      _editImagens.splice(i, 1);
+      renderImgThumbs('modal-img-thumbs', _editImagens, 'removerImagemEdit');
+      _syncPreview('modal-preview-img-photo', 'modal-preview-img-icon', _editImagens);
+    }
+
+    // Compat: extrai array de imagens de um produto (novo formato ou antigo)
+    function _imagensDoProduto(p) {
+      if (Array.isArray(p.imagens) && p.imagens.length) return p.imagens.slice();
+      if (p.imagem) return [p.imagem];
+      return [];
     }
 
     // ─────────────────────────────────────────
@@ -703,33 +783,46 @@
     }
 
     // ─── Calculadora integrada no formulário ───
-    // Fórmula: custo banho = valor_banho_por_g × peso_apos_banho
-    //          custo total = preço_peça_bruta + custo_banho
-    //          varejo = custo_total × (1 + %)
-    function calcularPrecoAutomatico() {
-      var bar          = document.getElementById('cost-result-bar');
+    // Fórmula: custo banho = valor_banho_por_grama × peso_da_peça
+    //          preço pago (custo total) = (banho × peso) + valor_do_bruto
+    //          varejo = preço_pago × (1 + %)
+    // Recalcula custo e lucro em tempo real.
+    // origem: 'preco' (digitou o preço de atacado) | 'custo' (peça/peso/banho) | 'margem' (usa a margem para sugerir o preço)
+    // Lucro/un = preço de atacado − custo (custo = peça bruta + banho×peso).
+    function recalcularLucro(origem) {
+      var bar         = document.getElementById('cost-result-bar');
       var precoBruto  = parseCustoG(document.getElementById('p-preco-bruto').value);
       var valorBanho  = parseCustoG(document.getElementById('p-valor-banho').value);
+      var pesoBrutoG  = parseFloat(document.getElementById('p-peso-bruto-g').value) || 0;
       var margem      = parseFloat(document.getElementById('p-margem').value) || 0;
 
-      var custoTotal = precoBruto + valorBanho;
+      var custoBanho = valorBanho * pesoBrutoG;
+      var custoTotal = custoBanho + precoBruto;
 
-      if (custoTotal <= 0) { bar.style.display = 'none'; return; }
+      var precoEl  = document.getElementById('preco-varejo');
+      var precoNum = parseFloat((precoEl.value || '').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
 
-      var varejo  = custoTotal * (1 + margem / 100);
-      var atacado = custoTotal * (1 + margem / 100 * 0.6);
-      var lucroUn = varejo - custoTotal;
+      // Só a margem sugere/sobrescreve o preço — digitar peça/banho não mexe no preço que você pôs.
+      if (origem === 'margem' && custoTotal > 0 && margem > 0) {
+        precoNum = custoTotal * (1 + margem / 100);
+        precoEl.value = formatBRL(precoNum);
+      }
+
+      if (custoTotal <= 0 && precoNum <= 0) { bar.style.display = 'none'; atualizarPreview(); return; }
+
+      var temLucro = precoNum > 0 && custoTotal > 0;
+      var lucroUn  = precoNum - custoTotal;
+      var lucroPct = custoTotal > 0 ? (lucroUn / custoTotal * 100) : 0;
 
       document.getElementById('crb-bruto').textContent   = precoBruto > 0 ? formatBRL(precoBruto) : '—';
-      document.getElementById('crb-banho').textContent   = valorBanho > 0 ? formatBRL(valorBanho) : '—';
-      document.getElementById('crb-custo').textContent   = formatBRL(custoTotal);
-      document.getElementById('crb-varejo').textContent  = formatBRL(varejo);
-      document.getElementById('crb-atacado').textContent = formatBRL(atacado);
-      document.getElementById('crb-lucro').textContent   = formatBRL(lucroUn);
+      document.getElementById('crb-banho').textContent   = custoBanho > 0 ? formatBRL(custoBanho) : '—';
+      document.getElementById('crb-custo').textContent   = custoTotal > 0 ? formatBRL(custoTotal) : '—';
+      document.getElementById('crb-varejo').textContent  = precoNum   > 0 ? formatBRL(precoNum)   : '—';
+      document.getElementById('crb-lucro').textContent   = temLucro
+        ? formatBRL(lucroUn) + ' (' + lucroPct.toFixed(0) + '%)'
+        : '—';
       bar.style.display = 'flex';
 
-      document.getElementById('preco-varejo').value  = formatBRL(varejo);
-      document.getElementById('preco-atacado').value = formatBRL(atacado);
       atualizarPreview();
     }
 
@@ -742,17 +835,14 @@
       if (peso <= 0 || custoG <= 0) {
         document.getElementById('res-custo').textContent   = '—';
         document.getElementById('res-varejo').textContent  = '—';
-        document.getElementById('res-atacado').textContent = '—';
         return;
       }
 
       const custo   = peso * custoG;
       const varejo  = custo * (1 + margem / 100);
-      const atacado = custo * (1 + margem / 100 * 0.6);
 
       document.getElementById('res-custo').textContent   = formatBRL(custo);
       document.getElementById('res-varejo').textContent  = formatBRL(varejo);
-      document.getElementById('res-atacado').textContent = formatBRL(atacado);
     }
 
     // ─────────────────────────────────────────
@@ -762,11 +852,12 @@
       const container = document.getElementById('prod-list');
       container.innerHTML = `
         <div class="prod-list-header">
+          <span class="prod-list-check"><input type="checkbox" id="sel-all-prod" onclick="toggleSelectAllProd(this)" title="Selecionar todos" aria-label="Selecionar todos" /></span>
           <span></span>
           <span>Produto</span>
           <span>Categoria</span>
           <span>Estoque</span>
-          <span>Preço varejo</span>
+          <span>Preço atacado</span>
           <span>Lucro / un</span>
           <span>Ações</span>
         </div>`;
@@ -791,11 +882,13 @@
         var lucroText  = typeof p.lucroUnitario === 'number' ? formatBRL(p.lucroUnitario) : '—';
         var lucroClass = typeof p.lucroUnitario === 'number' ? 'prod-list-lucro has-value' : 'prod-list-lucro';
         div.innerHTML = `
-          <div class="prod-list-thumb">${thumb}</div>
+          <label class="prod-list-check"><input type="checkbox" class="prod-check" value="${p.id}" onclick="onProdCheck()" aria-label="Selecionar ${p.nome}" /></label>
+          <div class="prod-list-thumb">${thumb}</div>`;
+        div.innerHTML += `
           <span class="prod-list-name">${p.nome}<small class="prod-list-code">${p.codigoPeca ? '#' + p.codigoPeca : ''}</small></span>
           <span class="prod-list-cat-badge">${p.categoria}</span>
           <span class="prod-list-stock ${low}">${p.estoque} un</span>
-          <span class="prod-list-price">R$ ${p.precoVarejo.toFixed(2).replace('.', ',')}</span>
+          <span class="prod-list-price">R$ ${(p.precoAtacado || p.precoVarejo || 0).toFixed(2).replace('.', ',')}</span>
           <span class="${lucroClass}">${lucroText}</span>
           <div class="prod-list-actions">
             <button class="btn-icon-sm" title="Trocar foto" onclick="document.getElementById('foto-inp-${p.id}').click()"><i class="ti ti-camera"></i></button>
@@ -815,10 +908,14 @@
         var lista = getProdutos();
         var idx = lista.findIndex(function(p) { return p.id === id; });
         if (idx >= 0) {
-          lista[idx].imagem = base64;
+          // Atualiza a capa (1ª foto) preservando as demais
+          var arr = _imagensDoProduto(lista[idx]);
+          if (arr.length) arr[0] = base64; else arr = [base64];
+          lista[idx].imagens = arr;
+          lista[idx].imagem = arr[0];
           saveProdutos(lista);
           filtrarProdutos();
-          showToast('Foto atualizada!');
+          showToast('Foto da capa atualizada!');
         }
       });
     }
@@ -843,6 +940,46 @@
       showToast('Produto removido.');
     }
 
+    // ── Seleção em massa da lista de estoque ──
+    function _checksProd() {
+      return Array.prototype.slice.call(document.querySelectorAll('.prod-check'));
+    }
+    function _idsSelecionadosProd() {
+      return _checksProd().filter(function(c) { return c.checked; })
+        .map(function(c) { return parseInt(c.value); });
+    }
+    function _atualizarBulkBarProd() {
+      var sel = _idsSelecionadosProd();
+      var bar = document.getElementById('bulk-bar-prod');
+      var cnt = document.getElementById('bulk-count-prod');
+      if (cnt) cnt.textContent = sel.length;
+      if (bar) bar.style.display = sel.length ? 'flex' : 'none';
+      var todas = _checksProd();
+      var master = document.getElementById('sel-all-prod');
+      if (master) {
+        master.checked = todas.length > 0 && sel.length === todas.length;
+        master.indeterminate = sel.length > 0 && sel.length < todas.length;
+      }
+    }
+    function onProdCheck() { _atualizarBulkBarProd(); }
+    function toggleSelectAllProd(master) {
+      _checksProd().forEach(function(c) { c.checked = master.checked; });
+      _atualizarBulkBarProd();
+    }
+    function limparSelecaoProd() {
+      _checksProd().forEach(function(c) { c.checked = false; });
+      _atualizarBulkBarProd();
+    }
+    function excluirSelecionados() {
+      var ids = _idsSelecionadosProd();
+      if (!ids.length) return;
+      if (!window.confirm('Excluir ' + ids.length + ' produto(s) selecionado(s)? Esta ação não pode ser desfeita.')) return;
+      saveProdutos(getProdutos().filter(function(x) { return ids.indexOf(x.id) === -1; }));
+      filtrarProdutos();
+      _atualizarBulkBarProd();
+      showToast(ids.length + ' produto(s) removido(s).');
+    }
+
     function editarProduto(id) {
       var p = getProdutos().find(function(x) { return x.id === id; });
       if (!p) return;
@@ -855,8 +992,7 @@
       document.getElementById('modal-nome').value      = p.nome;
       document.getElementById('modal-categoria').value = p.categoria;
       document.getElementById('modal-estoque').value   = p.estoque;
-      document.getElementById('modal-varejo').value    = 'R$ ' + p.precoVarejo.toFixed(2).replace('.', ',');
-      document.getElementById('modal-atacado').value   = 'R$ ' + p.precoAtacado.toFixed(2).replace('.', ',');
+      document.getElementById('modal-atacado').value    = 'R$ ' + (Number(p.precoVarejo || p.precoAtacado || 0)).toFixed(2).replace('.', ',');
       document.getElementById('modal-descricao').value = p.descricao || '';
 
       document.getElementById('modal-preco-bruto').value  = p.precoBruto     ? p.precoBruto.toFixed(2).replace('.', ',')  : '';
@@ -870,13 +1006,9 @@
         document.getElementById('modal-cost-bar').style.display = 'none';
       }
 
-      var img  = document.getElementById('modal-preview-img-photo');
-      var icon = document.getElementById('modal-preview-img-icon');
-      if (p.imagem) {
-        img.src = p.imagem; img.style.display = 'block'; icon.style.display = 'none';
-      } else {
-        img.src = ''; img.style.display = 'none'; icon.style.display = '';
-      }
+      _editImagens = _imagensDoProduto(p);
+      renderImgThumbs('modal-img-thumbs', _editImagens, 'removerImagemEdit');
+      _syncPreview('modal-preview-img-photo', 'modal-preview-img-icon', _editImagens);
 
       document.getElementById('modal-editar').classList.add('show');
       document.getElementById('modal-nome').focus();
@@ -889,37 +1021,25 @@
     function calcularModalPreco() {
       var precoBruto = parseCustoG(document.getElementById('modal-preco-bruto').value);
       var valorBanho = parseCustoG(document.getElementById('modal-valor-banho').value);
+      var pesoBrutoG = parseFloat(document.getElementById('modal-peso-bruto-g').value) || 0;
       var margem     = parseFloat(document.getElementById('modal-margem').value) || 0;
       var bar        = document.getElementById('modal-cost-bar');
 
-      var custoTotal = precoBruto + valorBanho;
+      var custoBanho = valorBanho * pesoBrutoG;
+      var custoTotal = custoBanho + precoBruto;
 
       if (custoTotal <= 0) { bar.style.display = 'none'; return; }
 
       var varejo  = custoTotal * (1 + margem / 100);
-      var atacado = custoTotal * (1 + margem / 100 * 0.6);
       var lucroUn = varejo - custoTotal;
 
       document.getElementById('modal-crb-bruto').textContent   = precoBruto > 0 ? formatBRL(precoBruto) : '—';
-      document.getElementById('modal-crb-banho').textContent   = valorBanho > 0 ? formatBRL(valorBanho) : '—';
+      document.getElementById('modal-crb-banho').textContent   = custoBanho > 0 ? formatBRL(custoBanho) : '—';
       document.getElementById('modal-crb-custo').textContent   = formatBRL(custoTotal);
-      document.getElementById('modal-crb-varejo').textContent  = formatBRL(varejo);
-      document.getElementById('modal-crb-atacado').textContent = formatBRL(atacado);
+      document.getElementById('modal-crb-atacado').textContent  = formatBRL(varejo);
       document.getElementById('modal-crb-lucro').textContent   = formatBRL(lucroUn);
       bar.style.display = 'flex';
-      document.getElementById('modal-varejo').value  = formatBRL(varejo);
-      document.getElementById('modal-atacado').value = formatBRL(atacado);
-    }
-
-    function atualizarImagemModal(input) {
-      var file = input.files[0];
-      if (!file) return;
-      if (!_validarArquivoImagem(file)) { input.value = ''; return; }
-      _comprimirImagem(file).then(function(base64) {
-        var img  = document.getElementById('modal-preview-img-photo');
-        var icon = document.getElementById('modal-preview-img-icon');
-        img.src = base64; img.style.display = 'block'; icon.style.display = 'none';
-      });
+      document.getElementById('modal-atacado').value  = formatBRL(varejo);
     }
 
     function salvarEdicaoModal() {
@@ -935,8 +1055,8 @@
       var pesoBrutoG = parseFloat(document.getElementById('modal-peso-bruto-g').value) || 0;
       var valorBanho = parseCustoG(document.getElementById('modal-valor-banho').value);
       var margemV    = parseFloat(document.getElementById('modal-margem').value) || 0;
-      var custoTot   = precoBruto + valorBanho;
-      var precoVar      = parsePreco(document.getElementById('modal-varejo').value);
+      var custoTot   = (valorBanho * pesoBrutoG) + precoBruto;
+      var precoVar      = parsePreco(document.getElementById('modal-atacado').value);
       var lucroUn       = custoTot > 0 ? precoVar - custoTot : undefined;
 
       var todos = getProdutos();
@@ -948,9 +1068,10 @@
         categoria:     document.getElementById('modal-categoria').value,
         estoque:       parseInt(document.getElementById('modal-estoque').value) || 0,
         precoVarejo:   precoVar,
-        precoAtacado:  parsePreco(document.getElementById('modal-atacado').value),
+        precoAtacado:  precoVar,
         descricao:     document.getElementById('modal-descricao').value.trim(),
-        imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : old.imagem,
+        imagens:         _editImagens.slice(),
+        imagem:          _editImagens[0] || null,
         precoBruto:      precoBruto  || undefined,
         pesoBrutoGramas:  pesoBrutoG  || undefined,
         pesoEnvioGramas:  parseInt(document.getElementById('modal-peso-envio-g').value) || undefined,
@@ -970,7 +1091,6 @@
       document.getElementById('nome').value          = '';
       document.getElementById('estoque-input').value = '';
       document.getElementById('preco-varejo').value  = '';
-      document.getElementById('preco-atacado').value = '';
       document.getElementById('descricao').value     = '';
       document.getElementById('imagem').value        = '';
       document.getElementById('p-preco-bruto').value  = '';
@@ -979,6 +1099,8 @@
       document.getElementById('p-valor-banho').value   = '';
       document.getElementById('p-margem').value        = '';
       document.getElementById('cost-result-bar').style.display = 'none';
+      _novoImagens = [];
+      renderImgThumbs('novo-img-thumbs', _novoImagens, 'removerImagemNovo');
       document.getElementById('preview-img-photo').style.display = 'none';
       document.getElementById('preview-img-icon').style.display  = '';
       atualizarPreview();
@@ -1000,7 +1122,7 @@
       var pesoBrutoG = parseFloat(document.getElementById('p-peso-bruto-g').value) || 0;
       var valorBanho = parseCustoG(document.getElementById('p-valor-banho').value);
       var margemV    = parseFloat(document.getElementById('p-margem').value) || 0;
-      var custoTot   = precoBruto + valorBanho;
+      var custoTot   = (valorBanho * pesoBrutoG) + precoBruto;
       var precoVar = parsePreco(document.getElementById('preco-varejo').value);
       var lucroUn  = custoTot > 0 ? precoVar - custoTot : undefined;
 
@@ -1013,8 +1135,9 @@
         categoria:       document.getElementById('categoria').value,
         estoque:         parseInt(document.getElementById('estoque-input').value) || 0,
         precoVarejo:     precoVar,
-        precoAtacado:    parsePreco(document.getElementById('preco-atacado').value),
-        imagem:          (imgEl.src && imgEl.style.display !== 'none') ? imgEl.src : null,
+        precoAtacado:    precoVar,
+        imagens:         _novoImagens.slice(),
+        imagem:          _novoImagens[0] || null,
         icone:           'ti-diamond',
         precoBruto:      precoBruto  || undefined,
         pesoBrutoGramas:  pesoBrutoG  || undefined,
@@ -1233,10 +1356,10 @@
         var nome = String(row[iNome] || '').trim();
         if (!nome) return;
 
-        var varejo  = iVarejo  >= 0 ? _parseMoeda(row[iVarejo])  : 0;
+        // Loja só de atacado: um único preço. Usa a coluna atacado; senão a de venda/varejo.
         var atacado = iAtacado >= 0 ? _parseMoeda(row[iAtacado]) : 0;
-        if (!atacado && varejo)  atacado = Math.round(varejo * 0.8 * 100) / 100;
-        if (!varejo  && atacado) varejo  = Math.round(atacado / 0.8 * 100) / 100;
+        var varejoCol = iVarejo >= 0 ? _parseMoeda(row[iVarejo]) : 0;
+        var preco = atacado || varejoCol || 0;
 
         var peca   = iPeca  >= 0 ? _parseMoeda(row[iPeca])  : 0;
         var comBanho = iBanho >= 0 ? _parseMoeda(row[iBanho]) : 0;
@@ -1245,8 +1368,8 @@
 
         var margemRaw = iMargem >= 0 ? String(row[iMargem] || '') : '';
         var margem = parseFloat(margemRaw.replace('%','').replace(',','.')) || 0;
-        if (!margem && custo > 0 && varejo > 0) {
-          margem = Math.round((varejo - custo) / custo * 100);
+        if (!margem && custo > 0 && preco > 0) {
+          margem = Math.round((preco - custo) / custo * 100);
         }
 
         var cat     = _normCat(iCat >= 0 ? row[iCat] : '', nome);
@@ -1257,8 +1380,8 @@
           nome: nome,
           categoria: cat,
           estoque: estoque,
-          precoVarejo:      varejo  || undefined,
-          precoAtacado:     atacado || undefined,
+          precoVarejo:      preco  || undefined,
+          precoAtacado:     preco  || undefined,
           custoPecaDireto:  peca    || undefined,
           custoBanhoDireto: banho   || undefined,
           custoTotal:       custo   || undefined,
@@ -1283,18 +1406,16 @@
       // Tabela processada: mostra os dados como serão importados (5 primeiras linhas de _importDados)
       var preview5 = _importDados.slice(0, 5);
       var thead = '<tr>' +
-        '<th>Produto</th><th>Categoria detectada</th><th>Estoque</th><th>Preço varejo</th><th>Preço atacado</th>' +
+        '<th>Produto</th><th>Categoria detectada</th><th>Estoque</th><th>Preço atacado</th>' +
         '</tr>';
       var tbody = preview5.map(function(p) {
         var cor = _CAT_COLORS[p.categoria] || '#94a3b8';
         var catBadge = '<span style="background:' + cor + '22;color:' + cor + ';font-weight:700;font-size:10px;padding:2px 8px;border-radius:20px;white-space:nowrap;">' + escHtml(p.categoria) + '</span>';
-        var vr  = p.precoVarejo  ? 'R$ ' + Number(p.precoVarejo).toFixed(2).replace('.',',')  : '—';
         var atk = p.precoAtacado ? 'R$ ' + Number(p.precoAtacado).toFixed(2).replace('.',',') : '—';
         return '<tr>' +
           '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escHtml(p.nome) + '">' + escHtml(p.nome) + '</td>' +
           '<td>' + catBadge + '</td>' +
           '<td>' + p.estoque + '</td>' +
-          '<td>' + vr + '</td>' +
           '<td>' + atk + '</td>' +
           '</tr>';
       }).join('');

@@ -1,0 +1,64 @@
+// ════════════════════════════════════════════════════════════════════
+// REGRAS SEGURAS — aplicar SOMENTE depois de:
+//   1) Habilitar o provedor Email/Senha no Firebase Authentication (Console)
+//   2) O Super Admin fazer login uma vez (migra a conta p/ o Auth e cria
+//      usuarios/{uid} com role superadmin — ver passo de seed abaixo)
+//   3) ATIVAR O BLAZE e mover as ESCRITAS feitas pelo CLIENTE para Cloud Functions:
+//        - sync de lapinkClients (cadastro)         -> Function
+//        - baixa de estoque (lapinkProdutos)         -> já é no webhook (Function)
+//        - criação de carrinho abandonado            -> Function (ou manter regra abaixo)
+//      Enquanto o cliente escrever direto no Firestore (cloud-sync), as regras
+//      abaixo de "escrita só admin" QUEBRAM esses fluxos. Por isso o lockdown
+//      total depende do Blaze + Functions mediando as escritas.
+//
+// Para ativar: renomear este arquivo para firestore.rules e
+//   firebase deploy --only firestore:rules
+// ════════════════════════════════════════════════════════════════════
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role in ['admin','superadmin'];
+    }
+
+    // Perfis de usuário (nome, role). Cada um lê/edita o seu; admin lê todos.
+    match /usuarios/{uid} {
+      allow read:   if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Token do Mercado Pago / WhatsApp — nunca legível no cliente; escrita só admin.
+    match /lapink/apiConfig {
+      allow read:  if false;
+      allow write: if isAdmin();
+    }
+
+    // Catálogo/config da loja — leitura pública; escrita só admin.
+    // (Requer mover o cadastro de cliente e a baixa de estoque para Functions.)
+    match /lapink/{document} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    // Pedidos — criados/baixados por Functions (Admin SDK). Admin atualiza rastreio/status.
+    match /pedidos/{id} {
+      allow read:   if true;
+      allow create, delete: if false;
+      allow update: if isAdmin()
+                    && request.resource.data.diff(resource.data)
+                       .affectedKeys().hasOnly(['rastreio','status','updatedAt']);
+    }
+
+    // Carrinhos abandonados — só admin lê; cliente logado cria/atualiza o seu.
+    match /abandonados/{id} {
+      allow read:   if isAdmin();
+      allow create, update: if isSignedIn();
+      allow delete: if false;
+    }
+  }
+}

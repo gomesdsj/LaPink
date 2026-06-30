@@ -1,5 +1,10 @@
-/* LaPink — Service Worker v5 */
-var CACHE = 'lapink-v5';
+/* LaPink — Service Worker v9 */
+var CACHE = 'lapink-v9';
+
+/* Permite que a página peça ativação imediata do novo SW */
+self.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 
 /* Arquivos essenciais pré-cacheados na instalação */
 var PRECACHE = [
@@ -51,8 +56,11 @@ self.addEventListener('fetch', function(e) {
   /* Ignora requisições de outras origens (CDN, APIs externas) */
   if (!url.startsWith(self.location.origin)) return;
 
-  /* HTML (navegação) e dados dinâmicos: network-first para garantir versão atual */
-  if (e.request.mode === 'navigate' || url.includes('/data/') || url.includes('/admin/')) {
+  /* HTML, dados, e TAMBÉM CSS/JS: network-first para garantir sempre a versão
+     mais recente (evita layout desatualizado e JS de sessão antigo no mobile).
+     Cai no cache apenas quando offline. */
+  var ehCodigo = /\.(?:css|js)(?:\?|$)/.test(url);
+  if (e.request.mode === 'navigate' || ehCodigo || url.includes('/data/') || url.includes('/admin/')) {
     e.respondWith(
       fetch(e.request)
         .then(function(res) {
@@ -65,14 +73,14 @@ self.addEventListener('fetch', function(e) {
         .catch(function() {
           /* Offline: retorna versão cacheada */
           return caches.match(e.request).then(function(cached) {
-            return cached || caches.match('./V1.html');
+            return cached || (e.request.mode === 'navigate' ? caches.match('./V1.html') : undefined);
           });
         })
     );
     return;
   }
 
-  /* Assets estáticos (CSS, JS, imagens): cache-first, atualiza em background */
+  /* Demais assets (imagens, fontes): cache-first, atualiza em background */
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       if (cached) {

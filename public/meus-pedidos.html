@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Meus pedidos — LaPink</title>
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#D4537E" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPublica.css" />
+<link rel="stylesheet" href="css/public.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+<style>
+body { background: var(--gray-50); min-height: 100vh; }
+
+/* ── Header ── */
+.pg-header {
+  background: #fff; border-bottom: .5px solid var(--pink-100);
+  padding: 14px 24px; display: flex; align-items: center; gap: 14px;
+  position: sticky; top: 0; z-index: 50;
+}
+.pg-header-logo {
+  font-size: 20px; font-weight: 900; color: var(--pink-500);
+  letter-spacing: -.5px; text-decoration: none;
+}
+.pg-header-title {
+  font-size: 15px; font-weight: 700; color: var(--gray-800);
+}
+.pg-header-back {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--pink-400); text-decoration: none;
+  background: var(--pink-50); border: 1px solid var(--pink-100); border-radius: 20px;
+  padding: 6px 14px; transition: background .15s;
+}
+.pg-header-back:hover { background: var(--pink-100); }
+
+/* ── Layout ── */
+.mp-page {
+  max-width: 680px; margin: 32px auto; padding: 0 20px 80px;
+}
+.mp-page-title {
+  font-size: 20px; font-weight: 900; color: var(--gray-800); margin-bottom: 20px;
+}
+
+/* ── Spinner ── */
+.mp-spinner {
+  display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 60px 0;
+}
+.mp-spinner-ring {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 4px solid var(--pink-100); border-top-color: var(--pink-400);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.mp-spinner p { font-size: 14px; color: var(--gray-400); }
+
+/* ── Empty state ── */
+.mp-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 60px 20px; text-align: center;
+}
+.mp-empty-icon {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--pink-50); border: 1px solid var(--pink-100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; color: var(--pink-300);
+}
+.mp-empty-title { font-size: 17px; font-weight: 800; color: var(--gray-800); }
+.mp-empty-sub   { font-size: 13px; color: var(--gray-400); }
+
+/* ── Card de pedido ── */
+.mp-order {
+  background: #fff; border-radius: 16px; padding: 0;
+  border: .5px solid var(--pink-100); box-shadow: 0 1px 6px rgba(212,83,126,.06);
+  margin-bottom: 14px; overflow: hidden; transition: box-shadow .15s;
+}
+.mp-order:hover { box-shadow: 0 4px 16px rgba(75,21,40,.1); }
+
+/* ── Cabeçalho do card ── */
+.mp-order-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; cursor: pointer; user-select: none;
+}
+.mp-order-num { flex: 1; min-width: 0; }
+.mp-order-num strong { font-size: 14px; font-weight: 800; color: var(--gray-800); display: block; }
+.mp-order-num span   { font-size: 12px; color: var(--gray-400); margin-top: 2px; display: block; }
+
+/* ── Badge de status ── */
+.mp-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; border-radius: 20px; padding: 4px 10px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.mp-badge.yellow  { background: var(--amber-50);  color: var(--amber-400); border: 1px solid #f0d98a; }
+.mp-badge.blue-l  { background: var(--blue-50);   color: var(--blue-400);  border: 1px solid #b0d4f0; }
+.mp-badge.green   { background: var(--green-50);  color: var(--green-400); border: 1px solid #b8e5c9; }
+.mp-badge.orange  { background: #FEF3E8;           color: #C07A00;          border: 1px solid #f0cc90; }
+.mp-badge.blue    { background: var(--blue-50);   color: var(--blue-400);  border: 1px solid #b0d4f0; }
+.mp-badge.green-d { background: #E5F4ED;           color: #1E6B42;          border: 1px solid #90d4b0; }
+.mp-badge.red     { background: var(--red-50);    color: var(--red-400);   border: 1px solid #f5c0c0; }
+
+/* ── Chevron ── */
+.mp-chevron {
+  font-size: 16px; color: var(--gray-300); transition: transform .2s; flex-shrink: 0;
+}
+.mp-order.open .mp-chevron { transform: rotate(180deg); }
+
+/* ── Corpo expansível ── */
+.mp-order-body {
+  display: none; border-top: .5px solid var(--pink-100); padding: 16px 18px;
+}
+.mp-order.open .mp-order-body { display: block; }
+
+/* ── Itens resumo (linha compacta) ── */
+.mp-order-items-compact {
+  font-size: 12px; color: var(--gray-400); line-height: 1.4;
+  padding-bottom: 12px; border-bottom: .5px solid var(--pink-50); margin-bottom: 12px;
+}
+
+/* ── Total destaque ── */
+.mp-order-total {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.mp-order-total-label { font-size: 12px; color: var(--gray-400); }
+.mp-order-total-value { font-size: 17px; font-weight: 900; color: var(--pink-500); }
+
+/* ── Rastreio inline ── */
+.mp-order-tracking {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 12px; padding-top: 12px; border-top: .5px solid var(--pink-50);
+}
+.mp-tracking-label { font-size: 12px; color: var(--gray-400); }
+.mp-tracking-code  { font-size: 13px; font-weight: 700; color: var(--gray-800); letter-spacing: .04em; }
+.mp-tracking-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; color: var(--blue-400); text-decoration: none;
+  background: var(--blue-50); border-radius: 20px; padding: 4px 12px;
+  margin-left: auto; transition: opacity .15s;
+}
+.mp-tracking-btn:hover { opacity: .8; }
+
+/* ── Detalhes expandidos ── */
+.mp-detail-section { margin-top: 16px; padding-top: 14px; border-top: .5px solid var(--pink-100); }
+.mp-detail-section-title {
+  font-size: 11px; font-weight: 700; color: var(--pink-500);
+  text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ── Itens detalhados ── */
+.mp-detail-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: .5px solid var(--pink-50);
+}
+.mp-detail-item:last-child { border-bottom: none; padding-bottom: 0; }
+.mp-detail-item:first-child { padding-top: 0; }
+.mp-detail-item-icon {
+  width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+  background: var(--pink-50); border: .5px solid var(--pink-100);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--pink-300);
+}
+.mp-detail-item-info { flex: 1; min-width: 0; }
+.mp-detail-item-name  { font-size: 12px; font-weight: 700; color: var(--gray-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-detail-item-qty   { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.mp-detail-item-price { font-size: 13px; font-weight: 800; color: var(--pink-500); white-space: nowrap; }
+
+/* ── Totais detalhes ── */
+.mp-detail-totals { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; padding-top: 10px; border-top: .5px solid var(--pink-100); }
+.mp-detail-tot-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); }
+.mp-detail-tot-row.bold { font-size: 14px; font-weight: 800; color: var(--gray-800); margin-top: 3px; }
+.mp-detail-tot-row.bold span:last-child { color: var(--pink-500); }
+
+/* ── Endereço ── */
+.mp-detail-address { font-size: 12px; color: var(--gray-600); line-height: 1.6; }
+
+/* ── Botões ── */
+.btn-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--pink-400); color: #fff; font-size: 15px; font-weight: 700;
+  padding: 14px 20px; border-radius: 12px; border: none; cursor: pointer;
+  text-decoration: none; transition: background .15s; margin-top: 20px;
+}
+.btn-primary:hover { background: var(--pink-500); }
+
+/* ── Erro ── */
+.mp-error {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 40px 20px; text-align: center;
+}
+.mp-error-icon { font-size: 32px; color: var(--red-400); }
+.mp-error-title { font-size: 16px; font-weight: 700; color: var(--gray-800); }
+.mp-error-sub   { font-size: 13px; color: var(--gray-400); }
+
+@media (max-width: 480px) {
+  .mp-page { margin-top: 20px; }
+  .pg-header-title { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="pg-header">
+  <a href="V1.html" class="pg-header-logo">LaPink</a>
+  <span class="pg-header-title">Meus pedidos</span>
+  <a href="V1.html" class="pg-header-back"><i class="ti ti-arrow-left"></i> Voltar à loja</a>
+</header>
+
+<main class="mp-page">
+  <div class="mp-spinner" id="spinner">
+    <div class="mp-spinner-ring"></div>
+    <p>Carregando seus pedidos…</p>
+  </div>
+  <div id="listContainer"></div>
+</main>
+
+<script>
+(function () {
+  /* ── helpers ── */
+  function fmtR(v) {
+    return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+  }
+  function fmtData(ts) {
+    if (!ts) return '—';
+    var d;
+    if (ts && typeof ts.toDate === 'function') d = ts.toDate();
+    else if (ts && ts.seconds) d = new Date(ts.seconds * 1000);
+    else d = new Date(ts);
+    return d.toLocaleDateString('pt-BR');
+  }
+
+  /* ── Auth gate ── */
+  var _client = null;
+  try {
+    _client = getLoggedClient();
+  } catch(e) {}
+
+  if (!_client || !_client.email) {
+    sessionStorage.setItem('referrerPage', 'meus-pedidos.html');
+    location.replace('login.html');
+    return;
+  }
+
+  /* ── Status config ── */
+  var STATUS_CFG = {
+    aguardando_pagamento:   { label: 'Aguardando pagamento', cls: 'yellow', icon: 'ti-clock' },
+    aguardando_confirmacao: { label: 'Em confirmação',       cls: 'blue-l', icon: 'ti-loader' },
+    pago:                   { label: 'Pago',                 cls: 'green',  icon: 'ti-circle-check' },
+    preparando:             { label: 'Em preparo',           cls: 'orange', icon: 'ti-tool' },
+    enviado:                { label: 'Enviado',              cls: 'blue',   icon: 'ti-truck-delivery' },
+    concluido:              { label: 'Concluído',            cls: 'green-d',icon: 'ti-checks' },
+    cancelado:              { label: 'Cancelado',            cls: 'red',    icon: 'ti-ban' }
+  };
+
+  function badgeHtml(status) {
+    var cfg = STATUS_CFG[status] || { label: status || 'Desconhecido', cls: 'yellow', icon: 'ti-help-circle' };
+    return '<span class="mp-badge ' + cfg.cls + '"><i class="ti ' + cfg.icon + '"></i>' + cfg.label + '</span>';
+  }
+
+  /* ── Itens compactos ── */
+  function itensCompacto(itens) {
+    if (!itens || !itens.length) return 'Nenhum item';
+    return itens.map(function(it) {
+      return (it.qty || 1) + 'x ' + (it.nome || 'Produto');
+    }).join(', ');
+  }
+
+  /* ── Render de um pedido ── */
+  function renderPedido(pedido, idx) {
+    var status   = (pedido.status || 'aguardando_pagamento').toLowerCase();
+    var rastreio = pedido.rastreio || null;
+    var itens    = pedido.itens || [];
+    var num      = pedido.numero || ('Pedido #' + (idx + 1));
+    var data     = fmtData(pedido.createdAt);
+    var id       = 'order-' + idx;
+
+    /* itens detalhados */
+    var itensDetHtml = itens.map(function(it) {
+      return '<div class="mp-detail-item">' +
+        '<div class="mp-detail-item-icon"><i class="ti ti-sparkles"></i></div>' +
+        '<div class="mp-detail-item-info">' +
+          '<div class="mp-detail-item-name">' + (it.nome || 'Produto') + '</div>' +
+          '<div class="mp-detail-item-qty">Qtd: ' + (it.qty || 1) + '</div>' +
+        '</div>' +
+        '<div class="mp-detail-item-price">' + fmtR((it.preco || 0) * (it.qty || 1)) + '</div>' +
+      '</div>';
+    }).join('');
+
+    var freteLabel = pedido.frete === 0
+      ? '<span style="color:var(--green-400);font-weight:700;">Grátis</span>'
+      : fmtR(pedido.frete || 0);
+
+    /* endereço */
+    var end = pedido.endereco || {};
+    var endHtml = '';
+    if (end.rua) {
+      endHtml = '<div class="mp-detail-section">' +
+        '<div class="mp-detail-section-title"><i class="ti ti-map-pin"></i> Endereço de entrega</div>' +
+        '<div class="mp-detail-address">' +
+          (end.rua || '') + ', ' + (end.numero || '') +
+          (end.complemento ? ' — ' + end.complemento : '') + '<br>' +
+          (end.bairro || '') + ' — ' + (end.cidade || '') + '/' + (end.estado || '') + '<br>' +
+          'CEP: ' + (end.cep || '') +
+        '</div>' +
+      '</div>';
+    }
+
+    /* rastreio inline no cabeçalho */
+    var rastreioInlineHtml = rastreio ?
+      '<div class="mp-order-tracking">' +
+        '<span class="mp-tracking-label">Rastreio:</span>' +
+        '<span class="mp-tracking-code">' + rastreio + '</span>' +
+        '<a href="https://rastreamento.correios.com.br/app/index.php?objetos=' + encodeURIComponent(rastreio) + '" target="_blank" rel="noopener" class="mp-tracking-btn"><i class="ti ti-external-link"></i> Acompanhar</a>' +
+      '</div>' : '';
+
+    return '<div class="mp-order" id="' + id + '">' +
+      /* cabeçalho clicável */
+      '<div class="mp-order-head" onclick="toggleOrder(\'' + id + '\')">' +
+        '<div class="mp-order-num">' +
+          '<strong>#' + num + '</strong>' +
+          '<span>' + data + '</span>' +
+        '</div>' +
+        badgeHtml(status) +
+        '<i class="ti ti-chevron-down mp-chevron"></i>' +
+      '</div>' +
+
+      /* corpo expansível */
+      '<div class="mp-order-body">' +
+        /* resumo compacto */
+        '<div class="mp-order-items-compact">' + itensCompacto(itens) + '</div>' +
+        '<div class="mp-order-total">' +
+          '<span class="mp-order-total-label">Total do pedido</span>' +
+          '<span class="mp-order-total-value">' + fmtR(pedido.total || 0) + '</span>' +
+        '</div>' +
+
+        /* rastreio */
+        rastreioInlineHtml +
+
+        /* itens detalhados */
+        (itens.length ?
+          '<div class="mp-detail-section">' +
+            '<div class="mp-detail-section-title"><i class="ti ti-shopping-bag"></i> Itens</div>' +
+            itensDetHtml +
+            '<div class="mp-detail-totals">' +
+              '<div class="mp-detail-tot-row"><span>Subtotal</span><span>' + fmtR(pedido.subtotal || 0) + '</span></div>' +
+              '<div class="mp-detail-tot-row"><span>Frete (' + (pedido.modalidadeFrete || '—') + ')</span><span>' + freteLabel + '</span></div>' +
+              '<div class="mp-detail-tot-row bold"><span>Total</span><span>' + fmtR(pedido.total || 0) + '</span></div>' +
+            '</div>' +
+          '</div>'
+        : '') +
+
+        /* endereço */
+        endHtml +
+      '</div>' +
+    '</div>';
+  }
+
+  /* ── Toggle expand/collapse ── */
+  window.toggleOrder = function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('open');
+  };
+
+  /* ── Render lista ── */
+  function renderLista(pedidos) {
+    var container = document.getElementById('listContainer');
+    document.getElementById('spinner').style.display = 'none';
+
+    if (!pedidos || !pedidos.length) {
+      container.innerHTML =
+        '<div class="mp-empty">' +
+          '<div class="mp-empty-icon"><i class="ti ti-shopping-cart"></i></div>' +
+          '<div class="mp-empty-title">Você ainda não tem pedidos</div>' +
+          '<p class="mp-empty-sub">Explore nossa coleção e faça seu primeiro pedido!</p>' +
+          '<a href="V1.html" class="btn-primary" style="margin-top:8px;"><i class="ti ti-shopping-bag"></i> Explorar produtos</a>' +
+        '</div>';
+      return;
+    }
+
+    var html = '<p style="font-size:13px;color:var(--gray-400);margin-bottom:16px;">' + pedidos.length + ' pedido' + (pedidos.length > 1 ? 's' : '') + ' encontrado' + (pedidos.length > 1 ? 's' : '') + '</p>';
+    pedidos.forEach(function(p, i) { html += renderPedido(p, i); });
+    container.innerHTML = html;
+  }
+
+  /* ── Erro genérico ── */
+  function renderErro(msg) {
+    var container = document.getElementById('listContainer');
+    document.getElementById('spinner').style.display = 'none';
+    container.innerHTML =
+      '<div class="mp-error">' +
+        '<div class="mp-error-icon"><i class="ti ti-alert-circle"></i></div>' +
+        '<div class="mp-error-title">Não foi possível carregar</div>' +
+        '<p class="mp-error-sub">' + (msg || 'Tente novamente em instantes.') + '</p>' +
+        '<a href="V1.html" class="btn-primary" style="margin-top:8px;"><i class="ti ti-home"></i> Voltar à loja</a>' +
+      '</div>';
+  }
+
+  /* ── Fallback: filtro no client ── */
+  function fetchAllAndFilter(email, cb) {
+    firebase.firestore().collection('pedidos').limit(200).get()
+      .then(function(snap) {
+        var lista = [];
+        snap.forEach(function(doc) {
+          var d = doc.data();
+          if (d.cliente && d.cliente.email && d.cliente.email.toLowerCase() === email.toLowerCase()) {
+            lista.push(d);
+          }
+        });
+        /* ordenar por createdAt desc */
+        lista.sort(function(a, b) {
+          var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+          var tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+          return tb - ta;
+        });
+        cb(null, lista.slice(0, 20));
+      })
+      .catch(function(err) { cb(err, null); });
+  }
+
+  /* ── Pedidos locais (lapinkPedidos) do cliente — funciona sem Blaze ── */
+  function pedidosLocais(email) {
+    try {
+      var lista = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]');
+      return lista.filter(function(p) {
+        var e = p.cliente && (p.cliente.email || '');
+        return e && e.toLowerCase() === (email || '').toLowerCase();
+      });
+    } catch (e) { return []; }
+  }
+
+  /* ── Mescla Firestore + local, dedup por número, ordena ── */
+  function mesclarEOrdenar(remotos, email) {
+    var locais = pedidosLocais(email);
+    var numerosRemotos = {};
+    (remotos || []).forEach(function(p) { if (p.numero) numerosRemotos[p.numero] = true; });
+    var locaisFiltrados = locais.filter(function(p) { return !numerosRemotos[p.numero]; });
+    var todos = (remotos || []).concat(locaisFiltrados);
+    todos.sort(function(a, b) {
+      var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds * 1000 : (a.data ? new Date(a.data).getTime() : 0);
+      var tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds * 1000 : (b.data ? new Date(b.data).getTime() : 0);
+      return tb - ta;
+    });
+    return todos;
+  }
+
+  /* ── Busca principal ── */
+  function loadPedidos() {
+    var email = _client.email;
+
+    firebase.firestore()
+      .collection('pedidos')
+      .where('cliente.email', '==', email)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get()
+      .then(function(snap) {
+        var lista = [];
+        snap.forEach(function(doc) { lista.push(doc.data()); });
+        renderLista(mesclarEOrdenar(lista, email));
+      })
+      .catch(function(err) {
+        /* Índice composto não criado — fallback */
+        if (err && (err.code === 'failed-precondition' || err.code === 'unimplemented' || (err.message && err.message.indexOf('index') !== -1))) {
+          fetchAllAndFilter(email, function(err2, lista) {
+            if (err2) renderLista(mesclarEOrdenar([], email));
+            else renderLista(mesclarEOrdenar(lista, email));
+          });
+        } else {
+          /* Falha total no Firestore — mostra ao menos os pedidos locais */
+          renderLista(mesclarEOrdenar([], email));
+        }
+      });
+  }
+
+  /* ── Init ── */
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof firebase !== 'undefined') {
+      loadPedidos();
+    } else {
+      renderErro('Firebase indisponível. Recarregue a página.');
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -78,11 +78,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Compatibilidade com o botão de logout do V1 (inline onclick="logout()")
+  // Compatibilidade com o botão de logout da loja (inline onclick="logout()")
   if (typeof window.logout === 'undefined') {
     window.logout = function() {
       clearLoggedClient();
-      window.location.replace('../admin/login.html');
+      if (typeof updateAuthUI === 'function') updateAuthUI();
+      // Permanece na loja (V1), não vai para o login do admin
+      window.location.replace('V1.html');
     };
   }
 });

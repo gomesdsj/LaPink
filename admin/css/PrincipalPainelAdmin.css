@@ -236,7 +236,15 @@
 /* ── Product list (1.3) ── */
 .prod-list { background: var(--white); border: .5px solid var(--gray-200); border-radius: var(--radius-lg); overflow: hidden; margin-top: 16px; }
 .prod-list-header,
-.prod-list-item { display: grid; grid-template-columns: 52px 1fr 110px 72px 100px 94px 80px; align-items: center; gap: 12px; padding: 10px 16px; }
+.prod-list-item { display: grid; grid-template-columns: 30px 52px 1fr 110px 72px 100px 94px 80px; align-items: center; gap: 12px; padding: 10px 16px; }
+.prod-list-check { display: flex; align-items: center; justify-content: center; margin: 0; cursor: pointer; }
+.prod-list-check input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--pink-500); }
+/* Barra de ação em massa */
+.bulk-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--pink-50); border: 1px solid var(--pink-200); border-radius: var(--radius-md);
+  padding: 10px 16px; margin-top: 14px; flex-wrap: wrap; }
+.bulk-bar .bulk-info { font-size: 13px; color: var(--gray-700); }
+.bulk-bar .bulk-actions { display: flex; gap: 8px; }
 .prod-list-lucro { font-size: 12px; color: var(--gray-300); font-weight: 600; }
 .prod-list-lucro.has-value { color: var(--green-400); }
 .prod-list-header { background: var(--gray-50); border-bottom: .5px solid var(--gray-100); font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .05em; }
@@ -291,8 +299,9 @@
   .photo-upload-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 640px) {
-  .admin-page { padding: 16px; }
-  .tab-content { padding: 16px; }
+  /* Padding lateral menor no mobile → filtros, abas e cards mais largos (~340px) */
+  .admin-page { padding: 16px 9px; }
+  .tab-content { padding: 16px 10px; }
   .photo-upload-grid { grid-template-columns: repeat(2, 1fr); }
   .product-preview-card { max-width: 100%; }
   .form-wrap { flex-direction: column; align-items: stretch; }
@@ -302,14 +311,15 @@
 
   /* Product list mobile */
   .prod-list-header { display: none; }
-  .prod-list-item { grid-template-columns: 44px 1fr auto; grid-template-rows: auto auto auto; gap: 2px 10px; padding: 12px 14px; }
-  .prod-list-thumb { grid-row: 1 / 4; }
-  .prod-list-name { font-size: 12px; grid-column: 2; }
-  .prod-list-cat-badge { font-size: 10px; padding: 2px 7px; grid-column: 2; }
+  .prod-list-item { grid-template-columns: 22px 44px 1fr auto; grid-template-rows: auto auto auto; gap: 2px 10px; padding: 12px 14px; }
+  .prod-list-check { grid-column: 1; grid-row: 1 / 4; }
+  .prod-list-thumb { grid-column: 2; grid-row: 1 / 4; }
+  .prod-list-name { font-size: 12px; grid-column: 3; }
+  .prod-list-cat-badge { font-size: 10px; padding: 2px 7px; grid-column: 3; }
   .prod-list-stock { display: none; }
-  .prod-list-price { grid-column: 3; grid-row: 1; font-size: 12px; text-align: right; }
-  .prod-list-lucro { grid-column: 3; grid-row: 2; font-size: 11px; text-align: right; }
-  .prod-list-actions { grid-column: 3; grid-row: 3; justify-content: flex-end; }
+  .prod-list-price { grid-column: 4; grid-row: 1; font-size: 12px; text-align: right; }
+  .prod-list-lucro { grid-column: 4; grid-row: 2; font-size: 11px; text-align: right; }
+  .prod-list-actions { grid-column: 4; grid-row: 3; justify-content: flex-end; }
   /* Cost section mobile */
   .cost-result-bar { flex-direction: column; }
   .crb-item { min-width: 0; }

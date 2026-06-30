@@ -95,14 +95,15 @@
       <p class="auth-footer-text">Não tem conta? <a href="register.html">Cadastre-se</a></p>
 
       <div style="margin-top:18px;text-align:center;border-top:1px solid var(--gray-200);padding-top:16px;">
-        <a href="../admin/login.html" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--gray-400);text-decoration:none;padding:8px 18px;border:1px solid var(--gray-200);border-radius:var(--radius-full);transition:all .15s;" onmouseover="this.style.color='var(--pink-500)';this.style.borderColor='var(--pink-300)'" onmouseout="this.style.color='var(--gray-400)';this.style.borderColor='var(--gray-200)'">
+        <button type="button" onclick="document.getElementById('login-email').focus();setLoginMessage('Entre com seu e-mail e senha de administrador — você será levado ao painel.', true);return false;" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--gray-400);text-decoration:none;padding:8px 18px;border:1px solid var(--gray-200);border-radius:var(--radius-full);background:none;cursor:pointer;transition:all .15s;" onmouseover="this.style.color='var(--pink-500)';this.style.borderColor='var(--pink-300)'" onmouseout="this.style.color='var(--gray-400)';this.style.borderColor='var(--gray-200)'">
           <i class="ti ti-layout-dashboard"></i> Acesso Administrador
-        </a>
+        </button>
       </div>
     </article>
   </section>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="js/firebase-init.js"></script>
   <script src="js/cloud-sync.js"></script>

@@ -13,650 +13,1105 @@
 <link rel="stylesheet" href="css/public.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
 <style>
-body { background:var(--gray-50); min-height:100vh; }
+/* ── Reset / base ── */
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--gray-50); min-height: 100vh; margin: 0; }
 
-/* ── Topo ── */
+/* ── Header ── */
 .pg-header {
-  background:#fff; border-bottom:.5px solid var(--pink-100);
-  padding:14px 24px; display:flex; align-items:center; gap:14px;
-  position:sticky; top:0; z-index:50;
+  background: #fff;
+  border-bottom: .5px solid var(--pink-100);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
-.pg-header-logo { font-size:20px; font-weight:900; color:var(--pink-500); letter-spacing:-.5px; text-decoration:none; }
-.pg-header-back {
-  margin-left:auto; display:flex; align-items:center; gap:6px;
-  font-size:13px; font-weight:600; color:var(--pink-400); text-decoration:none;
-  background:var(--pink-50); border:1px solid var(--pink-100); border-radius:20px;
-  padding:6px 14px; transition:background .15s;
+.pg-header-logo {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--pink-500);
+  letter-spacing: -.5px;
+  text-decoration: none;
 }
-.pg-header-back:hover { background:var(--pink-100); }
+.pg-header-steps {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pg-header-steps .step { color: var(--gray-400); }
+.pg-header-steps .step.active { color: var(--pink-500); }
+.pg-header-steps .step-sep { color: var(--gray-300); }
 
-/* ── Layout ── */
-.pg-page {
-  max-width:820px; margin:24px auto; padding:0 20px 80px;
-  display:flex; gap:20px; align-items:flex-start;
+/* ── Breadcrumb ── */
+.pg-breadcrumb {
+  max-width: 900px;
+  margin: 10px auto 0;
+  padding: 0 24px;
+  font-size: 12px;
+  color: #B08898;
 }
-.pg-left  { flex:1; min-width:0; display:flex; flex-direction:column; gap:16px; }
-.pg-right { flex:0 0 300px; position:sticky; top:76px; display:flex; flex-direction:column; gap:14px; }
+.pg-breadcrumb a { color: var(--pink-500); text-decoration: none; font-weight: 600; }
+.pg-breadcrumb a:hover { text-decoration: underline; }
+
+/* ── Layout 2 colunas ── */
+.pg-page {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 0 20px 80px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.pg-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pg-right {
+  flex: 0 0 310px;
+  position: sticky;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 /* ── Cards ── */
 .card {
-  background:#fff; border-radius:16px; padding:20px;
-  border:.5px solid var(--pink-100); box-shadow:0 1px 6px rgba(212,83,126,.06);
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border: .5px solid var(--pink-100);
+  box-shadow: 0 1px 6px rgba(212,83,126,.06);
 }
 .card-title {
-  font-size:11px; font-weight:700; color:var(--pink-500);
-  text-transform:uppercase; letter-spacing:.07em;
-  display:flex; align-items:center; gap:7px;
-  padding-bottom:12px; margin-bottom:16px;
-  border-bottom:.5px solid var(--pink-100);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pink-500);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: .5px solid var(--pink-100);
 }
 
-/* ── Itens ── */
+/* ── Itens do pedido ── */
 .pg-item {
-  display:flex; align-items:center; gap:12px;
-  padding:10px 0; border-bottom:.5px solid var(--pink-50);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: .5px solid var(--pink-50);
 }
-.pg-item:last-child { border-bottom:none; padding-bottom:0; }
-.pg-item:first-child { padding-top:0; }
+.pg-item:last-child { border-bottom: none; padding-bottom: 0; }
+.pg-item:first-child { padding-top: 0; }
 .pg-item-img {
-  width:56px; height:56px; border-radius:10px; flex-shrink:0;
-  background:var(--pink-50); border:.5px solid var(--pink-100);
-  display:flex; align-items:center; justify-content:center;
-  font-size:22px; color:var(--pink-200); overflow:hidden;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: var(--pink-50);
+  border: .5px solid var(--pink-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--pink-200);
+  overflow: hidden;
 }
-.pg-item-img img { width:100%; height:100%; object-fit:cover; }
-.pg-item-info { flex:1; min-width:0; }
-.pg-item-name { font-size:13px; font-weight:700; color:var(--gray-800); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.pg-item-qty  { font-size:11px; color:var(--gray-400); margin-top:2px; }
-.pg-item-price{ font-size:14px; font-weight:800; color:var(--pink-500); white-space:nowrap; }
-
-/* ── Totais ── */
-.pg-totals { display:flex; flex-direction:column; gap:6px; margin-top:14px; padding-top:12px; border-top:.5px solid var(--pink-100); }
-.pg-tot-row { display:flex; justify-content:space-between; font-size:12px; color:var(--gray-500); }
-.pg-tot-row.bold { font-size:15px; font-weight:800; color:var(--gray-800); margin-top:4px; }
-.pg-tot-row.bold span:last-child { color:var(--pink-500); }
-.pg-tot-gratis { color:#2E8B5A !important; }
+.pg-item-img img { width: 100%; height: 100%; object-fit: cover; }
+.pg-item-info { flex: 1; min-width: 0; }
+.pg-item-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pg-item-qty  { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.pg-item-price { font-size: 14px; font-weight: 800; color: var(--pink-500); white-space: nowrap; }
 
 /* ── Formulário ── */
-.pg-form-group { margin-bottom:14px; }
-.pg-form-group:last-child { margin-bottom:0; }
-.pg-form-group label { display:block; font-size:12px; font-weight:700; color:var(--gray-600); margin-bottom:6px; }
+.pg-form-group { margin-bottom: 14px; }
+.pg-form-group:last-child { margin-bottom: 0; }
+.pg-form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-600);
+  margin-bottom: 6px;
+}
 .pg-form-group input {
-  width:100%; box-sizing:border-box; padding:11px 14px;
-  border:1.5px solid var(--pink-100); border-radius:10px;
-  font-size:13px; color:var(--gray-800); outline:none;
-  transition:border-color .15s, box-shadow .15s;
+  width: 100%;
+  padding: 10px 14px;
+  border: .5px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--gray-800);
+  outline: none;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
 }
-.pg-form-group input:focus { border-color:var(--pink-300); box-shadow:0 0 0 3px rgba(212,83,126,.10); }
-.pg-form-group input.err { border-color:#e05555; }
-.req { color:#e05555; font-style:normal; }
-
-/* ── Métodos de pagamento ── */
-.pg-pay-methods { display:flex; flex-direction:column; gap:8px; }
-.pg-pay-method {
-  display:flex; align-items:center; gap:10px; padding:12px 14px;
-  border:1.5px solid var(--pink-100); border-radius:12px; cursor:pointer;
-  transition:border-color .15s, background .15s;
+.pg-form-group input:focus {
+  border-color: var(--pink-300);
+  box-shadow: 0 0 0 3px rgba(212,83,126,.10);
 }
-.pg-pay-method:has(input:checked) { border-color:var(--pink-300); background:var(--pink-50); }
-.pg-pay-method input[type=radio] { accent-color:var(--pink-400); width:14px; height:14px; flex-shrink:0; }
-.pg-pay-method-icon {
-  width:32px; height:32px; border-radius:8px; flex-shrink:0;
-  background:var(--pink-50); display:flex; align-items:center; justify-content:center;
-  font-size:16px; color:var(--pink-500);
+.pg-form-group input.err { border-color: #e05555; }
+.pg-form-group input:disabled {
+  background: var(--gray-50);
+  color: var(--gray-400);
+  cursor: not-allowed;
 }
-.pg-pay-method-info { flex:1; }
-.pg-pay-method-label { font-size:13px; font-weight:700; color:var(--gray-800); }
-.pg-pay-method-sub   { font-size:11px; color:var(--gray-400); margin-top:1px; }
+.req { color: #e05555; font-style: normal; }
 
-/* ── Box de ação do pagamento ── */
-.pg-pay-action { margin-top:16px; }
-
-/* PIX */
-.pg-pix-box {
-  background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac;
-  border-radius:12px; padding:16px; color:#166534;
+/* ── Linha dupla (Número + Complemento, Cidade + Estado) ── */
+.pg-form-row {
+  display: flex;
+  gap: 10px;
 }
-.pg-pix-box strong { display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:10px; }
-.pg-pix-chave-row { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #86efac; border-radius:8px; padding:10px 12px; margin-bottom:8px; }
-.pg-pix-chave-val { flex:1; font-size:13px; font-weight:700; color:#166534; word-break:break-all; }
-.pg-pix-copy {
-  flex-shrink:0; padding:6px 12px; background:#166534; color:#fff; border:none;
-  border-radius:6px; font-size:12px; font-weight:700; cursor:pointer;
-  display:flex; align-items:center; gap:5px; transition:background .15s;
+.pg-form-row .pg-form-group { flex: 1; margin-bottom: 0; }
+.pg-form-row .pg-form-group.narrow { flex: 0 0 80px; }
+
+/* ── CEP row ── */
+.pg-cep-row { display: flex; gap: 8px; align-items: flex-end; }
+.pg-cep-row .pg-form-group { flex: 1; margin-bottom: 0; }
+.pg-cep-btn {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 14px;
+  background: var(--pink-50);
+  border: .5px solid var(--pink-200);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pink-500);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
 }
-.pg-pix-copy:hover { background:#14532d; }
-.pg-pix-copy.copied { background:#2563eb; }
-.pg-pix-tipo { font-size:11px; opacity:.75; }
-
-/* Mercado Pago */
-.pg-mp-box { text-align:center; }
-.pg-mp-btn {
-  display:flex; align-items:center; justify-content:center; gap:10px;
-  width:100%; padding:16px; border-radius:14px; border:none; cursor:pointer;
-  background:#009ee3; color:#fff; font-size:15px; font-weight:800;
-  text-decoration:none; transition:background .15s, transform .1s;
+.pg-cep-btn:hover { background: var(--pink-100); }
+.pg-cep-btn:disabled { opacity: .5; cursor: default; }
+.pg-cep-status {
+  font-size: 11px;
+  margin-top: 4px;
+  min-height: 16px;
 }
-.pg-mp-btn:hover { background:#0077b3; transform:translateY(-1px); }
-.pg-mp-btn i { font-size:20px; }
-.pg-mp-note { font-size:11px; color:var(--gray-400); margin-top:8px; text-align:center; }
-.pg-mp-nolink { background:var(--pink-50); border:1px dashed var(--pink-200); border-radius:12px; padding:14px; text-align:center; color:var(--gray-500); font-size:12px; }
+.pg-cep-status.ok  { color: #2E8B5A; }
+.pg-cep-status.err { color: #e05555; }
 
-/* Transferência */
-.pg-transf-box { background:var(--pink-50); border:1px solid var(--pink-100); border-radius:12px; padding:14px; font-size:13px; color:var(--gray-700); }
-.pg-transf-box strong { display:block; font-size:12px; color:var(--pink-600); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em; }
-.pg-transf-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; }
-.pg-transf-row span:first-child { color:var(--gray-400); font-size:11px; }
-
-/* Dinheiro */
-.pg-dinheiro-box { background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:14px; font-size:13px; color:#92400e; }
-.pg-dinheiro-box i { font-size:20px; display:block; margin-bottom:6px; }
-
-/* ── Botão confirmar ── */
-.pg-btn-confirm {
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  width:100%; padding:16px; border-radius:14px; border:none; cursor:pointer;
-  background:var(--pink-500); color:#fff; font-size:15px; font-weight:800;
-  transition:background .15s; margin-top:4px;
+/* ── Opções de frete ── */
+.pg-frete-opts { display: flex; flex-direction: column; gap: 8px; }
+.pg-frete-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: .5px solid var(--pink-100);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
 }
-.pg-btn-confirm:hover { background:var(--pink-600); }
-.pg-btn-confirm:disabled { opacity:.5; cursor:default; }
-
-/* ── Badge de entrega ── */
-.pg-delivery-badge {
-  display:flex; align-items:center; gap:8px; padding:10px 14px;
-  background:var(--pink-50); border:1px solid var(--pink-100); border-radius:10px;
-  font-size:12px; color:var(--gray-600);
+.pg-frete-opt:has(input:checked) {
+  border-color: var(--pink-300);
+  background: var(--pink-50);
 }
-.pg-delivery-badge i { color:var(--pink-400); font-size:15px; }
-.pg-delivery-badge strong { color:var(--gray-800); }
-
-/* ── Sucesso ── */
-@keyframes spin { to { transform:rotate(360deg); } }
-.pg-frete-aviso { background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 12px; font-size:11px; color:#92400e; margin-top:8px; display:flex; align-items:center; gap:6px; }
-.pg-success { display:none; text-align:center; padding:48px 20px; }
-.pg-success-icon { width:72px; height:72px; border-radius:50%; background:#dcfce7; border:1px solid #86efac; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:32px; color:#166534; }
-.pg-success h2 { font-size:20px; font-weight:800; color:var(--gray-800); margin-bottom:8px; }
-.pg-success p  { font-size:13px; color:var(--gray-400); }
-
-/* ── Mobile ── */
-@media (max-width:680px) {
-  .pg-page { flex-direction:column; padding:0 14px 80px; margin-top:16px; gap:14px; }
-  .pg-right { position:static; flex:none; width:100%; }
-  .pg-header { padding:12px 16px; }
+.pg-frete-opt input[type="radio"] {
+  accent-color: var(--pink-500);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
 }
+.pg-frete-opt-info { flex: 1; }
+.pg-frete-opt-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.pg-frete-opt-sub {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 1px;
+}
+.pg-frete-opt-preco {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--pink-500);
+  white-space: nowrap;
+}
+.pg-frete-opt-preco.gratis { color: #2E8B5A; }
+.pg-frete-peso {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.pg-frete-aviso {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.pg-frete-gratis-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 10px;
+}
+
+/* ── Card de totais ── */
+.pg-totals { display: flex; flex-direction: column; gap: 7px; }
+.pg-tot-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--gray-500);
+}
+.pg-tot-row.bold {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--gray-800);
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: .5px solid var(--pink-100);
+}
+.pg-tot-row.bold span:last-child { color: var(--pink-500); }
+.pg-tot-gratis { color: #2E8B5A !important; font-weight: 700; }
+
+/* ── Botão Mercado Pago ── */
+.pg-btn-mp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background: var(--pink-500);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  transition: background .15s, transform .1s;
+  margin-top: 4px;
+}
+.pg-btn-mp:hover:not(:disabled) {
+  background: var(--pink-600);
+  transform: translateY(-1px);
+}
+.pg-btn-mp:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.pg-btn-mp i { font-size: 18px; }
+
+/* ── Spinner ── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-icon { display: inline-block; animation: spin 1s linear infinite; }
+
+/* ── Nota de segurança ── */
+.pg-security-note {
+  font-size: 11px;
+  color: var(--gray-400);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+/* ── Mobile ≤ 680px ── */
+@media (max-width: 680px) {
+  .pg-page {
+    flex-direction: column;
+    padding: 0 14px 80px;
+    margin-top: 14px;
+    gap: 14px;
+  }
+  .pg-right {
+    position: static;
+    flex: none;
+    width: 100%;
+  }
+  .pg-header { padding: 12px 16px; }
+  .pg-breadcrumb { padding: 0 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 </style>
 </head>
 <body>
-<script src="js/firebase-config.js"></script>
+
+<!-- Scripts (antes de qualquer render) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-init.js"></script>
 <script src="js/cloud-sync.js"></script>
 <script src="js/cart.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+// ── Auth Gate ──────────────────────────────────────────────────────────────
+var _client = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
+if (!_client) {
+  sessionStorage.setItem('referrerPage', 'pagamento.html');
+  location.replace('login.html');
+}
+
+// ── Cart Gate ──────────────────────────────────────────────────────────────
+var _cart = typeof getCart === 'function' ? getCart() : [];
+if (!_cart.length) {
+  location.replace('V1.html');
+}
+</script>
 
 <!-- ── Cabeçalho ── -->
 <header class="pg-header">
   <a href="V1.html" class="pg-header-logo">LaPink</a>
-  <a href="javascript:history.back()" class="pg-header-back"><i class="ti ti-arrow-left"></i> Voltar</a>
+  <div class="pg-header-steps">
+    <span class="step active">1. Endereço</span>
+    <span class="step-sep">›</span>
+    <span class="step">2. Pagamento</span>
+  </div>
 </header>
 
-<nav aria-label="Navegação" style="max-width:900px;margin:10px auto 0;padding:0 24px;font-size:12px;color:#B08898;">
-  <a href="V1.html" style="color:#D4537E;text-decoration:none;font-weight:600;">Loja</a>
-  <span aria-hidden="true" style="margin:0 6px;">›</span>
+<!-- ── Breadcrumb ── -->
+<nav class="pg-breadcrumb" aria-label="Navegação">
+  <a href="V1.html">Loja</a>
+  <span aria-hidden="true" style="margin: 0 6px;">›</span>
   <span>Pagamento</span>
 </nav>
 
+<!-- ── Layout principal ── -->
 <div class="pg-page" id="pgPage">
 
-  <!-- ── Esquerda: itens + dados ── -->
-  <div class="pg-left" id="pgLeft">
+  <!-- ══ COLUNA ESQUERDA ══ -->
+  <div class="pg-left">
 
-    <!-- Carrinho vazio -->
-    <div class="card" id="pgEmpty" style="display:none;text-align:center;padding:48px 20px;">
-      <i class="ti ti-shopping-cart" style="font-size:40px;color:var(--pink-200);display:block;margin-bottom:14px;"></i>
-      <p style="color:var(--gray-400);font-size:13px;margin-bottom:18px;">Seu carrinho está vazio.</p>
-      <a href="V1.html" style="display:inline-block;background:var(--pink-500);color:#fff;border-radius:12px;padding:11px 24px;font-size:14px;font-weight:700;text-decoration:none;">Ver produtos</a>
-    </div>
-
-    <!-- Itens do pedido -->
-    <div class="card" id="pgItemsCard">
-      <div class="card-title"><i class="ti ti-shopping-bag"></i> Itens do pedido</div>
+    <!-- Card: Resumo do pedido -->
+    <div class="card">
+      <div class="card-title"><i class="ti ti-shopping-bag" aria-hidden="true"></i> Resumo do pedido</div>
       <div id="pgItems"><!-- JS --></div>
-      <div class="pg-totals" id="pgTotals"><!-- JS --></div>
     </div>
 
-    <!-- Dados do cliente -->
-    <div class="card" id="pgFormCard">
-      <div class="card-title"><i class="ti ti-user"></i> Seus dados</div>
+    <!-- Card: Seus dados -->
+    <div class="card">
+      <div class="card-title"><i class="ti ti-user" aria-hidden="true"></i> Seus dados</div>
+
       <div class="pg-form-group">
-        <label>Nome completo <span class="req">*</span></label>
-        <input type="text" id="pgNome" placeholder="Seu nome" autocomplete="name" inputmode="text" />
+        <label for="pgNome">Nome completo <span class="req" aria-label="obrigatório">*</span></label>
+        <input type="text" id="pgNome" placeholder="Seu nome completo" autocomplete="name" inputmode="text" />
       </div>
+
       <div class="pg-form-group">
-        <label>WhatsApp <span class="req">*</span></label>
-        <input type="tel" id="pgWpp" placeholder="(11) 99999-9999" autocomplete="tel" inputmode="tel" />
+        <label for="pgCpf">CPF <span class="req" aria-label="obrigatório">*</span></label>
+        <input type="text" id="pgCpf" placeholder="000.000.000-00" autocomplete="off" inputmode="numeric" maxlength="14" />
+      </div>
+
+      <div class="pg-form-group">
+        <label for="pgCelular">Celular <span class="req" aria-label="obrigatório">*</span></label>
+        <input type="tel" id="pgCelular" placeholder="(00) 00000-0000" autocomplete="tel" inputmode="tel" maxlength="16" />
+      </div>
+    </div>
+
+    <!-- Card: Endereço de entrega -->
+    <div class="card">
+      <div class="card-title"><i class="ti ti-map-pin" aria-hidden="true"></i> Endereço de entrega</div>
+
+      <div class="pg-form-group" style="margin-bottom: 4px;">
+        <label for="pgCep">CEP <span class="req" aria-label="obrigatório">*</span></label>
+        <div class="pg-cep-row">
+          <div class="pg-form-group">
+            <input type="text" id="pgCep" placeholder="00000-000" inputmode="numeric" maxlength="9" autocomplete="postal-code" />
+          </div>
+          <button type="button" class="pg-cep-btn" id="pgCepBtn" onclick="buscarCep()">
+            <i class="ti ti-search" aria-hidden="true"></i> Buscar
+          </button>
+        </div>
+        <div class="pg-cep-status" id="pgCepStatus" aria-live="polite"></div>
+      </div>
+
+      <div class="pg-form-group">
+        <label for="pgRua">Rua / Logradouro <span class="req" aria-label="obrigatório">*</span></label>
+        <input type="text" id="pgRua" placeholder="Nome da rua" autocomplete="street-address" />
+      </div>
+
+      <div class="pg-form-row" style="margin-bottom: 14px;">
+        <div class="pg-form-group narrow">
+          <label for="pgNumero">Número <span class="req" aria-label="obrigatório">*</span></label>
+          <input type="text" id="pgNumero" placeholder="Nº" inputmode="numeric" autocomplete="off" />
+        </div>
+        <div class="pg-form-group">
+          <label for="pgComplemento">Complemento</label>
+          <input type="text" id="pgComplemento" placeholder="Apto, bloco..." autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="pg-form-group">
+        <label for="pgBairro">Bairro <span class="req" aria-label="obrigatório">*</span></label>
+        <input type="text" id="pgBairro" placeholder="Bairro" autocomplete="off" />
+      </div>
+
+      <div class="pg-form-row">
+        <div class="pg-form-group">
+          <label for="pgCidade">Cidade <span class="req" aria-label="obrigatório">*</span></label>
+          <input type="text" id="pgCidade" placeholder="Cidade" autocomplete="address-level2" />
+        </div>
+        <div class="pg-form-group narrow">
+          <label for="pgEstado">UF <span class="req" aria-label="obrigatório">*</span></label>
+          <input type="text" id="pgEstado" placeholder="UF" maxlength="2" autocomplete="address-level1" style="text-transform: uppercase;" />
+        </div>
       </div>
     </div>
 
   </div>
+  <!-- /pg-left -->
 
-  <!-- ── Direita: entrega + pagamento + confirmar ── -->
-  <div class="pg-right" id="pgRight">
+  <!-- ══ COLUNA DIREITA ══ -->
+  <div class="pg-right">
 
-    <!-- Entrega selecionada -->
-    <div class="pg-delivery-badge" id="pgDeliveryBadge" style="display:none;">
-      <i class="ti ti-truck-delivery" aria-hidden="true"></i>
-      <span id="pgDeliveryTxt">—</span>
+    <!-- Card: Modalidade de entrega -->
+    <div class="card" id="pgFreteCard">
+      <div class="card-title"><i class="ti ti-truck-delivery" aria-hidden="true"></i> Modalidade de entrega</div>
+      <div id="pgFreteConteudo"><!-- JS --></div>
     </div>
 
-    <!-- Forma de pagamento -->
+    <!-- Card: Totais -->
     <div class="card">
-      <div class="card-title"><i class="ti ti-credit-card"></i> Forma de pagamento</div>
-      <div class="pg-pay-methods" id="pgPayMethods"><!-- JS --></div>
-      <div class="pg-pay-action" id="pgPayAction"><!-- JS --></div>
+      <div class="card-title"><i class="ti ti-receipt" aria-hidden="true"></i> Totais</div>
+      <div class="pg-totals" id="pgTotais"><!-- JS --></div>
     </div>
 
-    <!-- Confirmar -->
-    <button class="pg-btn-confirm" id="pgBtnConfirm" onclick="confirmarPedido()">
-      <i class="ti ti-brand-whatsapp"></i> Confirmar pedido
+    <!-- Botão Mercado Livre (checkout Mercado Pago da conta vinculada) -->
+    <button class="pg-btn-mp" id="pgBtnMP" onclick="pagarComMP()">
+      <i class="ti ti-lock" aria-hidden="true"></i>
+      Pagar com Mercado Livre
     </button>
-
-    <p style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:4px;">
-      Ao confirmar, seu pedido é registrado e entramos em contato via WhatsApp.
+    <p class="pg-security-note">
+      <i class="ti ti-shield-check" aria-hidden="true"></i>
+      Você será levado ao checkout seguro do Mercado Livre (Mercado Pago) para concluir o pagamento.
     </p>
 
   </div>
+  <!-- /pg-right -->
 
 </div>
-
-<!-- Sucesso -->
-<div class="card pg-success" id="pgSuccess" style="max-width:500px;margin:60px auto;">
-  <div class="pg-success-icon"><i class="ti ti-check" aria-hidden="true"></i></div>
-  <h2>Pedido confirmado!</h2>
-  <p id="pgSuccessMsg">Seu pedido foi registrado com sucesso.</p>
-  <a href="V1.html" style="display:inline-block;margin-top:24px;background:var(--pink-500);color:#fff;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:700;text-decoration:none;">Continuar comprando</a>
-</div>
+<!-- /pg-page -->
 
 <script>
-function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtR(v){ return 'R$ '+Number(v).toFixed(2).replace('.',','); }
+(function () {
+  'use strict';
 
-(function(){
+  /* ── Utilidades ─────────────────────────────────────────── */
+  function _esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  function fmtR(v) {
+    return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+  }
+  function _entCfg() {
+    try { return JSON.parse(localStorage.getItem('lapinkEntregaConfig') || '{}'); } catch (e) { return {}; }
+  }
+  function _produtos() {
+    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch (e) { return []; }
+  }
 
-  // ── Configs ──────────────────────────────────────────────
-  function _payCfg()  { try{return JSON.parse(localStorage.getItem('lapinkPaymentConfig')||'{}');}catch(e){return{};} }
-  function _apiCfg()  { try{return JSON.parse(localStorage.getItem('lapinkApiConfig')||'{}');}catch(e){return{};} }
-  function _entCfg()  { try{return JSON.parse(localStorage.getItem('lapinkEntregaConfig')||'{}');}catch(e){return{};} }
-  function _storeCfg(){ try{return JSON.parse(localStorage.getItem('lapinkStoreConfig')||'{}');}catch(e){return{};} }
+  /* ── Estado global ──────────────────────────────────────── */
+  var _modalidadeSelecionada = '';  // 'pac' | 'sedex' | 'retirada' | 'local'
+  var _freteValor = 0;
+  var _pesoTotal = 0;
+  var _subtotal = 0;
+  var _freteGratisAtivo = false;
 
-  // ── Entrega selecionada (salva pelo mini-cart no checkout) ──
-  function _getDelivery(){
-    var ship = localStorage.getItem('lapinkCartShipping');
-    var cfg  = _entCfg();
-    if(!ship) return null;
-    var sub  = getCartTotal();
-    var gA   = cfg.gratis&&cfg.gratis.ativo;
-    var min  = gA?(cfg.gratis.minimo!=null?Number(cfg.gratis.minimo):300):0;
-    var gratis = gA&&sub>=min;
+  /* ── Máscaras ───────────────────────────────────────────── */
+  function maskCpf(v) {
+    v = v.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) return v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    if (v.length > 6) return v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    if (v.length > 3) return v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+    return v;
+  }
+  function maskCelular(v) {
+    v = v.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 6) return v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+    if (v.length > 2) return v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+    return v;
+  }
+  function maskCep(v) {
+    v = v.replace(/\D/g, '').slice(0, 8);
+    if (v.length > 5) return v.replace(/(\d{5})(\d{0,3})/, '$1-$2');
+    return v;
+  }
 
-    var MAP = {
-      gratis:    { label:'Frete grátis', taxa:0, icon:'ti-sparkles' },
-      retirada:  { label:'Retirada no local', taxa:0, icon:'ti-map-pin' },
-      local:     { label:'Entrega local', taxa: gratis?0:(cfg.local&&cfg.local.taxa||0), icon:'ti-motorbike' },
-      pac:       { label:'PAC (Correios)', taxa:0, icon:'ti-package' },
-      sedex:     { label:'SEDEX (Correios)', taxa:0, icon:'ti-bolt' },
-      correios:  { label:'Correios', taxa:0, icon:'ti-package' },
-      acombinar: { label:'A combinar', taxa:0, icon:'ti-truck-delivery', aCombinar:true }
-    };
-    // Try to get price from stored config
-    var base = MAP[ship]||{ label:ship, taxa:0, icon:'ti-truck-delivery' };
-    // For PAC/SEDEX, look up from entrega config if available
-    if((ship==='pac'||ship==='sedex')&&!gratis){
-      var prods = JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');
-      var cart  = getCart();
-      var pesoG = cart.reduce(function(s,i){
-        var p=prods.find(function(x){return String(x.id)===String(i.id);});
-        return s+((p&&p.pesoEnvioGramas)?p.pesoEnvioGramas*i.qty:0);
-      },0);
-      var tabela = ship==='pac'?(cfg.pac&&cfg.pac.tabela):(cfg.sedex&&cfg.sedex.tabela);
-      if(tabela&&tabela.length&&pesoG>0){
-        var ord=tabela.slice().sort(function(a,b){return a.ateG-b.ateG;});
-        var row=ord.find(function(r){return pesoG<=r.ateG;});
-        if(row) base.taxa=row.preco;
-      }
+  /* ── Campo CPF ── */
+  var inpCpf = document.getElementById('pgCpf');
+  inpCpf.addEventListener('input', function () {
+    var pos = this.selectionStart;
+    var raw = this.value.replace(/\D/g, '').length;
+    this.value = maskCpf(this.value);
+    // Reposicionar cursor aproximado
+    try { this.setSelectionRange(pos, pos); } catch (e) {}
+  });
+
+  /* ── Campo Celular ── */
+  var inpCel = document.getElementById('pgCelular');
+  inpCel.addEventListener('input', function () {
+    this.value = maskCelular(this.value);
+  });
+
+  /* ── Campo CEP ── */
+  var inpCep = document.getElementById('pgCep');
+  inpCep.addEventListener('input', function () {
+    this.value = maskCep(this.value);
+    var digitos = this.value.replace(/\D/g, '');
+    if (digitos.length === 8) buscarCep();
+  });
+
+  /* ── Estado UF: maiúsculo ── */
+  document.getElementById('pgEstado').addEventListener('input', function () {
+    this.value = this.value.toUpperCase();
+  });
+
+  /* ── ViaCEP ─────────────────────────────────────────────── */
+  window.buscarCep = function () {
+    var cep = inpCep.value.replace(/\D/g, '');
+    var statusEl = document.getElementById('pgCepStatus');
+    var btn = document.getElementById('pgCepBtn');
+    if (cep.length !== 8) {
+      statusEl.textContent = 'CEP deve ter 8 dígitos.';
+      statusEl.className = 'pg-cep-status err';
+      return;
     }
-    return base;
-  }
+    btn.disabled = true;
+    btn.textContent = 'Buscando...';
+    statusEl.textContent = '';
+    statusEl.className = 'pg-cep-status';
 
-  // ── Métodos de pagamento disponíveis ──────────────────────
-  var _PAY_META = {
-    pix:     { icon:'ti-qrcode',       label:'PIX',                     sub:'Pagamento instantâneo' },
-    cartao:  { icon:'ti-credit-card',  label:'Cartão de crédito/débito', sub:'Maquininha na entrega ou Mercado Pago' },
-    transf:  { icon:'ti-building-bank',label:'Transferência bancária',   sub:'Transferência bancária' },
-    dinheiro:{ icon:'ti-cash',         label:'Dinheiro / na entrega',    sub:'Pagamento na entrega'  }
-  };
-
-  function getPayOpts(){
-    var c=_payCfg(); var opts=[];
-    ['pix','cartao','transf','dinheiro'].forEach(function(k){
-      var m=c[k];
-      if(m&&m.ativo){ var meta=_PAY_META[k]; opts.push({key:k,icon:meta.icon,label:meta.label,sub:meta.sub}); }
-    });
-    if(!opts.length) opts.push({key:'outro',icon:'ti-cash',label:'Pagamento',sub:'A combinar com o vendedor'});
-    return opts;
-  }
-
-  // ── Estado ────────────────────────────────────────────────
-  var _selPay = localStorage.getItem('lapinkCartPayment') || '';
-
-  // ── Renderizar itens ──────────────────────────────────────
-  function renderItems(){
-    var cart=getCart();
-    var el=document.getElementById('pgItems');
-    var totEl=document.getElementById('pgTotals');
-    if(!cart.length){
-      document.getElementById('pgEmpty').style.display='';
-      document.getElementById('pgItemsCard').style.display='none';
-      document.getElementById('pgFormCard').style.display='none';
-      document.getElementById('pgRight').style.display='none';
-      return false;
-    }
-
-    var prods=JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');
-    el.innerHTML=cart.map(function(item){
-      var p=prods.find(function(x){return String(x.id)===String(item.id);});
-      var img=p&&p.imagem
-        ?'<img src="'+_esc(item.imagem)+'" alt="'+_esc(item.nome)+'" />'
-        :'<i class="ti ti-diamond"></i>';
-      return '<div class="pg-item">' +
-        '<div class="pg-item-img">'+img+'</div>' +
-        '<div class="pg-item-info">' +
-          '<div class="pg-item-name">'+_esc(item.nome)+'</div>' +
-          '<div class="pg-item-qty">Qtd: '+item.qty+'</div>' +
-        '</div>' +
-        '<div class="pg-item-price">'+fmtR(item.preco*item.qty)+'</div>' +
-      '</div>';
-    }).join('');
-
-    var sub=getCartTotal();
-    var delivery=_getDelivery();
-    var frete=delivery&&!delivery.aCombinar?(delivery.taxa||0):0;
-    var total=sub+frete;
-    var freteHtml=delivery
-      ?('<span class="pg-tot-row">' +
-        '<span>Frete</span>' +
-        '<span'+(delivery.aCombinar?' style="color:#888"':frete===0?' class="pg-tot-gratis"':'')+'>'+
-          (delivery.aCombinar?'A combinar':frete===0?'Grátis':fmtR(frete))+'</span>' +
-        '</span>')
-      :'';
-    var aCombinar = delivery && delivery.aCombinar;
-    var avisoHtml = aCombinar
-      ? '<div class="pg-frete-aviso"><i class="ti ti-info-circle"></i> O frete será calculado e combinado após o pedido.</div>'
-      : '';
-    var totalLabel = aCombinar ? 'Subtotal (+ frete a combinar)' : 'Total';
-    totEl.innerHTML=
-      '<span class="pg-tot-row"><span>Subtotal</span><span>'+fmtR(sub)+'</span></span>' +
-      freteHtml +
-      '<span class="pg-tot-row bold"><span>'+totalLabel+'</span><span>'+fmtR(total)+'</span></span>' +
-      avisoHtml;
-    return true;
-  }
-
-  // ── Entrega badge ─────────────────────────────────────────
-  function renderDelivery(){
-    var delivery=_getDelivery();
-    var badge=document.getElementById('pgDeliveryBadge');
-    var txt=document.getElementById('pgDeliveryTxt');
-    if(!badge||!txt) return;
-    if(delivery){
-      badge.style.display='flex';
-      var priceStr=delivery.aCombinar?'A combinar':delivery.taxa===0?'<strong style="color:#2E8B5A">Grátis</strong>':'<strong>'+fmtR(delivery.taxa)+'</strong>';
-      txt.innerHTML='<strong>'+_esc(delivery.label)+'</strong>&nbsp;·&nbsp;'+priceStr;
-    } else {
-      badge.style.display='none';
-    }
-  }
-
-  // ── Render métodos de pagamento ───────────────────────────
-  function renderPayMethods(){
-    var opts=getPayOpts();
-    var saved=localStorage.getItem('lapinkCartPayment')||'';
-    if(!saved||!opts.find(function(o){return o.key===saved;})) saved=opts[0]&&opts[0].key||'';
-    _selPay=saved;
-
-    var pgPayEl=document.getElementById('pgPayMethods');
-    pgPayEl.innerHTML=opts.map(function(o){
-      return '<label class="pg-pay-method">' +
-        '<input type="radio" name="pgPay" value="'+_esc(o.key)+'"'+(o.key===_selPay?' checked':'')+' />' +
-        '<div class="pg-pay-method-icon"><i class="ti '+_esc(o.icon)+'"></i></div>' +
-        '<div class="pg-pay-method-info">' +
-          '<div class="pg-pay-method-label">'+_esc(o.label)+'</div>' +
-          '<div class="pg-pay-method-sub">'+_esc(o.sub)+'</div>' +
-        '</div>' +
-      '</label>';
-    }).join('');
-    pgPayEl.querySelectorAll('input[name="pgPay"]').forEach(function(inp){
-      inp.addEventListener('change',function(){ if(this.checked) selectPay(this.value); });
-    });
-
-    renderPayAction();
-  }
-
-  // ── Ação de pagamento por método ──────────────────────────
-  function renderPayAction(){
-    var el=document.getElementById('pgPayAction');
-    if(!el) return;
-    var cfg=_payCfg(); var api=_apiCfg();
-    var k=_selPay; var html='';
-
-    if(k==='pix'&&cfg.pix&&cfg.pix.chave){
-      var tipoLabel={cpf:'CPF',cnpj:'CNPJ',email:'E-mail',telefone:'Telefone',aleatoria:'Chave aleatória'}[cfg.pix.tipoChave]||'Chave PIX';
-      html='<div class="pg-pix-box">' +
-        '<strong><i class="ti ti-qrcode"></i> Pagar via PIX</strong>' +
-        '<div class="pg-pix-tipo">Tipo: '+_esc(tipoLabel)+(cfg.pix.nomeFavorecido?' · '+_esc(cfg.pix.nomeFavorecido):'')+' </div>' +
-        '<div class="pg-pix-chave-row" style="margin-top:10px;">' +
-          '<span class="pg-pix-chave-val">'+_esc(cfg.pix.chave)+'</span>' +
-          '<button class="pg-pix-copy" id="pg-copy-btn" onclick="copiarPix()"><i class="ti ti-copy"></i> Copiar</button>' +
-        '</div>' +
-        (cfg.pix.instrucao?'<p style="font-size:12px;margin-top:6px;">'+_esc(cfg.pix.instrucao)+'</p>':'') +
-      '</div>';
-
-    } else if(k==='cartao'){
-      var mpLink=api.mpPaymentLink||'';
-      if(mpLink){
-        html='<div class="pg-mp-box">' +
-          '<a href="'+_esc(mpLink)+'" target="_blank" rel="noopener" class="pg-mp-btn">' +
-            '<i class="ti ti-credit-card"></i> Pagar com Mercado Pago' +
-          '</a>' +
-          '<p class="pg-mp-note">Você será redirecionado ao ambiente seguro do Mercado Pago.</p>' +
-        '</div>';
-      } else {
-        html='<div class="pg-mp-nolink">' +
-          '<i class="ti ti-credit-card" style="font-size:22px;display:block;margin-bottom:6px;color:var(--pink-300);"></i>' +
-          'Pagamento via maquininha no momento da entrega' +
-          (cfg.cartao&&cfg.cartao.parcelaMax>1?'<br><strong>Parcelamento em até '+cfg.cartao.parcelaMax+'x sem juros</strong>':'') +
-        '</div>';
-      }
-
-    } else if(k==='transf'&&cfg.transferencia){
-      var t=cfg.transferencia;
-      html='<div class="pg-transf-box">' +
-        '<strong><i class="ti ti-building-bank"></i> Dados para transferência</strong>' +
-        (t.banco?'<div class="pg-transf-row"><span>Banco</span><strong>'+_esc(t.banco)+'</strong></div>':'') +
-        (t.agencia?'<div class="pg-transf-row"><span>Agência</span><strong>'+_esc(t.agencia)+'</strong></div>':'') +
-        (t.conta?'<div class="pg-transf-row"><span>Conta</span><strong>'+_esc(t.conta)+'</strong></div>':'') +
-        (t.favorecido?'<div class="pg-transf-row"><span>Favorecido</span><strong>'+_esc(t.favorecido)+'</strong></div>':'') +
-        (t.instrucao?'<p style="font-size:12px;margin-top:8px;color:#555;">'+_esc(t.instrucao)+'</p>':'') +
-      '</div>';
-
-    } else if(k==='dinheiro'&&cfg.dinheiro){
-      html='<div class="pg-dinheiro-box">' +
-        '<i class="ti ti-cash"></i>' +
-        '<strong>Pagamento na entrega</strong>' +
-        '<p style="margin-top:6px;font-size:12px;">'+_esc(cfg.dinheiro.instrucao||'Pagamento no momento da entrega ou retirada.')+'</p>' +
-      '</div>';
-
-    } else {
-      html='<div class="pg-mp-nolink">Pagamento a combinar com o vendedor.</div>';
-    }
-
-    el.innerHTML=html;
-  }
-
-  // ── Expõe ─────────────────────────────────────────────────
-  window.selectPay=function(k){
-    _selPay=k;
-    localStorage.setItem('lapinkCartPayment',k);
-    renderPayAction();
-  };
-
-  window.copiarPix=function(){
-    var cfg=_payCfg();
-    if(!cfg.pix||!cfg.pix.chave) return;
-    navigator.clipboard.writeText(cfg.pix.chave).then(function(){
-      var btn=document.getElementById('pg-copy-btn');
-      if(btn){ btn.innerHTML='<i class="ti ti-check"></i> Copiado!'; btn.classList.add('copied'); }
-      setTimeout(function(){ if(btn){ btn.innerHTML='<i class="ti ti-copy"></i> Copiar'; btn.classList.remove('copied'); } },2000);
-    }).catch(function(){
-      var ta=document.createElement('textarea');
-      ta.value=cfg.pix.chave; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    });
-  };
-
-  // ── Confirmar pedido ──────────────────────────────────────
-  var _confirmando = false;
-
-  window.confirmarPedido=function(){
-    if(_confirmando) return;
-
-    var nome=document.getElementById('pgNome').value.trim();
-    var wpp=document.getElementById('pgWpp').value.trim();
-    var ok=true;
-    if(!nome){ document.getElementById('pgNome').classList.add('err'); ok=false; }
-    else document.getElementById('pgNome').classList.remove('err');
-    if(!wpp){ document.getElementById('pgWpp').classList.add('err'); ok=false; }
-    else document.getElementById('pgWpp').classList.remove('err');
-    if(!ok){ document.getElementById('pgNome').focus(); return; }
-
-    var cart=getCart();
-    if(!cart.length){ alert('Seu carrinho está vazio.'); return; }
-
-    // ── Validar estoque antes de confirmar
-    try{
-      var prods=JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');
-      var semEstoque=[];
-      cart.forEach(function(item){
-        var p=prods.find(function(x){return String(x.id)===String(item.id);});
-        if(p && Number(p.estoque)>=0 && item.qty > Number(p.estoque)){
-          semEstoque.push(item.nome+' (disponível: '+p.estoque+')');
+    fetch('https://viacep.com.br/ws/' + cep + '/json/')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-search" aria-hidden="true"></i> Buscar';
+        if (d.erro) {
+          statusEl.textContent = 'CEP não encontrado.';
+          statusEl.className = 'pg-cep-status err';
+          return;
         }
+        document.getElementById('pgRua').value    = d.logradouro || '';
+        document.getElementById('pgBairro').value = d.bairro     || '';
+        document.getElementById('pgCidade').value = d.localidade || '';
+        document.getElementById('pgEstado').value = (d.uf || '').toUpperCase();
+        statusEl.textContent = 'Endereço encontrado!';
+        statusEl.className = 'pg-cep-status ok';
+        document.getElementById('pgNumero').focus();
+        // Remover erros dos campos preenchidos
+        ['pgRua', 'pgBairro', 'pgCidade', 'pgEstado'].forEach(function (id) {
+          document.getElementById(id).classList.remove('err');
+        });
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-search" aria-hidden="true"></i> Buscar';
+        statusEl.textContent = 'Erro ao buscar CEP. Tente novamente.';
+        statusEl.className = 'pg-cep-status err';
       });
-      if(semEstoque.length){
-        alert('Estoque insuficiente para:\n'+semEstoque.join('\n')+'\n\nAjuste as quantidades no carrinho.');
+  };
+
+  /* ── Calcular peso total ────────────────────────────────── */
+  function calcularPeso() {
+    var prods = _produtos();
+    var cart = typeof getCart === 'function' ? getCart() : _cart;
+    var peso = cart.reduce(function (s, item) {
+      var p = prods.find(function (x) { return String(x.id) === String(item.id); });
+      // O cadastro salva o peso como "pesoEnvioGramas" (fallback p/ pesoEnvioG por compat.)
+      var pesoUnit = p ? Number(p.pesoEnvioGramas || p.pesoEnvioG || 0) : 0;
+      return s + pesoUnit * item.qty;
+    }, 0);
+    peso += 300; // embalagem padrão
+    return peso;
+  }
+
+  /* ── Encontrar preço na tabela de frete ─────────────────── */
+  function precoNaTabela(tabela, pesoG) {
+    if (!tabela || !tabela.length) return null;
+    var ordenada = tabela.slice().sort(function (a, b) { return Number(a.ateG) - Number(b.ateG); });
+    var faixa = ordenada.find(function (r) { return pesoG <= Number(r.ateG); });
+    return faixa ? Number(faixa.preco) : null; // null = excede tabela
+  }
+
+  /* ── Renderizar itens do pedido ─────────────────────────── */
+  function renderItens() {
+    var cart = typeof getCart === 'function' ? getCart() : _cart;
+    var el = document.getElementById('pgItems');
+    _subtotal = cart.reduce(function (s, i) { return s + i.preco * i.qty; }, 0);
+
+    el.innerHTML = cart.map(function (item) {
+      var imgHtml = item.imagem
+        ? '<img src="' + _esc(item.imagem) + '" alt="' + _esc(item.nome) + '" loading="lazy" />'
+        : '<i class="ti ti-diamond" aria-hidden="true"></i>';
+      return '<div class="pg-item">' +
+        '<div class="pg-item-img">' + imgHtml + '</div>' +
+        '<div class="pg-item-info">' +
+          '<div class="pg-item-name">' + _esc(item.nome) + '</div>' +
+          '<div class="pg-item-qty">Qtd: ' + item.qty + '</div>' +
+        '</div>' +
+        '<div class="pg-item-price">' + fmtR(item.preco * item.qty) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  /* ── Renderizar opções de frete ─────────────────────────── */
+  function renderFrete() {
+    var cfg = _entCfg();
+    var el = document.getElementById('pgFreteConteudo');
+    _pesoTotal = calcularPeso();
+
+    // Verificar frete grátis
+    var gratisAtivo = cfg.gratis && cfg.gratis.ativo;
+    var gratisMin = gratisAtivo ? Number(cfg.gratis.minimo || 0) : Infinity;
+    _freteGratisAtivo = gratisAtivo && _subtotal >= gratisMin;
+
+    var opcoes = [];
+    var excedeuTabela = false;
+
+    // PAC
+    if (cfg.pac && cfg.pac.ativo) {
+      var precoPac = precoNaTabela(cfg.pac.tabela, _pesoTotal);
+      if (precoPac === null) {
+        excedeuTabela = true;
+      } else {
+        opcoes.push({
+          id: 'pac',
+          label: 'PAC (Correios)',
+          sub: 'Prazo padrão dos Correios',
+          icon: 'ti-package',
+          preco: _freteGratisAtivo ? 0 : precoPac,
+          isGratis: _freteGratisAtivo
+        });
+      }
+    }
+
+    // SEDEX
+    if (cfg.sedex && cfg.sedex.ativo) {
+      var precoSedex = precoNaTabela(cfg.sedex.tabela, _pesoTotal);
+      if (precoSedex === null) {
+        excedeuTabela = true;
+      } else {
+        opcoes.push({
+          id: 'sedex',
+          label: 'SEDEX (Correios)',
+          sub: 'Entrega expressa',
+          icon: 'ti-bolt',
+          preco: _freteGratisAtivo ? 0 : precoSedex,
+          isGratis: _freteGratisAtivo
+        });
+      }
+    }
+
+    // Retirada na loja
+    if (cfg.retirada && cfg.retirada.ativo) {
+      opcoes.push({
+        id: 'retirada',
+        label: 'Retirada na loja',
+        sub: 'Combine horário após o pedido',
+        icon: 'ti-map-pin',
+        preco: 0,
+        isGratis: true
+      });
+    }
+
+    // Entrega local
+    if (cfg.local && cfg.local.ativo) {
+      opcoes.push({
+        id: 'local',
+        label: 'Entrega local',
+        sub: 'Entrega na cidade',
+        icon: 'ti-motorbike',
+        preco: _freteGratisAtivo ? 0 : Number(cfg.local.taxa || 0),
+        isGratis: _freteGratisAtivo
+      });
+    }
+
+    var html = '';
+
+    // Badge frete grátis
+    if (_freteGratisAtivo) {
+      html += '<div class="pg-frete-gratis-badge"><i class="ti ti-sparkles" aria-hidden="true"></i> Frete grátis disponível neste pedido!</div>';
+    }
+
+    // Peso
+    html += '<div class="pg-frete-peso"><i class="ti ti-weight" aria-hidden="true"></i> Peso estimado: <strong>' + _pesoTotal + 'g</strong> (incl. embalagem)</div>';
+
+    if (!opcoes.length) {
+      html += '<div class="pg-frete-aviso"><i class="ti ti-info-circle" aria-hidden="true"></i> Nenhuma modalidade de entrega disponível no momento.</div>';
+    } else {
+      html += '<div class="pg-frete-opts">';
+      opcoes.forEach(function (op, idx) {
+        var checked = (op.id === _modalidadeSelecionada) || (idx === 0 && !_modalidadeSelecionada);
+        if (checked && !_modalidadeSelecionada) {
+          _modalidadeSelecionada = op.id;
+          _freteValor = op.preco;
+        }
+        var precoStr = op.isGratis
+          ? '<span class="pg-frete-opt-preco gratis">Grátis</span>'
+          : '<span class="pg-frete-opt-preco">' + fmtR(op.preco) + '</span>';
+
+        html += '<label class="pg-frete-opt">' +
+          '<input type="radio" name="pgFrete" value="' + _esc(op.id) + '"' + (checked ? ' checked' : '') + ' />' +
+          '<div class="pg-frete-opt-info">' +
+            '<div class="pg-frete-opt-label"><i class="ti ' + _esc(op.icon) + '" aria-hidden="true"></i> ' + _esc(op.label) + '</div>' +
+            '<div class="pg-frete-opt-sub">' + _esc(op.sub) + '</div>' +
+          '</div>' +
+          precoStr +
+          '</label>';
+      });
+      html += '</div>';
+    }
+
+    if (excedeuTabela) {
+      html += '<div class="pg-frete-aviso" style="margin-top:10px;"><i class="ti ti-alert-triangle" aria-hidden="true"></i> O peso do pedido excede as faixas configuradas. Entre em contato para combinar o frete dos Correios.</div>';
+    }
+
+    el.innerHTML = html;
+
+    // Eventos nos radios
+    el.querySelectorAll('input[name="pgFrete"]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        if (!this.checked) return;
+        _modalidadeSelecionada = this.value;
+        var op = opcoes.find(function (o) { return o.id === inp.value; });
+        _freteValor = op ? op.preco : 0;
+        renderTotais();
+      });
+    });
+
+    renderTotais();
+  }
+
+  /* ── Renderizar totais ──────────────────────────────────── */
+  function renderTotais() {
+    var el = document.getElementById('pgTotais');
+    var total = _subtotal + _freteValor;
+
+    var freteHtml = '';
+    if (_modalidadeSelecionada === 'retirada' || (_freteGratisAtivo && _freteValor === 0 && _modalidadeSelecionada)) {
+      freteHtml = '<div class="pg-tot-row"><span>Frete</span><span class="pg-tot-gratis">Grátis</span></div>';
+    } else if (_modalidadeSelecionada) {
+      freteHtml = '<div class="pg-tot-row"><span>Frete</span><span>' + fmtR(_freteValor) + '</span></div>';
+    } else {
+      freteHtml = '<div class="pg-tot-row"><span>Frete</span><span style="color:var(--gray-400)">A combinar</span></div>';
+    }
+
+    el.innerHTML =
+      '<div class="pg-tot-row"><span>Subtotal</span><span>' + fmtR(_subtotal) + '</span></div>' +
+      freteHtml +
+      '<div class="pg-tot-row bold"><span>TOTAL</span><span>' + fmtR(total) + '</span></div>';
+  }
+
+  /* ── Pré-preencher dados do cliente ─────────────────────── */
+  function preencherDados() {
+    if (_client) {
+      if (_client.name) document.getElementById('pgNome').value = _client.name;
+    }
+  }
+
+  /* ── Validação de campos ────────────────────────────────── */
+  function validar() {
+    var campos = [
+      { id: 'pgNome',    teste: function (v) { return v.length >= 3; } },
+      { id: 'pgCpf',     teste: function (v) { return v.replace(/\D/g, '').length === 11; } },
+      { id: 'pgCelular', teste: function (v) { return v.replace(/\D/g, '').length >= 10; } },
+      { id: 'pgCep',     teste: function (v) { return v.replace(/\D/g, '').length === 8; } },
+      { id: 'pgRua',     teste: function (v) { return v.length >= 2; } },
+      { id: 'pgNumero',  teste: function (v) { return v.length >= 1; } },
+      { id: 'pgBairro',  teste: function (v) { return v.length >= 2; } },
+      { id: 'pgCidade',  teste: function (v) { return v.length >= 2; } },
+      { id: 'pgEstado',  teste: function (v) { return v.length === 2; } }
+    ];
+
+    var ok = true;
+    var primeiroErro = null;
+
+    campos.forEach(function (c) {
+      var el = document.getElementById(c.id);
+      var val = el.value.trim();
+      if (!c.teste(val)) {
+        el.classList.add('err');
+        if (!primeiroErro) primeiroErro = el;
+        ok = false;
+      } else {
+        el.classList.remove('err');
+      }
+    });
+
+    if (!ok && primeiroErro) {
+      primeiroErro.focus();
+      primeiroErro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    return ok;
+  }
+
+  /* ── Remover classe err ao digitar ──────────────────────── */
+  ['pgNome','pgCpf','pgCelular','pgCep','pgRua','pgNumero','pgBairro','pgCidade','pgEstado'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', function () { this.classList.remove('err'); });
+    }
+  });
+
+  /* ── Chamada ao Firebase Function (Mercado Pago) ─────────── */
+  window.pagarComMP = async function () {
+    if (!validar()) return;
+
+    var cart = typeof getCart === 'function' ? getCart() : _cart;
+    if (!cart.length) { location.replace('V1.html'); return; }
+
+    // Coleta valores do form
+    var nome        = document.getElementById('pgNome').value.trim();
+    var cpf         = document.getElementById('pgCpf').value.replace(/\D/g, '');
+    var celular     = document.getElementById('pgCelular').value.trim();
+    var cep         = document.getElementById('pgCep').value.replace(/\D/g, '');
+    var rua         = document.getElementById('pgRua').value.trim();
+    var numero      = document.getElementById('pgNumero').value.trim();
+    var complemento = document.getElementById('pgComplemento').value.trim();
+    var bairro      = document.getElementById('pgBairro').value.trim();
+    var cidade      = document.getElementById('pgCidade').value.trim();
+    var estado      = document.getElementById('pgEstado').value.trim().toUpperCase();
+
+    var total = _subtotal + _freteValor;
+
+    var payload = {
+      cliente: {
+        nome: nome,
+        email: _client.email || '',
+        cpf: cpf,
+        celular: celular
+      },
+      endereco: {
+        cep: cep,
+        rua: rua,
+        numero: numero,
+        complemento: complemento,
+        bairro: bairro,
+        cidade: cidade,
+        estado: estado
+      },
+      itens: cart.map(function (i) {
+        return { id: i.id, nome: i.nome, qty: i.qty, preco: i.preco };
+      }),
+      subtotal: _subtotal,
+      frete: _freteValor,
+      total: total,
+      modalidadeFrete: _modalidadeSelecionada
+    };
+
+    // UI: spinner
+    var btn = document.getElementById('pgBtnMP');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2 spin-icon" aria-hidden="true"></i> Processando...';
+
+    try {
+      var resp = await fetch(
+        'https://us-central1-lapink-82a39.cloudfunctions.net/createPreference',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      var data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.error || 'Erro ao processar pagamento');
+      }
+
+      // Salvar pedido_id localmente para sucesso.html ler.
+      // OBS: NÃO baixamos estoque aqui — a baixa ocorre no webhook quando o
+      // pagamento é confirmado (evita "vazar" estoque se o cliente abandonar o MP).
+      if (data.pedido_id) {
+        localStorage.setItem('lapinkUltimoPedido', data.pedido_id);
+      }
+      marcarAbandonoConvertido(); // compra concluída — sai da lista de abandonados
+
+      // Redirecionar para o Mercado Pago
+      window.location.href = data.init_point;
+
+    } catch (err) {
+      // ── Fallback sem backend (Blaze não ativo) ──────────────
+      // Registra o pedido localmente para não travar a loja e baixa o estoque.
+      // O pagamento real do MP exige as Functions (plano Blaze).
+      var registrado = registrarPedidoLocal(payload);
+      if (registrado) {
+        baixarEstoqueLocal(payload.itens);
+        marcarAbandonoConvertido(); // compra concluída (fallback)
+        localStorage.setItem('lapinkUltimoPedido', registrado.numero);
+        if (typeof clearCart === 'function') { try { clearCart(); } catch (e) {} }
+        window.location.href = 'sucesso.html?pedido=' + encodeURIComponent(registrado.numero) + '&local=1';
         return;
       }
-    }catch(e){}
-
-    var delivery=_getDelivery();
-    var sub=getCartTotal();
-    var freteACombinar=!delivery||delivery.aCombinar;
-    var frete=freteACombinar?0:(delivery.taxa||0);
-    var total=sub+frete;
-
-    var sc=_storeCfg();
-    var lojaWpp=(sc.whatsapp||'').replace(/\D/g,'');
-    if(!lojaWpp){ alert('WhatsApp da loja não configurado. Peça ao administrador.'); return; }
-
-    // ── Proteção duplo clique
-    _confirmando=true;
-    var btn=document.getElementById('pgBtnConfirm');
-    if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Confirmando...'; }
-
-    // ── Número de pedido único (timestamp + random)
-    var numPedido=(function(){
-      try{
-        var ts=Date.now().toString(36).toUpperCase();
-        var rnd=Math.random().toString(36).slice(2,5).toUpperCase();
-        return ts+'-'+rnd;
-      }catch(e){return 'PED-'+Date.now();}
-    })();
-
-    var payOpts=getPayOpts();
-    var payLabel=(payOpts.find(function(o){return o.key===_selPay;})||{label:''}).label;
-
-    var pedido={
-      numero:numPedido, cliente:nome, whatsapp:wpp,
-      itens:cart.map(function(i){return{nome:i.nome,qty:i.qty,preco:i.preco};}),
-      subtotal:sub, frete:freteACombinar?null:frete,
-      entrega:delivery?delivery.label:'A combinar',
-      pagamento:payLabel, total:total,
-      status:'aguardando', data:new Date().toISOString()
-    };
-    try{
-      var pedidos=JSON.parse(localStorage.getItem('lapinkPedidos')||'[]');
-      pedidos.unshift(pedido);
-      localStorage.setItem('lapinkPedidos',JSON.stringify(pedidos));
-    }catch(e){}
-
-    // ── Baixar estoque após validação
-    try{
-      var prodsAtual=JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');
-      cart.forEach(function(item){
-        var idx=prodsAtual.findIndex(function(p){return String(p.id)===String(item.id);});
-        if(idx>=0) prodsAtual[idx].estoque=Math.max(0,(Number(prodsAtual[idx].estoque)||0)-item.qty);
-      });
-      localStorage.setItem('lapinkProdutos',JSON.stringify(prodsAtual));
-    }catch(e){}
-
-    // ── Montar mensagem WhatsApp
-    var itensMsg=cart.map(function(i){return '- '+i.nome+' x'+i.qty+' — '+fmtR(i.preco*i.qty);}).join('\n');
-    var delivLine=delivery
-      ?('*Entrega:* '+delivery.label+(freteACombinar?' — A combinar':frete===0?' — Grátis':' — '+fmtR(frete))+'\n')
-      :'';
-    var totalLine=freteACombinar
-      ?'*Subtotal:* '+fmtR(sub)+'\n*Frete:* A combinar\n'
-      :'*Subtotal:* '+fmtR(sub)+'\n';
-    var msg=
-      '*Novo Pedido LaPink* 🛍\n' +
-      '*Nº:* '+numPedido+'\n' +
-      '*Data:* '+new Date().toLocaleDateString('pt-BR')+'\n\n' +
-      '*Cliente:* '+nome+'\n' +
-      '*WhatsApp:* '+wpp+'\n\n' +
-      '*Itens:*\n'+itensMsg+'\n\n' +
-      totalLine+
-      delivLine+
-      '*Total:* '+fmtR(total)+(freteACombinar?' _(+ frete a combinar)_':'')+'\n' +
-      (payLabel?'*Pagamento:* '+payLabel+'\n':'') +
-      '\n_Status: Aguardando confirmação_';
-
-    clearCart();
-
-    document.getElementById('pgPage').style.display='none';
-    var suc=document.getElementById('pgSuccess');
-    suc.style.display='block';
-    document.getElementById('pgSuccessMsg').innerHTML=
-      'Pedido <strong>'+numPedido+'</strong> registrado!<br>Sua mensagem foi aberta no WhatsApp.';
-
-    var waUrl='https://wa.me/'+lojaWpp+'?text='+encodeURIComponent(msg);
-    setTimeout(function(){ window.open(waUrl,'_blank'); _confirmando=false; },300);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> Pagar com Mercado Livre';
+      alert('Erro ao processar pagamento: ' + (err.message || 'Tente novamente.'));
+    }
   };
 
-  // ── Pré-preencher dados salvos ────────────────────────────
-  function preencherDados(){
-    try{
-      var u=JSON.parse(localStorage.getItem('lapinkSession')||'null');
-      if(u){ if(u.nome) document.getElementById('pgNome').value=u.nome; if(u.whatsapp) document.getElementById('pgWpp').value=u.whatsapp; }
-    }catch(e){}
+  /* ── Baixa de estoque local (sincroniza p/ Firestore via cloud-sync) ── */
+  function baixarEstoqueLocal(itens) {
+    try {
+      var prods = _produtos();
+      var mudou = false;
+      (itens || []).forEach(function (it) {
+        var p = prods.find(function (x) { return String(x.id) === String(it.id); });
+        if (p && typeof p.estoque !== 'undefined') {
+          p.estoque = Math.max(0, (parseInt(p.estoque) || 0) - (it.qty || 1));
+          mudou = true;
+        }
+      });
+      if (mudou) localStorage.setItem('lapinkProdutos', JSON.stringify(prods));
+    } catch (e) { console.warn('[pagamento] baixa estoque local falhou', e); }
   }
 
-  // ── Init ──────────────────────────────────────────────────
-  var ok=renderItems();
-  if(ok){
-    renderDelivery();
-    renderPayMethods();
-    preencherDados();
+  /* ── Marca pedido Firestore como estoqueBaixado (evita baixa dupla no webhook) ── */
+  function marcarEstoqueBaixado(pedidoId) {
+    try {
+      if (typeof firebase !== 'undefined' && firebase.apps.length) {
+        firebase.firestore().collection('pedidos').doc(pedidoId)
+          .update({ estoqueBaixado: true }).catch(function () {});
+      }
+    } catch (e) {}
   }
+
+  /* ── Registra pedido em localStorage (lapinkPedidos) p/ admin + relatórios ── */
+  function registrarPedidoLocal(payload) {
+    try {
+      var numero = 'LPK-' + Date.now().toString(36).toUpperCase() + '-' +
+                   Math.random().toString(36).slice(2, 4).toUpperCase();
+      var pedido = {
+        id: Date.now(),
+        numero: numero,
+        status: 'aguardando_pagamento',
+        cliente: {
+          name: payload.cliente.nome,
+          nome: payload.cliente.nome,
+          email: payload.cliente.email,
+          cpf: payload.cliente.cpf,
+          whatsapp: payload.cliente.celular,
+          celular: payload.cliente.celular
+        },
+        endereco: payload.endereco,
+        itens: payload.itens,
+        subtotal: payload.subtotal,
+        frete: payload.frete,
+        total: payload.total,
+        modalidadeFrete: payload.modalidadeFrete,
+        pagamento: 'mercadopago',
+        rastreio: null,
+        estoqueBaixado: true,
+        data: new Date().toISOString()
+      };
+      var lista = [];
+      try { lista = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]'); } catch (e) {}
+      lista.push(pedido);
+      localStorage.setItem('lapinkPedidos', JSON.stringify(lista));
+      return pedido;
+    } catch (e) { console.warn('[pagamento] registrarPedidoLocal falhou', e); return null; }
+  }
+
+  /* ── Captura de carrinho abandonado (chamar no WhatsApp depois) ── */
+  var _abandonoId = null;
+  function salvarAbandono() {
+    try {
+      var cel  = (document.getElementById('pgCelular').value || '').replace(/\D/g, '');
+      var nome = (document.getElementById('pgNome').value || '').trim();
+      var cart = typeof getCart === 'function' ? getCart() : [];
+      if (cel.length < 10 || !cart.length) return; // só com celular válido + itens
+      if (!_abandonoId) _abandonoId = 'AB-' + Date.now().toString(36).toUpperCase();
+      var rec = {
+        id: _abandonoId,
+        nome: nome,
+        celular: cel,
+        email: (_client && _client.email) || '',
+        itens: cart.map(function (i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
+        total: (typeof getCartTotal === 'function' ? getCartTotal() : 0),
+        status: 'aberto',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      try {
+        var arr = JSON.parse(localStorage.getItem('lapinkAbandonados') || '[]');
+        var i = arr.findIndex(function (x) { return x.id === _abandonoId; });
+        if (i >= 0) arr[i] = rec; else arr.push(rec);
+        localStorage.setItem('lapinkAbandonados', JSON.stringify(arr));
+      } catch (e) {}
+      try {
+        if (typeof firebase !== 'undefined' && firebase.apps.length) {
+          firebase.firestore().collection('abandonados').doc(_abandonoId).set(rec, { merge: true }).catch(function () {});
+        }
+      } catch (e) {}
+    } catch (e) {}
+  }
+  function marcarAbandonoConvertido() {
+    if (!_abandonoId) return;
+    try {
+      var arr = JSON.parse(localStorage.getItem('lapinkAbandonados') || '[]').filter(function (x) { return x.id !== _abandonoId; });
+      localStorage.setItem('lapinkAbandonados', JSON.stringify(arr));
+    } catch (e) {}
+    try {
+      if (typeof firebase !== 'undefined' && firebase.apps.length) {
+        firebase.firestore().collection('abandonados').doc(_abandonoId).set({ status: 'convertido', updatedAt: Date.now() }, { merge: true }).catch(function () {});
+      }
+    } catch (e) {}
+  }
+  var _abTimer;
+  ['pgCelular', 'pgNome'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('blur', function () { clearTimeout(_abTimer); _abTimer = setTimeout(salvarAbandono, 400); });
+  });
+
+  /* ── Init ───────────────────────────────────────────────── */
+  renderItens();
+  renderFrete();
+  preencherDados();
 
 })();
 </script>

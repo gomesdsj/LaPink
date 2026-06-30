@@ -62,8 +62,9 @@ function _hashPassword(str) {
       changed = true;
     } else {
       if (users[idx].role !== 'superadmin') { users[idx].role = 'superadmin'; changed = true; }
-      // Sempre mantém a senha fixa definida para o super admin
-      if (users[idx].password !== DEFAULT_HASH) { users[idx].password = DEFAULT_HASH; changed = true; }
+      // NÃO sobrescreve a senha: o super admin pode alterá-la e ela deve persistir.
+      // Só define a senha padrão se por algum motivo estiver vazia.
+      if (!users[idx].password) { users[idx].password = DEFAULT_HASH; changed = true; }
     }
   });
   if (changed) _saveUsers(users);
@@ -76,6 +77,27 @@ function _getUsers() {
 
 function _saveUsers(arr) {
   localStorage.setItem(_USERS_KEY, JSON.stringify(arr));
+  _pushUsersCloud(arr);
+}
+
+// Publica lapinkUsers no Firestore (lapink/lapinkUsers) fazendo UNIÃO por e-mail
+// com o que já existe remotamente — evita que o seed do super admin, ao rodar
+// num navegador novo, apague admins criados em outro dispositivo.
+function _pushUsersCloud(localArr) {
+  try {
+    if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) return;
+    var ref = firebase.firestore().collection('lapink').doc('lapinkUsers');
+    ref.get().then(function (snap) {
+      var remote = (snap.exists && snap.data() && snap.data().data) || [];
+      var byEmail = {};
+      (Array.isArray(remote) ? remote : []).forEach(function (u) { if (u && u.email) byEmail[u.email.toLowerCase()] = u; });
+      (localArr || []).forEach(function (u) { if (u && u.email) byEmail[u.email.toLowerCase()] = u; });
+      var merged = Object.keys(byEmail).map(function (k) { return byEmail[k]; });
+      ref.set({ data: merged, updatedAt: Date.now() }, { merge: true }).catch(function () {});
+    }).catch(function () {
+      ref.set({ data: localArr || [], updatedAt: Date.now() }, { merge: true }).catch(function () {});
+    });
+  } catch (e) {}
 }
 
 // ── Páginas do painel admin (usadas para controle de acesso por usuário) ─
@@ -99,8 +121,9 @@ function _getCurrentPageId() {
 }
 
 function _loginUrl() {
+  // Login único do projeto: public/login.html (atende cliente e admin).
   var path = window.location.pathname.replace(/\\/g, '/');
-  return path.includes('/public/') ? '../admin/login.html' : 'login.html';
+  return path.includes('/public/') ? 'login.html' : '../public/login.html';
 }
 
 // ── API pública ───────────────────────────────────────────

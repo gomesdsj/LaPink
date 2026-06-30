@@ -77,6 +77,20 @@ async function _doRegister() {
   clients.push(newClient);
   saveClients(clients);
 
+  // Cria a conta também no Firebase Authentication (se ativo). Silencioso:
+  // se o provedor estiver desativado ou já existir, segue com o cadastro local.
+  try {
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+      var cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
+      var uid = cred.user && cred.user.uid;
+      try {
+        await firebase.firestore().collection('usuarios').doc(uid).set({
+          email: email, name: name, whatsapp: whatsapp, role: 'client', createdAt: Date.now()
+        }, { merge: true });
+      } catch (e) {}
+    }
+  } catch (e) { /* email-already-in-use / provedor off / senha curta — ignora */ }
+
   setLoggedClient({ name: name, email: email, role: 'client' });
 
   setRegisterMessage('Cadastro realizado! Entrando na loja...', true);

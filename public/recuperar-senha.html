@@ -128,51 +128,114 @@
       el.style.color = erro ? 'var(--red-500, #ef4444)' : 'var(--green-600, #16a34a)';
     }
 
+    // Lê um documento da coleção lapink no Firestore (fallback p/ guia anônima / outro dispositivo)
+    async function _fetchLapinkDoc(docId) {
+      try {
+        if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) return null;
+        var snap = await firebase.firestore().collection('lapink').doc(docId).get();
+        if (snap.exists) { var d = snap.data(); if (d && d.data) return d.data; }
+      } catch (e) {}
+      return null;
+    }
+
     document.getElementById('recoveryForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       var email = document.getElementById('rec-email').value.trim().toLowerCase();
       if (!email) { showMsg('Informe seu e-mail.', true); return; }
 
-      var clients = getClients();
-      var client = clients.find(function(c) { return (c.email || '').toLowerCase() === email; });
+      var btn = document.getElementById('rec-btn');
+      btn.disabled = true; btn.textContent = 'Verificando…';
+      showMsg('', false);
+      document.getElementById('notConfigured').style.display = 'none';
 
-      if (!client) {
+      function restore() { btn.disabled = false; btn.textContent = 'Enviar senha temporária'; }
+      function achar(arr) {
+        return (Array.isArray(arr) ? arr : []).find(function(u) { return (u.email || '').toLowerCase() === email; });
+      }
+
+      // 1) Procura a conta — clientes e usuários admin, local + Firestore
+      var clients = getClients();
+      var conta = achar(clients);
+      var origem = 'clients';
+
+      if (!conta) {
+        var users = []; try { users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]'); } catch (e) {}
+        conta = achar(users); if (conta) origem = 'users';
+      }
+      if (!conta) {
+        var remoteClients = await _fetchLapinkDoc('lapinkClients');
+        conta = achar(remoteClients);
+        if (conta) { clients = remoteClients; origem = 'clients'; }
+      }
+      if (!conta) {
+        var remoteUsers = await _fetchLapinkDoc('lapinkUsers');
+        conta = achar(remoteUsers);
+        if (conta) { origem = 'users'; }
+      }
+
+      if (!conta) {
         showMsg('E-mail não encontrado. Verifique o e-mail digitado.', true);
+        restore();
         return;
       }
 
+      // 2) Resolve config do EmailJS (local ou Firestore)
       var cfg = getApiConfig();
       if (!cfg.emailjsPk || !cfg.emailjsSid || !cfg.emailjsTid) {
+        var remoteCfg = await _fetchLapinkDoc('lapinkApiConfig');
+        if (remoteCfg) cfg = remoteCfg;
+      }
+      if (!cfg.emailjsPk || !cfg.emailjsSid || !cfg.emailjsTid) {
         document.getElementById('notConfigured').style.display = 'block';
+        restore();
         return;
       }
 
-      var btn = document.getElementById('rec-btn');
-      btn.disabled = true;
       btn.textContent = 'Enviando…';
-      document.getElementById('notConfigured').style.display = 'none';
-      showMsg('', false);
 
+      // 3) Gera senha temporária, salva o hash e sincroniza
       var tempPassword = gerarSenhaTemp();
       var hash = await hashPassword(tempPassword);
+      conta.password = hash;
 
-      var idx = clients.findIndex(function(c) { return (c.email || '').toLowerCase() === email; });
-      clients[idx].password = hash;
-      saveClients(clients);
+      if (origem === 'clients') {
+        var ci = clients.findIndex(function(c) { return (c.email || '').toLowerCase() === email; });
+        if (ci >= 0) clients[ci].password = hash; else clients.push(conta);
+        saveClients(clients); // sincroniza via cloud-sync
+      } else {
+        // usuário admin — atualiza lapinkUsers local + Firestore (merge por e-mail)
+        var lu = []; try { lu = JSON.parse(localStorage.getItem('lapinkUsers') || '[]'); } catch (e) {}
+        var ui = lu.findIndex(function(u) { return (u.email || '').toLowerCase() === email; });
+        if (ui >= 0) lu[ui].password = hash; else lu.push(conta);
+        try { localStorage.setItem('lapinkUsers', JSON.stringify(lu)); } catch (e) {}
+        try {
+          if (typeof firebase !== 'undefined' && firebase.apps.length) {
+            var ref = firebase.firestore().collection('lapink').doc('lapinkUsers');
+            var remoteU = await _fetchLapinkDoc('lapinkUsers');
+            var byEmail = {};
+            (Array.isArray(remoteU) ? remoteU : []).forEach(function(u){ if (u && u.email) byEmail[u.email.toLowerCase()] = u; });
+            lu.forEach(function(u){ if (u && u.email) byEmail[u.email.toLowerCase()] = u; });
+            await ref.set({ data: Object.keys(byEmail).map(function(k){ return byEmail[k]; }), updatedAt: Date.now() }, { merge: true });
+          }
+        } catch (e) {}
+      }
 
+      // 4) Envia o e-mail com o remetente configurado
       try {
         emailjs.init({ publicKey: cfg.emailjsPk });
         await emailjs.send(cfg.emailjsSid, cfg.emailjsTid, {
-          to_email: client.email,
-          to_name:  client.name || client.email,
-          temp_password: tempPassword
+          to_email: conta.email,
+          to_name:  conta.name || conta.email,
+          temp_password: tempPassword,
+          from_email: cfg.emailjsFrom || '',
+          reply_to:   cfg.emailjsFrom || '',
+          from_name:  'LaPink'
         });
         document.getElementById('recoveryForm').style.display = 'none';
         document.getElementById('recoverySuccess').style.display = 'block';
       } catch (err) {
         showMsg('Erro ao enviar e-mail. Tente novamente.', true);
-        btn.disabled = false;
-        btn.textContent = 'Enviar senha temporária';
+        restore();
       }
     });
   </script>

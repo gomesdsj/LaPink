@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
@@ -21,6 +25,7 @@
       "lapink-insomnia.json",
       "AGENTES_STATUS.md",
       "**/node_modules/**",
+      "functions/**",
       "data/**",
       "screenshots/**",
       ".env"

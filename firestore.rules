@@ -1,8 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Token do Mercado Pago: leitura pública BLOQUEADA (não vaza o token).
+    // Escrita liberada para o admin salvar (sem Firebase Auth no front);
+    // as Functions leem via Admin SDK (ignoram as rules).
+    match /lapink/apiConfig {
+      allow read: if false;
+      allow write: if true;
+    }
+
+    // Demais dados públicos da loja (produtos, config, pedidos legacy)
     match /lapink/{document} {
       allow read, write: if true;
+    }
+
+    // Carrinhos abandonados — cliente cria/atualiza o próprio; admin lê.
+    // Cada carrinho é um doc separado (sem clobber). Delete só via Admin SDK.
+    match /abandonados/{id} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    // Pedidos criados via Firebase Functions (Admin SDK bypass rules)
+    // Leitura pública para que clientes acompanhem pelo ID
+    // Criação e delete bloqueados (apenas via Functions/Admin SDK)
+    // Update do admin web limitado a rastreio/status/updatedAt — impede que
+    // terceiros alterem total, itens, pagamento ou marquem estoqueBaixado.
+    match /pedidos/{pedidoId} {
+      allow read: if true;
+      allow create, delete: if false;
+      allow update: if request.resource.data.diff(resource.data)
+                      .affectedKeys().hasOnly(['rastreio', 'status', 'updatedAt']);
     }
   }
 }

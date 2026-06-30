@@ -271,6 +271,93 @@ body {
   overflow: hidden;
 }
 .prod-img i { font-size: 42px; color: var(--pk-300); }
+
+/* ── Mini-carrossel de fotos no card (1-3 fotos) ── */
+.prod-img .pc-track,
+.prod-modal-img .pc-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.prod-img .pc-track::-webkit-scrollbar,
+.prod-modal-img .pc-track::-webkit-scrollbar { display: none; }
+/* No modal de detalhes as setas ficam sempre visíveis */
+.prod-modal-img .pc-nav { opacity: 1; }
+.pc-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pc-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pc-slide--icon i { font-size: 42px; color: var(--pk-300); }
+
+/* Desktop/web (computador): área da foto QUADRADA para a imagem preencher
+   todo o quadrado (sem sobra/fundo). Fotos de produto são ~quadradas, então
+   o preenchimento (cover) não corta de forma perceptível. */
+@media (min-width: 901px) {
+  .prod-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .prod-img { height: auto; aspect-ratio: 1 / 1; }
+  .pc-slide img { object-fit: cover; }
+}
+.pc-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--pk-200);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--pk-500);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0;
+  transition: opacity .18s, background .18s, transform .15s;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+.pc-nav i { font-size: 12px; }
+.prod-card:hover .pc-nav { opacity: 1; }
+.pc-nav:hover { background: #fff; }
+.pc-nav.pc-prev { left: 6px; }
+.pc-nav.pc-next { right: 6px; }
+.pc-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  z-index: 3;
+}
+.pc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.7);
+  border: 1px solid rgba(212,83,126,.45);
+  cursor: pointer;
+  transition: background .18s, transform .18s;
+}
+.pc-dot.active { background: var(--pk-500); transform: scale(1.25); }
+/* Em telas de toque, mostra as setas sempre (sem hover) */
+@media (hover: none) {
+  .pc-nav { opacity: .9; }
+}
 .prod-badge {
   background: var(--pk-500);
   color: #fff;
@@ -286,15 +373,42 @@ body {
   position: absolute;
   top: 8px;
   right: 8px;
-  color: var(--pk-300);
-  font-size: 15px;
-  transition: color .18s;
+  z-index: 4;
+  color: var(--pk-400);
+  background: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color .18s, transform .15s, background .18s;
+  box-shadow: 0 1px 6px rgba(0,0,0,.16);
 }
-.prod-card:hover .prod-fav { color: var(--pk-500); }
-.prod-info { padding: 14px; }
-.prod-name { font-size: 13px; font-weight: 600; color: var(--pk-dark); margin-bottom: 6px; line-height: 1.3; }
-.prod-price { font-size: 15px; color: var(--pk-500); font-weight: 700; }
-.prod-old { font-size: 11px; color: var(--pk-300); text-decoration: line-through; margin-left: 5px; }
+.prod-fav i { font-size: 14px; }
+.prod-fav:hover { color: var(--pk-500); transform: scale(1.12); }
+.prod-fav.is-fav { color: #e0397a; }
+.prod-fav.is-fav i { color: #e0397a; }
+.prod-info { padding: 11px 12px; }
+.prod-name { font-size: 12px; font-weight: 600; color: var(--pk-dark); margin-bottom: 4px; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.prod-price { font-size: 13px; color: var(--pk-500); font-weight: 700; }
+.prod-old { font-size: 10px; color: var(--pk-300); text-decoration: line-through; margin-left: 5px; }
+.prod-add-cart {
+  margin-top: 8px; width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--pk-500); color: #fff; border: none;
+  border-radius: var(--radius-full, 999px); padding: 8px 10px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: background .15s, transform .12s;
+}
+.prod-add-cart i { font-size: 15px; }
+.prod-add-cart:hover { background: var(--pk-600); }
+.prod-add-cart:active { transform: scale(.97); }
 
 /* ── Banner atacado ─────────── */
 .banner {
@@ -409,6 +523,37 @@ body {
 /* ── Badges de estoque (override) ── */
 .prod-badge--estoque-baixo { background: #e67e22 !important; }
 .prod-badge--esgotado      { background: #b0b0b0 !important; }
+.prod-badge--promo         { background: #e0397a !important; }
+
+/* ── Cards de coleção (Inverno 2025, Verão 2026...) ── */
+.colecao-tile {
+  background: #fff;
+  border: 1.5px solid var(--pk-200);
+  border-radius: var(--r);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.colecao-tile:hover {
+  border-color: var(--pk-400);
+  box-shadow: 0 6px 24px rgba(212,83,126,.14);
+  transform: translateY(-3px);
+}
+.colecao-tile-media {
+  height: 170px;
+  background: var(--pk-50);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.colecao-tile-media img { width: 100%; height: 100%; object-fit: cover; }
+.colecao-tile-media i { font-size: 46px; color: var(--pk-300); }
+.colecao-tile-info { padding: 12px 14px; }
+.colecao-tile-name { font-size: 15px; font-weight: 800; color: var(--pk-dark); }
+.colecao-tile-count { font-size: 12px; color: var(--pk-500); font-weight: 600; margin-top: 2px; }
+@media (max-width: 640px) {
+  .colecao-tile-media { height: 150px; }
+  .colecao-tile-name { font-size: 13px; }
+}
 .prod-card--esgotado       { opacity: .72; }
 .prod-card--esgotado .prod-img { filter: grayscale(50%); }
 .btn-esgotado              { opacity: .5; cursor: not-allowed !important; }
@@ -592,14 +737,38 @@ body {
   #panelBtn,
   .nav-user { display: none !important; }
   #mobileSearchBtn { display: inline-flex !important; }
+
+  /* Busca ativa: a barra ocupa o lugar do hamburguer + logo */
+  .nav.nav-searching .nav-hamburger,
+  .nav.nav-searching .logo { display: none !important; }
+  .nav.nav-searching .search-bar {
+    display: flex !important;
+    position: static;
+    flex: 1;
+    margin: 0 8px 0 0;
+    max-width: none;
+  }
 }
 
 @media (max-width: 640px) {
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .prod-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Fotos maiores no mobile na exposição principal */
+  .prod-img { height: 230px; }
+  /* Fontes menores na parte de baixo do card — evita barra de rolagem */
+  .prod-info { padding: 9px 10px; }
+  .prod-name { font-size: 11px; margin-bottom: 3px; }
+  .prod-price { font-size: 12px; }
   .reviews .rev-grid { grid-template-columns: repeat(2, 1fr); }
   .banner, .newsletter { padding: 20px; margin: 0 12px 18px; }
   .footer { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 400px) {
+  .prod-img { height: 190px; }
+  .prod-info { padding: 8px 9px; }
+  .prod-name { font-size: 10.5px; }
+  .prod-price { font-size: 11.5px; }
 }
 
 @media (max-width: 480px) {
@@ -644,17 +813,21 @@ body {
   min-height: 360px;
 }
 .prod-modal-img img { width: 100%; height: 100%; object-fit: cover; }
-.prod-modal-img i   { font-size: 70px; color: var(--pk-300); }
+.prod-modal-img > i { font-size: 70px; color: var(--pk-300); }
+/* setas do carrossel não devem herdar o tamanho do ícone-placeholder */
+.prod-modal-img .pc-nav i { font-size: 12px; }
+.prod-modal-img .pc-slide--icon i { font-size: 70px; color: var(--pk-300); }
 
 .prod-modal-close {
   position: absolute; top: 10px; right: 10px;
-  background: rgba(255,255,255,.85); border: none; border-radius: 50%;
-  width: 26px; height: 26px; cursor: pointer; font-size: 13px;
-  color: var(--pk-dark);
+  background: #fff; border: none; border-radius: 50%;
+  width: 28px; height: 28px; cursor: pointer; font-size: 14px; line-height: 1;
+  color: var(--pk-dark); padding: 0;
   display: flex; align-items: center; justify-content: center;
-  backdrop-filter: blur(4px); z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18); z-index: 5;
 }
-.prod-modal-close:hover { background: #fff; }
+.prod-modal-close i { font-size: 15px; }
+.prod-modal-close:hover { background: var(--pk-50); transform: scale(1.08); }
 
 .prod-modal-body {
   flex: 1; padding: 28px 24px; overflow-y: auto;
@@ -710,7 +883,10 @@ body {
   }
   .prod-modal-img {
     flex: none;
-    width: 100%; height: 200px;
+    width: 100%;
+    /* foto um pouco retangular (mais comprida que quadrada) */
+    aspect-ratio: 1 / 1.2;
+    height: auto;
     border-radius: 20px 20px 0 0;
     min-height: unset;
   }
