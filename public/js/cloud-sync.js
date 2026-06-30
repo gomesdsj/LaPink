@@ -7,9 +7,14 @@
 //
 // NOTA: lapinkUsers NÃO está em SYNC_KEYS — o seed _seedSuperAdmins() roda a cada
 // carga de página admin e sobrescreveria o Firestore, apagando admins extras.
+//
+// SEGURANÇA: lapinkClients (PII + hashes de senha) e lapinkApiConfig (chaves
+// EmailJS/MP) foram REMOVIDOS do sync — não devem trafegar para um Firestore de
+// leitura pública. As regras do Firestore negam esses documentos. Contas de
+// cliente passam a ser locais ao dispositivo até a migração para Firebase Auth.
 
 (function () {
-  var SYNC_KEYS = ['lapinkClients', 'lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkApiConfig', 'lapinkPaymentConfig', 'lapinkEntregaConfig', 'lapinkPedidoCounter'];
+  var SYNC_KEYS = ['lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkPaymentConfig', 'lapinkEntregaConfig', 'lapinkPedidoCounter'];
   var MAX_RETRIES = 20; // 20 × 300ms = 6s máximo de espera pelo Firebase
 
   // ── Firestore helpers ─────────────────────────────────────────
@@ -66,11 +71,20 @@
     });
   }
 
+  // Notifica a página quando uma chave chega do Firestore, para re-renderizar
+  // sem precisar de reload. Ex.: V1.html e produto.html escutam 'lapinkProdutosAtualizados'.
+  function _notificarSync(key, data) {
+    try {
+      document.dispatchEvent(new CustomEvent(key + 'Atualizados', { detail: data }));
+      window.dispatchEvent(new CustomEvent('lapinkSync', { detail: { key: key, data: data } }));
+    } catch (e) { /* navegadores antigos: ignora */ }
+  }
+
   // Inicia sincronização quando Firebase estiver pronto (máx MAX_RETRIES tentativas)
   function waitAndSync(retries) {
     retries = retries || 0;
     if (typeof firebase !== 'undefined' && firebase.apps.length) {
-      syncFromCloud();
+      syncFromCloud(_notificarSync);
     } else if (retries < MAX_RETRIES) {
       setTimeout(function () { waitAndSync(retries + 1); }, 300);
     } else {

@@ -757,7 +757,7 @@ function _esc(s) {
 
     itemsList.innerHTML = cart.map(function(item) {
       var imgHtml = item.imagem
-        ? '<img src="' + _esc(item.imagem) + '" alt="' + _esc(item.nome) + '" />'
+        ? '<img src="' + _esc(item.imagem) + '" alt="' + _esc(item.nome) + '" loading="lazy" />'
         : '<i class="ti ti-diamond"></i>';
       return '<div class="cart-item" data-id="' + _esc(item.id) + '">' +
         '<div class="cart-item-img">' + imgHtml + '</div>' +

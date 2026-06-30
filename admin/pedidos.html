@@ -549,6 +549,7 @@
         rastreioHtml +
         '<div class="pedido-footer" style="margin-top:10px;">' +
           '<select class="pedido-status-select" onchange="' + onChangeStatus + '">' + statusOptions + '</select>' +
+          (!isFS ? '<button class="btn-icon" type="button" onclick="abrirEditarPedido(' + p.id + ')"><i class="ti ti-pencil"></i> Editar</button>' : '') +
           (waNum ? '<a href="' + waLink + '" target="_blank" rel="noopener" class="btn-icon wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>' : '') +
           (!isFS ? '<button class="btn-icon danger" type="button" onclick="excluirPedido(' + p.id + ')"><i class="ti ti-trash"></i> Excluir</button>' : '') +
         '</div>' +
@@ -657,7 +658,7 @@
 
     var opts = '<option value="">Selecionar produto…</option>';
     produtos.forEach(function(pr) {
-      var preco = parseFloat(pr.precoVarejo) || 0;
+      var preco = parseFloat(pr.precoAtacado) || parseFloat(pr.precoVarejo) || 0;
       opts += '<option value="' + escHtml(pr.nome) + '|' + preco + '">' + escHtml(pr.nome) + ' — ' + fmtMoeda(preco) + '</option>';
     });
     opts += '<option value="__outro">Outro (digitar manualmente)</option>';
@@ -749,7 +750,7 @@
         var pidx = produtos.findIndex(function(pr) { return pr.nome === item.nome; });
         if (pidx >= 0) produtos[pidx].estoque = Math.max(0, (parseInt(produtos[pidx].estoque) || 0) - item.qty);
       });
-      localStorage.setItem('lapinkProdutos', JSON.stringify(produtos));
+      saveProdutos(produtos);
 
       pedidos[eidx].cliente     = { name: nome, email: email, whatsapp: whatsapp };
       pedidos[eidx].clienteEmail = email;

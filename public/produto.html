@@ -180,6 +180,12 @@
 
   if (!produto) {
     document.getElementById('not-found').style.display = '';
+    // 1º acesso sem cache: o catálogo pode chegar do Firestore depois do load.
+    // Recarrega uma vez quando os produtos sincronizarem, para achar a peça.
+    document.addEventListener('lapinkProdutosAtualizados', function _recarregar() {
+      document.removeEventListener('lapinkProdutosAtualizados', _recarregar);
+      location.reload();
+    });
     return;
   }
 

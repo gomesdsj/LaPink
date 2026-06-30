@@ -194,14 +194,6 @@ async function _doLogin() {
     if (_stored && _isSafeRedirect(_stored)) referrerPage = _stored;
   } catch(e) {}
 
-  var hashedInput;
-  try {
-    hashedInput = await hashPassword(loginPassword);
-  } catch (err) {
-    setLoginMessage('Erro ao processar senha. Tente novamente.', false);
-    return;
-  }
-
   // ── 1) Firebase Authentication (se ativo). Se falhar, segue para o sistema atual. ──
   var authClient = await _firebaseAuthLogin(email, loginPassword);
   if (authClient) { authClient = await _applyAdminRole(email, authClient); _finishLogin(authClient, referrerPage); return; }
@@ -209,53 +201,24 @@ async function _doLogin() {
   var clients = getClients();
   var client  = null;
 
-  // SHA-256
-  client = clients.find(function(c) { return c.email === email && c.password === hashedInput; });
-
-  // Fallback: texto puro (contas muito antigas) — migra para SHA-256
-  if (!client) {
-    var plainClient = clients.find(function(c) { return c.email === email && c.password === loginPassword; });
-    if (plainClient) {
-      plainClient.password = hashedInput;
-      saveClients(clients);
-      client = plainClient;
+  // ── 2) Clientes locais — verifica qualquer esquema de hash (PBKDF2 salgado,
+  //       SHA-256 salgado ou SHA-256 legado). NÃO há mais fallback de senha em
+  //       texto puro. Hashes legados são migrados para salgado de forma transparente.
+  var cand = clients.find(function(c) { return c.email === email; });
+  if (cand && await verifyPassword(loginPassword, cand.password)) {
+    if (passwordPrecisaUpgrade(cand.password)) {
+      try { cand.password = await hashPasswordSalted(loginPassword); saveClients(clients); } catch (e) {}
     }
+    client = cand;
   }
 
-  // Usuário criado pelo painel admin (lapinkUsers) — apenas SHA-256
+  // ── 3) Usuário criado pelo painel admin (lapinkUsers) ──
   if (!client) {
     try {
       var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
-      var found = users.find(function(u) { return u.email === email && u.password === hashedInput; });
-      if (found) client = { email: found.email, name: found.name, role: found.role || 'client', pages: found.pages };
-    } catch(e) {}
-  }
-
-  // Fallback no Firestore — resolve guia anônima / outro dispositivo, onde o
-  // cloud-sync ainda não baixou os dados (ou a conta foi criada em outro lugar).
-  if (!client) {
-    try {
-      var remoteClients = await _fetchLapinkDoc('lapinkClients');
-      if (Array.isArray(remoteClients)) {
-        client = remoteClients.find(function(c) { return c.email === email && c.password === hashedInput; }) || null;
-        // Conta antiga em texto puro no Firestore
-        if (!client) {
-          var rp = remoteClients.find(function(c) { return c.email === email && c.password === loginPassword; });
-          if (rp) { rp.password = hashedInput; client = rp; }
-        }
-        if (client) {
-          // Atualiza o cache local para próximos logins
-          try { localStorage.setItem('lapinkClients', JSON.stringify(remoteClients)); } catch(e) {}
-        }
-      }
-    } catch(e) {}
-  }
-  if (!client) {
-    try {
-      var remoteUsers = await _fetchLapinkDoc('lapinkUsers');
-      if (Array.isArray(remoteUsers)) {
-        var ru = remoteUsers.find(function(u) { return u.email === email && u.password === hashedInput; });
-        if (ru) client = { email: ru.email, name: ru.name, role: ru.role || 'client', pages: ru.pages };
+      var found = users.find(function(u) { return u.email === email; });
+      if (found && await verifyPassword(loginPassword, found.password)) {
+        client = { email: found.email, name: found.name, role: found.role || 'client', pages: found.pages };
       }
     } catch(e) {}
   }

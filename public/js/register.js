@@ -59,10 +59,10 @@ async function _doRegister() {
 
   var hash;
   try {
-    hash = await hashPassword(password);
+    hash = await hashPasswordSalted(password);
   } catch (err) {
     setRegisterMessage('Erro ao processar senha. Tente novamente.', false);
-    console.error('[LaPink] hashPassword falhou:', err);
+    console.error('[LaPink] hashPasswordSalted falhou:', err);
     return;
   }
 

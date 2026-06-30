@@ -40,6 +40,77 @@ async function hashPassword(password) {
   return _sha256js(str);
 }
 
+// ── Hash de senha com SALT (defesa contra rainbow tables) ──────────
+// Formatos suportados:
+//   pbkdf2$<iter>$<saltHex>$<hashHex>  → preferido (crypto.subtle, PBKDF2-SHA256)
+//   s256$<saltHex>$<hashHex>           → fallback sem subtle (SHA-256 salgado)
+//   <64 hex>                            → legado (SHA-256 puro, sem salt)
+var _PBKDF2_ITER = 100000;
+
+function _bytesToHex(bytes) {
+  return Array.prototype.map.call(bytes, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+function _hexToBytes(hex) {
+  var out = new Uint8Array(hex.length / 2);
+  for (var i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return out;
+}
+function _randomSaltHex(nBytes) {
+  var b = new Uint8Array(nBytes || 16);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(b);
+  else for (var i = 0; i < b.length; i++) b[i] = Math.floor(Math.random() * 256);
+  return _bytesToHex(b);
+}
+async function _pbkdf2Hex(password, saltBytes, iter) {
+  var key = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(password)), 'PBKDF2', false, ['deriveBits']);
+  var bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: saltBytes, iterations: iter, hash: 'SHA-256' }, key, 256);
+  return _bytesToHex(new Uint8Array(bits));
+}
+
+// Gera o hash salgado de uma senha nova.
+async function hashPasswordSalted(password) {
+  var saltHex = _randomSaltHex(16);
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    var h = await _pbkdf2Hex(password, _hexToBytes(saltHex), _PBKDF2_ITER);
+    return 'pbkdf2$' + _PBKDF2_ITER + '$' + saltHex + '$' + h;
+  }
+  // Fallback sem subtle (ex.: contexto não-HTTPS): SHA-256 salgado
+  return 's256$' + saltHex + '$' + _sha256js(saltHex + ':' + String(password));
+}
+
+// Comparação de tempo constante (evita timing leak).
+function _safeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// Verifica uma senha contra um valor armazenado (qualquer um dos formatos).
+async function verifyPassword(password, stored) {
+  if (!stored || typeof stored !== 'string') return false;
+  try {
+    if (stored.indexOf('pbkdf2$') === 0) {
+      var p = stored.split('$'); // ['pbkdf2', iter, saltHex, hashHex]
+      if (p.length !== 4 || typeof crypto === 'undefined' || !crypto.subtle) return false;
+      var calc = await _pbkdf2Hex(password, _hexToBytes(p[2]), parseInt(p[1], 10) || _PBKDF2_ITER);
+      return _safeEqual(calc, p[3]);
+    }
+    if (stored.indexOf('s256$') === 0) {
+      var s = stored.split('$'); // ['s256', saltHex, hashHex]
+      if (s.length !== 3) return false;
+      return _safeEqual(_sha256js(s[1] + ':' + String(password)), s[2]);
+    }
+    // Legado: SHA-256 puro (sem salt)
+    return _safeEqual(await hashPassword(password), stored);
+  } catch (e) { return false; }
+}
+
+// Indica se o hash armazenado é de um esquema antigo e deve ser re-hasheado no login.
+function passwordPrecisaUpgrade(stored) {
+  return !stored || typeof stored !== 'string' || stored.indexOf('pbkdf2$') !== 0;
+}
+
 function getClients() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_CLIENTS_KEY) || '[]');
@@ -56,11 +127,21 @@ function saveClients(clients) {
   }
 }
 
+// Duração da sessão do cliente (8h) — espelha a do painel admin.
+var _SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+
 function getLoggedClient() {
   // Tenta lapinkSession (novo sistema) primeiro
   try {
     var session = JSON.parse(localStorage.getItem('lapinkSession') || 'null');
-    if (session && session.name) return session;
+    if (session && session.name) {
+      // Expira a sessão se passou do prazo (sessões legadas sem expiresAt são toleradas).
+      if (session.expiresAt && Date.now() > session.expiresAt) {
+        clearLoggedClient();
+        return null;
+      }
+      return session;
+    }
   } catch (e) {}
   // Fallback: chave legada lapinkLoggedClient
   try {
@@ -73,11 +154,12 @@ function getLoggedClient() {
 function setLoggedClient(client) {
   try {
     localStorage.setItem(STORAGE_LOGGED_KEY, JSON.stringify(client));
-    // Sincroniza com o novo sistema de sessão
+    // Sincroniza com o novo sistema de sessão (com expiração)
     localStorage.setItem('lapinkSession', JSON.stringify({
       email: client.email || '',
       role:  client.role  || 'client',
-      name:  client.name  || client.email || ''
+      name:  client.name  || client.email || '',
+      expiresAt: Date.now() + _SESSION_TTL_MS
     }));
   } catch (e) {
     console.warn('LaPink: localStorage indisponível ou cheio.');

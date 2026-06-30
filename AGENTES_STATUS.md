@@ -414,4 +414,46 @@
 
 ---
 
-*Equipe TechCorp — 20 agentes ativos · LaPink · Atualizado: 2026-06-18*
+## VERIFICAÇÃO DE PRONTIDÃO PARA USUÁRIOS — 2026-06-30
+
+Auditoria conduzida por QA (Thiago Lima), Segurança (Beatriz Santos) e E-commerce (Pedro Alves), com síntese do Tech Lead (Henrique Vieira).
+
+**VEREDITO GERAL: 🔴 NÃO PRONTO para usuários reais** — 2 bloqueadores que exigem decisão/ação, 1 já corrigido.
+
+| Domínio | Veredito | Bloqueador principal |
+|---------|----------|----------------------|
+| QA funcional | 🟡 Pronto com ressalvas | ✅ Loja vazia no 1º acesso — **CORRIGIDO** (cloud-sync dispara `lapinkProdutosAtualizados`; V1 e produto.html re-renderizam) |
+| Segurança | 🔴 Não pronto | `firestore.rules` com `read,write: if true` em `/lapink/{doc}` → vazamento de clientes e **takeover de admin** (qualquer um grava `lapinkUsers` com role superadmin) |
+| E-commerce | 🟠 Só catálogo/demo | Pagamento não está no ar (Functions sem deploy, exige Blaze); fallback finaliza pedido **sem cobrar** e baixa estoque indevidamente |
+
+### 🔴 BLOQUEADORES ANTES DE ABRIR
+1. ~~**Segurança — regras do Firestore (CRÍTICO).**~~ ✅ **CORRIGIDO 2026-06-30** — `firestore.rules` agora é default-deny: catálogo/config públicos liberados; `lapinkClients` (PII+hashes), `lapinkUsers` (anti-takeover), `lapinkApiConfig`/`apiConfig` (segredos) NEGADOS. `lapinkClients`/`lapinkApiConfig` removidos do cloud-sync. *(Beatriz Santos)* — Resíduo: escrita do catálogo ainda aberta (sem Firebase Auth no painel); lockdown total via `firestore.rules.secure` quando migrar o login admin para Firebase Auth.
+2. ~~**Vendas falsas (fallback que "vende" sem cobrar).**~~ ✅ **CORRIGIDO 2026-06-30** — checkout não registra pedido nem baixa estoque quando o pagamento não está disponível; mostra aviso "não foi cobrado". *(Pedro Alves)*
+3. **Pagamento real (pendente — cliente ainda não passou a conta MP).** Ativar Blaze → deploy das Functions → token MP de produção → `MP_WEBHOOK_SECRET`. *(Felipe Cardoso / Carla Barbosa)*
+
+### ✅ NOVAS FUNCIONALIDADES — 2026-06-30
+- **Editar/alterar pedido** no painel: botão "Editar" no card (pedidos locais) abre o modal pré-preenchido; ajusta itens/qtd/cliente e recalcula total + estoque. *(Isabela Gomes / Pedro Alves)*
+- **Loja vazia no 1º acesso** corrigida (re-render pós cloud-sync). *(Thiago Lima)*
+- **Cards V1**: 5 por linha no desktop. *(Carlos Mendez / Fernanda Melo)*
+
+### ✅ RESSALVAS RESOLVIDAS (sem config externa) — 2026-06-30
+- **Senhas com SALT (PBKDF2-SHA256, 100k iter):** `hashPasswordSalted` + `verifyPassword` retrocompatível em `public/js/storage.js`; cadastro novo já salga; login antigo é migrado de forma transparente. **Fallback de senha em texto puro REMOVIDO** do login. *(Beatriz Santos)*
+- **Expiração de sessão do cliente (8h):** `setLoggedClient` grava `expiresAt`; `getLoggedClient` invalida sessão vencida. *(Thiago Lima)*
+- **Acessibilidade:** `loading="lazy"` + `alt` escapado nas imagens dinâmicas; focus-trap nos modais da loja (Tab circula, Esc fecha); contraste de texto pequeno elevado a WCAG AA (`--pk-soft`). *(Amanda Costa)*
+- **Performance:** compressão de imagem no upload já existente confirmada (900px/WebP 0.88); `loading="lazy"` nas listas do admin; debounce nas buscas pesadas. *(Rafael Torres)*
+
+### ⏳ PENDENTE — depende de config externa (cliente vai fornecer)
+- Domínio próprio + `sitemap.xml`/canonical (depende do domínio). *(Lucas Rocha)*
+- Pagamento real: Blaze + deploy Functions + token MP + `MP_WEBHOOK_SECRET`. *(Felipe Cardoso / Carla Barbosa)*
+- Recuperação de senha por e-mail: depende das chaves do EmailJS. *(Vanessa Ribeiro)*
+- Lockdown total das rules (`firestore.rules.secure`): depende de migrar login admin p/ Firebase Auth. *(Beatriz Santos)*
+
+### 🟠 RESSALVAS (não bloqueiam, mas corrigir cedo)
+- Senhas em SHA-256 sem salt + fallback de texto puro no login *(Beatriz)*
+- Sessão de cliente sem `expiresAt` *(Thiago)*
+- Recuperação de senha depende de EmailJS configurado *(Vanessa)*
+- Escrita de `apiConfig` aberta a qualquer um (sabotagem de token) *(Beatriz)*
+
+---
+
+*Equipe TechCorp — 20 agentes ativos · LaPink · Atualizado: 2026-06-30*

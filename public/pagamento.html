@@ -977,23 +977,33 @@ if (!_cart.length) {
       window.location.href = data.init_point;
 
     } catch (err) {
-      // ── Fallback sem backend (Blaze não ativo) ──────────────
-      // Registra o pedido localmente para não travar a loja e baixa o estoque.
-      // O pagamento real do MP exige as Functions (plano Blaze).
-      var registrado = registrarPedidoLocal(payload);
-      if (registrado) {
-        baixarEstoqueLocal(payload.itens);
-        marcarAbandonoConvertido(); // compra concluída (fallback)
-        localStorage.setItem('lapinkUltimoPedido', registrado.numero);
-        if (typeof clearCart === 'function') { try { clearCart(); } catch (e) {} }
-        window.location.href = 'sucesso.html?pedido=' + encodeURIComponent(registrado.numero) + '&local=1';
-        return;
-      }
+      // Pagamento online ainda NÃO disponível (Cloud Functions / Mercado Pago não
+      // configurados). NÃO registramos pedido, NÃO baixamos estoque e NÃO limpamos
+      // o carrinho — evita "venda falsa" (cliente concluir sem pagar e furar estoque).
+      console.warn('[pagamento] checkout indisponível:', err && err.message);
       btn.disabled = false;
       btn.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> Pagar com Mercado Livre';
-      alert('Erro ao processar pagamento: ' + (err.message || 'Tente novamente.'));
+      _mostrarErroCheckout();
     }
   };
+
+  /* ── Aviso de pagamento indisponível (sem finalizar nada) ── */
+  function _mostrarErroCheckout() {
+    var nota = document.querySelector('.pg-security-note');
+    if (nota) {
+      nota.innerHTML = '<i class="ti ti-alert-triangle" aria-hidden="true" style="color:#c0392b"></i> ' +
+        'Pagamento online em manutenção no momento. Seu pedido <strong>não</strong> foi cobrado. ' +
+        'Tente novamente em instantes ou fale com a loja para concluir a compra.';
+      nota.style.color = '#c0392b';
+    }
+    try {
+      if (typeof showToast === 'function') {
+        showToast('Pagamento indisponível agora — seu pedido não foi cobrado.', 'erro');
+      } else {
+        alert('Pagamento online em manutenção. Seu pedido NÃO foi cobrado. Tente novamente em instantes.');
+      }
+    } catch (e) {}
+  }
 
   /* ── Baixa de estoque local (sincroniza p/ Firestore via cloud-sync) ── */
   function baixarEstoqueLocal(itens) {

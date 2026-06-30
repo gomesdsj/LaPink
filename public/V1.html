@@ -1408,7 +1408,7 @@ window.abrirQty = function(event, card) {
     var inner;
     if (imgsModal.length) {
       var slidesM = imgsModal.map(function(src) {
-        return '<div class="pc-slide"><img src="' + src + '" alt="' + (nome || '') + '" /></div>';
+        return '<div class="pc-slide"><img src="' + src + '" alt="' + esc(nome || '') + '" loading="lazy" /></div>';
       }).join('');
       inner = '<div class="pc-track" onscroll="pcSync(this)">' + slidesM + '</div>';
       if (imgsModal.length > 1) {
@@ -2375,7 +2375,7 @@ window.saveProfileData = async function() {
       var p=prods.find(function(x){return String(x.id)===String(item.id);});
       var thumbSrc = item.imagem || (p && ((p.imagens&&p.imagens[0]) || p.imagem)) || '';
       var img = thumbSrc
-        ?'<img src="'+cpEsc(thumbSrc)+'" alt="'+cpEsc(item.nome)+'" />'
+        ?'<img src="'+cpEsc(thumbSrc)+'" alt="'+cpEsc(item.nome)+'" loading="lazy" />'
         :'<i class="ti ti-diamond"></i>';
       var sid=cpEsc(String(item.id));
       return '<div class="cp-item">' +
@@ -2563,6 +2563,63 @@ window.saveProfileData = async function() {
   } else {
     initFreteStrip();
   }
+})();
+</script>
+
+<!-- ═══ Focus-trap genérico para modais (acessibilidade — Amanda Costa) ═══ -->
+<script>
+(function() {
+  // Detecta qual modal está aberto no momento (na ordem de prioridade visual)
+  function modalAberto() {
+    var qty = document.getElementById('qty-sheet');
+    if (qty && qty.classList.contains('open')) return qty;
+    var prof = document.getElementById('profileSheet');
+    if (prof && prof.classList.contains('open')) return prof;
+    var cart = document.getElementById('cartPanel');
+    if (cart && cart.classList.contains('open')) return cart;
+    return null;
+  }
+
+  var FOCUSAVEIS = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function visivel(el) {
+    return el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0;
+  }
+
+  document.addEventListener('keydown', function(e) {
+    var modal = modalAberto();
+    if (!modal) return;
+
+    // Esc fecha o modal de produto (os demais já têm seus próprios handlers de Esc)
+    if (e.key === 'Escape') {
+      if (modal.id === 'qty-sheet' && typeof fecharQty === 'function') {
+        e.preventDefault();
+        fecharQty();
+      }
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    // Trap de Tab: foco circula apenas dentro do modal aberto
+    var itens = Array.prototype.filter.call(modal.querySelectorAll(FOCUSAVEIS), visivel);
+    if (!itens.length) return;
+    var primeiro = itens[0];
+    var ultimo   = itens[itens.length - 1];
+    var ativo    = document.activeElement;
+
+    if (e.shiftKey) {
+      if (ativo === primeiro || !modal.contains(ativo)) {
+        e.preventDefault();
+        ultimo.focus();
+      }
+    } else {
+      if (ativo === ultimo || !modal.contains(ativo)) {
+        e.preventDefault();
+        primeiro.focus();
+      }
+    }
+  });
 })();
 </script>
 </body>

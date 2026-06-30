@@ -522,7 +522,7 @@
                 <h4><i class="ti ti-package"></i> Todos os produtos <span id="cat-count" style="font-weight:400; color:var(--gray-400);"></span></h4>
                 <div class="catalogo-search-wrap">
                   <i class="ti ti-search"></i>
-                  <input type="search" id="catalogo-search" class="catalogo-search" placeholder="Buscar peça por nome, categoria ou código..." oninput="renderCatalogo()" autocomplete="off" />
+                  <input type="search" id="catalogo-search" class="catalogo-search" placeholder="Buscar peça por nome, categoria ou código..." oninput="buscarCatalogo()" autocomplete="off" />
                 </div>
                 <div class="prod-selector-list" id="catalogo-list">
                   <div class="sel-empty">Carregando...</div>
@@ -787,7 +787,7 @@ function getConfig() {
 
 function thumbHtml(p) {
   return p.imagem
-    ? '<img src="' + p.imagem + '" alt="' + escHtml(p.nome) + '" />'
+    ? '<img src="' + p.imagem + '" alt="' + escHtml(p.nome) + '" loading="lazy" />'
     : '<i class="ti ' + (p.icone || 'ti-diamond') + '"></i>';
 }
 function precoFmt(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
@@ -884,6 +884,14 @@ function togglePromocaoProduto(id) {
 }
 
 var destaqueList = [];
+
+// Debounce leve (~250ms) só para a busca do catálogo — evita reconstruir
+// a lista inteira (com imagens) a cada tecla digitada.
+var _buscaCatalogoTimer = null;
+function buscarCatalogo() {
+  clearTimeout(_buscaCatalogoTimer);
+  _buscaCatalogoTimer = setTimeout(renderCatalogo, 250);
+}
 
 function renderCatalogo() {
   var todos     = getProdutos();
@@ -988,7 +996,7 @@ function atualizarPreviewCatalogo() {
     if (!p) return '';
     var badge    = d.badge || '';
     var thumb    = p.imagem
-      ? '<img src="' + p.imagem + '" alt="' + escHtml(p.nome) + '" />'
+      ? '<img src="' + p.imagem + '" alt="' + escHtml(p.nome) + '" loading="lazy" />'
       : '<i class="ti ' + (p.icone || 'ti-diamond') + '"></i>';
     var badgeHtml = badge ? '<span class="v1-mini-badge">' + escHtml(badge) + '</span>' : '';
     return '<div class="v1-mini-card">' +
@@ -1180,7 +1188,7 @@ function renderCarrossel() {
 
   el.innerHTML = slidesData.map(function(s, i) {
     var imgHtml = s.imagem
-      ? '<img src="' + escHtml(s.imagem) + '" alt="Slide ' + (i+1) + '" />'
+      ? '<img src="' + escHtml(s.imagem) + '" alt="Slide ' + (i+1) + '" loading="lazy" />'
       : '<div class="slide-img-placeholder"><i class="ti ti-photo-up"></i>Clique para adicionar imagem</div>';
 
     var coresHtml = CORES.map(function(c) {

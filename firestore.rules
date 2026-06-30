@@ -1,31 +1,56 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Token do Mercado Pago: leitura pública BLOQUEADA (não vaza o token).
-    // Escrita liberada para o admin salvar (sem Firebase Auth no front);
-    // as Functions leem via Admin SDK (ignoram as rules).
-    match /lapink/apiConfig {
-      allow read: if false;
-      allow write: if true;
+
+    // ════════════════════════════════════════════════════════════════
+    // POSTURA: default-deny. Só os documentos PÚBLICOS de catálogo/config
+    // (sem segredos, sem PII, sem credenciais) são liberados.
+    //
+    // NEGADOS por não estarem na lista (não há regra que os permita):
+    //   • lapinkClients     → PII de clientes + hashes de senha
+    //   • lapinkUsers        → admins (e-mail + hash + role) — fecha o
+    //                          takeover: ninguém grava um superadmin aqui
+    //   • lapinkApiConfig    → pode conter chaves (EmailJS/MP)
+    //   • apiConfig          → token do Mercado Pago (lido só via Admin SDK)
+    //
+    // OBS: a escrita dos docs públicos ainda é aberta porque o painel admin
+    // não usa Firebase Auth (publica via cloud-sync). Risco residual = vandalismo
+    // do catálogo. Lockdown total ("só admin escreve") exige migrar o login do
+    // painel para Firebase Auth — ver firestore.rules.secure.
+    // ════════════════════════════════════════════════════════════════
+
+    function isDocPublico(doc) {
+      return doc in [
+        'lapinkProdutos',
+        'lapinkLojaConfig',
+        'lapinkStoreConfig',
+        'lapinkCarrossel',
+        'lapinkNotifConfig',
+        'lapinkEntregaConfig',
+        'lapinkPaymentConfig',
+        'lapinkConfig',
+        'lapinkPedidoCounter',
+        'lapinkPedidos'
+      ];
     }
 
-    // Demais dados públicos da loja (produtos, config, pedidos legacy)
-    match /lapink/{document} {
-      allow read, write: if true;
+    match /lapink/{doc} {
+      allow read, write: if isDocPublico(doc);
+      // Qualquer outro doc em /lapink/ (lapinkClients, lapinkUsers,
+      // lapinkApiConfig, apiConfig…) → negado (sem allow = sem acesso).
     }
 
-    // Carrinhos abandonados — cliente cria/atualiza o próprio; admin lê.
-    // Cada carrinho é um doc separado (sem clobber). Delete só via Admin SDK.
+    // Carrinhos abandonados — cliente cria/atualiza o próprio; admin lê pelo painel.
+    // Delete só via Admin SDK.
     match /abandonados/{id} {
       allow read, create, update: if true;
       allow delete: if false;
     }
 
-    // Pedidos criados via Firebase Functions (Admin SDK bypass rules)
-    // Leitura pública para que clientes acompanhem pelo ID
-    // Criação e delete bloqueados (apenas via Functions/Admin SDK)
-    // Update do admin web limitado a rastreio/status/updatedAt — impede que
-    // terceiros alterem total, itens, pagamento ou marquem estoqueBaixado.
+    // Pedidos criados via Cloud Functions (Admin SDK ignora as rules).
+    // Leitura pública para o cliente acompanhar pelo ID.
+    // Criação/exclusão bloqueadas. Update do painel limitado a rastreio/status —
+    // impede terceiros de alterar total, itens, pagamento ou marcar estoqueBaixado.
     match /pedidos/{pedidoId} {
       allow read: if true;
       allow create, delete: if false;

@@ -273,7 +273,7 @@
             </div>
 
             <div class="search-bar-admin">
-              <input type="search" placeholder="Buscar produto" id="busca-produto" oninput="filtrarProdutos()" />
+              <input type="search" placeholder="Buscar produto" id="busca-produto" oninput="buscarProdutos()" />
               <select id="filtro-cat" onchange="filtrarProdutos()">
                 <option value="">Todos os produtos</option>
                 <option>Anéis</option>
@@ -709,7 +709,7 @@
       c.style.display = 'flex';
       c.innerHTML = arr.map(function(src, i) {
         return '<div class="img-thumb">' +
-          '<img src="' + src + '" alt="foto ' + (i + 1) + '" />' +
+          '<img src="' + src + '" alt="foto ' + (i + 1) + '" loading="lazy" />' +
           (i === 0 ? '<span class="img-thumb-cap">Capa</span>' : '') +
           '<button type="button" class="img-thumb-x" title="Remover" onclick="' + removeFn + '(' + i + ')"><i class="ti ti-x"></i></button>' +
         '</div>';
@@ -874,7 +874,7 @@
       lista.forEach(p => {
         const low  = p.estoque <= 5 ? 'low' : '';
         const thumb = p.imagem
-          ? `<img src="${p.imagem}" alt="${p.nome}" />`
+          ? `<img src="${p.imagem}" alt="${p.nome}" loading="lazy" />`
           : `<i class="ti ${p.icone || 'ti-diamond'}"></i>`;
 
         const div = document.createElement('div');
@@ -918,6 +918,15 @@
           showToast('Foto da capa atualizada!');
         }
       });
+    }
+
+    // Debounce leve (~250ms) só para a busca — evita reconstruir a lista
+    // inteira de estoque (com imagens) a cada tecla digitada. Os botões de
+    // filtrar/categoria continuam chamando filtrarProdutos() direto (instantâneo).
+    var _buscaProdTimer = null;
+    function buscarProdutos() {
+      clearTimeout(_buscaProdTimer);
+      _buscaProdTimer = setTimeout(filtrarProdutos, 250);
     }
 
     function filtrarProdutos() {
