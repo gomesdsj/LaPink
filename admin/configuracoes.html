@@ -246,7 +246,19 @@
               <p>Estimativa do espaço ocupado pelos dados do localStorage.</p>
               <div id="storage-uso-label" class="storage-label" style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;"></div>
               <div class="storage-bar-wrap"><div class="storage-bar" id="storage-bar" style="width:0%"></div></div>
-              <div class="storage-label">Limite estimado do localStorage: ~5 MB</div>
+              <div class="storage-label">Limite estimado do localStorage (este navegador): ~5 MB</div>
+            </div>
+
+            <div class="section-card">
+              <h3><i class="ti ti-cloud" style="color:#3b82f6"></i> Firebase (nuvem) — quanto você já usou</h3>
+              <p>Estimativa do espaço que seus dados ocupam no Firestore. O plano gratuito (Spark) oferece <strong>~1 GB</strong>.</p>
+              <div id="fb-uso-label" class="storage-label" style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:6px;">Calculando…</div>
+              <div class="storage-bar-wrap"><div class="storage-bar" id="fb-bar" style="width:0%;background:#3b82f6"></div></div>
+              <div class="storage-label">Limite do plano gratuito: ~1 GB</div>
+              <div id="fb-breakdown" style="margin-top:12px;font-size:12px;color:var(--gray-600)"></div>
+              <button class="btn-secondary" type="button" onclick="renderFirebaseUso()" style="margin-top:12px;">
+                <i class="ti ti-refresh"></i> Atualizar estimativa
+              </button>
             </div>
 
             <div class="section-card">
@@ -859,6 +871,68 @@
     document.getElementById('info-produtos').textContent = nProd + ' produto' + (nProd !== 1 ? 's' : '') + ' armazenado' + (nProd !== 1 ? 's' : '');
     document.getElementById('info-clientes').textContent = nCli + ' cliente' + (nCli !== 1 ? 's' : '') + ' armazenado' + (nCli !== 1 ? 's' : '');
     document.getElementById('info-pedidos').textContent = nPed + ' pedido' + (nPed !== 1 ? 's' : '') + ' armazenado' + (nPed !== 1 ? 's' : '');
+
+    renderFirebaseUso(); // estimativa do uso no Firestore (assíncrono)
+  }
+
+  // ─── Uso estimado no Firebase (Firestore) ────────────────────
+  // O SDK do cliente não expõe a cota do projeto; estimamos somando o tamanho
+  // dos documentos legíveis. Itens com leitura bloqueada por segurança
+  // (clientes/credenciais) não entram na conta.
+  async function renderFirebaseUso() {
+    var lbl = document.getElementById('fb-uso-label');
+    var bar = document.getElementById('fb-bar');
+    var bd  = document.getElementById('fb-breakdown');
+    if (!lbl) return;
+
+    var fs = (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) ? firebase.firestore() : null;
+    if (!fs) {
+      lbl.textContent = 'Firebase não disponível agora — recarregue a página.';
+      bar.style.width = '0%'; bd.innerHTML = '';
+      return;
+    }
+
+    lbl.textContent = 'Calculando…'; bd.innerHTML = '';
+
+    var docsPublicos = ['lapinkProdutos','lapinkPedidos','lapinkLojaConfig','lapinkStoreConfig',
+      'lapinkCarrossel','lapinkEntregaConfig','lapinkPaymentConfig','lapinkNotifConfig','lapinkConfig','lapinkPedidoCounter'];
+    var rotulos = { lapinkProdutos:'Produtos (com fotos)', lapinkPedidos:'Pedidos (locais)',
+      lapinkLojaConfig:'Config. da loja', lapinkStoreConfig:'Config. da vitrine', lapinkCarrossel:'Carrossel',
+      lapinkEntregaConfig:'Config. de entrega', lapinkPaymentConfig:'Config. de pagamento',
+      lapinkNotifConfig:'Notificações', lapinkConfig:'Config. geral', lapinkPedidoCounter:'Contador de pedidos' };
+
+    var partes = [], total = 0;
+
+    await Promise.all(docsPublicos.map(function (k) {
+      return fs.collection('lapink').doc(k).get().then(function (snap) {
+        if (snap.exists) {
+          var d = snap.data();
+          var bytes = JSON.stringify((d && d.data !== undefined) ? d.data : d).length;
+          if (bytes > 0) { partes.push({ nome: rotulos[k] || k, bytes: bytes }); total += bytes; }
+        }
+      }).catch(function () {});
+    }));
+
+    await fs.collection('pedidos').get().then(function (qs) {
+      var bytes = 0, n = 0;
+      qs.forEach(function (doc) { bytes += JSON.stringify(doc.data()).length; n++; });
+      if (n > 0) { partes.push({ nome: 'Pedidos Mercado Pago (' + n + ')', bytes: bytes }); total += bytes; }
+    }).catch(function () {});
+
+    var limite = 1024 * 1024 * 1024; // ~1 GB (Spark)
+    var pct = Math.min(100, (total / limite) * 100);
+
+    lbl.textContent = fmtBytes(total) + ' usados de ~1 GB  (' + pct.toFixed(2) + '%)';
+    bar.style.width = Math.max(0.5, pct).toFixed(2) + '%';
+
+    partes.sort(function (a, b) { return b.bytes - a.bytes; });
+    bd.innerHTML = partes.map(function (p) {
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:.5px solid var(--gray-100);">' +
+             '<span>' + p.nome + '</span><strong>' + fmtBytes(p.bytes) + '</strong></div>';
+    }).join('') +
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;color:var(--pink-600);">' +
+      '<span>Espaço livre estimado</span><strong>' + fmtBytes(Math.max(0, limite - total)) + '</strong></div>' +
+    '<div style="margin-top:8px;color:var(--gray-400);font-size:11px;">As fotos dos produtos são o que mais ocupa espaço. Itens com leitura restrita por segurança (clientes/credenciais) não entram nesta conta.</div>';
   }
 
   function limparDados(key, label, infoId) {
