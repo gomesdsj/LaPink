@@ -555,11 +555,47 @@ if (!_cart.length) {
   }
 
   /* ── Estado global ──────────────────────────────────────── */
-  var _modalidadeSelecionada = '';  // 'pac' | 'sedex' | 'retirada' | 'local'
+  var _modalidadeSelecionada = '';  // 'pac' | 'sedex' | 'retirada' | 'local' | 'me_<id>'
   var _freteValor = 0;
   var _pesoTotal = 0;
   var _subtotal = 0;
   var _freteGratisAtivo = false;
+  var _freteOpcoesAPI = null;       // cotação real por CEP (Melhor Envio); null = usa tabela
+
+  var COTAR_FRETE_URL = 'https://us-central1-lapink-82a39.cloudfunctions.net/cotarFrete';
+
+  /* ── Cotação de frete real por CEP (Melhor Envio via Cloud Function) ──
+     Retorna array de opções [{id,empresa,servico,preco,prazo}] ou null
+     (não configurado / Blaze inativo / erro) → o checkout cai na tabela manual. */
+  async function cotarFreteAPI(cepDestino, pesoG, valor) {
+    try {
+      var resp = await fetch(COTAR_FRETE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cepDestino: cepDestino, pesoG: pesoG, valor: valor })
+      });
+      if (!resp.ok) return null;
+      var data = await resp.json();
+      return (data && Array.isArray(data.opcoes) && data.opcoes.length) ? data.opcoes : null;
+    } catch (e) { return null; }
+  }
+
+  // Dispara a cotação quando há um CEP de destino válido (8 dígitos).
+  async function atualizarFretePorCep() {
+    var cepEl = document.getElementById('pgCep');
+    var cep = (cepEl ? cepEl.value : '').replace(/\D/g, '');
+    if (cep.length !== 8) { _freteOpcoesAPI = null; return; }
+    _subtotal = (typeof getCart === 'function' ? getCart() : _cart)
+      .reduce(function (s, i) { return s + i.preco * i.qty; }, 0);
+    _pesoTotal = calcularPeso();
+    var cont = document.getElementById('pgFreteConteudo');
+    if (cont) cont.insertAdjacentHTML('afterbegin',
+      '<div id="pgFreteCotando" class="pg-frete-peso"><i class="ti ti-loader-2 spin-icon"></i> Cotando frete para o seu CEP…</div>');
+    var opc = await cotarFreteAPI(cep, _pesoTotal, _subtotal);
+    _freteOpcoesAPI = opc;        // array (sucesso) ou null (fallback tabela)
+    _modalidadeSelecionada = '';  // reavalia a seleção com as novas opções
+    renderFrete();
+  }
 
   /* ── Máscaras ───────────────────────────────────────────── */
   function maskCpf(v) {
@@ -646,6 +682,7 @@ if (!_cart.length) {
         ['pgRua', 'pgBairro', 'pgCidade', 'pgEstado'].forEach(function (id) {
           document.getElementById(id).classList.remove('err');
         });
+        atualizarFretePorCep(); // cota frete real para o CEP encontrado
       })
       .catch(function () {
         btn.disabled = false;
@@ -711,38 +748,52 @@ if (!_cart.length) {
 
     var opcoes = [];
     var excedeuTabela = false;
+    var usouAPI = Array.isArray(_freteOpcoesAPI) && _freteOpcoesAPI.length > 0;
 
-    // PAC
-    if (cfg.pac && cfg.pac.ativo) {
-      var precoPac = precoNaTabela(cfg.pac.tabela, _pesoTotal);
-      if (precoPac === null) {
-        excedeuTabela = true;
-      } else {
+    if (usouAPI) {
+      // Cotação real por CEP (Melhor Envio): Correios + outras transportadoras
+      _freteOpcoesAPI.forEach(function (o) {
         opcoes.push({
-          id: 'pac',
-          label: 'PAC (Correios)',
-          sub: 'Prazo padrão dos Correios',
-          icon: 'ti-package',
-          preco: _freteGratisAtivo ? 0 : precoPac,
+          id: 'me_' + o.id,
+          label: (o.empresa ? o.empresa + ' ' : '') + (o.servico || 'Transportadora'),
+          sub: o.prazo ? ('Entrega em até ' + o.prazo + ' dia(s) útil(eis)') : 'Cotação por CEP',
+          icon: 'ti-truck-delivery',
+          preco: _freteGratisAtivo ? 0 : (Number(o.preco) || 0),
           isGratis: _freteGratisAtivo
         });
+      });
+    } else {
+      // Fallback: tabela manual por peso configurada pelo lojista (PAC/SEDEX)
+      if (cfg.pac && cfg.pac.ativo) {
+        var precoPac = precoNaTabela(cfg.pac.tabela, _pesoTotal);
+        if (precoPac === null) {
+          excedeuTabela = true;
+        } else {
+          opcoes.push({
+            id: 'pac',
+            label: 'PAC (Correios)',
+            sub: 'Prazo padrão dos Correios',
+            icon: 'ti-package',
+            preco: _freteGratisAtivo ? 0 : precoPac,
+            isGratis: _freteGratisAtivo
+          });
+        }
       }
-    }
 
-    // SEDEX
-    if (cfg.sedex && cfg.sedex.ativo) {
-      var precoSedex = precoNaTabela(cfg.sedex.tabela, _pesoTotal);
-      if (precoSedex === null) {
-        excedeuTabela = true;
-      } else {
-        opcoes.push({
-          id: 'sedex',
-          label: 'SEDEX (Correios)',
-          sub: 'Entrega expressa',
-          icon: 'ti-bolt',
-          preco: _freteGratisAtivo ? 0 : precoSedex,
-          isGratis: _freteGratisAtivo
-        });
+      if (cfg.sedex && cfg.sedex.ativo) {
+        var precoSedex = precoNaTabela(cfg.sedex.tabela, _pesoTotal);
+        if (precoSedex === null) {
+          excedeuTabela = true;
+        } else {
+          opcoes.push({
+            id: 'sedex',
+            label: 'SEDEX (Correios)',
+            sub: 'Entrega expressa',
+            icon: 'ti-bolt',
+            preco: _freteGratisAtivo ? 0 : precoSedex,
+            isGratis: _freteGratisAtivo
+          });
+        }
       }
     }
 

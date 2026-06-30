@@ -431,3 +431,96 @@ exports.cobrarAbandonados = functions.https.onRequest(function (req, res) {
       });
   });
 });
+
+// ---------------------------------------------------------------------------
+// 4. cotarFrete — cotação de frete por CEP via Melhor Envio (Correios + outras)
+//    Config (admin, doc lapink/apiConfig.data): meToken, cepOrigem, meSandbox,
+//    meUserAgent. Requer Blaze. O cliente envia cepDestino, pesoG e valor.
+// ---------------------------------------------------------------------------
+exports.cotarFrete = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    var body = req.body || {};
+    var cepDestino = String(body.cepDestino || '').replace(/\D/g, '');
+    var pesoKg = Math.max(0.3, (Number(body.pesoG) || 0) / 1000); // mínimo 0,3 kg
+    var valor = Number(body.valor) || 0;
+    var dims = body.dimensoes || {};
+
+    if (cepDestino.length !== 8) {
+      res.status(400).json({ error: 'CEP de destino inválido.' });
+      return;
+    }
+
+    Promise.all([
+      db.collection('lapink').doc('apiConfig').get(),        // segredo (token)
+      db.collection('lapink').doc('lapinkEntregaConfig').get() // config (CEP origem, sandbox)
+    ])
+      .then(function (snaps) {
+        var secret = (snaps[0].exists && snaps[0].data() && snaps[0].data().data) || {};
+        var entrega = (snaps[1].exists && snaps[1].data() && snaps[1].data().data) || {};
+        // Token: preferir Secret/env var (recomendado); apiConfig.data.meToken é fallback.
+        var token = process.env.MELHOR_ENVIO_TOKEN || secret.meToken;
+        var cepOrigem = String(entrega.cepOrigem || '').replace(/\D/g, '');
+        var data = entrega; // CEP origem, sandbox e userAgent vêm da config de entrega
+        if (!token) { throw { _status: 503, message: 'Frete não configurado (token Melhor Envio ausente).' }; }
+        if (cepOrigem.length !== 8) { throw { _status: 503, message: 'CEP de origem (loja) não configurado.' }; }
+
+        var base = data.meSandbox ? 'https://sandbox.melhorenvio.com.br' : 'https://melhorenvio.com.br';
+        var payload = {
+          from: { postal_code: cepOrigem },
+          to: { postal_code: cepDestino },
+          package: {
+            weight: pesoKg,
+            width:  Number(dims.width)  || 16,
+            height: Number(dims.height) || 2,
+            length: Number(dims.length) || 11
+          },
+          options: { insurance_value: valor, receipt: false, own_hand: false }
+        };
+
+        return fetch(base + '/api/v2/me/shipment/calculate', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'User-Agent': data.meUserAgent || 'LaPink (contato@lapink.com.br)'
+          },
+          body: JSON.stringify(payload)
+        });
+      })
+      .then(function (r) {
+        return r.json().then(function (arr) {
+          if (!r.ok) {
+            functions.logger.error('MelhorEnvio cotarFrete erro', arr);
+            throw { _status: 502, message: 'Erro na cotação de frete.' };
+          }
+          return arr;
+        });
+      })
+      .then(function (arr) {
+        var opcoes = (Array.isArray(arr) ? arr : [])
+          .filter(function (o) { return o && !o.error && (o.price || o.custom_price); })
+          .map(function (o) {
+            var prazo = o.delivery_time;
+            if (!prazo && o.delivery_range && o.delivery_range.max) prazo = o.delivery_range.max;
+            return {
+              id: String(o.id),
+              empresa: (o.company && o.company.name) || '',
+              servico: o.name || '',
+              preco: Number(o.custom_price || o.price) || 0,
+              prazo: prazo || null
+            };
+          });
+        res.status(200).json({ opcoes: opcoes });
+      })
+      .catch(function (err) {
+        var status = (err && err._status) || 500;
+        if (status >= 500) functions.logger.error('cotarFrete erro', err);
+        res.status(status).json({ error: (err && err.message) || 'Erro interno na cotação.' });
+      });
+  });
+});

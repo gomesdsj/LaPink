@@ -517,10 +517,37 @@
               </div>
             </div>
 
+            <!-- Cotação automática por CEP (Melhor Envio) -->
+            <div class="section-card">
+              <h3><i class="ti ti-truck-delivery" style="color:var(--pink-500)"></i> Cotação automática por CEP (Melhor Envio)</h3>
+              <p>Quando ativa, o checkout calcula o frete real até o CEP do cliente (Correios PAC/SEDEX + outras transportadoras). Enquanto não estiver configurada, o site usa a tabela manual por peso abaixo como reserva.</p>
+
+              <div class="form-row" style="margin-top:12px;">
+                <div class="form-group">
+                  <label for="ent-cep-origem">CEP de origem (de onde você envia)</label>
+                  <input type="text" id="ent-cep-origem" placeholder="00000-000" inputmode="numeric" maxlength="9" autocomplete="postal-code" />
+                </div>
+                <div class="form-group">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="ent-me-sandbox" /> Usar ambiente de testes (sandbox)
+                  </label>
+                  <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Marque só para testar sem gerar etiquetas reais.</div>
+                </div>
+              </div>
+
+              <p style="font-size:12px;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-100);border-radius:8px;padding:10px 12px;margin-top:6px;">
+                <i class="ti ti-key"></i> <strong>Token do Melhor Envio:</strong> por segurança, o token NÃO é salvo aqui. Ele é configurado no servidor quando o plano Blaze for ativado, com o comando
+                <code style="background:#fff;border:1px solid var(--pink-100);border-radius:4px;padding:1px 5px;">firebase functions:secrets:set MELHOR_ENVIO_TOKEN</code>.
+                Crie sua conta em <strong>melhorenvio.com.br</strong> e gere o token de API.
+              </p>
+
+              <button class="btn-save-form" type="button" onclick="salvarEntrega()"><i class="ti ti-device-floppy"></i> Salvar cotação automática</button>
+            </div>
+
             <!-- Frete pelos Correios -->
             <div class="section-card">
-              <h3><i class="ti ti-package" style="color:var(--pink-500)"></i> Frete pelos Correios (PAC e SEDEX)</h3>
-              <p>Configure os valores por faixa de peso para PAC e SEDEX. O sistema calcula automaticamente com base no peso total dos itens no carrinho e oferece ambas as opções ao cliente.</p>
+              <h3><i class="ti ti-package" style="color:var(--pink-500)"></i> Frete pelos Correios (PAC e SEDEX) — tabela manual (reserva)</h3>
+              <p>Usada quando a cotação automática acima não está configurada. Configure os valores por faixa de peso para PAC e SEDEX — o sistema calcula com base no peso total dos itens no carrinho.</p>
 
               <!-- Info box: caixas Correios -->
               <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:10px;padding:14px 16px;margin-bottom:18px;">
@@ -1079,6 +1106,11 @@
 
     document.getElementById('ent-obs').value = cfg.obs || '';
 
+    // Cotação automática (Melhor Envio)
+    var cepOri = cfg.cepOrigem || '';
+    document.getElementById('ent-cep-origem').value = cepOri.length === 8 ? cepOri.slice(0,5) + '-' + cepOri.slice(5) : cepOri;
+    document.getElementById('ent-me-sandbox').checked = !!cfg.meSandbox;
+
     // PAC
     document.getElementById('ent-pac-ativo').checked = cfg.pac ? !!cfg.pac.ativo : true;
     _tabelaPAC = (cfg.pac && cfg.pac.tabela && cfg.pac.tabela.length)
@@ -1119,6 +1151,8 @@
         minimo: parseFloat(document.getElementById('ent-gratis-minimo').value) || 0
       },
       obs: document.getElementById('ent-obs').value.trim(),
+      cepOrigem: (document.getElementById('ent-cep-origem').value || '').replace(/\D/g, ''),
+      meSandbox: document.getElementById('ent-me-sandbox').checked,
       pac: {
         ativo:  document.getElementById('ent-pac-ativo').checked,
         tabela: _tabelaPAC.filter(function(r){ return r.ateG>0; }).sort(function(a,b){ return a.ateG-b.ateG; })

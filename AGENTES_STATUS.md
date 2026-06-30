@@ -442,6 +442,12 @@ Auditoria conduzida por QA (Thiago Lima), Segurança (Beatriz Santos) e E-commer
 - **Acessibilidade:** `loading="lazy"` + `alt` escapado nas imagens dinâmicas; focus-trap nos modais da loja (Tab circula, Esc fecha); contraste de texto pequeno elevado a WCAG AA (`--pk-soft`). *(Amanda Costa)*
 - **Performance:** compressão de imagem no upload já existente confirmada (900px/WebP 0.88); `loading="lazy"` nas listas do admin; debounce nas buscas pesadas. *(Rafael Torres)*
 
+### ✅ FRETE POR CEP (Melhor Envio) — construído pronto p/ ativar — 2026-06-30
+- Cloud Function `cotarFrete` (Correios + outras transportadoras via Melhor Envio).
+- Checkout cota o frete real ao digitar o CEP; **fallback** automático para a tabela manual por peso quando não configurado.
+- Admin: card "Cotação automática por CEP" (CEP de origem + sandbox) na aba Entrega.
+- Falta (externo): Blaze + `MELHOR_ENVIO_TOKEN` (Secret) + criar conta no Melhor Envio. *(Felipe Cardoso / Pedro Alves)*
+
 ### ⏳ PENDENTE — depende de config externa (cliente vai fornecer)
 - Domínio próprio + `sitemap.xml`/canonical (depende do domínio). *(Lucas Rocha)*
 - Pagamento real: Blaze + deploy Functions + token MP + `MP_WEBHOOK_SECRET`. *(Felipe Cardoso / Carla Barbosa)*
