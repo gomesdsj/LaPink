@@ -46,25 +46,37 @@ function _hashPassword(str) {
 }
 
 // ── Seed dos Super Admins fixos ───────────────────────────
-// Senha do super admin: 267267
-// SHA-256('267267') = 5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a
+// Super admins permanentes: role 'superadmin' garantido a cada carga e
+// impossíveis de excluir (proteção em deleteUser). Recriados se sumirem.
+//   • alexandrej529@hotmail.com — senha 267267 (alterável pelo próprio)
+//   • crischavesk123@hotmail.com — senha FIXA Cris@1824 (sempre reforçada)
 (function _seedSuperAdmins() {
-  var DEFAULT_HASH = '5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a';
   var FIXED = [
-    { email: 'alexandrej529@hotmail.com', name: 'Alexandre', role: 'superadmin' }
+    // Senha: 267267  — SHA-256
+    { email: 'alexandrej529@hotmail.com', name: 'Alexandre', role: 'superadmin',
+      passwordHash: '5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a',
+      travarSenha: false },
+    // Senha: Cris@1824  — SHA-256 (super admin fixo; senha sempre esta)
+    { email: 'crischavesk123@hotmail.com', name: 'Cristiane', role: 'superadmin',
+      passwordHash: 'a507a72cb3b73a3006224fb4314e004ad2c90072312d92e83ac73bd56ec61520',
+      travarSenha: true }
   ];
   var users = _getUsers();
   var changed = false;
   FIXED.forEach(function(sa) {
     var idx = users.findIndex(function(u) { return u.email.toLowerCase() === sa.email.toLowerCase(); });
     if (idx === -1) {
-      users.push({ email: sa.email, password: DEFAULT_HASH, role: sa.role, name: sa.name, address: '', createdAt: new Date().toISOString() });
+      users.push({ email: sa.email, password: sa.passwordHash, role: 'superadmin', name: sa.name, address: '', createdAt: new Date().toISOString() });
       changed = true;
     } else {
       if (users[idx].role !== 'superadmin') { users[idx].role = 'superadmin'; changed = true; }
-      // NÃO sobrescreve a senha: o super admin pode alterá-la e ela deve persistir.
-      // Só define a senha padrão se por algum motivo estiver vazia.
-      if (!users[idx].password) { users[idx].password = DEFAULT_HASH; changed = true; }
+      if (sa.travarSenha) {
+        // Senha fixa: sempre reforça (qualquer alteração é revertida na próxima carga)
+        if (users[idx].password !== sa.passwordHash) { users[idx].password = sa.passwordHash; changed = true; }
+      } else if (!users[idx].password) {
+        // Alterável: só define a padrão se estiver vazia
+        users[idx].password = sa.passwordHash; changed = true;
+      }
     }
   });
   if (changed) _saveUsers(users);
