@@ -40,10 +40,14 @@ service cloud.firestore {
       // lapinkApiConfig, apiConfig…) → negado (sem allow = sem acesso).
     }
 
-    // Perfis de usuário do Firebase Auth (nome/role). Cada um lê/grava só o SEU.
-    // Usado por register.js/login.js quando o provedor Email/Senha está ativo.
+    // Perfis de usuário do Firebase Auth. Cada um lê/grava só o SEU perfil,
+    // MAS não pode se auto-promover: ao gravar, o campo `role` só pode ser
+    // 'client' (ou ausente). Papéis de admin/superadmin são definidos apenas
+    // via Console do Firebase ou Admin SDK (que ignoram estas rules).
     match /usuarios/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+                   && (!('role' in request.resource.data) || request.resource.data.role == 'client');
     }
 
     // Carrinhos abandonados — cliente cria/atualiza o próprio; admin lê pelo painel.
