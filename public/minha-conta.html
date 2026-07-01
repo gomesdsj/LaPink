@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Minha Conta</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/cloud-sync.js"></script>
+<script src="js/perfil-db.js"></script>
 <script src="js/storage.js"></script>
 <script>
   function checkAuth(roles) {
@@ -298,6 +300,10 @@
     else if (!arr.length) users[idx].endereco = null;
     else if (!users[idx].endereco) users[idx].endereco = arr[0];
     localStorage.setItem('lapinkClients', JSON.stringify(users));
+    // Grava no banco por cliente (usuarios/{uid}) quando autenticado no Firebase Auth
+    if (typeof window.salvarEnderecosDB === 'function') {
+      window.salvarEnderecosDB(users[idx].enderecos || [], users[idx].endereco || null);
+    }
   }
   function _enderecoLinhas(e) {
     var cidUf = [e.cidade, e.uf].filter(Boolean).join('/');
@@ -342,6 +348,19 @@
     renderEnderecos(); _toast('Endereço removido.');
   };
   renderEnderecos();
+
+  // Se o cliente está autenticado no banco, traz os endereços salvos de lá
+  if (typeof window.carregarEnderecosDB === 'function') {
+    window.carregarEnderecosDB().then(function (d) {
+      if (!d) return;
+      var users = _mcUsers(); var idx = _mcUserIdx(users);
+      if (idx === -1) return;
+      users[idx].enderecos = d.enderecos || [];
+      users[idx].endereco = d.endereco || (d.enderecos && d.enderecos[0]) || users[idx].endereco || null;
+      localStorage.setItem('lapinkClients', JSON.stringify(users));
+      renderEnderecos();
+    }).catch(function () {});
+  }
 
   function mcMaskCep(input) {
     var digitosAntes = input.value.slice(0, input.selectionStart).replace(/\D/g, '').length;

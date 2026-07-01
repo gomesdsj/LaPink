@@ -403,9 +403,11 @@ body { background: var(--gray-50); min-height: 100vh; margin: 0; }
 
 <!-- Scripts (antes de qualquer render) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/cloud-sync.js"></script>
+<script src="js/perfil-db.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/auth.js"></script>
@@ -1100,6 +1102,10 @@ if (!_cart.length) {
       if (end.cep && end.rua && !arr.some(function (e) { return chave(e) === chave(end); })) arr.push(end);
       users[idx].enderecos = arr;
       localStorage.setItem('lapinkClients', JSON.stringify(users));
+      // Grava no banco por cliente (usuarios/{uid}) quando autenticado
+      if (typeof window.salvarEnderecosDB === 'function') {
+        window.salvarEnderecosDB(users[idx].enderecos || [], users[idx].endereco || null);
+      }
     } catch (e) {}
   }
 
