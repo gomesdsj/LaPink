@@ -285,6 +285,29 @@ body { background: var(--gray-50); min-height: 100vh; margin: 0; }
   color: #166534;
   margin-bottom: 10px;
 }
+.pg-frete-tag {
+  font-size: 10px; font-weight: 700; color: var(--pink-600);
+  background: var(--pink-50); border: 1px solid var(--pink-200);
+  border-radius: 20px; padding: 1px 7px; margin-left: 6px; white-space: nowrap;
+}
+
+/* ── Formas de pagamento (estilo Kabum) ── */
+.pg-pay-opt {
+  display: flex; align-items: center; gap: 11px; padding: 12px 14px;
+  border: .5px solid var(--pink-100); border-radius: 12px; cursor: pointer;
+  transition: border-color .15s, background .15s; margin-bottom: 8px;
+}
+.pg-pay-opt:last-child { margin-bottom: 0; }
+.pg-pay-opt:has(input:checked) { border-color: var(--pink-300); background: var(--pink-50); }
+.pg-pay-opt input[type="radio"] { accent-color: var(--pink-500); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+.pg-pay-icon { font-size: 22px; color: var(--pink-500); width: 26px; text-align: center; flex-shrink: 0; }
+.pg-pay-info { flex: 1; min-width: 0; }
+.pg-pay-label { font-size: 13px; font-weight: 700; color: var(--gray-800); }
+.pg-pay-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.pg-pay-badge {
+  font-size: 10px; font-weight: 700; color: #166534; background: #dcfce7;
+  border: 1px solid #86efac; border-radius: 20px; padding: 2px 8px; white-space: nowrap;
+}
 
 /* ── Card de totais ── */
 .pg-totals { display: flex; flex-direction: column; gap: 7px; }
@@ -403,9 +426,13 @@ if (!_cart.length) {
 <header class="pg-header">
   <a href="V1.html" class="pg-header-logo">LaPink</a>
   <div class="pg-header-steps">
-    <span class="step active">1. Endereço</span>
+    <span class="step">Sacola</span>
     <span class="step-sep">›</span>
-    <span class="step">2. Pagamento</span>
+    <span class="step">Identificação</span>
+    <span class="step-sep">›</span>
+    <span class="step">Entrega</span>
+    <span class="step-sep">›</span>
+    <span class="step active">Pagamento</span>
   </div>
 </header>
 
@@ -498,6 +525,12 @@ if (!_cart.length) {
       </div>
     </div>
 
+    <!-- Card: Forma de pagamento -->
+    <div class="card">
+      <div class="card-title"><i class="ti ti-credit-card" aria-hidden="true"></i> Forma de pagamento</div>
+      <div id="pgPagamento"><!-- JS --></div>
+    </div>
+
   </div>
   <!-- /pg-left -->
 
@@ -561,6 +594,7 @@ if (!_cart.length) {
   var _subtotal = 0;
   var _freteGratisAtivo = false;
   var _freteOpcoesAPI = null;       // cotação real por CEP (Melhor Envio); null = usa tabela
+  var _formaPagamento = 'pix';      // forma de pagamento escolhida (visual; MP processa quando ativo)
 
   var COTAR_FRETE_URL = 'https://us-central1-lapink-82a39.cloudfunctions.net/cotarFrete';
 
@@ -830,6 +864,15 @@ if (!_cart.length) {
       });
     }
 
+    // Marca a opção paga mais barata (destaque estilo Kabum)
+    if (opcoes.length > 1) {
+      var pagas = opcoes.filter(function (o) { return !o.isGratis && o.preco > 0; });
+      if (pagas.length) {
+        var minP = Math.min.apply(null, pagas.map(function (o) { return o.preco; }));
+        opcoes.forEach(function (o) { if (!o.isGratis && o.preco === minP) { o.maisBarato = true; } });
+      }
+    }
+
     var html = '';
 
     // Badge frete grátis
@@ -857,7 +900,7 @@ if (!_cart.length) {
         html += '<label class="pg-frete-opt">' +
           '<input type="radio" name="pgFrete" value="' + _esc(op.id) + '"' + (checked ? ' checked' : '') + ' />' +
           '<div class="pg-frete-opt-info">' +
-            '<div class="pg-frete-opt-label"><i class="ti ' + _esc(op.icon) + '" aria-hidden="true"></i> ' + _esc(op.label) + '</div>' +
+            '<div class="pg-frete-opt-label"><i class="ti ' + _esc(op.icon) + '" aria-hidden="true"></i> ' + _esc(op.label) + (op.maisBarato ? '<span class="pg-frete-tag">Mais barato</span>' : '') + '</div>' +
             '<div class="pg-frete-opt-sub">' + _esc(op.sub) + '</div>' +
           '</div>' +
           precoStr +
@@ -904,6 +947,35 @@ if (!_cart.length) {
       '<div class="pg-tot-row"><span>Subtotal</span><span>' + fmtR(_subtotal) + '</span></div>' +
       freteHtml +
       '<div class="pg-tot-row bold"><span>TOTAL</span><span>' + fmtR(total) + '</span></div>';
+
+    renderFormaPagamento(); // recalcula parcelas conforme o total
+  }
+
+  /* ── Formas de pagamento (estilo Kabum; visual até o Mercado Pago ativar) ── */
+  function renderFormaPagamento() {
+    var el = document.getElementById('pgPagamento');
+    if (!el) return;
+    var total = _subtotal + _freteValor;
+    var base = total > 0 ? total : _subtotal;
+    var parcelas = Math.max(1, Math.min(12, Math.floor(base / 5))); // parcela mínima ~R$5
+    var valorParc = parcelas > 0 ? base / parcelas : base;
+    var opts = [
+      { id: 'pix',    icon: 'ti-qrcode',      label: 'PIX',                sub: 'Aprovação na hora, 100% seguro',                 badge: 'à vista' },
+      { id: 'cartao', icon: 'ti-credit-card', label: 'Cartão de crédito',  sub: 'em até ' + parcelas + 'x de ' + fmtR(valorParc) + ' sem juros' },
+      { id: 'boleto', icon: 'ti-barcode',     label: 'Boleto bancário',    sub: 'Compensa em até 3 dias úteis',                    badge: 'à vista' }
+    ];
+    el.innerHTML = opts.map(function (o) {
+      var checked = o.id === _formaPagamento;
+      return '<label class="pg-pay-opt">' +
+        '<input type="radio" name="pgPay" value="' + o.id + '"' + (checked ? ' checked' : '') + ' />' +
+        '<i class="pg-pay-icon ti ' + o.icon + '" aria-hidden="true"></i>' +
+        '<div class="pg-pay-info"><div class="pg-pay-label">' + o.label + '</div><div class="pg-pay-sub">' + o.sub + '</div></div>' +
+        (o.badge ? '<span class="pg-pay-badge">' + o.badge + '</span>' : '') +
+        '</label>';
+    }).join('');
+    el.querySelectorAll('input[name="pgPay"]').forEach(function (inp) {
+      inp.addEventListener('change', function () { if (this.checked) _formaPagamento = this.value; });
+    });
   }
 
   /* ── Pré-preencher dados do cliente ─────────────────────── */
