@@ -559,14 +559,14 @@ if (!_cart.length) {
       <div class="pg-totals" id="pgTotais"><!-- JS --></div>
     </div>
 
-    <!-- Botão Mercado Livre (checkout Mercado Pago da conta vinculada) -->
+    <!-- Botão Mercado Pago (checkout da conta do lojista) -->
     <button class="pg-btn-mp" id="pgBtnMP" onclick="pagarComMP()">
       <i class="ti ti-lock" aria-hidden="true"></i>
-      Pagar com Mercado Livre
+      Pagar com Mercado Pago
     </button>
     <p class="pg-security-note">
       <i class="ti ti-shield-check" aria-hidden="true"></i>
-      Você será levado ao checkout seguro do Mercado Livre (Mercado Pago) para concluir o pagamento.
+      Checkout seguro do Mercado Pago — pague com PIX, cartão de crédito/débito de qualquer banco ou boleto.
     </p>
 
   </div>
@@ -1239,7 +1239,7 @@ if (!_cart.length) {
       // o carrinho — evita "venda falsa" (cliente concluir sem pagar e furar estoque).
       console.warn('[pagamento] checkout indisponível:', err && err.message);
       btn.disabled = false;
-      btn.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> Pagar com Mercado Livre';
+      btn.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> Pagar com Mercado Pago';
       _mostrarErroCheckout();
     }
   };
