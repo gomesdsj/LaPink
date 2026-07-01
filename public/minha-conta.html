@@ -168,9 +168,14 @@
     </div>
   </div>
 
-  <!-- Seção: Alterar Endereço -->
-  <div class="conta-section-title"><i class="ti ti-map-pin"></i> Endereço de entrega</div>
+  <!-- Seção: Endereços salvos -->
+  <div class="conta-section-title"><i class="ti ti-map-pin"></i> Endereços salvos</div>
+  <div id="enderecos-salvos" style="margin-bottom:14px;"><!-- renderizado por renderEnderecos() --></div>
+
   <div class="card">
+    <div style="font-weight:700;font-size:14px;margin-bottom:12px;color:var(--gray-800);display:flex;align-items:center;gap:6px;">
+      <i class="ti ti-plus" style="color:var(--pink-500,#D4537E);"></i> Adicionar endereço
+    </div>
     <div class="form-group">
       <label>CEP</label>
       <div style="display:flex;gap:8px;">
@@ -205,7 +210,7 @@
       <input type="text" id="end-referencia" placeholder="Ex: próximo ao mercado..." />
     </div>
     <button class="btn btn-primary btn-sm" onclick="salvarEndereco()">
-      <i class="ti ti-check"></i> Salvar endereço
+      <i class="ti ti-check"></i> Adicionar endereço
     </button>
   </div>
 
@@ -272,19 +277,71 @@
     document.querySelector('.conta-main').appendChild(aviso);
   }
 
-  // Carrega endereço salvo (objeto estruturado)
-  (function carregarEndereco() {
-    var users = typeof getAllUsers === 'function' ? getAllUsers() : [];
-    var user = users.find(function(u) { return _session && (u.email||'').toLowerCase() === (_session.email||'').toLowerCase(); });
-    var end = (user && user.endereco) || {};
-    document.getElementById('end-cep').value         = end.cep         || '';
-    document.getElementById('end-rua').value         = end.rua         || '';
-    document.getElementById('end-numero').value      = end.numero      || '';
-    document.getElementById('end-complemento').value = end.complemento || '';
-    document.getElementById('end-bairro').value      = end.bairro      || '';
-    document.getElementById('end-cidade').value      = end.cidade      || '';
-    document.getElementById('end-referencia').value  = end.referencia  || '';
-  })();
+  // ── Endereços salvos ─────────────────────────────────────
+  function _mcUsers() { try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e){ return []; } }
+  function _mcUserIdx(users) { return users.findIndex(function(u){ return (u.email||'').toLowerCase() === (_session.email||'').toLowerCase(); }); }
+  function _mcEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function getEnderecos() {
+    var users = _mcUsers(); var idx = _mcUserIdx(users);
+    if (idx === -1) return [];
+    var u = users[idx];
+    var arr = Array.isArray(u.enderecos) ? u.enderecos.slice() : [];
+    if (!arr.length && u.endereco && (u.endereco.cep || u.endereco.rua)) arr = [u.endereco]; // migra o antigo
+    return arr;
+  }
+  function _persistEnderecos(arr, padraoIdx) {
+    var users = _mcUsers(); var idx = _mcUserIdx(users);
+    if (idx === -1) return;
+    users[idx].enderecos = arr;
+    if (typeof padraoIdx === 'number' && arr[padraoIdx]) users[idx].endereco = arr[padraoIdx];
+    else if (!arr.length) users[idx].endereco = null;
+    else if (!users[idx].endereco) users[idx].endereco = arr[0];
+    localStorage.setItem('lapinkClients', JSON.stringify(users));
+  }
+  function _enderecoLinhas(e) {
+    var cidUf = [e.cidade, e.uf].filter(Boolean).join('/');
+    var l1 = [e.rua, e.numero].filter(Boolean).join(', ');
+    var l2 = [e.bairro, cidUf].filter(Boolean).join(' - ');
+    var extra = [e.complemento, e.referencia].filter(Boolean).join(' · ');
+    return [l1, l2, extra, (e.cep ? 'CEP ' + e.cep : '')].filter(Boolean);
+  }
+  function renderEnderecos() {
+    var cont = document.getElementById('enderecos-salvos');
+    if (!cont) return;
+    var arr = getEnderecos();
+    var users = _mcUsers(); var uidx = _mcUserIdx(users);
+    var padrao = (uidx > -1 && users[uidx].endereco) ? JSON.stringify(users[uidx].endereco) : null;
+    if (!arr.length) {
+      cont.innerHTML = '<div class="card" style="text-align:center;color:var(--gray-400);font-size:13px;padding:18px;">Nenhum endereço salvo ainda. Adicione um abaixo.</div>';
+      return;
+    }
+    cont.innerHTML = arr.map(function(e, i) {
+      var ehPadrao = padrao && JSON.stringify(e) === padrao;
+      var linhas = _enderecoLinhas(e).map(function(t){ return '<div style="font-size:12px;color:var(--gray-500);line-height:1.5;">'+_mcEsc(t)+'</div>'; }).join('');
+      return '<div class="card" style="margin-bottom:10px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;'+(ehPadrao?'border:1.5px solid var(--pink-300,#F3A6C4);':'')+'">' +
+        '<div style="flex:1;min-width:0;">' +
+          (ehPadrao ? '<span class="badge badge-green" style="font-size:10px;padding:2px 8px;margin-bottom:6px;display:inline-block;">Padrão</span>' : '') +
+          linhas +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">' +
+          (ehPadrao ? '' : '<button type="button" class="btn btn-secondary btn-sm" onclick="definirPadrao('+i+')" title="Usar como padrão"><i class="ti ti-star"></i></button>') +
+          '<button type="button" class="btn btn-secondary btn-sm" onclick="removerEndereco('+i+')" title="Remover" style="color:#e11d48;"><i class="ti ti-trash"></i></button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  window.definirPadrao = function(i){ var arr=getEnderecos(); if(!arr[i])return; _persistEnderecos(arr, i); renderEnderecos(); _toast('Endereço padrão atualizado.'); };
+  window.removerEndereco = function(i){
+    var arr=getEnderecos(); if(!arr[i])return;
+    if(!confirm('Remover este endereço?'))return;
+    var users=_mcUsers(); var uidx=_mcUserIdx(users);
+    var eraPadrao = uidx>-1 && users[uidx].endereco && JSON.stringify(users[uidx].endereco)===JSON.stringify(arr[i]);
+    arr.splice(i,1);
+    _persistEnderecos(arr, eraPadrao ? 0 : undefined);
+    renderEnderecos(); _toast('Endereço removido.');
+  };
+  renderEnderecos();
 
   function mcMaskCep(input) {
     var digitosAntes = input.value.slice(0, input.selectionStart).replace(/\D/g, '').length;
@@ -376,23 +433,29 @@
   renderPedidos();
 
   function salvarEndereco() {
+    var cidadeRaw = (document.getElementById('end-cidade').value || '').trim();
+    var cidade = cidadeRaw, uf = '';
+    var m = cidadeRaw.match(/^(.*?)[\s\-\/]+([A-Za-z]{2})$/); // separa "Cidade - UF"
+    if (m) { cidade = m[1].trim(); uf = m[2].toUpperCase(); }
     var end = {
       cep:         (document.getElementById('end-cep').value         || '').trim(),
       rua:         (document.getElementById('end-rua').value         || '').trim(),
       numero:      (document.getElementById('end-numero').value      || '').trim(),
       complemento: (document.getElementById('end-complemento').value || '').trim(),
       bairro:      (document.getElementById('end-bairro').value      || '').trim(),
-      cidade:      (document.getElementById('end-cidade').value      || '').trim(),
+      cidade:      cidade,
+      uf:          uf,
       referencia:  (document.getElementById('end-referencia').value  || '').trim()
     };
-    try {
-      var users = getAllUsers();
-      var idx = users.findIndex(function(u) { return (u.email||'').toLowerCase() === (_session.email||'').toLowerCase(); });
-      if (idx === -1) { _toast('Usuário não encontrado.', 'erro'); return; }
-      users[idx].endereco = end;
-      localStorage.setItem('lapinkClients', JSON.stringify(users));
-      _toast('Endereço salvo!');
-    } catch(e) { _toast('Erro ao salvar.', 'erro'); }
+    if (!end.cep || !end.rua || !end.numero) { _toast('Preencha ao menos CEP, rua e número.', 'erro'); return; }
+    if (_mcUserIdx(_mcUsers()) === -1) { _toast('Usuário não encontrado.', 'erro'); return; }
+    var arr = getEnderecos();
+    arr.push(end);
+    _persistEnderecos(arr, arr.length === 1 ? 0 : undefined); // 1º endereço vira o padrão
+    ['end-cep','end-rua','end-numero','end-complemento','end-bairro','end-cidade','end-referencia']
+      .forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+    renderEnderecos();
+    _toast('Endereço adicionado aos endereços salvos!');
   }
 
   async function salvarSenha() {
