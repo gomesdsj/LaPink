@@ -617,28 +617,37 @@ if (!_cart.length) {
     return v;
   }
 
+  /* ── Aplica máscara PRESERVANDO a posição do cursor ──────────
+     Conta os dígitos antes do cursor e reposiciona após a mesma
+     quantidade de dígitos no texto formatado. Sem isso, ao inserir
+     um separador (. - ()) o cursor cai no lugar errado e os números
+     "embaralham" quando se digita/edita no meio do campo. */
+  function _aplicarMascara(el, maskFn) {
+    var digitosAntes = el.value.slice(0, el.selectionStart).replace(/\D/g, '').length;
+    el.value = maskFn(el.value);
+    var pos = 0, cont = 0;
+    while (pos < el.value.length && cont < digitosAntes) {
+      if (/\d/.test(el.value.charAt(pos))) cont++;
+      pos++;
+    }
+    try { el.setSelectionRange(pos, pos); } catch (e) {}
+  }
+
   /* ── Campo CPF ── */
-  var inpCpf = document.getElementById('pgCpf');
-  inpCpf.addEventListener('input', function () {
-    var pos = this.selectionStart;
-    var raw = this.value.replace(/\D/g, '').length;
-    this.value = maskCpf(this.value);
-    // Reposicionar cursor aproximado
-    try { this.setSelectionRange(pos, pos); } catch (e) {}
+  document.getElementById('pgCpf').addEventListener('input', function () {
+    _aplicarMascara(this, maskCpf);
   });
 
   /* ── Campo Celular ── */
-  var inpCel = document.getElementById('pgCelular');
-  inpCel.addEventListener('input', function () {
-    this.value = maskCelular(this.value);
+  document.getElementById('pgCelular').addEventListener('input', function () {
+    _aplicarMascara(this, maskCelular);
   });
 
   /* ── Campo CEP ── */
   var inpCep = document.getElementById('pgCep');
   inpCep.addEventListener('input', function () {
-    this.value = maskCep(this.value);
-    var digitos = this.value.replace(/\D/g, '');
-    if (digitos.length === 8) buscarCep();
+    _aplicarMascara(this, maskCep);
+    if (this.value.replace(/\D/g, '').length === 8) buscarCep();
   });
 
   /* ── Estado UF: maiúsculo ── */

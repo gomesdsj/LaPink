@@ -287,8 +287,15 @@
   })();
 
   function mcMaskCep(input) {
+    var digitosAntes = input.value.slice(0, input.selectionStart).replace(/\D/g, '').length;
     var v = input.value.replace(/\D/g, '').slice(0, 8);
     input.value = v.length > 5 ? v.slice(0,5) + '-' + v.slice(5) : v;
+    var pos = 0, cont = 0;
+    while (pos < input.value.length && cont < digitosAntes) {
+      if (/\d/.test(input.value.charAt(pos))) cont++;
+      pos++;
+    }
+    try { input.setSelectionRange(pos, pos); } catch (e) {}
   }
   var _mcCepBuscando = false;
   function mcBuscaCep(cep) {
