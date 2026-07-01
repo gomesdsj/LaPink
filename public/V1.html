@@ -590,9 +590,15 @@
     <div class="prod-grid" id="v1-prod-grid">
       <!-- renderizado pelo script -->
     </div>
-    <button class="btn-catalogo-toggle" id="btn-ver-catalogo" onclick="toggleCatalogo()">
-      <i class="ti ti-grid-dots"></i> Ver catálogo completo
-    </button>
+  </div>
+
+  <!-- Catálogo completo por categoria (todos os produtos, sempre visível) -->
+  <div class="section" id="secao-catalogo">
+    <div class="section-header">
+      <span class="section-title">Catálogo completo</span>
+      <span style="font-size:12px; color:#aaa;" id="catalogo-count"></span>
+    </div>
+    <div id="catalogo-por-cat"></div>
   </div>
 
   <!-- Banner atacado -->
@@ -603,15 +609,6 @@
       <p>Cadastre-se como revendedora e acesse preços exclusivos.</p>
     </div>
     <div class="banner-img"><i class="ti ti-building-store"></i></div>
-  </div>
-
-  <!-- Catálogo completo por categoria -->
-  <div class="section" id="secao-catalogo" style="display:none;">
-    <div class="section-header">
-      <span class="section-title">Catálogo completo</span>
-      <span style="font-size:12px; color:#aaa;" id="catalogo-count"></span>
-    </div>
-    <div id="catalogo-por-cat"></div>
   </div>
 
   <!-- Depoimentos -->
@@ -1277,7 +1274,7 @@
     if (!secao || !container) return;
 
     var produtos = getProdutos();
-    if (!produtos.length) return;
+    if (!produtos.length) { secao.style.display = 'none'; return; }
 
     // Agrupa por categoria
     var cats = {};
@@ -1303,8 +1300,9 @@
     secao.style.display = '';
   }
 
-  // Renderiza produtos em destaque
+  // Renderiza produtos em destaque + catálogo completo (sempre visível)
   atualizarProdutos();
+  renderCatalogoCompleto();
   atualizarBadgeFavoritos();
 
   // Toggle do catálogo completo por categoria
@@ -1326,8 +1324,7 @@
   document.addEventListener('lapinkProdutosAtualizados', function() {
     atualizarProdutos();
     if (typeof window.renderCatGridMain === 'function') window.renderCatGridMain();
-    var secao = document.getElementById('secao-catalogo');
-    if (secao && secao.style.display !== 'none') renderCatalogoCompleto();
+    renderCatalogoCompleto(); // catálogo sempre visível — re-renderiza ao sincronizar
   });
 
   // URL param — suporte a ?cat=Anéis (deep link por categoria)
@@ -2259,13 +2256,9 @@ window.saveProfileData = async function() {
       <div class="cp-tot-row"><span id="cp-frete-label">Frete</span><span id="cp-frete-val">A combinar</span></div>
     </div>
     <div class="cp-tot-total"><span>Total</span><span id="cp-total">R$ 0,00</span></div>
-    <button type="button" class="cp-btn-whats" style="margin-top:14px;width:100%;cursor:pointer;border:none;background:#25D366;color:#fff;font-weight:800;padding:13px;border-radius:22px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;"
-      onclick="pedirPeloWhatsApp()">
-      <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Pedir pelo WhatsApp
-    </button>
-    <button type="button" class="cp-btn-checkout" style="margin-top:10px;width:100%;cursor:pointer;border:none;"
+    <button type="button" class="cp-btn-checkout" style="margin-top:14px;width:100%;cursor:pointer;border:none;"
       onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(!c){sessionStorage.setItem('referrerPage','pagamento.html');location.href='login.html';}else{location.href='pagamento.html';}})()">
-      <i class="ti ti-lock" aria-hidden="true"></i> Pagar online
+      <i class="ti ti-shopping-bag-check" aria-hidden="true"></i> Comprar agora
     </button>
   </div>
 

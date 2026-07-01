@@ -978,11 +978,67 @@ if (!_cart.length) {
     });
   }
 
-  /* ── Pré-preencher dados do cliente ─────────────────────── */
+  /* ── Perfil salvo do cliente (lapinkClients) ────────────── */
+  function _perfilAtual() {
+    try {
+      var email = (_client && _client.email) || '';
+      if (!email) { var s = JSON.parse(localStorage.getItem('lapinkSession') || 'null'); email = s && s.email; }
+      if (!email) return null;
+      var users = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
+      return users.find(function (u) { return (u.email || '').toLowerCase() === email.toLowerCase(); }) || null;
+    } catch (e) { return null; }
+  }
+
+  /* ── Pré-preencher dados do cliente já cadastrado ────────
+     Puxa nome, celular, CPF e endereço salvos. Os campos continuam
+     editáveis — o cliente pode trocar o endereço na hora da compra. */
   function preencherDados() {
-    if (_client) {
-      if (_client.name) document.getElementById('pgNome').value = _client.name;
-    }
+    var user = _perfilAtual();
+    var nome = (user && user.name) || (_client && _client.name) || '';
+    if (nome) document.getElementById('pgNome').value = nome;
+    if (!user) return;
+
+    if (user.cpf) document.getElementById('pgCpf').value = maskCpf(user.cpf);
+    var cel = user.whatsapp || user.celular || '';
+    if (cel) document.getElementById('pgCelular').value = maskCelular(cel);
+
+    var e = user.endereco || {};
+    if (e.cep)         document.getElementById('pgCep').value         = maskCep(e.cep);
+    if (e.rua)         document.getElementById('pgRua').value         = e.rua;
+    if (e.numero)      document.getElementById('pgNumero').value      = e.numero;
+    if (e.complemento) document.getElementById('pgComplemento').value = e.complemento;
+    if (e.bairro)      document.getElementById('pgBairro').value      = e.bairro;
+    if (e.cidade)      document.getElementById('pgCidade').value      = e.cidade;
+    if (e.uf)          document.getElementById('pgEstado').value      = String(e.uf).toUpperCase();
+
+    // Se já tem CEP salvo, cota o frete automaticamente
+    if ((e.cep || '').replace(/\D/g, '').length === 8) { try { atualizarFretePorCep(); } catch (x) {} }
+  }
+
+  /* ── Salva os dados informados no perfil (p/ próximas compras) ── */
+  function _salvarPerfilCheckout() {
+    try {
+      var email = (_client && _client.email) || (JSON.parse(localStorage.getItem('lapinkSession') || '{}').email);
+      if (!email) return;
+      var users = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
+      var idx = users.findIndex(function (u) { return (u.email || '').toLowerCase() === email.toLowerCase(); });
+      if (idx === -1) return;
+      var cpf = document.getElementById('pgCpf').value.replace(/\D/g, '');
+      var cel = document.getElementById('pgCelular').value.replace(/\D/g, '');
+      if (cpf) users[idx].cpf = cpf;
+      if (cel) users[idx].whatsapp = cel;
+      users[idx].endereco = {
+        cep:         document.getElementById('pgCep').value.replace(/\D/g, ''),
+        rua:         document.getElementById('pgRua').value.trim(),
+        numero:      document.getElementById('pgNumero').value.trim(),
+        complemento: document.getElementById('pgComplemento').value.trim(),
+        bairro:      document.getElementById('pgBairro').value.trim(),
+        cidade:      document.getElementById('pgCidade').value.trim(),
+        uf:          document.getElementById('pgEstado').value.trim().toUpperCase(),
+        referencia:  (users[idx].endereco && users[idx].endereco.referencia) || ''
+      };
+      localStorage.setItem('lapinkClients', JSON.stringify(users));
+    } catch (e) {}
   }
 
   /* ── Validação de campos ────────────────────────────────── */
@@ -1033,6 +1089,7 @@ if (!_cart.length) {
   /* ── Chamada ao Firebase Function (Mercado Pago) ─────────── */
   window.pagarComMP = async function () {
     if (!validar()) return;
+    _salvarPerfilCheckout(); // guarda dados/endereço p/ próximas compras
 
     var cart = typeof getCart === 'function' ? getCart() : _cart;
     if (!cart.length) { location.replace('V1.html'); return; }
@@ -1151,6 +1208,7 @@ if (!_cart.length) {
   function _pedidoWhatsApp() {
     var cart = typeof getCart === 'function' ? getCart() : _cart;
     if (!cart || !cart.length) { location.replace('V1.html'); return; }
+    _salvarPerfilCheckout(); // guarda dados/endereço p/ próximas compras
     var store = {};
     try { store = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}'); } catch (e) {}
     var wa = (store.whatsapp || '').replace(/\D/g, '');
