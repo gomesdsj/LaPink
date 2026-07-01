@@ -448,6 +448,16 @@ Auditoria conduzida por QA (Thiago Lima), Segurança (Beatriz Santos) e E-commer
 - Admin: card "Cotação automática por CEP" (CEP de origem + sandbox) na aba Entrega.
 - Falta (externo): Blaze + `MELHOR_ENVIO_TOKEN` (Secret) + criar conta no Melhor Envio. *(Felipe Cardoso / Pedro Alves)*
 
+### ✅ VALIDAÇÃO DE GO-LIVE — 2026-06-30 (QA + Segurança + E-commerce)
+**Veredito: PODE IR AO AR como vitrine + pedido por WhatsApp.** Não é loja transacional (pagamento online exige Blaze + MP).
+Correções aplicadas nesta rodada:
+- **XSS armazenado corrigido** (Beatriz): `src` de imagem escapado em V1.html e produto.html (catálogo tem escrita pública). *(Beatriz Santos)*
+- **Pedido por WhatsApp** (Pedro/Thiago): botão "Pedir pelo WhatsApp" no mini-carrinho + botão de saída no aviso de pagamento indisponível (fim do "beco sem saída"). Usa `lapinkStoreConfig.whatsapp`. Loja passa a **fechar pedido sem gateway**.
+- **Regra `usuarios/{uid}`** adicionada (auth-gated): perfis do Firebase Auth param de falhar silenciosamente. *(Thiago)*
+
+Ações do lojista antes de divulgar: preencher **WhatsApp da loja** (Config → Loja); preencher **tabela de frete** (Config → Entrega); verificar **provedor Email/Senha ligado** no console Firebase (login cross-device).
+Ressalvas conscientes: `pedidos`/`abandonados` com PII e escrita de catálogo abertas — lockdown total exige migrar login admin p/ Firebase Auth.
+
 ### ⏳ PENDENTE — depende de config externa (cliente vai fornecer)
 - Domínio próprio + `sitemap.xml`/canonical (depende do domínio). *(Lucas Rocha)*
 - Pagamento real: Blaze + deploy Functions + token MP + `MP_WEBHOOK_SECRET`. *(Felipe Cardoso / Carla Barbosa)*

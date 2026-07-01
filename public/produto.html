@@ -163,6 +163,13 @@
     try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]'); } catch(e) { return []; }
   }
 
+  // Escapa para uso seguro em atributos/HTML (produtos têm escrita pública → anti-XSS)
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   var params  = new URLSearchParams(window.location.search);
   var idParam = params.get('id');
   var nomePar = params.get('nome');
@@ -213,8 +220,8 @@
     if (_imgs.length > 1) {
       thumbsEl.style.display = 'flex';
       thumbsEl.innerHTML = _imgs.map(function(src, i) {
-        return '<button type="button" class="product-thumb' + (i === 0 ? ' active' : '') + '" data-src="' + src + '">' +
-          '<img src="' + src + '" alt="' + (produto.nome || '') + ' foto ' + (i + 1) + '" loading="lazy" /></button>';
+        return '<button type="button" class="product-thumb' + (i === 0 ? ' active' : '') + '" data-src="' + esc(src) + '">' +
+          '<img src="' + esc(src) + '" alt="' + esc(produto.nome || '') + ' foto ' + (i + 1) + '" loading="lazy" /></button>';
       }).join('');
       thumbsEl.addEventListener('click', function(ev) {
         var btn = ev.target.closest('.product-thumb');

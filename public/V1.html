@@ -929,7 +929,7 @@
       var thumb;
       if (imgs.length) {
         var slides = imgs.map(function(src) {
-          return '<div class="pc-slide"><img src="' + src + '" alt="' + esc(p.nome) + '" loading="lazy" /></div>';
+          return '<div class="pc-slide"><img src="' + esc(src) + '" alt="' + esc(p.nome) + '" loading="lazy" /></div>';
         }).join('');
         thumb = '<div class="pc-track" onscroll="pcSync(this)">' + slides + '</div>';
         if (imgs.length > 1) {
@@ -1137,7 +1137,7 @@
             if (pp) { capa = (Array.isArray(pp.imagens) && pp.imagens[0]) || pp.imagem || null; break; }
           }
           var media = capa
-            ? '<img src="' + capa + '" alt="' + esc(nome) + '" loading="lazy" />'
+            ? '<img src="' + esc(capa) + '" alt="' + esc(nome) + '" loading="lazy" />'
             : '<i class="ti ti-stack-2" aria-hidden="true"></i>';
           return '<div class="colecao-tile" onclick="abrirColecao(\'' + esc(String(c.id)) + '\')">' +
             '<div class="colecao-tile-media">' + media + '</div>' +
@@ -1408,7 +1408,7 @@ window.abrirQty = function(event, card) {
     var inner;
     if (imgsModal.length) {
       var slidesM = imgsModal.map(function(src) {
-        return '<div class="pc-slide"><img src="' + src + '" alt="' + esc(nome || '') + '" loading="lazy" /></div>';
+        return '<div class="pc-slide"><img src="' + esc(src) + '" alt="' + esc(nome || '') + '" loading="lazy" /></div>';
       }).join('');
       inner = '<div class="pc-track" onscroll="pcSync(this)">' + slidesM + '</div>';
       if (imgsModal.length > 1) {
@@ -2252,9 +2252,13 @@ window.saveProfileData = async function() {
       <div class="cp-tot-row"><span id="cp-frete-label">Frete</span><span id="cp-frete-val">A combinar</span></div>
     </div>
     <div class="cp-tot-total"><span>Total</span><span id="cp-total">R$ 0,00</span></div>
-    <button type="button" class="cp-btn-checkout" style="margin-top:14px;width:100%;cursor:pointer;border:none;"
+    <button type="button" class="cp-btn-whats" style="margin-top:14px;width:100%;cursor:pointer;border:none;background:#25D366;color:#fff;font-weight:800;padding:13px;border-radius:22px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;"
+      onclick="pedirPeloWhatsApp()">
+      <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Pedir pelo WhatsApp
+    </button>
+    <button type="button" class="cp-btn-checkout" style="margin-top:10px;width:100%;cursor:pointer;border:none;"
       onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(!c){sessionStorage.setItem('referrerPage','pagamento.html');location.href='login.html';}else{location.href='pagamento.html';}})()">
-      <i class="ti ti-lock" aria-hidden="true"></i> Finalizar pedido
+      <i class="ti ti-lock" aria-hidden="true"></i> Pagar online
     </button>
   </div>
 
@@ -2272,6 +2276,27 @@ window.saveProfileData = async function() {
   function _prods()   { try { return JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');       } catch(e){return[];} }
   function fmtR(v)    { return 'R$ '+Number(v).toFixed(2).replace('.',','); }
   function fmtPeso(g) { return g>=1000?(g/1000).toFixed(1).replace('.',',')+' kg':g+' g'; }
+
+  // Fecha o pedido pelo WhatsApp da loja (funciona sem gateway de pagamento).
+  window.pedirPeloWhatsApp = function () {
+    var cart = typeof getCart === 'function' ? getCart() : [];
+    if (!cart.length) { return; }
+    var store = {};
+    try { store = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}'); } catch (e) {}
+    var wa = (store.whatsapp || '').replace(/\D/g, '');
+    if (!wa) { alert('O WhatsApp da loja ainda não foi configurado. Se você é o administrador, cadastre em Configurações → Loja.'); return; }
+    if (wa.length <= 11) wa = '55' + wa;
+    var linhas = cart.map(function (i) { return '• ' + i.qty + 'x ' + i.nome + ' — ' + fmtR(i.preco * i.qty); });
+    var subtotal = (typeof getCartTotal === 'function') ? getCartTotal() : cart.reduce(function (s, i) { return s + i.preco * i.qty; }, 0);
+    var freteTxt = (document.getElementById('cp-frete-val') || {}).textContent || 'a combinar';
+    var totalTxt = (document.getElementById('cp-total') || {}).textContent || fmtR(subtotal);
+    var msg = 'Olá! Quero fazer um pedido na LaPink 💖\n\n' + linhas.join('\n') +
+              '\n\nSubtotal: ' + fmtR(subtotal) +
+              '\nFrete: ' + freteTxt +
+              '\nTotal: ' + totalTxt +
+              '\n\nPode me ajudar a finalizar?';
+    window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
+  };
 
   var _PAY_META = {
     pix:     { icon:'ti-qrcode',       label:'PIX',                    sub:'Pagamento instantâneo' },

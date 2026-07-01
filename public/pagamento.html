@@ -1038,22 +1038,65 @@ if (!_cart.length) {
     }
   };
 
-  /* ── Aviso de pagamento indisponível (sem finalizar nada) ── */
+  /* ── Aviso de pagamento indisponível (sem finalizar nada) + saída via WhatsApp ── */
   function _mostrarErroCheckout() {
     var nota = document.querySelector('.pg-security-note');
     if (nota) {
       nota.innerHTML = '<i class="ti ti-alert-triangle" aria-hidden="true" style="color:#c0392b"></i> ' +
         'Pagamento online em manutenção no momento. Seu pedido <strong>não</strong> foi cobrado. ' +
-        'Tente novamente em instantes ou fale com a loja para concluir a compra.';
+        'Conclua sua compra pelo WhatsApp — é só clicar no botão abaixo.';
       nota.style.color = '#c0392b';
     }
-    try {
-      if (typeof showToast === 'function') {
-        showToast('Pagamento indisponível agora — seu pedido não foi cobrado.', 'erro');
-      } else {
-        alert('Pagamento online em manutenção. Seu pedido NÃO foi cobrado. Tente novamente em instantes.');
+    // Injeta (uma vez) o botão de finalizar pelo WhatsApp logo após o botão de pagar.
+    if (!document.getElementById('pgBtnWhats')) {
+      var ref = document.getElementById('pgBtnMP');
+      if (ref && ref.parentNode) {
+        var b = document.createElement('button');
+        b.id = 'pgBtnWhats';
+        b.type = 'button';
+        b.className = 'pg-btn-mp';
+        b.style.cssText = 'background:#25D366;margin-top:10px;';
+        b.innerHTML = '<i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Finalizar pedido pelo WhatsApp';
+        b.onclick = _pedidoWhatsApp;
+        ref.parentNode.insertBefore(b, ref.nextSibling);
       }
+    }
+    try {
+      if (typeof showToast === 'function') showToast('Pagamento indisponível agora — finalize pelo WhatsApp.', 'erro');
     } catch (e) {}
+  }
+
+  /* ── Monta o pedido e abre o WhatsApp da loja ── */
+  function _pedidoWhatsApp() {
+    var cart = typeof getCart === 'function' ? getCart() : _cart;
+    if (!cart || !cart.length) { location.replace('V1.html'); return; }
+    var store = {};
+    try { store = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}'); } catch (e) {}
+    var wa = (store.whatsapp || '').replace(/\D/g, '');
+    if (!wa) { alert('O WhatsApp da loja ainda não foi configurado. Fale com o administrador.'); return; }
+    if (wa.length <= 11) wa = '55' + wa;
+
+    var nome = (document.getElementById('pgNome').value || '').trim();
+    var cep  = (document.getElementById('pgCep').value || '').trim();
+    var rua  = (document.getElementById('pgRua').value || '').trim();
+    var num  = (document.getElementById('pgNumero').value || '').trim();
+    var bairro = (document.getElementById('pgBairro').value || '').trim();
+    var cidade = (document.getElementById('pgCidade').value || '').trim();
+    var uf   = (document.getElementById('pgEstado').value || '').trim();
+
+    var linhas = cart.map(function (i) { return '• ' + i.qty + 'x ' + i.nome + ' — ' + fmtR(i.preco * i.qty); });
+    var total = _subtotal + _freteValor;
+    var endereco = (rua || cidade)
+      ? ('\n\nEndereço: ' + [rua + (num ? ', ' + num : ''), bairro, cidade + (uf ? '/' + uf : ''), cep].filter(Boolean).join(' - '))
+      : '';
+    var msg = 'Olá! Quero finalizar meu pedido na LaPink 💖' + (nome ? ' (sou ' + nome + ')' : '') + '\n\n' +
+              linhas.join('\n') +
+              '\n\nSubtotal: ' + fmtR(_subtotal) +
+              '\nFrete: ' + (_modalidadeSelecionada ? fmtR(_freteValor) : 'a combinar') +
+              '\nTotal: ' + fmtR(total) +
+              endereco +
+              '\n\nComo faço o pagamento?';
+    window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
   /* ── Baixa de estoque local (sincroniza p/ Firestore via cloud-sync) ── */
