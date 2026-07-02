@@ -433,10 +433,82 @@ exports.cobrarAbandonados = functions.https.onRequest(function (req, res) {
 });
 
 // ---------------------------------------------------------------------------
-// 4. cotarFrete — cotação de frete por CEP via Melhor Envio (Correios + outras)
-//    Config (admin, doc lapink/apiConfig.data): meToken, cepOrigem, meSandbox,
-//    meUserAgent. Requer Blaze. O cliente envia cepDestino, pesoG e valor.
+// 4. cotarFrete — cotação de frete por CEP (Correios + transportadoras)
+//    Provedor definido em lapink/lapinkEntregaConfig.data.freteProvider:
+//      'mandabem'    → Manda Bem (plataforma_id + plataforma_chave)
+//      'melhorenvio' → Melhor Envio (token) [padrão]
+//    Segredos em lapink/apiConfig.data (mandabemToken, meToken). Requer Blaze.
+//    O cliente envia cepDestino, pesoG e valor.
 // ---------------------------------------------------------------------------
+
+// Adaptador Melhor Envio → [{id,empresa,servico,preco,prazo}]
+function _freteMelhorEnvio(p) {
+  var token = process.env.MELHOR_ENVIO_TOKEN || p.token;
+  if (!token) throw { _status: 503, message: 'Frete não configurado (token Melhor Envio ausente).' };
+  var base = p.sandbox ? 'https://sandbox.melhorenvio.com.br' : 'https://melhorenvio.com.br';
+  var payload = {
+    from: { postal_code: p.cepOrigem },
+    to: { postal_code: p.cepDestino },
+    package: { weight: p.pesoKg, width: Number(p.dims.width) || 16, height: Number(p.dims.height) || 2, length: Number(p.dims.length) || 11 },
+    options: { insurance_value: p.valor, receipt: false, own_hand: false }
+  };
+  return fetch(base + '/api/v2/me/shipment/calculate', {
+    method: 'POST',
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'User-Agent': p.userAgent || 'LaPink (contato@lapink.com.br)' },
+    body: JSON.stringify(payload)
+  }).then(function (r) {
+    return r.json().then(function (arr) {
+      if (!r.ok) { functions.logger.error('MelhorEnvio erro', arr); throw { _status: 502, message: 'Erro na cotação de frete.' }; }
+      return (Array.isArray(arr) ? arr : []).filter(function (o) { return o && !o.error && (o.price || o.custom_price); }).map(function (o) {
+        var prazo = o.delivery_time || (o.delivery_range && o.delivery_range.max) || null;
+        return { id: String(o.id), empresa: (o.company && o.company.name) || '', servico: o.name || '', preco: Number(o.custom_price || o.price) || 0, prazo: prazo };
+      });
+    });
+  });
+}
+
+// Adaptador Manda Bem → [{id,empresa,servico,preco,prazo}]  (POST form-urlencoded, 1 chamada por serviço)
+function _freteMandaBem(p) {
+  var id = process.env.MANDABEM_ID || p.id;
+  var chave = process.env.MANDABEM_TOKEN || p.chave;
+  if (!id || !chave) throw { _status: 503, message: 'Frete não configurado (API ID/Token do Manda Bem ausente).' };
+  var servicos = ['PAC', 'SEDEX', 'PACMINI'];
+  var nomes = { PAC: 'PAC (Correios)', SEDEX: 'SEDEX (Correios)', PACMINI: 'PAC Mini (Correios)' };
+  var baseParams = {
+    plataforma_id: String(id),
+    plataforma_chave: String(chave),
+    cep_origem: p.cepOrigem,
+    cep_destino: p.cepDestino,
+    peso: String(p.pesoKg),
+    altura: String(Number(p.dims.height) || 2),
+    largura: String(Number(p.dims.width) || 11),
+    comprimento: String(Number(p.dims.length) || 16),
+    valor_seguro: (Number(p.valor) || 0).toFixed(2)
+  };
+  return Promise.all(servicos.map(function (sv) {
+    var form = new URLSearchParams(Object.assign({}, baseParams, { servico: sv }));
+    return fetch('https://mandabem.com.br/ws/valor_envio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+      body: form.toString()
+    }).then(function (r) { return r.json().catch(function () { return null; }); })
+      .then(function (j) { return { sv: sv, j: j }; })
+      .catch(function () { return { sv: sv, j: null }; });
+  })).then(function (results) {
+    var opcoes = [];
+    results.forEach(function (rr) {
+      var resu = rr.j && rr.j.resultado;
+      if (!resu || String(resu.sucesso) !== 'true') return;
+      var s = resu[rr.sv];
+      if (!s || s.valor == null) return;
+      var preco = parseFloat(String(s.valor).replace(',', '.')) || 0;
+      if (preco <= 0) return;
+      opcoes.push({ id: 'mb_' + rr.sv, empresa: 'Correios', servico: nomes[rr.sv] || rr.sv, preco: preco, prazo: (s.prazo != null ? Number(s.prazo) : null) });
+    });
+    return opcoes;
+  });
+}
+
 exports.cotarFrete = functions.https.onRequest(function (req, res) {
   cors(req, res, function () {
     if (req.method !== 'POST') {
@@ -455,66 +527,28 @@ exports.cotarFrete = functions.https.onRequest(function (req, res) {
     }
 
     Promise.all([
-      db.collection('lapink').doc('apiConfig').get(),        // segredo (token)
-      db.collection('lapink').doc('lapinkEntregaConfig').get() // config (CEP origem, sandbox)
+      db.collection('lapink').doc('apiConfig').get(),          // segredos (tokens)
+      db.collection('lapink').doc('lapinkEntregaConfig').get() // config (provedor, CEP origem)
     ])
       .then(function (snaps) {
         var secret = (snaps[0].exists && snaps[0].data() && snaps[0].data().data) || {};
         var entrega = (snaps[1].exists && snaps[1].data() && snaps[1].data().data) || {};
-        // Token: preferir Secret/env var (recomendado); apiConfig.data.meToken é fallback.
-        var token = process.env.MELHOR_ENVIO_TOKEN || secret.meToken;
         var cepOrigem = String(entrega.cepOrigem || '').replace(/\D/g, '');
-        var data = entrega; // CEP origem, sandbox e userAgent vêm da config de entrega
-        if (!token) { throw { _status: 503, message: 'Frete não configurado (token Melhor Envio ausente).' }; }
         if (cepOrigem.length !== 8) { throw { _status: 503, message: 'CEP de origem (loja) não configurado.' }; }
 
-        var base = data.meSandbox ? 'https://sandbox.melhorenvio.com.br' : 'https://melhorenvio.com.br';
-        var payload = {
-          from: { postal_code: cepOrigem },
-          to: { postal_code: cepDestino },
-          package: {
-            weight: pesoKg,
-            width:  Number(dims.width)  || 16,
-            height: Number(dims.height) || 2,
-            length: Number(dims.length) || 11
-          },
-          options: { insurance_value: valor, receipt: false, own_hand: false }
-        };
+        // Provedor: explícito na config, senão detecta pelo que estiver configurado.
+        var provider = entrega.freteProvider ||
+          ((process.env.MANDABEM_TOKEN || secret.mandabemToken) ? 'mandabem'
+            : (process.env.MELHOR_ENVIO_TOKEN || secret.meToken) ? 'melhorenvio' : '');
 
-        return fetch(base + '/api/v2/me/shipment/calculate', {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-            'User-Agent': data.meUserAgent || 'LaPink (contato@lapink.com.br)'
-          },
-          body: JSON.stringify(payload)
-        });
+        var comum = { cepOrigem: cepOrigem, cepDestino: cepDestino, pesoKg: pesoKg, valor: valor, dims: dims };
+
+        if (provider === 'mandabem') {
+          return _freteMandaBem(Object.assign({ id: entrega.mandabemId, chave: secret.mandabemToken }, comum));
+        }
+        return _freteMelhorEnvio(Object.assign({ token: secret.meToken, sandbox: entrega.meSandbox, userAgent: entrega.meUserAgent }, comum));
       })
-      .then(function (r) {
-        return r.json().then(function (arr) {
-          if (!r.ok) {
-            functions.logger.error('MelhorEnvio cotarFrete erro', arr);
-            throw { _status: 502, message: 'Erro na cotação de frete.' };
-          }
-          return arr;
-        });
-      })
-      .then(function (arr) {
-        var opcoes = (Array.isArray(arr) ? arr : [])
-          .filter(function (o) { return o && !o.error && (o.price || o.custom_price); })
-          .map(function (o) {
-            var prazo = o.delivery_time;
-            if (!prazo && o.delivery_range && o.delivery_range.max) prazo = o.delivery_range.max;
-            return {
-              id: String(o.id),
-              empresa: (o.company && o.company.name) || '',
-              servico: o.name || '',
-              preco: Number(o.custom_price || o.price) || 0,
-              prazo: prazo || null
-            };
-          });
+      .then(function (opcoes) {
         res.status(200).json({ opcoes: opcoes });
       })
       .catch(function (err) {
