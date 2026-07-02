@@ -556,6 +556,30 @@
               <button class="btn-save-form" type="button" onclick="salvarEntrega()"><i class="ti ti-device-floppy"></i> Salvar cotação automática</button>
             </div>
 
+            <!-- Integração Manda Bem (chave de API) -->
+            <div class="section-card">
+              <h3><i class="ti ti-plug-connected" style="color:var(--pink-500)"></i> Integração Manda Bem</h3>
+              <p>Cole a <strong>chave de API do Manda Bem</strong> para cotar o frete real por CEP. A chave é salva com segurança no banco de dados e <strong>nunca aparece no código do site</strong> (leitura bloqueada; só o servidor a usa).</p>
+
+              <div class="form-group">
+                <label for="ent-mandabem-token">Chave de API (token) do Manda Bem</label>
+                <input type="password" id="ent-mandabem-token" placeholder="cole aqui o token do Manda Bem" autocomplete="new-password" style="font-family:monospace;" />
+              </div>
+
+              <label class="toggle-row" style="border:none;padding:6px 0;">
+                <span style="font-size:13px;color:var(--gray-700);">Usar Manda Bem como provedor de frete</span>
+                <span class="toggle-switch"><input type="checkbox" id="ent-mandabem-ativo" /><span class="toggle-slider"></span></span>
+              </label>
+
+              <p style="font-size:12px;color:var(--pink-600);background:var(--pink-50);border:1px solid var(--pink-100);border-radius:8px;padding:10px 12px;margin-top:6px;">
+                <i class="ti ti-info-circle"></i> Precisa do <strong>CEP de origem</strong> preenchido acima e do plano <strong>Blaze</strong> ativo para a cotação funcionar no ar. Enquanto isso, o site usa a tabela manual de frete como reserva.
+              </p>
+
+              <button type="button" class="btn-save-form" onclick="salvarMandaBemToken()" style="background:#d97706;">
+                <i class="ti ti-lock"></i> Salvar chave com segurança
+              </button>
+            </div>
+
             <!-- Frete pelos Correios -->
             <div class="section-card">
               <h3><i class="ti ti-package" style="color:var(--pink-500)"></i> Frete pelos Correios (PAC e SEDEX) — tabela manual (reserva)</h3>
@@ -1002,6 +1026,40 @@
       });
   }
 
+  // Salva a chave de API do Manda Bem no apiConfig (leitura bloqueada) e define
+  // o provedor de frete em lapinkEntregaConfig (não-secreto).
+  function salvarMandaBemToken() {
+    var token = (document.getElementById('ent-mandabem-token').value || '').trim();
+    var ativo = document.getElementById('ent-mandabem-ativo').checked;
+    if (!token && ativo) { showToast('Cole a chave de API do Manda Bem antes de ativar.', 'erro'); return; }
+
+    // Provedor de frete (não-secreto) na config de entrega
+    try {
+      var ent = getObj('lapinkEntregaConfig');
+      ent.freteProvider = ativo ? 'mandabem' : '';
+      localStorage.setItem('lapinkEntregaConfig', JSON.stringify(ent));
+    } catch (e) {}
+
+    if (!token) { showToast('Provedor de frete atualizado.'); return; }
+
+    var btn = document.querySelector('button[onclick="salvarMandaBemToken()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .9s linear infinite"></i> Salvando...'; }
+    function restore() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-lock"></i> Salvar chave com segurança'; } }
+
+    var db = (typeof firebase !== 'undefined' && firebase.apps.length) ? firebase.firestore() : null;
+    if (!db) { showToast('Firebase não disponível.', 'erro'); restore(); return; }
+    db.collection('lapink').doc('apiConfig')
+      .set({ data: { mandabemToken: token }, updatedAt: Date.now() }, { merge: true })
+      .then(function() {
+        showToast('Chave do Manda Bem salva com segurança no banco de dados!');
+        document.getElementById('ent-mandabem-token').value = '';
+        restore();
+      }).catch(function(e) {
+        showToast('Erro ao salvar: ' + e.message, 'erro');
+        restore();
+      });
+  }
+
   // Salva o token do WhatsApp Business + Phone ID no apiConfig (leitura bloqueada)
   function salvarWhatsToken() {
     var token = (document.getElementById('int-wba-token').value || '').trim();
@@ -1184,6 +1242,10 @@
     var cepOri = cfg.cepOrigem || '';
     document.getElementById('ent-cep-origem').value = cepOri.length === 8 ? cepOri.slice(0,5) + '-' + cepOri.slice(5) : cepOri;
     document.getElementById('ent-me-sandbox').checked = !!cfg.meSandbox;
+
+    // Provedor de frete (Manda Bem)
+    var mbEl = document.getElementById('ent-mandabem-ativo');
+    if (mbEl) mbEl.checked = (cfg.freteProvider === 'mandabem');
 
     // PAC
     document.getElementById('ent-pac-ativo').checked = cfg.pac ? !!cfg.pac.ativo : true;
