@@ -577,7 +577,7 @@
   </div>
 
   <!-- Produtos em destaque -->
-  <div class="section bg-tint">
+  <div class="section bg-tint" id="v1-destaque-section">
     <div class="section-header">
       <span class="section-title" id="v1-section-title">Mais vendidos</span>
       <a class="section-link" id="v1-section-link" onclick="limparFiltro()" style="cursor:pointer; display:none;">Ver todos →</a>
@@ -601,12 +601,12 @@
     <div id="catalogo-por-cat"></div>
   </div>
 
-  <!-- Banner atacado -->
-  <div class="banner">
+  <!-- Banner atacado (editável no admin → Editor Loja V1) -->
+  <div class="banner" id="v1-banner">
     <div class="banner-text">
-      <div class="eyebrow">Para revendedoras</div>
-      <h3>Compre no atacado<br>com preços especiais</h3>
-      <p>Cadastre-se como revendedora e acesse preços exclusivos.</p>
+      <div class="eyebrow" id="v1-banner-eyebrow">Para revendedoras</div>
+      <h3 id="v1-banner-titulo">Compre no atacado<br>com preços especiais</h3>
+      <p id="v1-banner-sub">Cadastre-se como revendedora e acesse preços exclusivos.</p>
     </div>
     <div class="banner-img"><i class="ti ti-building-store"></i></div>
   </div>
@@ -776,6 +776,14 @@
       btn2:    'Promoções'
     },
     destaque:     [],
+    destaqueTitulo: 'Mais vendidos',
+    destaqueOculto: false,
+    banner: {
+      ativo:   true,
+      eyebrow: 'Para revendedoras',
+      titulo:  'Compre no atacado\ncom preços especiais',
+      sub:     'Cadastre-se como revendedora e acesse preços exclusivos.'
+    },
     depoimentos: [
       { texto: 'Qualidade incrível! Os anéis são lindos e duraram muito mais do que eu esperava.',  autor: 'Ana P. — São Paulo'        },
       { texto: 'Entrega rápida e embalagem super caprichada. Presente perfeito para minha mãe!',    autor: 'Carla M. — Rio de Janeiro' },
@@ -795,6 +803,9 @@
       if (!c) return DEFAULT;
       c.hero       = Object.assign({}, DEFAULT.hero,       c.hero       || {});
       c.newsletter = Object.assign({}, DEFAULT.newsletter, c.newsletter || {});
+      c.banner     = Object.assign({}, DEFAULT.banner,     c.banner     || {});
+      if (typeof c.destaqueTitulo !== 'string' || !c.destaqueTitulo) c.destaqueTitulo = DEFAULT.destaqueTitulo;
+      if (typeof c.destaqueOculto !== 'boolean') c.destaqueOculto = false;
       if (!Array.isArray(c.depoimentos)) c.depoimentos = [];
       if (!Array.isArray(c.destaque))   c.destaque = [];
       return c;
@@ -1207,7 +1218,7 @@
       prodGrid.innerHTML = renderCards(lista, emptyMsg);
     } else {
       // Modo destaque (configurado pelo editor)
-      titleEl.textContent  = 'Mais vendidos';
+      titleEl.textContent  = (config && config.destaqueTitulo) || 'Mais vendidos';
       linkEl.style.display = 'none';
       backEl.style.display = 'none';
 
@@ -1242,6 +1253,26 @@
   // Anúncio
   var anuncioEl = document.getElementById('v1-anuncio');
   if (anuncioEl) anuncioEl.innerHTML = '<i class="ti ti-truck"></i> ' + config.anuncio;
+
+  // Banner atacado (editável no editor da loja)
+  (function () {
+    var b = config.banner || {};
+    var wrap = document.getElementById('v1-banner');
+    if (!wrap) return;
+    if (b.ativo === false) { wrap.style.display = 'none'; return; }
+    var ey = document.getElementById('v1-banner-eyebrow');
+    var ti = document.getElementById('v1-banner-titulo');
+    var su = document.getElementById('v1-banner-sub');
+    if (ey) ey.textContent = b.eyebrow || '';
+    if (ti) ti.innerHTML = esc(b.titulo || '').replace(/\n/g, '<br>');
+    if (su) su.textContent = b.sub || '';
+  })();
+
+  // Seção "Mais vendidos" — ocultar se configurado
+  (function () {
+    var sec = document.getElementById('v1-destaque-section');
+    if (sec && config.destaqueOculto) sec.style.display = 'none';
+  })();
 
   // Depoimentos — oculta a seção quando não há depoimentos configurados
   var revGrid    = document.getElementById('v1-rev-grid');

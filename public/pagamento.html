@@ -569,6 +569,19 @@ if (!_cart.length) {
       Checkout seguro do Mercado Pago — pague com PIX, cartão de crédito/débito de qualquer banco ou boleto.
     </p>
 
+    <!-- Finalizar pelo WhatsApp — sempre visível (funciona mesmo sem pagamento online) -->
+    <div style="display:flex;align-items:center;gap:8px;margin:14px 0 10px;color:var(--gray-400);font-size:11px;">
+      <span style="flex:1;height:1px;background:var(--gray-200);"></span> ou <span style="flex:1;height:1px;background:var(--gray-200);"></span>
+    </div>
+    <button class="pg-btn-mp" id="pgBtnWhats" style="background:#25D366;" onclick="_pedidoWhatsApp()">
+      <i class="ti ti-brand-whatsapp" aria-hidden="true"></i>
+      Finalizar pedido pelo WhatsApp
+    </button>
+    <p class="pg-security-note">
+      <i class="ti ti-brand-whatsapp" aria-hidden="true" style="color:#25D366"></i>
+      Envie seu pedido pelo WhatsApp e combine o pagamento direto com a loja.
+    </p>
+
   </div>
   <!-- /pg-right -->
 
@@ -1273,6 +1286,7 @@ if (!_cart.length) {
   }
 
   /* ── Monta o pedido e abre o WhatsApp da loja ── */
+  window._pedidoWhatsApp = _pedidoWhatsApp;
   function _pedidoWhatsApp() {
     var cart = typeof getCart === 'function' ? getCart() : _cart;
     if (!cart || !cart.length) { location.replace('V1.html'); return; }
