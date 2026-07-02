@@ -618,6 +618,38 @@ if (!_cart.length) {
   var _freteGratisAtivo = false;
   var _freteOpcoesAPI = null;       // cotação real por CEP (Melhor Envio); null = usa tabela
   var _formaPagamento = 'pix';      // forma de pagamento escolhida (visual; MP processa quando ativo)
+  var _descontoPct = 0;             // desconto de boas-vindas (%) aplicado
+  var _descontoValor = 0;           // valor do desconto em R$
+
+  /* ── Desconto de boas-vindas (config em lapinkLojaConfig.descontoBoasVindas) ──
+     Aplica para cliente logado que ainda não usou (primeira compra). */
+  function _calcularDesconto() {
+    _descontoPct = 0; _descontoValor = 0;
+    try {
+      var loja = JSON.parse(localStorage.getItem('lapinkLojaConfig') || '{}') || {};
+      var d = loja.descontoBoasVindas || {};
+      if (!d.ativo || !(Number(d.percentual) > 0)) return;
+      if (!_client || !_client.email) return;            // precisa estar logado
+      var user = _perfilAtual();
+      if (user && user.descontoUsado) return;            // já usou o desconto
+      _descontoPct = Math.max(0, Math.min(90, Number(d.percentual) || 0));
+      _descontoValor = Math.round(_subtotal * _descontoPct) / 100;
+    } catch (e) {}
+  }
+
+  // Marca o desconto como usado no perfil do cliente (ao finalizar o pedido)
+  function _marcarDescontoUsado() {
+    try {
+      if (_descontoValor <= 0) return;
+      var email = (_client && _client.email) || (JSON.parse(localStorage.getItem('lapinkSession') || '{}').email);
+      if (!email) return;
+      var users = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
+      var idx = users.findIndex(function (u) { return (u.email || '').toLowerCase() === email.toLowerCase(); });
+      if (idx === -1) return;
+      users[idx].descontoUsado = true;
+      localStorage.setItem('lapinkClients', JSON.stringify(users));
+    } catch (e) {}
+  }
 
   var COTAR_FRETE_URL = 'https://us-central1-lapink-82a39.cloudfunctions.net/cotarFrete';
 
@@ -955,7 +987,8 @@ if (!_cart.length) {
   /* ── Renderizar totais ──────────────────────────────────── */
   function renderTotais() {
     var el = document.getElementById('pgTotais');
-    var total = _subtotal + _freteValor;
+    _calcularDesconto();
+    var total = _subtotal - _descontoValor + _freteValor;
 
     var freteHtml = '';
     if (_modalidadeSelecionada === 'retirada' || (_freteGratisAtivo && _freteValor === 0 && _modalidadeSelecionada)) {
@@ -966,8 +999,13 @@ if (!_cart.length) {
       freteHtml = '<div class="pg-tot-row"><span>Frete</span><span style="color:var(--gray-400)">A combinar</span></div>';
     }
 
+    var descontoHtml = _descontoValor > 0
+      ? '<div class="pg-tot-row"><span>Desconto boas-vindas (' + _descontoPct + '%)</span><span class="pg-tot-gratis">− ' + fmtR(_descontoValor) + '</span></div>'
+      : '';
+
     el.innerHTML =
       '<div class="pg-tot-row"><span>Subtotal</span><span>' + fmtR(_subtotal) + '</span></div>' +
+      descontoHtml +
       freteHtml +
       '<div class="pg-tot-row bold"><span>TOTAL</span><span>' + fmtR(total) + '</span></div>';
 
@@ -978,7 +1016,7 @@ if (!_cart.length) {
   function renderFormaPagamento() {
     var el = document.getElementById('pgPagamento');
     if (!el) return;
-    var total = _subtotal + _freteValor;
+    var total = _subtotal - _descontoValor + _freteValor;
     var base = total > 0 ? total : _subtotal;
     var parcelas = Math.max(1, Math.min(12, Math.floor(base / 5))); // parcela mínima ~R$5
     var valorParc = parcelas > 0 ? base / parcelas : base;
@@ -1305,18 +1343,22 @@ if (!_cart.length) {
     var cidade = (document.getElementById('pgCidade').value || '').trim();
     var uf   = (document.getElementById('pgEstado').value || '').trim();
 
+    _calcularDesconto();
     var linhas = cart.map(function (i) { return '• ' + i.qty + 'x ' + i.nome + ' — ' + fmtR(i.preco * i.qty); });
-    var total = _subtotal + _freteValor;
+    var total = _subtotal - _descontoValor + _freteValor;
     var endereco = (rua || cidade)
       ? ('\n\nEndereço: ' + [rua + (num ? ', ' + num : ''), bairro, cidade + (uf ? '/' + uf : ''), cep].filter(Boolean).join(' - '))
       : '';
+    var descontoLinha = _descontoValor > 0 ? '\nDesconto boas-vindas (' + _descontoPct + '%): -' + fmtR(_descontoValor) : '';
     var msg = 'Olá! Quero finalizar meu pedido na LaPink 💖' + (nome ? ' (sou ' + nome + ')' : '') + '\n\n' +
               linhas.join('\n') +
               '\n\nSubtotal: ' + fmtR(_subtotal) +
+              descontoLinha +
               '\nFrete: ' + (_modalidadeSelecionada ? fmtR(_freteValor) : 'a combinar') +
               '\nTotal: ' + fmtR(total) +
               endereco +
               '\n\nComo faço o pagamento?';
+    _marcarDescontoUsado(); // desconto de boas-vindas é uma vez só
     window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
