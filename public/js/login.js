@@ -1,3 +1,32 @@
+// ── Seed dos super admins fixos (espelha admin/js/auth.js) ──────────
+// Garante que os super admins existam no lapinkUsers deste navegador para
+// que o login funcione mesmo sem ter aberto o painel antes (navegador novo).
+(function _seedSuperAdminsLogin() {
+  try {
+    var FIXED = [
+      { email: 'alexandrej529@hotmail.com', name: 'Alexandre', role: 'superadmin',
+        passwordHash: '5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a', travarSenha: false },
+      { email: 'crischavesk123@hotmail.com', name: 'Cristiane', role: 'superadmin',
+        passwordHash: 'a507a72cb3b73a3006224fb4314e004ad2c90072312d92e83ac73bd56ec61520', travarSenha: true }
+    ];
+    var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
+    if (!Array.isArray(users)) users = [];
+    var changed = false;
+    FIXED.forEach(function (sa) {
+      var idx = users.findIndex(function (u) { return u.email && u.email.toLowerCase() === sa.email.toLowerCase(); });
+      if (idx === -1) {
+        users.push({ email: sa.email, password: sa.passwordHash, role: 'superadmin', name: sa.name, address: '', createdAt: new Date().toISOString() });
+        changed = true;
+      } else {
+        if (users[idx].role !== 'superadmin') { users[idx].role = 'superadmin'; changed = true; }
+        if (sa.travarSenha) { if (users[idx].password !== sa.passwordHash) { users[idx].password = sa.passwordHash; changed = true; } }
+        else if (!users[idx].password) { users[idx].password = sa.passwordHash; changed = true; }
+      }
+    });
+    if (changed) localStorage.setItem('lapinkUsers', JSON.stringify(users));
+  } catch (e) {}
+})();
+
 var loginForm    = document.getElementById('loginForm');
 var loginMessage = document.getElementById('loginMessage');
 
