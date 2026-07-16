@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="css/componentes.css" />
 <link rel="stylesheet" href="css/PrincipalPublica.css" />
 <link rel="stylesheet" href="css/public.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/tabler-icons.min.css" />
 <style>
   .auth-card-icon {
     width: 52px; height: 52px; border-radius: var(--radius-lg);
@@ -105,6 +105,7 @@
   </section>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="js/firebase-init.js"></script>
   <script src="js/cloud-sync.js"></script>
@@ -153,7 +154,36 @@
         return (Array.isArray(arr) ? arr : []).find(function(u) { return (u.email || '').toLowerCase() === email; });
       }
 
-      // 1) Procura a conta — clientes e usuários admin, local + Firestore
+      // 0) Firebase Auth — caminho preferido: envia o e-mail oficial de
+      //    redefinição de senha (funciona em QUALQUER dispositivo, sem chaves).
+      //    Exceção: se a conta legada existe NESTE navegador e o EmailJS está
+      //    configurado aqui (cenário admin), o fluxo legado é garantido — usa ele.
+      var _cfgLocal = getApiConfig();
+      var _legadoViavel = !!achar(getClients()) && !!(_cfgLocal.emailjsPk && _cfgLocal.emailjsSid && _cfgLocal.emailjsTid);
+      try {
+        if (!_legadoViavel && typeof firebase !== 'undefined' && firebase.auth) {
+          await firebase.auth().sendPasswordResetEmail(email);
+          document.getElementById('recoveryForm').style.display = 'none';
+          document.getElementById('recoverySuccess').style.display = 'block';
+          var okEl = document.querySelector('#recoverySuccess p');
+          if (okEl) okEl.textContent = 'Enviamos um link de redefinição de senha para ' + email + '. Verifique sua caixa de entrada (e o spam).';
+          return;
+        }
+      } catch (eAuth) {
+        // user-not-found → conta ainda não migrada para o Auth: segue no fluxo legado.
+        // too-many-requests → orienta aguardar.
+        if (eAuth && eAuth.code === 'auth/too-many-requests') {
+          showMsg('Muitas tentativas. Aguarde alguns minutos e tente novamente.', true);
+          restore();
+          return;
+        }
+        if (eAuth && eAuth.code !== 'auth/user-not-found') {
+          console.warn('[recuperar] Auth reset:', eAuth.code || eAuth.message);
+        }
+      }
+
+      // 1) Fluxo legado (conta ainda não migrada) — procura a conta
+      //    local + Firestore e envia senha temporária via EmailJS
       var clients = getClients();
       var conta = achar(clients);
       var origem = 'clients';
@@ -174,7 +204,7 @@
       }
 
       if (!conta) {
-        showMsg('E-mail não encontrado. Verifique o e-mail digitado.', true);
+        showMsg('E-mail não encontrado. Verifique o e-mail digitado — ou entre uma vez no dispositivo em que se cadastrou para ativar a recuperação online.', true);
         restore();
         return;
       }

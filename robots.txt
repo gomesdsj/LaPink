@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /public/checkout.html
+Disallow: /public/pagamento.html
+Disallow: /public/login.html
+Disallow: /public/register.html
+Disallow: /public/recuperar-senha.html
+Disallow: /public/minha-conta.html
+Disallow: /public/meus-pedidos.html
+
+Sitemap: https://lapink-82a39.web.app/sitemap.xml
