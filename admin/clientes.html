@@ -274,14 +274,73 @@
       var waNumber = waDigits ? '55' + waDigits : '';
       var waUrl = waNumber ? 'https://wa.me/' + waNumber + '?text=' + encodeURIComponent('Olá ' + (client.name || '') + '!') : '';
 
-      var purchases = (client.purchases && client.purchases.length)
-        ? client.purchases.map(function(p) {
-            var pid = escHtml(String(p.pedidoId || p.order || '—'));
-            var tot = typeof p.total === 'number' ? 'R$ ' + p.total.toFixed(2).replace('.',',') : '—';
-            var dt  = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '';
-            return '<div class="cli-purchase"><span>Pedido #' + pid + (dt ? ' · ' + dt : '') + '</span><span>' + tot + '</span></div>';
+      // ── Pedidos do cliente (fonte: lapinkPedidos, casando pelo e-mail) ──
+      var emailLow = email.toLowerCase();
+      var pedidosCliente = getPedidos().filter(function(p) {
+        var pe = (p.clienteEmail || (p.cliente && p.cliente.email) || '').toLowerCase();
+        return pe && pe === emailLow;
+      }).sort(function(a, b) { return new Date(b.data || 0) - new Date(a.data || 0); });
+
+      var purchases;
+      if (pedidosCliente.length) {
+        purchases = pedidosCliente.map(function(p) {
+          var st  = normStatusPedido(p.status);
+          var tot = formatBRL(parseFloat(p.total) || 0);
+          var dt  = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '';
+          var nItens = Array.isArray(p.itens) ? p.itens.length : 0;
+          return '<div class="cli-purchase">' +
+            '<span>Pedido #' + escHtml(String(p.numero || p.id || '—')) +
+              (dt ? ' · ' + dt : '') + (nItens ? ' · ' + nItens + ' item' + (nItens !== 1 ? 'ns' : '') : '') +
+              ' <span class="badge badge-pink" style="font-size:9px;padding:1px 7px;">' + escHtml(STATUS_PEDIDO_LABELS[st] || st) + '</span></span>' +
+            '<span>' + tot + '</span></div>';
+        }).join('');
+      } else if (client.purchases && client.purchases.length) {
+        // Fallback: histórico antigo salvo no próprio cadastro do cliente
+        purchases = client.purchases.map(function(p) {
+          var pid = escHtml(String(p.pedidoId || p.order || '—'));
+          var tot = typeof p.total === 'number' ? 'R$ ' + p.total.toFixed(2).replace('.',',') : '—';
+          var dt  = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '';
+          return '<div class="cli-purchase"><span>Pedido #' + pid + (dt ? ' · ' + dt : '') + '</span><span>' + tot + '</span></div>';
+        }).join('');
+      } else {
+        purchases = '<div class="cli-purchase"><span>Nenhuma compra registrada</span><span>—</span></div>';
+      }
+
+      // ── Endereços salvos (fonte: conta do usuário — lapinkUsers) ──
+      function _fmtEndereco(e) {
+        if (!e) return '';
+        if (typeof e === 'string') return escHtml(e);
+        var cidUf = [e.cidade, e.uf].filter(Boolean).join('/');
+        var l1 = [e.rua, e.numero].filter(Boolean).join(', ');
+        var l2 = [e.bairro, cidUf].filter(Boolean).join(' - ');
+        var extra = [e.complemento, e.referencia].filter(Boolean).join(' · ');
+        return [l1, l2, extra, (e.cep ? 'CEP ' + e.cep : '')]
+          .filter(Boolean).map(escHtml).join('<br>');
+      }
+      var contaUser = (function() {
+        try {
+          var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]') || [];
+          return users.find(function(u) { return (u.email || '').toLowerCase() === emailLow; }) || null;
+        } catch (e) { return null; }
+      })();
+      var listaEnderecos = [];
+      if (contaUser) {
+        if (Array.isArray(contaUser.enderecos) && contaUser.enderecos.length) listaEnderecos = contaUser.enderecos;
+        else if (contaUser.endereco) listaEnderecos = [contaUser.endereco];
+      }
+      if (!listaEnderecos.length && (client.address || client.endereco)) listaEnderecos = [client.address || client.endereco];
+      var padraoJson = contaUser && contaUser.endereco ? JSON.stringify(contaUser.endereco) : null;
+      var enderecosHtml = listaEnderecos.length
+        ? listaEnderecos.map(function(e) {
+            var linhas = _fmtEndereco(e);
+            if (!linhas) return '';
+            var ehPadrao = padraoJson && typeof e === 'object' && JSON.stringify(e) === padraoJson;
+            return '<div class="cli-purchase" style="align-items:flex-start;">' +
+              '<span style="line-height:1.5;"><i class="ti ti-map-pin" style="color:var(--pink-400);"></i> ' + linhas + '</span>' +
+              (ehPadrao ? '<span class="badge badge-green" style="font-size:9px;padding:1px 7px;flex-shrink:0;">Padrão</span>' : '<span></span>') +
+            '</div>';
           }).join('')
-        : '<div class="cli-purchase"><span>Nenhuma compra registrada</span><span>—</span></div>';
+        : '<div class="cli-purchase"><span>Nenhum endereço salvo pelo cliente</span><span>—</span></div>';
 
       var adminBtn = '';
       if (isSuper) {
@@ -304,11 +363,12 @@
         '<div class="cli-modal-body">' +
           '<div class="cli-field"><span class="k">Telefone</span><span class="v">' + (waNumber ? '<a href="https://wa.me/' + escHtml(waNumber) + '" target="_blank" style="color:var(--green-400);text-decoration:none;font-weight:600;"><i class="ti ti-brand-whatsapp"></i> ' + escHtml(client.whatsapp) + '</a>' : '—') + '</span></div>' +
           '<div class="cli-field"><span class="k">E-mail</span><span class="v">' + escHtml(client.email || '—') + '</span></div>' +
-          '<div class="cli-field"><span class="k">Endereço</span><span class="v">' + escHtml(client.address || client.endereco || '—') + '</span></div>' +
           '<div class="cli-field"><span class="k">Senha</span><span class="v">' + maskPassword(client.password) + '</span></div>' +
           '<div class="cli-field"><span class="k">Total gasto</span><span class="v"><span class="badge badge-green">R$ ' + (client.totalSpent || 0).toFixed(2).replace('.',',') + '</span></span></div>' +
-          '<div class="cli-field"><span class="k">Compras</span><span class="v">' + ((client.purchases && client.purchases.length) || 0) + '</span></div>' +
-          '<div class="cli-section-title">Compras anteriores</div>' +
+          '<div class="cli-field"><span class="k">Pedidos</span><span class="v">' + (pedidosCliente.length || ((client.purchases && client.purchases.length) || 0)) + '</span></div>' +
+          '<div class="cli-section-title"><i class="ti ti-map-pin"></i> Endereços salvos</div>' +
+          enderecosHtml +
+          '<div class="cli-section-title"><i class="ti ti-shopping-cart"></i> Pedidos do cliente</div>' +
           purchases +
           '<div class="cli-modal-actions">' +
             '<button type="button" class="btn btn-secondary" onclick="editClient(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-pencil"></i> Editar</button>' +
