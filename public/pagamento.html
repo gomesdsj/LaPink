@@ -559,10 +559,10 @@ if (!_cart.length) {
       <div class="pg-totals" id="pgTotais"><!-- JS --></div>
     </div>
 
-    <!-- Botão Mercado Pago (checkout da conta do lojista) -->
+    <!-- Botão de pagamento (checkout da conta do lojista) -->
     <button class="pg-btn-mp" id="pgBtnMP" onclick="pagarComMP()">
       <i class="ti ti-lock" aria-hidden="true"></i>
-      Pagar com Mercado Pago
+      Seguir com pagamento
     </button>
     <p class="pg-security-note">
       <i class="ti ti-shield-check" aria-hidden="true"></i>
@@ -1290,7 +1290,7 @@ if (!_cart.length) {
       // o carrinho — evita "venda falsa" (cliente concluir sem pagar e furar estoque).
       console.warn('[pagamento] checkout indisponível:', err && err.message);
       btn.disabled = false;
-      btn.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> Pagar com Mercado Pago';
+      btn.innerHTML = '<i class="ti ti-lock" aria-hidden="true"></i> Seguir com pagamento';
       _mostrarErroCheckout();
     }
   };

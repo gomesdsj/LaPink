@@ -1307,26 +1307,12 @@
     var produtos = getProdutos();
     if (!produtos.length) { secao.style.display = 'none'; return; }
 
-    // Agrupa por categoria
-    var cats = {};
-    produtos.forEach(function(p) {
-      var c = (p.categoria || 'Outros').trim();
-      if (!cats[c]) cats[c] = [];
-      cats[c].push(p);
-    });
-
     if (countEl) countEl.textContent = produtos.length + ' produtos';
 
-    container.innerHTML = Object.keys(cats).sort().map(function(cat) {
-      var items = cats[cat].map(function(p) { return { produto: p, badge: '' }; });
-      return '<div class="cat-group">' +
-        '<h3 class="cat-group-title">' +
-          '<i class="ti ti-tag" style="color:#D4537E;"></i> ' + esc(cat) +
-          ' <span class="cat-group-count">' + items.length + '</span>' +
-        '</h3>' +
-        '<div class="prod-grid">' + renderCards(items) + '</div>' +
-      '</div>';
-    }).join('');
+    // Todos os produtos em grade contínua, sem separação por categoria
+    // (a visão por categoria aparece apenas ao filtrar pelo menu/cards)
+    var items = produtos.map(function(p) { return { produto: p, badge: '' }; });
+    container.innerHTML = '<div class="prod-grid">' + renderCards(items) + '</div>';
 
     secao.style.display = '';
   }
@@ -1886,6 +1872,16 @@ var CAT_ICONS = {
 };
 var CAT_FALLBACK = ['Anéis','Brincos','Colares','Bolsas','Pulseiras','Conjuntos','Berloques','Chokers'];
 
+// Categorias da loja — fonte única gerenciada no painel admin (lapinkCategorias).
+// Fallback para a lista padrão se ainda não houver nada salvo.
+function getCategoriasLoja() {
+  try {
+    var arr = JSON.parse(localStorage.getItem('lapinkCategorias') || 'null');
+    if (Array.isArray(arr) && arr.length) return arr;
+  } catch (e) {}
+  return CAT_FALLBACK.slice();
+}
+
 // ── Categorias PRINCIPAIS exibidas na home (não exibe todas aqui;
 //    a lista completa fica no menu hambúrguer) ──────────────────
 var CAT_PRINCIPAIS = ['Anéis','Brincos','Colares','Bolsas'];
@@ -1914,10 +1910,12 @@ window.renderCatGridMain = function() {
     });
   }
 
-  // Mostra apenas as categorias PRINCIPAIS que possuem produtos.
-  // Se nenhuma principal tiver produtos, mostra todas as principais.
-  var cats = CAT_PRINCIPAIS.filter(temProdutos);
-  if (!cats.length) cats = CAT_PRINCIPAIS.slice();
+  // Mostra apenas as categorias PRINCIPAIS que ainda existem na loja e possuem produtos.
+  // Se nenhuma principal tiver produtos, mostra as principais existentes.
+  var catsLoja   = getCategoriasLoja();
+  var principais = CAT_PRINCIPAIS.filter(function(c) { return catsLoja.indexOf(c) >= 0; });
+  var cats = principais.filter(temProdutos);
+  if (!cats.length) cats = principais.slice();
 
   var catAtiva = window._v1CatFiltro;
   var escFn = typeof esc === 'function' ? esc : function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
@@ -1959,14 +1957,14 @@ function renderDrawerCategories() {
   })();
 
   var cats = {};
-  CAT_FALLBACK.forEach(function(c) { cats[c] = true; });           // padrão da loja
+  getCategoriasLoja().forEach(function(c) { cats[c] = true; });     // categorias da loja (admin)
   produtos.forEach(function(p) {
     var c = (p.categoria || '').trim();
     if (c) cats[c] = true;                                          // criadas nos produtos
   });
 
   var catNames = Object.keys(cats).sort();
-  if (!catNames.length) catNames = CAT_FALLBACK;
+  if (!catNames.length) catNames = getCategoriasLoja();
 
   lista.innerHTML = catNames.map(function(cat) {
     var icon   = CAT_ICONS[cat] || 'ti-tag';

@@ -28,6 +28,21 @@ function saveProdutos(arr) {
   localStorage.setItem('lapinkProdutos', JSON.stringify(arr));
 }
 
+/* ── Categorias da loja (fonte única: localStorage lapinkCategorias) ── */
+var CATEGORIAS_PADRAO = ['Anéis','Brincos','Berloques','Chokers','Colares','Conjuntos','Piercing Pressão','Pulseiras','Bolsas'];
+
+function getCategorias() {
+  try {
+    var arr = JSON.parse(localStorage.getItem('lapinkCategorias') || 'null');
+    if (Array.isArray(arr) && arr.length) return arr;
+  } catch(e) {}
+  return CATEGORIAS_PADRAO.slice();
+}
+
+function saveCategorias(arr) {
+  localStorage.setItem('lapinkCategorias', JSON.stringify(arr));
+}
+
 function getPedidos() {
   try { return JSON.parse(localStorage.getItem('lapinkPedidos') || '[]'); } catch(e) { return []; }
 }
