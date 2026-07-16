@@ -30,8 +30,12 @@ service cloud.firestore {
         'lapinkPaymentConfig',
         'lapinkConfig',
         'lapinkPedidoCounter',
-        'lapinkPedidos'
-      ];
+        'lapinkPedidos',
+        'lapinkCategorias'
+      ]
+      // Partes de docs grandes (>1 MiB) — o cloud-sync divide catálogos com
+      // fotos em lapinkProdutos_0, _1, … (idem pedidos/carrossel/config da loja)
+      || doc.matches('(lapinkProdutos|lapinkPedidos|lapinkCarrossel|lapinkLojaConfig)_[0-9]+');
     }
 
     // Segredos (token Mercado Pago, Manda Bem/Melhor Envio, etc.).

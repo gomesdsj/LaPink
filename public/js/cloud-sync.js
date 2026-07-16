@@ -24,14 +24,54 @@
       : null;
   }
 
-  // Grava array/objeto inteiro como documento único em /lapink/{key}
+  // Firestore limita cada documento a ~1 MiB. Catálogos com fotos (base64)
+  // passam disso fácil — então arrays grandes são divididos em partes
+  // (lapinkProdutos_0, _1, …) e o doc principal vira um índice {chunked, chunks}.
+  var CHUNK_LIMIT = 850 * 1024; // margem de segurança sob o limite de 1 MiB
+
+  function _erroEscrita(key) {
+    return function (e) {
+      console.error('[sync] ERRO ao enviar ' + key + ' para a nuvem — os dados ficaram SÓ neste dispositivo:', e && e.message);
+      try {
+        if (typeof showToast === 'function') showToast('Falha ao sincronizar com a nuvem (' + key + '). Tente novamente.', 'erro');
+      } catch (_) {}
+    };
+  }
+
+  // Grava em /lapink/{key}; se o array for grande, divide em partes < 1 MiB
   function writeToFirestore(key, value) {
     var firestore = db();
     if (!firestore) return;
     try {
       var data = typeof value === 'string' ? JSON.parse(value) : value;
-      firestore.collection('lapink').doc(key).set({ data: data, updatedAt: Date.now() })
-        .catch(function (e) { console.warn('[sync] write error:', e); });
+      var tamanho = JSON.stringify(data).length;
+      var agora = Date.now();
+
+      if (!Array.isArray(data) || tamanho <= CHUNK_LIMIT) {
+        firestore.collection('lapink').doc(key).set({ data: data, updatedAt: agora })
+          .catch(_erroEscrita(key));
+        return;
+      }
+
+      // Divide o array em partes respeitando o limite por documento
+      var partes = [];
+      var atual = [], atualLen = 2;
+      data.forEach(function (item) {
+        var s = JSON.stringify(item).length + 1;
+        if (atual.length && atualLen + s > CHUNK_LIMIT) { partes.push(atual); atual = []; atualLen = 2; }
+        atual.push(item); atualLen += s;
+      });
+      if (atual.length) partes.push(atual);
+
+      // Grava as partes primeiro; o doc principal (índice) por último —
+      // leitores só usam o índice novo depois que as partes existem
+      Promise.all(partes.map(function (arr, i) {
+        return firestore.collection('lapink').doc(key + '_' + i).set({ data: arr, updatedAt: agora });
+      })).then(function () {
+        return firestore.collection('lapink').doc(key).set({ chunked: true, chunks: partes.length, updatedAt: agora });
+      }).then(function () {
+        console.log('[sync] ' + key + ' → Firestore em ' + partes.length + ' partes (' + Math.round(tamanho / 1024) + ' KB)');
+      }).catch(_erroEscrita(key));
     } catch (e) { console.warn('[sync] parse error:', e); }
   }
 
@@ -55,17 +95,49 @@
       firestore.collection('lapink').doc(key).get().then(function (snap) {
         if (!snap.exists) return;
         var remote = snap.data();
-        if (!remote || !remote.data) return;
+        if (!remote) return;
 
         var localRaw = localStorage.getItem(key);
         var localUpdated = 0;
         try { localUpdated = JSON.parse(localStorage.getItem(key + '_ts') || '0'); } catch(e) {}
 
-        if (!localRaw || remote.updatedAt > localUpdated) {
-          _orig.call(localStorage, key, JSON.stringify(remote.data));
-          _orig.call(localStorage, key + '_ts', String(remote.updatedAt));
-          console.log('[sync] ' + key + ' ← Firestore (' + (Array.isArray(remote.data) ? remote.data.length + ' itens' : 'ok') + ')');
-          if (typeof onKeySync === 'function') onKeySync(key, remote.data);
+        // Auto-recuperação: se o local é MAIS NOVO que a nuvem, reenvia —
+        // resgata dados que ficaram presos no dispositivo por falha de envio
+        // (ex.: catálogo com fotos que estourava o limite de 1 MiB por doc)
+        if (localRaw && localUpdated > (remote.updatedAt || 0)) {
+          console.log('[sync] ' + key + ' local mais novo que a nuvem — reenviando');
+          writeToFirestore(key, localRaw);
+          return;
+        }
+
+        function aplicar(dataRemota) {
+          if (!localRaw || remote.updatedAt > localUpdated) {
+            _orig.call(localStorage, key, JSON.stringify(dataRemota));
+            _orig.call(localStorage, key + '_ts', String(remote.updatedAt));
+            console.log('[sync] ' + key + ' ← Firestore (' + (Array.isArray(dataRemota) ? dataRemota.length + ' itens' : 'ok') + ')');
+            if (typeof onKeySync === 'function') onKeySync(key, dataRemota);
+          }
+        }
+
+        if (remote.chunked && remote.chunks > 0) {
+          // Doc dividido em partes: busca todas e remonta o array na ordem
+          var reads = [];
+          for (var i = 0; i < remote.chunks; i++) {
+            reads.push(firestore.collection('lapink').doc(key + '_' + i).get());
+          }
+          Promise.all(reads).then(function (snaps) {
+            var arr = [];
+            var completo = true;
+            snaps.forEach(function (s) {
+              var d = s.exists ? s.data() : null;
+              if (d && Array.isArray(d.data)) arr = arr.concat(d.data);
+              else completo = false;
+            });
+            if (completo && arr.length) aplicar(arr);
+            else console.warn('[sync] ' + key + ': partes incompletas na nuvem, ignorando');
+          }).catch(function (e) { console.warn('[sync] read chunks error ' + key, e); });
+        } else if (remote.data) {
+          aplicar(remote.data);
         }
       }).catch(function (e) { console.warn('[sync] read error ' + key, e); });
     });
