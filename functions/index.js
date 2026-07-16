@@ -473,10 +473,15 @@ function _freteMelhorEnvio(p) {
   }).then(function (r) {
     return r.json().then(function (arr) {
       if (!r.ok) { functions.logger.error('MelhorEnvio erro', arr); throw { _status: 502, message: 'Erro na cotação de frete.' }; }
-      return (Array.isArray(arr) ? arr : []).filter(function (o) { return o && !o.error && (o.price || o.custom_price); }).map(function (o) {
+      var opcoes = (Array.isArray(arr) ? arr : []).filter(function (o) { return o && !o.error && (o.price || o.custom_price); });
+      // Filtro "somente Correios" (padrão ligado): PAC / SEDEX / Mini Envios
+      if (p.somenteCorreios !== false) {
+        opcoes = opcoes.filter(function (o) { return o.company && /correios/i.test(o.company.name || ''); });
+      }
+      return opcoes.map(function (o) {
         var prazo = o.delivery_time || (o.delivery_range && o.delivery_range.max) || null;
         return { id: String(o.id), empresa: (o.company && o.company.name) || '', servico: o.name || '', preco: Number(o.custom_price || o.price) || 0, prazo: prazo };
-      });
+      }).sort(function (a, b) { return a.preco - b.preco; });
     });
   });
 }
@@ -547,8 +552,9 @@ exports.cotarFrete = functions.https.onRequest(function (req, res) {
       .then(function (snaps) {
         var secret = (snaps[0].exists && snaps[0].data() && snaps[0].data().data) || {};
         var entrega = (snaps[1].exists && snaps[1].data() && snaps[1].data().data) || {};
-        var cepOrigem = String(entrega.cepOrigem || '').replace(/\D/g, '');
-        if (cepOrigem.length !== 8) { throw { _status: 503, message: 'CEP de origem (loja) não configurado.' }; }
+        // Origem padrão da loja: Av. Centenário — Centro, Criciúma/SC
+        var cepOrigem = String(entrega.cepOrigem || '88801000').replace(/\D/g, '');
+        if (cepOrigem.length !== 8) cepOrigem = '88801000';
 
         // Provedor: explícito na config, senão detecta pelo que estiver configurado.
         var provider = entrega.freteProvider ||
@@ -560,7 +566,7 @@ exports.cotarFrete = functions.https.onRequest(function (req, res) {
         if (provider === 'mandabem') {
           return _freteMandaBem(Object.assign({ id: entrega.mandabemId, chave: secret.mandabemToken }, comum));
         }
-        return _freteMelhorEnvio(Object.assign({ token: secret.meToken, sandbox: entrega.meSandbox, userAgent: entrega.meUserAgent }, comum));
+        return _freteMelhorEnvio(Object.assign({ token: secret.meToken, sandbox: entrega.meSandbox, userAgent: entrega.meUserAgent, somenteCorreios: entrega.meSomenteCorreios }, comum));
       })
       .then(function (opcoes) {
         res.status(200).json({ opcoes: opcoes });
