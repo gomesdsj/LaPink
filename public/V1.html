@@ -565,14 +565,20 @@
     <div class="carousel-dots" id="carouselDots"></div>
   </div>
 
-  <!-- Categorias (só desktop — no celular/tablet a opção fica no menu hambúrguer) -->
-  <div class="section bg-white" id="secao-categorias">
-    <div class="section-header">
-      <span class="section-title">Categorias</span>
-      <a class="section-link" id="btn-ver-todas-cats" onclick="toggleVerTodasCats()" style="cursor:pointer;display:none;">Ver todas →</a>
-    </div>
-    <div class="cat-grid" id="cat-grid-main">
-      <!-- populado por renderCatGridMain() -->
+  <!-- Faixa de benefícios (carrossel contínuo — todas as plataformas) -->
+  <div class="benefits-strip" id="benefits-strip" aria-label="Vantagens da loja">
+    <div class="benefits-track">
+      <span class="benefit-item"><i class="ti ti-credit-card"></i> Parcele em até 3x sem juros</span>
+      <span class="benefit-item"><i class="ti ti-shield-check"></i> Compra 100% segura</span>
+      <span class="benefit-item"><i class="ti ti-truck-delivery"></i> Enviamos para todo o Brasil</span>
+      <span class="benefit-item"><i class="ti ti-brand-whatsapp"></i> Atendimento pelo WhatsApp</span>
+      <span class="benefit-item"><i class="ti ti-tag"></i> Preço de atacado para revendedoras</span>
+      <!-- duplicado para o loop contínuo sem emenda -->
+      <span class="benefit-item" aria-hidden="true"><i class="ti ti-credit-card"></i> Parcele em até 3x sem juros</span>
+      <span class="benefit-item" aria-hidden="true"><i class="ti ti-shield-check"></i> Compra 100% segura</span>
+      <span class="benefit-item" aria-hidden="true"><i class="ti ti-truck-delivery"></i> Enviamos para todo o Brasil</span>
+      <span class="benefit-item" aria-hidden="true"><i class="ti ti-brand-whatsapp"></i> Atendimento pelo WhatsApp</span>
+      <span class="benefit-item" aria-hidden="true"><i class="ti ti-tag"></i> Preço de atacado para revendedoras</span>
     </div>
   </div>
 

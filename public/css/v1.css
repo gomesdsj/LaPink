@@ -706,11 +706,48 @@ body {
 .drawer-btn-out { background: var(--pk-50); color: var(--pk-mid); border: 1px solid var(--pk-200); display: none; }
 .drawer-btn-out:hover { background: var(--pk-100); }
 
+/* ── Faixa de benefícios (carrossel fino contínuo) ─────────── */
+.benefits-strip {
+  background: #fff;
+  border-top: 1px solid var(--pk-100, #fce4ef);
+  border-bottom: 1px solid var(--pk-100, #fce4ef);
+  overflow: hidden;
+  padding: 12px 0;
+}
+.benefits-track {
+  display: flex;
+  gap: 56px;
+  width: max-content;
+  padding-left: 24px;
+  animation: benefits-scroll 26s linear infinite;
+}
+.benefits-strip:hover .benefits-track { animation-play-state: paused; }
+.benefit-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-600, #555);
+  white-space: nowrap;
+}
+.benefit-item i { color: #D4537E; font-size: 18px; }
+@keyframes benefits-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .benefits-track { animation: none; overflow-x: auto; }
+}
+@media (max-width: 640px) {
+  .benefits-strip { padding: 9px 0; }
+  .benefit-item { font-size: 12px; }
+  .benefit-item i { font-size: 16px; }
+  .benefits-track { gap: 36px; animation-duration: 18s; }
+}
+
 /* ── Responsivo ─────────────── */
 @media (max-width: 1024px) {
-  /* Celular/tablet: a seção Categorias sai da home — a opção já existe
-     no menu hambúrguer (painel Categorias) */
-  #secao-categorias { display: none; }
   .section { padding: 22px 16px; }
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
