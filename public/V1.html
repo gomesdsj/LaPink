@@ -1953,6 +1953,23 @@ document.addEventListener('lapinkCategoriasAtualizados', function() {
   window.renderCatGridMain();
 });
 
+// Sincronização entre ABAS do mesmo navegador: mexeu no Gerenciar Categorias
+// (ou nos produtos) no painel admin em outra aba → esta V1 atualiza na hora.
+window.addEventListener('storage', function(ev) {
+  if (!ev || !ev.key) return;
+  if (ev.key === 'lapinkCategorias') {
+    window.renderCatGridMain();
+    // Se o painel de categorias do menu estiver aberto, remonta a lista
+    var panel = document.getElementById('drawerCatPanel');
+    if (panel && panel.classList.contains('open') && typeof renderDrawerCategories === 'function') {
+      renderDrawerCategories();
+    }
+  }
+  if (ev.key === 'lapinkProdutos') {
+    document.dispatchEvent(new CustomEvent('lapinkProdutosAtualizados'));
+  }
+});
+
 function renderDrawerCategories() {
   var lista = document.getElementById('drawerCatPanelList');
   if (!lista) return;
