@@ -28,7 +28,14 @@
       "functions/**",
       "data/**",
       "screenshots/**",
-      ".env"
+      ".env",
+      "**/.git/**",
+      ".git/**",
+      ".claude/**",
+      ".vscode/**",
+      "firestore.rules",
+      "firestore.rules.secure",
+      "firestore.indexes.json"
     ],
     "rewrites": [
       {
