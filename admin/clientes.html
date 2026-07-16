@@ -317,19 +317,13 @@
         return [l1, l2, extra, (e.cep ? 'CEP ' + e.cep : '')]
           .filter(Boolean).map(escHtml).join('<br>');
       }
-      var contaUser = (function() {
-        try {
-          var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]') || [];
-          return users.find(function(u) { return (u.email || '').toLowerCase() === emailLow; }) || null;
-        } catch (e) { return null; }
-      })();
+      // Fallback local: endereços salvos pelo cliente em "Minha conta"
+      // ficam no próprio cadastro (lapinkClients → client.enderecos)
       var listaEnderecos = [];
-      if (contaUser) {
-        if (Array.isArray(contaUser.enderecos) && contaUser.enderecos.length) listaEnderecos = contaUser.enderecos;
-        else if (contaUser.endereco) listaEnderecos = [contaUser.endereco];
-      }
-      if (!listaEnderecos.length && (client.address || client.endereco)) listaEnderecos = [client.address || client.endereco];
-      var padraoJson = contaUser && contaUser.endereco ? JSON.stringify(contaUser.endereco) : null;
+      if (Array.isArray(client.enderecos) && client.enderecos.length) listaEnderecos = client.enderecos;
+      else if (client.endereco && typeof client.endereco === 'object') listaEnderecos = [client.endereco];
+      else if (client.address || client.endereco) listaEnderecos = [client.address || client.endereco];
+      var padraoJson = (client.endereco && typeof client.endereco === 'object') ? JSON.stringify(client.endereco) : null;
       var enderecosHtml = listaEnderecos.length
         ? listaEnderecos.map(function(e) {
             var linhas = _fmtEndereco(e);
@@ -367,7 +361,7 @@
           '<div class="cli-field"><span class="k">Total gasto</span><span class="v"><span class="badge badge-green">R$ ' + (client.totalSpent || 0).toFixed(2).replace('.',',') + '</span></span></div>' +
           '<div class="cli-field"><span class="k">Pedidos</span><span class="v">' + (pedidosCliente.length || ((client.purchases && client.purchases.length) || 0)) + '</span></div>' +
           '<div class="cli-section-title"><i class="ti ti-map-pin"></i> Endereços salvos</div>' +
-          enderecosHtml +
+          '<div id="cli-enderecos-list">' + enderecosHtml + '</div>' +
           '<div class="cli-section-title"><i class="ti ti-shopping-cart"></i> Pedidos do cliente</div>' +
           purchases +
           '<div class="cli-modal-actions">' +
@@ -390,6 +384,33 @@
       document.getElementById('cliModalBody').innerHTML = body;
       document.getElementById('cliModalOverlay').classList.add('open');
       document.body.style.overflow = 'hidden';
+
+      // ── Endereços do Firebase (enderecos/{emailKey}) — fonte principal:
+      //    o que o cliente salvou em "Minha conta" no aparelho dele ──
+      (function buscarEnderecosFS() {
+        var db = (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) ? firebase.firestore() : null;
+        if (!db) return;
+        var emailKey = emailLow.replace(/[^a-z0-9]/g, '_');
+        db.collection('enderecos').doc(emailKey).get().then(function(snap) {
+          if (!snap.exists || _cliModalEmail !== email) return;
+          var d = snap.data() || {};
+          var arr = Array.isArray(d.enderecos) && d.enderecos.length ? d.enderecos
+                  : (d.endereco ? [d.endereco] : []);
+          if (!arr.length) return;
+          var padraoFS = d.endereco ? JSON.stringify(d.endereco) : null;
+          var cont = document.getElementById('cli-enderecos-list');
+          if (!cont) return;
+          cont.innerHTML = arr.map(function(e) {
+            var linhas = _fmtEndereco(e);
+            if (!linhas) return '';
+            var ehPadrao = padraoFS && typeof e === 'object' && JSON.stringify(e) === padraoFS;
+            return '<div class="cli-purchase" style="align-items:flex-start;">' +
+              '<span style="line-height:1.5;"><i class="ti ti-map-pin" style="color:var(--pink-400);"></i> ' + linhas + '</span>' +
+              (ehPadrao ? '<span class="badge badge-green" style="font-size:9px;padding:1px 7px;flex-shrink:0;">Padrão</span>' : '<span></span>') +
+            '</div>';
+          }).join('');
+        }).catch(function(e) { console.warn('[clientes] enderecos FS:', e && e.message); });
+      })();
     };
 
     window.fecharClienteModal = function(ev) {

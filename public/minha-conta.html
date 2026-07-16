@@ -349,6 +349,18 @@
   };
   renderEnderecos();
 
+  // Publica os endereços atuais no Firebase (enderecos/{emailKey}) — garante
+  // que contas antigas apareçam no painel admin sem precisar editar nada
+  if (typeof window.salvarEnderecosDB === 'function') {
+    (function() {
+      var arrIni = getEnderecos();
+      if (!arrIni.length) return;
+      var usersIni = _mcUsers(); var idxIni = _mcUserIdx(usersIni);
+      var padraoIni = (idxIni > -1 && usersIni[idxIni].endereco) || arrIni[0] || null;
+      window.salvarEnderecosDB(arrIni, padraoIni);
+    })();
+  }
+
   // Se o cliente está autenticado no banco, traz os endereços salvos de lá
   if (typeof window.carregarEnderecosDB === 'function') {
     window.carregarEnderecosDB().then(function (d) {

@@ -33,16 +33,47 @@
     });
   }
 
-  // Salva a lista de endereços + o padrão no banco (usuarios/{uid}).
+  // Chave estável derivada do e-mail (mesma usada pelo painel admin para ler).
+  function _emailKey(email) {
+    return String(email || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
+  }
+
+  // E-mail/nome do cliente logado (sessão local — não depende do Firebase Auth).
+  function _clienteLogado() {
+    try {
+      var c = typeof getLoggedClient === 'function' ? getLoggedClient() : null;
+      return (c && c.email) ? c : null;
+    } catch (e) { return null; }
+  }
+
+  // Salva a lista de endereços + o padrão no banco.
+  // 1) enderecos/{emailKey} — sempre que houver cliente logado (o painel admin
+  //    lê este doc para mostrar os endereços no perfil do cliente);
+  // 2) usuarios/{uid} — adicionalmente, quando autenticado no Firebase Auth.
   window.salvarEnderecosDB = function (enderecos, padrao) {
     var db = _db();
     if (!db) return Promise.resolve(false);
-    return _uidReady().then(function (uid) {
+    var payload = { enderecos: enderecos || [], endereco: padrao || null, updatedAt: Date.now() };
+
+    var gravacoes = [];
+
+    var cli = _clienteLogado();
+    if (cli) {
+      var docPub = Object.assign({ email: cli.email, nome: cli.name || '' }, payload);
+      gravacoes.push(
+        db.collection('enderecos').doc(_emailKey(cli.email)).set(docPub, { merge: true })
+          .then(function () { return true; }).catch(function () { return false; })
+      );
+    }
+
+    gravacoes.push(_uidReady().then(function (uid) {
       if (!uid) return false;
-      return db.collection('usuarios').doc(uid).set(
-        { enderecos: enderecos || [], endereco: padrao || null, updatedAt: Date.now() },
-        { merge: true }
-      ).then(function () { return true; }).catch(function () { return false; });
+      return db.collection('usuarios').doc(uid).set(payload, { merge: true })
+        .then(function () { return true; }).catch(function () { return false; });
+    }));
+
+    return Promise.all(gravacoes).then(function (rs) {
+      return rs.some(function (ok) { return ok; });
     });
   };
 
