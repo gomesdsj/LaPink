@@ -86,10 +86,23 @@
     }
   };
 
+  // Pull completo no máximo a cada 60s por aba — trocar de página dentro do
+  // painel usa o localStorage direto (instantâneo) em vez de reler 11 docs
+  // do Firestore a cada navegação. Gravações continuam subindo na hora.
+  var SYNC_MIN_INTERVAL_MS = 60 * 1000;
+
   // ── Carga inicial: Firestore → localStorage ───────────────────
-  function syncFromCloud(onKeySync) {
+  function syncFromCloud(onKeySync, force) {
     var firestore = db();
     if (!firestore) return;
+
+    if (!force) {
+      try {
+        var last = Number(sessionStorage.getItem('lapinkSyncAt') || 0);
+        if (Date.now() - last < SYNC_MIN_INTERVAL_MS) return;
+        sessionStorage.setItem('lapinkSyncAt', String(Date.now()));
+      } catch (e) {}
+    }
 
     SYNC_KEYS.forEach(function (key) {
       firestore.collection('lapink').doc(key).get().then(function (snap) {
@@ -171,5 +184,9 @@
   }
 
   // Expõe para uso manual e para callbacks pós-sync em páginas específicas
-  window.LaPinkSync = { push: writeToFirestore, pull: syncFromCloud };
+  // (pull manual ignora o intervalo mínimo — sempre busca na hora)
+  window.LaPinkSync = {
+    push: writeToFirestore,
+    pull: function (cb) { return syncFromCloud(cb, true); }
+  };
 })();
