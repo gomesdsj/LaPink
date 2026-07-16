@@ -67,6 +67,33 @@ function baseUrlDe(req) {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: lê o catálogo completo, remontando as partes quando o doc principal
+// está particionado ({chunked, chunks} — catálogos com fotos > 1 MiB).
+// Retorna { prods, chunkArrays } — chunkArrays = null quando não particionado.
+// Os objetos de chunkArrays são os MESMOS de prods (mutar um muta o outro).
+// ---------------------------------------------------------------------------
+function lerCatalogo() {
+  return db.collection('lapink').doc('lapinkProdutos').get().then(function (snap) {
+    if (!snap.exists) return { prods: [], chunkArrays: null };
+    var d = snap.data() || {};
+    if (d.chunked && d.chunks > 0) {
+      var reads = [];
+      for (var i = 0; i < d.chunks; i++) {
+        reads.push(db.collection('lapink').doc('lapinkProdutos_' + i).get());
+      }
+      return Promise.all(reads).then(function (snaps) {
+        var chunkArrays = snaps.map(function (s) {
+          var x = s.exists ? s.data() : null;
+          return x && Array.isArray(x.data) ? x.data : [];
+        });
+        return { prods: [].concat.apply([], chunkArrays), chunkArrays: chunkArrays };
+      });
+    }
+    return { prods: Array.isArray(d.data) ? d.data : [], chunkArrays: null };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Helper: gera orderId único
 // ---------------------------------------------------------------------------
 function gerarOrderId() {
@@ -119,16 +146,30 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
     const orderId = gerarOrderId();
     // Valores recalculados no servidor (não confiar no payload do cliente)
     var _itensCalc = [], _subtotalCalc = 0, _freteCalc = 0, _totalCalc = 0;
+    var _descontoInfo = { pct: 0, valor: 0 };
 
-    Promise.all([getMpToken(), db.collection('lapink').doc('lapinkProdutos').get()])
+    Promise.all([
+      getMpToken(),
+      lerCatalogo(), // suporta catálogo particionado (fotos > 1 MiB)
+      db.collection('lapink').doc('lapinkLojaConfig').get() // desconto boas-vindas
+    ])
       .then(function (arr) {
         var token = arr[0];
-        var prodSnap = arr[1];
-        var prods = (prodSnap.exists && prodSnap.data() && prodSnap.data().data) || [];
+        var prods = arr[1].prods;
+        var lojaCfg = (arr[2].exists && arr[2].data() && arr[2].data().data) || {};
         var mapa = {};
         (Array.isArray(prods) ? prods : []).forEach(function (p) { if (p && typeof p.id !== 'undefined') mapa[String(p.id)] = p; });
 
         function precoDe(p) { var a = Number(p.precoAtacado) || 0, v = Number(p.precoVarejo) || 0; return a > 0 ? a : v; }
+
+        // Desconto de boas-vindas: valida contra a config da loja (nunca
+        // confia no % vindo do cliente — usa o MENOR entre pedido e config)
+        var descCfg = lojaCfg.descontoBoasVindas || {};
+        var descontoPct = 0;
+        if (descCfg.ativo && Number(descCfg.percentual) > 0 && Number(body.descontoPct) > 0) {
+          descontoPct = Math.min(Number(body.descontoPct), Number(descCfg.percentual), 90);
+        }
+        var fatorDesc = 1 - descontoPct / 100;
 
         // Recalcula preços e valida estoque a partir do catálogo no servidor
         const mpItems = [];
@@ -142,17 +183,26 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
             if (qty > estoque) qty = estoque; // limita ao estoque disponível
           }
           var preco = precoDe(p);
+          // Preço cobrado no MP já com o desconto aplicado (proporcional por item)
+          var precoCobrado = Math.round(preco * fatorDesc * 100) / 100;
           _subtotalCalc += preco * qty;
           _itensCalc.push({ id: p.id, nome: p.nome, qty: qty, preco: preco });
-          mpItems.push({ id: String(p.id), title: String(p.nome || 'Produto'), quantity: qty, unit_price: preco, currency_id: 'BRL' });
+          mpItems.push({ id: String(p.id), title: String(p.nome || 'Produto'), quantity: qty, unit_price: precoCobrado, currency_id: 'BRL' });
         });
+
+        _subtotalCalc = Math.round(_subtotalCalc * 100) / 100;
+        var _descontoCalc = Math.round(mpItems.reduce(function (s, it) {
+          return s + it.unit_price * it.quantity;
+        }, 0) * 100) / 100;
+        _descontoCalc = Math.round((_subtotalCalc - _descontoCalc) * 100) / 100; // valor do desconto
 
         // Frete: aceita só número não-negativo do cliente (tabela depende da config)
         _freteCalc = Math.max(0, Number(frete) || 0);
-        _totalCalc = _subtotalCalc + _freteCalc;
+        _totalCalc = Math.round((_subtotalCalc - _descontoCalc + _freteCalc) * 100) / 100;
         if (_freteCalc > 0) {
           mpItems.push({ id: 'FRETE', title: 'Frete', quantity: 1, unit_price: _freteCalc, currency_id: 'BRL' });
         }
+        _descontoInfo = { pct: descontoPct, valor: _descontoCalc };
 
         // Monta payer
         const clienteNome = (cliente && cliente.nome) || 'Comprador';
@@ -211,6 +261,8 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           endereco: endereco || {},
           itens: _itensCalc,            // itens validados no servidor
           subtotal: _subtotalCalc,      // recalculado no servidor
+          desconto: _descontoInfo.valor,       // desconto boas-vindas (R$)
+          descontoPct: _descontoInfo.pct,      // desconto boas-vindas (%)
           frete: _freteCalc,
           total: _totalCalc,            // recalculado no servidor
           modalidadeFrete: modalidadeFrete || '',
@@ -347,41 +399,56 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
 // Helper: decrementa estoque dos produtos no Firestore
 // ---------------------------------------------------------------------------
 function decrementarEstoque(itensPedido) {
-  return db
-    .collection('lapink')
-    .doc('lapinkProdutos')
-    .get()
-    .then(function (snap) {
-      if (!snap.exists) {
-        functions.logger.warn('decrementarEstoque: documento lapinkProdutos não encontrado');
-        return;
-      }
+  return lerCatalogo().then(function (cat) {
+    var prods = cat.prods;
+    if (!prods.length) {
+      functions.logger.warn('decrementarEstoque: catálogo vazio/não encontrado');
+      return;
+    }
 
-      var docData = snap.data() || {};
-      var prods = docData.data;
-
-      if (!Array.isArray(prods)) {
-        functions.logger.warn('decrementarEstoque: campo data não é array');
-        return;
-      }
-
-      itensPedido.forEach(function (itemPedido) {
-        var prod = prods.find(function (p) {
-          return String(p.id) === String(itemPedido.id);
-        });
-        if (prod && typeof prod.estoque === 'number') {
-          prod.estoque = Math.max(0, prod.estoque - (Number(itemPedido.qty) || 1));
+    // Decrementa nos objetos (compartilhados com chunkArrays quando particionado)
+    // e registra em quais partes houve mudança.
+    var partesModificadas = {};
+    itensPedido.forEach(function (itemPedido) {
+      var prod = null, chunkIdx = -1;
+      if (cat.chunkArrays) {
+        for (var c = 0; c < cat.chunkArrays.length && !prod; c++) {
+          var achado = cat.chunkArrays[c].find(function (p) { return String(p.id) === String(itemPedido.id); });
+          if (achado) { prod = achado; chunkIdx = c; }
         }
-      });
-
-      return db
-        .collection('lapink')
-        .doc('lapinkProdutos')
-        .set({ data: prods, updatedAt: Date.now() }, { merge: true })
-        .then(function () {
-          functions.logger.info('decrementarEstoque: estoque atualizado para ' + itensPedido.length + ' item(s)');
-        });
+      } else {
+        prod = prods.find(function (p) { return String(p.id) === String(itemPedido.id); });
+      }
+      if (prod && typeof prod.estoque !== 'undefined') {
+        prod.estoque = Math.max(0, (parseInt(prod.estoque) || 0) - (Number(itemPedido.qty) || 1));
+        if (chunkIdx >= 0) partesModificadas[chunkIdx] = true;
+      }
     });
+
+    var agora = Date.now();
+
+    if (!cat.chunkArrays) {
+      // Catálogo em documento único (formato original)
+      return db.collection('lapink').doc('lapinkProdutos')
+        .set({ data: prods, updatedAt: agora }, { merge: true })
+        .then(function () {
+          functions.logger.info('decrementarEstoque: estoque atualizado (' + itensPedido.length + ' item(s))');
+        });
+    }
+
+    // Catálogo particionado: regrava só as partes alteradas + índice (updatedAt
+    // novo faz os clientes re-baixarem o catálogo na próxima sincronização)
+    var escritas = Object.keys(partesModificadas).map(function (idx) {
+      return db.collection('lapink').doc('lapinkProdutos_' + idx)
+        .set({ data: cat.chunkArrays[idx], updatedAt: agora });
+    });
+    return Promise.all(escritas).then(function () {
+      return db.collection('lapink').doc('lapinkProdutos')
+        .set({ chunked: true, chunks: cat.chunkArrays.length, updatedAt: agora });
+    }).then(function () {
+      functions.logger.info('decrementarEstoque: estoque atualizado em ' + escritas.length + ' parte(s)');
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -105,6 +105,28 @@ function isPedidoPendente(p) {
   return isPedidoAtivo(p) && !isPedidoPago(p);
 }
 
+/* ── Baixa de estoque de pedido local ───────────────────────────
+   Só baixa pedidos com estoqueBaixado === false (checkout WhatsApp).
+   Pedidos criados pelo admin já baixam na criação (flag undefined) e
+   pedidos do Mercado Pago baixam no webhook — ambos ficam intactos. */
+function baixarEstoquePedidoLocal(pedido) {
+  if (!pedido || pedido.estoqueBaixado !== false || !Array.isArray(pedido.itens)) return false;
+  var prods = getProdutos();
+  var mudou = false;
+  pedido.itens.forEach(function (it) {
+    var i = prods.findIndex(function (p) {
+      return (it.id != null && String(p.id) === String(it.id)) || (it.id == null && p.nome === it.nome);
+    });
+    if (i >= 0) {
+      prods[i].estoque = Math.max(0, (parseInt(prods[i].estoque) || 0) - (it.qty || 1));
+      mudou = true;
+    }
+  });
+  if (mudou) saveProdutos(prods);
+  pedido.estoqueBaixado = true;
+  return mudou;
+}
+
 /* ── Preço / custo / lucro / margem de produto — fonte única ──
    O preço de venda é o de atacado (precoAtacado === precoVarejo, legado).
    custoTotal = peça bruta + banho×peso. margemLucro é % sobre o custo. */

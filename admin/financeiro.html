@@ -926,6 +926,8 @@ function marcarPago(id) {
   var idx = pedidos.findIndex(function(p) { return p.id === id; });
   if (idx === -1) return;
   pedidos[idx].pago = true;
+  // Pedido do checkout (WhatsApp) ainda sem baixa de estoque → baixa agora
+  if (typeof baixarEstoquePedidoLocal === 'function') baixarEstoquePedidoLocal(pedidos[idx]);
   setPedidos(pedidos);
   render();
   showToast('Pedido marcado como pago!', 'success');

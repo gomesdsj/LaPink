@@ -584,6 +584,11 @@
     for (var i = 0; i < pedidos.length; i++) { if (pedidos[i].id === id) { idx = i; break; } }
     if (idx < 0) return;
     pedidos[idx].status = novoStatus;
+    // Status de pagamento confirmado + pedido do checkout sem baixa → baixa estoque
+    if (typeof isPedidoPago === 'function' && isPedidoPago({ status: novoStatus }) &&
+        typeof baixarEstoquePedidoLocal === 'function') {
+      baixarEstoquePedidoLocal(pedidos[idx]);
+    }
     setPedidos(pedidos);
     renderStats();
     renderPedidos();
