@@ -17,7 +17,7 @@ body.auth-background .nav-actions { gap: 12px; }
 .nav-user { display: none; }
 .logout-btn { display: none; }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .auth-page, .product-page { padding: 24px 16px; }
   .store-nav.auth-background { padding: 0 16px; }
   .product-page { padding-top: 28px; padding-bottom: 28px; }

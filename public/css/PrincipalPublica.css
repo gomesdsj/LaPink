@@ -100,7 +100,7 @@
 .pay-icons { display: flex; gap: 8px; }
 .pay-icon { background: var(--white); border: .5px solid var(--pink-100); border-radius: 6px; padding: 3px 8px; font-size: 9px; color: var(--pink-400); font-weight: 700; }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .store-nav { flex-wrap: wrap; justify-content: center; padding: 0 18px; gap: 10px; }
   .store-logo { flex: 1 1 100%; justify-content: center; }
   .nav-search { flex: 1 1 100%; max-width: none; order: 3; margin-top: 12px; }
@@ -164,7 +164,7 @@ body.auth-background { background: #FBEAF0; }
 .hidden { display: none !important; }
 .text-center { text-align: center; }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .store-nav { padding: 0 16px; }
   .store-section { padding: 20px 16px; }
 }
@@ -304,7 +304,7 @@ body.nav-open { overflow: hidden; }
 }
 
 /* ── Mobile breakpoints ── */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .nav-hamburger { display: flex; align-items: center; justify-content: center; }
   .nav-links { display: none; }
   .nav-text-btn { display: none !important; }

@@ -302,7 +302,7 @@ body {
 /* Desktop/web (computador): área da foto QUADRADA para a imagem preencher
    todo o quadrado (sem sobra/fundo). Fotos de produto são ~quadradas, então
    o preenchimento (cover) não corta de forma perceptível. */
-@media (min-width: 901px) {
+@media (min-width: 1025px) {
   .prod-grid { grid-template-columns: repeat(5, 1fr); gap: 12px; }
   .prod-img { height: auto; aspect-ratio: 1 / 1; }
   .pc-slide img { object-fit: cover; }
@@ -707,7 +707,7 @@ body {
 .drawer-btn-out:hover { background: var(--pk-100); }
 
 /* ── Responsivo ─────────────── */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .section { padding: 22px 16px; }
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -717,7 +717,7 @@ body {
   .footer { grid-template-columns: repeat(2, 1fr); padding: 22px 16px; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .nav {
     flex-wrap: nowrap;
     height: 52px;
