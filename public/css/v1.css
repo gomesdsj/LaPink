@@ -708,6 +708,9 @@ body {
 
 /* ── Responsivo ─────────────── */
 @media (max-width: 1024px) {
+  /* Celular/tablet: a seção Categorias sai da home — a opção já existe
+     no menu hambúrguer (painel Categorias) */
+  #secao-categorias { display: none; }
   .section { padding: 22px 16px; }
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
