@@ -50,7 +50,7 @@ async function _doRegister() {
   }
 
   var clients = getClients();
-  if (clients.some(function(c) { return c.email === email; })) {
+  if (clients.some(function(c) { return (c.email || '').toLowerCase() === email; })) {
     setRegisterMessage('Este e-mail já está cadastrado.', false);
     return;
   }
@@ -66,6 +66,34 @@ async function _doRegister() {
     return;
   }
 
+  // Cria a conta no Firebase Authentication ANTES do cadastro local.
+  // Se o e-mail já existir na nuvem com OUTRA senha, avisa em vez de criar
+  // uma conta local divergente (que só funcionaria neste navegador).
+  try {
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+      try {
+        var cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        var uid = cred.user && cred.user.uid;
+        try {
+          await firebase.firestore().collection('usuarios').doc(uid).set({
+            email: email, name: name, whatsapp: whatsapp, role: 'client', createdAt: Date.now()
+          }, { merge: true });
+        } catch (e) {}
+      } catch (e) {
+        if (e && e.code === 'auth/email-already-in-use') {
+          // Conta já existe na nuvem — só prossegue se a senha informada confere
+          try {
+            await firebase.auth().signInWithEmailAndPassword(email, password);
+          } catch (e2) {
+            setRegisterMessage('Este e-mail já possui conta. Use "Entrar" ou recupere a senha.', false);
+            return;
+          }
+        }
+        /* provedor desativado / outros erros — segue com o cadastro local */
+      }
+    }
+  } catch (e) {}
+
   var newClient = {
     name:       name,
     email:      email,
@@ -76,20 +104,6 @@ async function _doRegister() {
   };
   clients.push(newClient);
   saveClients(clients);
-
-  // Cria a conta também no Firebase Authentication (se ativo). Silencioso:
-  // se o provedor estiver desativado ou já existir, segue com o cadastro local.
-  try {
-    if (typeof firebase !== 'undefined' && firebase.auth) {
-      var cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
-      var uid = cred.user && cred.user.uid;
-      try {
-        await firebase.firestore().collection('usuarios').doc(uid).set({
-          email: email, name: name, whatsapp: whatsapp, role: 'client', createdAt: Date.now()
-        }, { merge: true });
-      } catch (e) {}
-    }
-  } catch (e) { /* email-already-in-use / provedor off / senha curta — ignora */ }
 
   setLoggedClient({ name: name, email: email, role: 'client' });
 

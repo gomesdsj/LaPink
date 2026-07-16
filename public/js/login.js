@@ -233,7 +233,9 @@ async function _doLogin() {
   // ── 2) Clientes locais — verifica qualquer esquema de hash (PBKDF2 salgado,
   //       SHA-256 salgado ou SHA-256 legado). NÃO há mais fallback de senha em
   //       texto puro. Hashes legados são migrados para salgado de forma transparente.
-  var cand = clients.find(function(c) { return c.email === email; });
+  //       Comparação de e-mail SEM diferenciar maiúsculas (contas antigas podem
+  //       ter sido salvas com letras maiúsculas).
+  var cand = clients.find(function(c) { return (c.email || '').toLowerCase() === email; });
   if (cand && await verifyPassword(loginPassword, cand.password)) {
     if (passwordPrecisaUpgrade(cand.password)) {
       try { cand.password = await hashPasswordSalted(loginPassword); saveClients(clients); } catch (e) {}
@@ -245,7 +247,7 @@ async function _doLogin() {
   if (!client) {
     try {
       var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
-      var found = users.find(function(u) { return u.email === email; });
+      var found = users.find(function(u) { return (u.email || '').toLowerCase() === email; });
       if (found && await verifyPassword(loginPassword, found.password)) {
         client = { email: found.email, name: found.name, role: found.role || 'client', pages: found.pages };
       }
