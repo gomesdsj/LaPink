@@ -1078,6 +1078,41 @@ if (!_cart.length) {
     _popularEndSalvos();
   }
 
+  /* ── Endereço salvo vindo do Firebase (enderecos/{emailKey}) ──────
+     Cliente salvou o endereço em OUTRO dispositivo (ex.: celular) e está
+     comprando neste? Busca na nuvem, hidrata o perfil local e re-preenche —
+     o frete é cotado automaticamente da origem (Centro, Criciúma/SC) até o
+     CEP salvo da cliente (ex.: São Leopoldo/RS). */
+  function _buscarEnderecoNuvem() {
+    try {
+      var user = _perfilAtual();
+      // Já tem endereço local? Não precisa da nuvem.
+      if (user && user.endereco && (user.endereco.cep || '').replace(/\D/g, '').length === 8) return;
+      var email = (_client && _client.email) ||
+        ((JSON.parse(localStorage.getItem('lapinkSession') || '{}') || {}).email) || '';
+      if (!email) return;
+      var db = (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) ? firebase.firestore() : null;
+      if (!db) { setTimeout(_buscarEnderecoNuvem, 600); return; } // aguarda o Firebase carregar
+      var emailKey = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      db.collection('enderecos').doc(emailKey).get().then(function (snap) {
+        if (!snap.exists) return;
+        var d = snap.data() || {};
+        var padrao = d.endereco || (Array.isArray(d.enderecos) && d.enderecos[0]) || null;
+        if (!padrao || !(padrao.cep || '').replace(/\D/g, '').length) return;
+        // Hidrata o perfil local com os endereços da nuvem
+        try {
+          var users = JSON.parse(localStorage.getItem('lapinkClients') || '[]');
+          var idx = users.findIndex(function (u) { return (u.email || '').toLowerCase() === email.toLowerCase(); });
+          if (idx === -1) { users.push({ email: email, name: d.nome || '' }); idx = users.length - 1; }
+          users[idx].endereco  = padrao;
+          users[idx].enderecos = Array.isArray(d.enderecos) && d.enderecos.length ? d.enderecos : [padrao];
+          localStorage.setItem('lapinkClients', JSON.stringify(users));
+        } catch (x) {}
+        preencherDados(); // re-preenche o formulário e cota o frete
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   /* ── Seletor de endereços salvos no checkout ── */
   function _popularEndSalvos() {
     var wrap = document.getElementById('pgEndSalvosWrap');
@@ -1479,6 +1514,7 @@ if (!_cart.length) {
   renderItens();
   renderFrete();
   preencherDados();
+  _buscarEnderecoNuvem(); // endereço salvo em outro dispositivo → busca na nuvem
 
 })();
 </script>
