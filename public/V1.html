@@ -1901,21 +1901,23 @@ window.renderCatGridMain = function() {
     });
   } catch (e) { produtos = []; }
 
-  // Categoria está "presente" se há pelo menos um produto nela (plural ou singular)
+  // Categoria está "presente" se há pelo menos um produto nela
+  // (aceita a forma singular legada: "Anel" conta em "Anéis" etc.)
   function temProdutos(cat) {
     var sing = CAT_SINGULAR[cat];
+    var semS = /s$/i.test(cat) ? cat.slice(0, -1) : null; // singular genérico
     return produtos.some(function(p) {
       var c = (p.categoria || '').trim();
-      return c === cat || (sing && c === sing);
+      return c === cat || (sing && c === sing) || (semS && c === semS);
     });
   }
 
-  // Mostra apenas as categorias PRINCIPAIS que ainda existem na loja e possuem produtos.
-  // Se nenhuma principal tiver produtos, mostra as principais existentes.
-  var catsLoja   = getCategoriasLoja();
-  var principais = CAT_PRINCIPAIS.filter(function(c) { return catsLoja.indexOf(c) >= 0; });
-  var cats = principais.filter(temProdutos);
-  if (!cats.length) cats = principais.slice();
+  // SINCRONIZADO com o painel admin: mostra as categorias gerenciadas em
+  // Configurações (lapinkCategorias), na ordem do admin, exibindo as que têm
+  // produtos visíveis. Excluiu no admin → some daqui; adicionou → aparece.
+  var catsLoja = getCategoriasLoja();
+  var cats = catsLoja.filter(temProdutos);
+  if (!cats.length) cats = catsLoja.slice(0, 4); // loja sem estoque: mostra as primeiras
 
   var catAtiva = window._v1CatFiltro;
   var escFn = typeof esc === 'function' ? esc : function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
@@ -1944,6 +1946,12 @@ if (document.readyState === 'loading') {
 } else {
   window.renderCatGridMain();
 }
+
+// Sincronização ao vivo: quando as categorias (ou produtos) chegam do
+// Firestore, a home re-renderiza os cards sem precisar recarregar a página
+document.addEventListener('lapinkCategoriasAtualizados', function() {
+  window.renderCatGridMain();
+});
 
 function renderDrawerCategories() {
   var lista = document.getElementById('drawerCatPanelList');
