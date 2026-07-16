@@ -53,6 +53,20 @@ async function getMpToken() {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: base URL do site para links de retorno (aceita só domínios da loja)
+// ---------------------------------------------------------------------------
+const ORIGENS_PERMITIDAS = [
+  'https://www.lapinkacessorios.com.br',
+  'https://lapinkacessorios.com.br',
+  'https://lapink-82a39.web.app',
+  'https://lapink-82a39.firebaseapp.com',
+];
+function baseUrlDe(req) {
+  const origem = (req.headers && req.headers.origin) || '';
+  return ORIGENS_PERMITIDAS.indexOf(origem) >= 0 ? origem : 'https://www.lapinkacessorios.com.br';
+}
+
+// ---------------------------------------------------------------------------
 // Helper: gera orderId único
 // ---------------------------------------------------------------------------
 function gerarOrderId() {
@@ -157,9 +171,9 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           items: mpItems,
           payer: payer,
           back_urls: {
-            success: 'https://lapink-82a39.web.app/public/sucesso.html?pedido=' + orderId,
-            failure: 'https://lapink-82a39.web.app/public/pagamento.html?erro=pagamento',
-            pending: 'https://lapink-82a39.web.app/public/sucesso.html?pedido=' + orderId + '&pendente=1',
+            success: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId,
+            failure: baseUrlDe(req) + '/public/pagamento.html?erro=pagamento',
+            pending: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId + '&pendente=1',
           },
           auto_return: 'approved',
           notification_url: 'https://us-central1-lapink-82a39.cloudfunctions.net/mpWebhook',
@@ -402,7 +416,7 @@ exports.cobrarAbandonados = functions.https.onRequest(function (req, res) {
                 if (num.length <= 11) num = '55' + num;
                 var primeiroNome = String(a.nome || '').split(' ')[0] || 'Olá';
                 var texto = 'Oi ' + primeiroNome + '! 💖 Vi que você deixou itens no carrinho da LaPink. ' +
-                  'Posso te ajudar a finalizar a compra? https://lapink-82a39.web.app/public/V1.html';
+                  'Posso te ajudar a finalizar a compra? https://www.lapinkacessorios.com.br/public/V1.html';
                 return fetch('https://graph.facebook.com/v18.0/' + phoneId + '/messages', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },

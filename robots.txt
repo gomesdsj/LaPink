@@ -9,4 +9,4 @@ Disallow: /public/recuperar-senha.html
 Disallow: /public/minha-conta.html
 Disallow: /public/meus-pedidos.html
 
-Sitemap: https://lapink-82a39.web.app/sitemap.xml
+Sitemap: https://www.lapinkacessorios.com.br/sitemap.xml

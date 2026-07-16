@@ -41,6 +41,14 @@
       {
         "source": "/",
         "destination": "/public/V1.html"
+      },
+      {
+        "source": "/admin",
+        "destination": "/admin/admin.html"
+      },
+      {
+        "source": "/login",
+        "destination": "/public/login.html"
       }
     ],
     "headers": [
