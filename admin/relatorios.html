@@ -47,6 +47,13 @@
 .status-pill.enviado { background:#dbeafe; color:#1d4ed8; }
 .status-pill.cancelado{ background:#fee2e2; color:#b91c1c; }
 .status-pill.novo    { background:var(--pink-50); color:var(--pink-500); }
+.status-pill.aguardando        { background:#fef9c3; color:#92400e; }
+.status-pill.pagamento_analise { background:#fef3c7; color:#b45309; }
+.status-pill.pedido_analise    { background:#fef3c7; color:#b45309; }
+.status-pill.nota_fiscal       { background:#dbeafe; color:#1d4ed8; }
+.status-pill.separacao         { background:var(--pink-50); color:var(--pink-500); }
+.status-pill.transporte        { background:#e0e7ff; color:#4338ca; }
+.status-pill.negado            { background:#fee2e2; color:#b91c1c; }
 
 .chart-box h3 { font-size:12px; font-weight:700; color:var(--gray-600); margin-bottom:10px; }
 
@@ -263,12 +270,14 @@
               <div class="rel-filter-label"><i class="ti ti-flag"></i> Por status</div>
               <select id="rel-status" class="rel-select" onchange="aplicarStatus()">
                 <option value="">Todos os status</option>
-                <option value="aguardando_pagamento">Aguardando pagamento</option>
-                <option value="aguardando_confirmacao">Confirmando pagamento</option>
+                <option value="aguardando">Aguardando</option>
+                <option value="pagamento_analise">Pagamento em análise</option>
+                <option value="pedido_analise">Pedido em análise</option>
                 <option value="pago">Pago</option>
-                <option value="preparando">Em preparo</option>
-                <option value="enviado">Enviado</option>
-                <option value="concluido">Concluído</option>
+                <option value="nota_fiscal">Nota fiscal</option>
+                <option value="separacao">Separação</option>
+                <option value="transporte">Transporte</option>
+                <option value="negado">Negado</option>
                 <option value="cancelado">Cancelado</option>
               </select>
             </div>
@@ -367,7 +376,7 @@
             <div class="stat-card">
               <div class="s-label">Margem média</div>
               <div class="s-value" id="p-margem-media">—</div>
-              <div class="s-delta neutral"><i class="ti ti-percentage"></i> sobre preço de atacado</div>
+              <div class="s-delta neutral"><i class="ti ti-percentage"></i> sobre o custo</div>
             </div>
             <div class="stat-card">
               <div class="s-label">Total de produtos</div>
@@ -598,24 +607,10 @@ function getClientes() {
   try { return JSON.parse(localStorage.getItem('lapinkClients') || '[]'); } catch(e) { return []; }
 }
 
-/* ── Lucro / margem de produto ── */
-function getLucro(p) {
-  if (p.lucroUnitario !== undefined && p.lucroUnitario !== null && p.lucroUnitario !== '') {
-    return parseBRL(String(p.lucroUnitario));
-  }
-  var varejo = parseBRL(String(p.precoVarejo || 0));
-  var atacado = parseBRL(String(p.precoAtacado || 0));
-  return atacado ? varejo - atacado : 0;
-}
-function getMargem(p) {
-  if (p.margemLucro !== undefined && p.margemLucro !== null && p.margemLucro !== '') {
-    var m = parseBRL(String(p.margemLucro));
-    if (m > 0) return m;
-  }
-  var varejo = parseBRL(String(p.precoVarejo || 0));
-  var atacado = parseBRL(String(p.precoAtacado || 0));
-  return varejo > 0 && atacado > 0 ? ((varejo - atacado) / varejo) * 100 : 0;
-}
+/* ── Lucro / margem de produto (fonte única: utils.js) ──
+   lucro = preço de atacado − custo | margem = % sobre o custo */
+function getLucro(p)  { return getLucroProduto(p); }
+function getMargem(p) { return getMargemProduto(p); }
 
 /* ── SVG bar chart horizontal genérico ── */
 function renderHBarChart(containerId, items, labelKey, valueKey, formatFn, color) {
@@ -697,13 +692,8 @@ function _dataDoPedido(ped) {
 function getPedidosNoPeriodo() {
   var pedidos = getPedidos();
   return pedidos.filter(function(p) {
-    // Status
-    if (_relStatus) {
-      var st = (p.status || '').toLowerCase();
-      // 'aguardando' legado conta como aguardando_pagamento
-      if (_relStatus === 'aguardando_pagamento' && st === 'aguardando') { /* ok */ }
-      else if (st !== _relStatus) return false;
-    }
+    // Status (normalizado — status legados contam no equivalente atual)
+    if (_relStatus && normStatusPedido(p.status) !== _relStatus) return false;
     // Data
     if (_relDataInicio || _relDataFim) {
       var d = _dataDoPedido(p);
@@ -717,10 +707,7 @@ function getPedidosNoPeriodo() {
 
 function _fmtDataBR(d) { return d.toLocaleDateString('pt-BR'); }
 
-var _STATUS_LABELS = {
-  aguardando_pagamento:'Aguardando pagamento', aguardando_confirmacao:'Confirmando pagamento',
-  pago:'Pago', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado'
-};
+var _STATUS_LABELS = STATUS_PEDIDO_LABELS; // fonte única (utils.js)
 
 function atualizarInfoPeriodo() {
   var el = document.getElementById('rel-data-info');
@@ -801,10 +788,10 @@ function renderVendas() {
   var contagemProdutos = {};
 
   pedidos.forEach(function(ped) {
-    var st = (ped.status || 'aguardando').toLowerCase();
+    var st = normStatusPedido(ped.status);
     contadorStatus[st] = (contadorStatus[st] || 0) + 1;
-    if (st !== 'cancelado') receitaTotal += parseFloat(ped.total) || 0;
-    if (st === 'aguardando') pendentes++;
+    if (isPedidoAtivo(ped)) receitaTotal += parseFloat(ped.total) || 0;
+    if (isPedidoPendente(ped)) pendentes++;
 
     if (Array.isArray(ped.itens)) {
       ped.itens.forEach(function(item) {
@@ -814,7 +801,7 @@ function renderVendas() {
     }
   });
 
-  var ativosCount = pedidos.filter(function(p) { return (p.status || '') !== 'cancelado'; }).length;
+  var ativosCount = pedidos.filter(isPedidoAtivo).length;
   var ticketMedio = ativosCount > 0 ? receitaTotal / ativosCount : 0;
 
   document.getElementById('v-total-pedidos').textContent  = total;
@@ -822,11 +809,14 @@ function renderVendas() {
   document.getElementById('v-ticket-medio').textContent   = ativosCount > 0 ? formatBRL(ticketMedio) : '—';
   document.getElementById('v-pendentes').textContent      = pendentes;
 
-  // Gráfico receita por status
-  var statusLabels = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' };
-  var statusColors = { aguardando:'#facc15', preparando:'var(--pink-300)', enviado:'#60a5fa', concluido:'var(--green-400,#4ade80)', cancelado:'var(--red-400)' };
+  // Gráfico pedidos por status (status já normalizados)
+  var statusColors = {
+    aguardando:'#facc15', pagamento_analise:'#fbbf24', pedido_analise:'#f59e0b',
+    pago:'var(--green-400,#4ade80)', nota_fiscal:'#60a5fa', separacao:'var(--pink-300)',
+    transporte:'#818cf8', negado:'#f87171', cancelado:'var(--red-400)'
+  };
   var statusItems = Object.keys(contadorStatus).map(function(k) {
-    return { nome: statusLabels[k] || k, qtd: contadorStatus[k], cor: statusColors[k] || 'var(--pink-300)' };
+    return { nome: STATUS_PEDIDO_LABELS[k] || k, qtd: contadorStatus[k], cor: statusColors[k] || 'var(--pink-300)' };
   }).sort(function(a,b){ return b.qtd - a.qtd; });
   renderHBarChart('chart-status-vendas', statusItems, 'nome', 'qtd', function(v) { return v + ' pedido' + (v !== 1 ? 's' : ''); });
 
@@ -843,8 +833,8 @@ function renderVendas() {
     return;
   }
   tbody.innerHTML = pedidos.slice().reverse().map(function(ped) {
-    var st = (ped.status || 'aguardando').toLowerCase();
-    var stLabel = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' }[st] || ped.status;
+    var st = normStatusPedido(ped.status);
+    var stLabel = STATUS_PEDIDO_LABELS[st] || ped.status;
     var nItens = Array.isArray(ped.itens) ? ped.itens.length : 0;
     var data = ped.data ? new Date(ped.data).toLocaleDateString('pt-BR') : '—';
     return '<tr>' +
@@ -902,9 +892,9 @@ function renderProdutos() {
   var porCategoria    = {};
 
   produtos.forEach(function(p) {
-    var varejo = parseBRL(String(p.precoVarejo || 0));
-    var est    = parseInt(p.estoque) || 0;
-    valorEstoque += varejo * est;
+    var preco = getPrecoProduto(p);
+    var est   = parseInt(p.estoque) || 0;
+    valorEstoque += preco * est;
 
     var lucro = getLucro(p);
     if (lucro > 0) lucroPotencial += lucro * est;
@@ -923,8 +913,8 @@ function renderProdutos() {
 
   // Gráficos
   var topValor = produtos.slice().sort(function(a,b) {
-    return parseBRL(String(b.precoVarejo||0)) - parseBRL(String(a.precoVarejo||0));
-  }).slice(0,8).map(function(p) { return { nome: p.nome, valor: parseBRL(String(p.precoVarejo||0)) }; });
+    return getPrecoProduto(b) - getPrecoProduto(a);
+  }).slice(0,8).map(function(p) { return { nome: p.nome, valor: getPrecoProduto(p) }; });
   renderHBarChart('chart-valor-produto', topValor, 'nome', 'valor', function(v) {
     return v >= 1000 ? 'R$' + (v/1000).toFixed(1) + 'k' : 'R$' + v.toFixed(0);
   });
@@ -966,8 +956,8 @@ function renderProdutos() {
     return;
   }
   tbody.innerHTML = produtos.map(function(p) {
-    var preco   = parseBRL(String(p.precoAtacado||0)) || parseBRL(String(p.precoVarejo||0));
-    var custo   = parseBRL(String(p.custoTotal||0));
+    var preco   = getPrecoProduto(p);
+    var custo   = getCustoProduto(p);
     var lucro   = getLucro(p);
     var margem  = getMargem(p);
     var est     = parseInt(p.estoque) || 0;
@@ -1005,12 +995,14 @@ function renderClientes() {
 
   var total       = clientes.length;
   var gastoTotal  = clientes.reduce(function(s,c){ return s + (c.totalSpent||0); }, 0);
-  var ticketMedio = total > 0 ? gastoTotal / total : 0;
+  // Ticket médio considera apenas quem já comprou (evita diluir com cadastros sem compra)
+  var compradores = clientes.filter(function(c){ return (c.purchases||[]).length > 0 || (c.totalSpent||0) > 0; }).length;
+  var ticketMedio = compradores > 0 ? gastoTotal / compradores : 0;
   var top         = clientes.slice().sort(function(a,b){ return (b.totalSpent||0)-(a.totalSpent||0); })[0];
 
   document.getElementById('c-total').textContent          = total;
   document.getElementById('c-gasto-total').textContent    = formatBRL(gastoTotal);
-  document.getElementById('c-ticket-medio').textContent   = total > 0 ? formatBRL(ticketMedio) : '—';
+  document.getElementById('c-ticket-medio').textContent   = compradores > 0 ? formatBRL(ticketMedio) : '—';
   document.getElementById('c-top-comprador').textContent  = top ? top.name : '—';
 
   // Gráfico top por gasto
@@ -1106,8 +1098,8 @@ function renderEstoque() {
   }
   tbody.innerHTML = produtos.slice().sort(function(a,b){ return (parseInt(a.estoque)||0)-(parseInt(b.estoque)||0); }).map(function(p) {
     var est    = parseInt(p.estoque)||0;
-    var varejo = parseBRL(String(p.precoVarejo||0));
-    var valorTotal = varejo * est;
+    var preco  = getPrecoProduto(p);
+    var valorTotal = preco * est;
     var badge = est <= 5
       ? '<span class="badge badge-amber"><i class="ti ti-alert-circle"></i> Crítico</span>'
       : est <= 10
@@ -1117,7 +1109,7 @@ function renderEstoque() {
       '<td>' + escHtml(p.nome||'—') + '</td>' +
       '<td>' + escHtml(p.categoria||'—') + '</td>' +
       '<td><strong>' + est + '</strong></td>' +
-      '<td>' + (varejo ? formatBRL(varejo) : '—') + '</td>' +
+      '<td>' + (preco ? formatBRL(preco) : '—') + '</td>' +
       '<td>' + formatBRL(valorTotal) + '</td>' +
       '<td>' + badge + '</td>' +
     '</tr>';

@@ -59,6 +59,87 @@ function saveClients(arr) {
   localStorage.setItem('lapinkClients', JSON.stringify(arr));
 }
 
+/* ── Status de pedido — fonte única (mesma regra de pedidos.html) ──
+   Fluxo: aguardando → pagamento_analise → pedido_analise → pago →
+          nota_fiscal → separacao → transporte | negado | cancelado */
+var STATUS_PEDIDO_LEGADO = {
+  aguardando_pagamento:   'pagamento_analise',
+  aguardando_confirmacao: 'pagamento_analise',
+  preparando:             'separacao',
+  enviado:                'transporte',
+  concluido:              'pago'
+};
+var STATUS_PEDIDO_LABELS = {
+  aguardando:        'Aguardando',
+  pagamento_analise: 'Pagamento em análise',
+  pedido_analise:    'Pedido em análise',
+  pago:              'Pago',
+  nota_fiscal:       'Nota fiscal',
+  separacao:         'Separação',
+  transporte:        'Transporte',
+  negado:            'Negado',
+  cancelado:         'Cancelado'
+};
+
+// Normaliza status (legado → atual)
+function normStatusPedido(st) {
+  st = String(st || 'aguardando').toLowerCase();
+  return STATUS_PEDIDO_LEGADO[st] || st;
+}
+
+// Pedido conta para a receita? (não cancelado nem negado)
+function isPedidoAtivo(p) {
+  var st = normStatusPedido(p && p.status);
+  return st !== 'cancelado' && st !== 'negado';
+}
+
+// Pedido está pago? Flag manual (financeiro) OU status de pagamento confirmado
+function isPedidoPago(p) {
+  if (p && p.pago === true) return true;
+  var st = normStatusPedido(p && p.status);
+  return st === 'pago' || st === 'nota_fiscal' || st === 'separacao' || st === 'transporte';
+}
+
+// Pedido aguardando pagamento/confirmação (pendente de recebimento)
+function isPedidoPendente(p) {
+  return isPedidoAtivo(p) && !isPedidoPago(p);
+}
+
+/* ── Preço / custo / lucro / margem de produto — fonte única ──
+   O preço de venda é o de atacado (precoAtacado === precoVarejo, legado).
+   custoTotal = peça bruta + banho×peso. margemLucro é % sobre o custo. */
+function _numProduto(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  return parseBRL(String(v || '0'));
+}
+
+function getPrecoProduto(p) {
+  return _numProduto(p.precoAtacado) || _numProduto(p.precoVarejo);
+}
+
+function getCustoProduto(p) {
+  return _numProduto(p.custoTotal);
+}
+
+function getLucroProduto(p) {
+  if (p.lucroUnitario !== undefined && p.lucroUnitario !== null && p.lucroUnitario !== '') {
+    return _numProduto(p.lucroUnitario);
+  }
+  var preco = getPrecoProduto(p);
+  var custo = getCustoProduto(p);
+  return preco > 0 && custo > 0 ? preco - custo : 0;
+}
+
+function getMargemProduto(p) {
+  if (p.margemLucro !== undefined && p.margemLucro !== null && p.margemLucro !== '') {
+    var m = _numProduto(p.margemLucro);
+    if (m > 0) return m;
+  }
+  var custo = getCustoProduto(p);
+  var lucro = getLucroProduto(p);
+  return custo > 0 ? (lucro / custo) * 100 : 0;
+}
+
 function formatPesoInput(input) {
   var raw = input.value.replace(/\D/g, '').replace(/^0+/, '') || '0';
   while (raw.length < 4) raw = '0' + raw;

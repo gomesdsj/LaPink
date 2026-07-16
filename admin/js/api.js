@@ -221,13 +221,13 @@ var LaPinkAPI = (function () {
         var topProdutos    = {};
 
         pedidos.forEach(function (p) {
-          var st    = (p.status || 'aguardando').toLowerCase();
+          var st    = normStatusPedido(p.status);
           var total = parseFloat(p.total) || 0;
           var data  = p.data ? new Date(p.data) : null;
 
           vendasPorStatus[st] = (vendasPorStatus[st] || 0) + 1;
 
-          if (st === 'cancelado') return;
+          if (!isPedidoAtivo(p)) return; // cancelado/negado fora da receita
 
           receita += total;
 
@@ -235,9 +235,10 @@ var LaPinkAPI = (function () {
           if (data) {
             var mesD = data.getMonth(), anoD = data.getFullYear();
             var chave = anoD + '-' + String(mesD + 1).padStart(2, '0');
-            if (!vendasPorMes[chave]) vendasPorMes[chave] = { receita: 0, count: 0 };
+            if (!vendasPorMes[chave]) vendasPorMes[chave] = { receita: 0, count: 0, pagos: 0 };
             vendasPorMes[chave].receita += total;
             vendasPorMes[chave].count++;
+            if (isPedidoPago(p)) vendasPorMes[chave].pagos += total;
 
             if (mesD === mesAtual && anoD === anoAtual) {
               receitaMes += total;
@@ -248,8 +249,8 @@ var LaPinkAPI = (function () {
             if (mesD === mA && anoD === aA) receitaAnterior += total;
           }
 
-          // A receber (financeiro)
-          if (!p.pago) { aReceber += total; pedidosPendentes++; }
+          // A receber (financeiro) — pago = flag manual OU status confirmado
+          if (!isPedidoPago(p)) { aReceber += total; pedidosPendentes++; }
 
           // Top produtos
           if (Array.isArray(p.itens)) {
@@ -262,10 +263,10 @@ var LaPinkAPI = (function () {
           }
         });
 
-        // Receita por categoria (estoque × preço)
+        // Valor em estoque por categoria (estoque × preço de atacado)
         produtos.forEach(function (p) {
           var cat = p.categoria || 'Outros';
-          var val = parseFloat(p.precoVarejo || 0) * (parseInt(p.estoque) || 0);
+          var val = getPrecoProduto(p) * (parseInt(p.estoque) || 0);
           vendasPorCategoria[cat] = (vendasPorCategoria[cat] || 0) + val;
         });
 
@@ -279,7 +280,7 @@ var LaPinkAPI = (function () {
 
         return {
           receita          : { total: receita, mes: receitaMes, deltaPct: deltaMes },
-          pedidos          : { total: pedidos.length, mes: pedidosMes, pendentes: vendasPorStatus.aguardando || 0 },
+          pedidos          : { total: pedidos.length, mes: pedidosMes, pendentes: pedidosPendentes },
           financeiro       : { aReceber: aReceber, cobPendentes: pedidosPendentes },
           clientes         : { total: clientes.length },
           produtos         : { total: produtos.length, estoqueBaixo: estoqueBaixo.length },

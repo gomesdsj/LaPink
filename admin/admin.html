@@ -242,7 +242,7 @@
       var categorias = {};
       produtos.forEach(function(p) {
         var cat = p.categoria || 'Outros';
-        var preco = parseBRL(String(p.precoVarejo || 0));
+        var preco = getPrecoProduto(p);
         var est = parseInt(p.estoque) || 0;
         categorias[cat] = (categorias[cat] || 0) + preco * est;
       });
@@ -297,15 +297,15 @@
       }
 
       var sorted = produtos.slice().sort(function(a, b) {
-        var va = parseBRL(String(a.precoVarejo || 0)) * (parseInt(a.estoque) || 0);
-        var vb = parseBRL(String(b.precoVarejo || 0)) * (parseInt(b.estoque) || 0);
+        var va = getPrecoProduto(a) * (parseInt(a.estoque) || 0);
+        var vb = getPrecoProduto(b) * (parseInt(b.estoque) || 0);
         return vb - va;
       }).slice(0, 5);
 
-      var max = parseBRL(String(sorted[0].precoVarejo || 0)) * (parseInt(sorted[0].estoque) || 0) || 1;
+      var max = getPrecoProduto(sorted[0]) * (parseInt(sorted[0].estoque) || 0) || 1;
 
       var html = sorted.map(function(p) {
-        var val = parseBRL(String(p.precoVarejo || 0)) * (parseInt(p.estoque) || 0);
+        var val = getPrecoProduto(p) * (parseInt(p.estoque) || 0);
         var pct = Math.round((val / max) * 100);
         var nome = escHtml((p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto'));
         return (
@@ -375,8 +375,8 @@
 
       tbody.innerHTML = filtrados.map(function(p) {
         var est = parseInt(p.estoque) || 0;
-        var preco = parseBRL(String(p.precoVarejo || 0));
-        var lucro = parseBRL(String(p.lucroUnitario || 0));
+        var preco = getPrecoProduto(p);
+        var lucro = getLucroProduto(p);
         var icone = escHtml(p.icone || 'ti-diamond');
         var statusBadge = est <= 5
           ? '<span class="badge badge-amber">Estoque baixo</span>'
@@ -449,7 +449,7 @@
         // Valor em estoque (calculado localmente, não vem no stats)
         var valorTotal = 0;
         getProdutos().forEach(function(p) {
-          valorTotal += parseBRL(String(p.precoVarejo || 0)) * (parseInt(p.estoque) || 0);
+          valorTotal += getPrecoProduto(p) * (parseInt(p.estoque) || 0);
         });
         document.getElementById('stat-valor').textContent = formatBRL(valorTotal);
 
@@ -489,10 +489,10 @@
         document.getElementById('stat-pedidos').textContent  = pedidos.length;
         var rec = 0, val = 0, crit = 0;
         produtos.forEach(function(p) {
-          val += parseBRL(String(p.precoVarejo||0)) * (parseInt(p.estoque)||0);
+          val += getPrecoProduto(p) * (parseInt(p.estoque)||0);
           if ((parseInt(p.estoque)||0) <= 5) crit++;
         });
-        pedidos.forEach(function(p) { if (p.status !== 'cancelado') rec += parseFloat(p.total)||0; });
+        pedidos.forEach(function(p) { if (isPedidoAtivo(p)) rec += parseFloat(p.total)||0; });
         document.getElementById('stat-valor').textContent   = formatBRL(val);
         document.getElementById('stat-receita').textContent = formatBRL(rec);
         document.getElementById('stat-critico').textContent = crit;
@@ -508,10 +508,18 @@
         cont.innerHTML = '<div class="empty-state" style="padding:16px 0;"><i class="ti ti-shopping-cart"></i><p style="font-size:12px;">Nenhum pedido ainda</p></div>';
         return;
       }
-      var statusLabel = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' };
-      var statusCor   = { aguardando:'badge-amber', preparando:'badge-pink', enviado:'badge-blue', concluido:'badge-green', cancelado:'badge-red' };
-      cont.innerHTML = pedidos.slice(0, 5).map(function(p) {
-        var st = (p.status || 'aguardando').toLowerCase();
+      var statusLabel = STATUS_PEDIDO_LABELS; // fonte única (utils.js)
+      var statusCor   = {
+        aguardando:'badge-amber', pagamento_analise:'badge-amber', pedido_analise:'badge-amber',
+        pago:'badge-green', nota_fiscal:'badge-blue', separacao:'badge-pink',
+        transporte:'badge-blue', negado:'badge-red', cancelado:'badge-red'
+      };
+      // Mais recentes primeiro (ordena por data desc)
+      var recentes = pedidos.slice().sort(function(a, b) {
+        return new Date(b.data || 0) - new Date(a.data || 0);
+      }).slice(0, 5);
+      cont.innerHTML = recentes.map(function(p) {
+        var st = normStatusPedido(p.status);
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--gray-100);gap:8px;">' +
           '<div style="font-size:12px;">' +
             '<strong>#' + escHtml(p.numero || String(p.id).slice(-4)) + '</strong>' +

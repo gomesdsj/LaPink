@@ -33,11 +33,15 @@
   font-size: 10px; font-weight: 700;
   padding: 2px 8px; border-radius: 20px;
 }
-.status-pill.aguardando { background:#fef9c3; color:#92400e; }
-.status-pill.preparando { background:var(--pink-50); color:var(--pink-500); }
-.status-pill.enviado    { background:#dbeafe; color:#1d4ed8; }
-.status-pill.concluido  { background:var(--green-100,#dcfce7); color:#16a34a; }
-.status-pill.cancelado  { background:#fee2e2; color:#b91c1c; }
+.status-pill.aguardando        { background:#fef9c3; color:#92400e; }
+.status-pill.pagamento_analise { background:#fef3c7; color:#b45309; }
+.status-pill.pedido_analise    { background:#fef3c7; color:#b45309; }
+.status-pill.pago              { background:var(--green-100,#dcfce7); color:#16a34a; }
+.status-pill.nota_fiscal       { background:#dbeafe; color:#1d4ed8; }
+.status-pill.separacao         { background:var(--pink-50); color:var(--pink-500); }
+.status-pill.transporte        { background:#e0e7ff; color:#4338ca; }
+.status-pill.negado            { background:#fee2e2; color:#b91c1c; }
+.status-pill.cancelado         { background:#fee2e2; color:#b91c1c; }
 
 /* ─── Stat card top borders (KPI) ─── */
 .kpi-receita  { border-top: 3px solid var(--pink-400); }
@@ -258,9 +262,8 @@ textarea.form-control { resize: vertical; }
             <select id="filtro-status" onchange="renderCobrancas()">
               <option value="todos">Todos os status</option>
               <option value="aguardando">Aguardando</option>
-              <option value="preparando">Em preparo</option>
-              <option value="enviado">Enviado</option>
-              <option value="concluido">Concluído</option>
+              <option value="pagamento_analise">Pagamento em análise</option>
+              <option value="pedido_analise">Pedido em análise</option>
             </select>
             <input type="text" id="filtro-nome" placeholder="Buscar cliente…" oninput="renderCobrancas()" style="min-width:180px;" />
             <span class="filter-label" id="cob-count-label"></span>
@@ -626,8 +629,12 @@ function showToast(msg, type) {
   _toastTimer = setTimeout(function() { el.style.opacity = '0'; }, 2800);
 }
 
-var STATUS_LABEL = { aguardando:'Aguardando', preparando:'Em preparo', enviado:'Enviado', concluido:'Concluído', cancelado:'Cancelado' };
-var STATUS_CLASS = { aguardando:'badge-amber', preparando:'badge-pink', enviado:'badge-blue', concluido:'badge-green', cancelado:'badge-red' };
+var STATUS_LABEL = STATUS_PEDIDO_LABELS; // fonte única (utils.js), status normalizados
+var STATUS_CLASS = {
+  aguardando:'badge-amber', pagamento_analise:'badge-amber', pedido_analise:'badge-amber',
+  pago:'badge-green', nota_fiscal:'badge-blue', separacao:'badge-pink',
+  transporte:'badge-blue', negado:'badge-red', cancelado:'badge-red'
+};
 var MNAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 /* ── SVG bar chart horizontal (igual relatorios) ── */
@@ -669,10 +676,11 @@ function renderKPIs() {
   var pedidos = getPedidos();
   var receita = 0, recebido = 0, aReceber = 0, countPend = 0;
   pedidos.forEach(function(p) {
-    if ((p.status || '').toLowerCase() === 'cancelado') return;
+    if (!isPedidoAtivo(p)) return; // ignora cancelados e negados
     var t = parseFloat(p.total) || 0;
     receita += t;
-    if (p.pago) recebido += t;
+    // Pago = flag manual OU status de pagamento confirmado (pago/nota fiscal/separação/transporte)
+    if (isPedidoPago(p)) recebido += t;
     else { aReceber += t; countPend++; }
   });
 
@@ -694,9 +702,9 @@ function renderCobrancas() {
   var filtroNome = ((document.getElementById('filtro-nome') || {}).value || '').trim().toLowerCase();
 
   var lista = pedidos.filter(function(p) {
-    if ((p.status || '').toLowerCase() === 'cancelado') return false;
-    if (p.pago) return false;
-    if (filtroSt !== 'todos' && (p.status || '').toLowerCase() !== filtroSt) return false;
+    if (!isPedidoAtivo(p)) return false;   // cancelados/negados não são cobrança
+    if (isPedidoPago(p)) return false;     // pagos (flag ou status) saem das cobranças
+    if (filtroSt !== 'todos' && normStatusPedido(p.status) !== filtroSt) return false;
     if (filtroNome) {
       var nome  = ((p.cliente && p.cliente.name) || '').toLowerCase();
       var email = (p.clienteEmail || '').toLowerCase();
@@ -714,7 +722,7 @@ function renderCobrancas() {
     return;
   }
   container.innerHTML = lista.map(function(p) {
-    var st     = (p.status || 'aguardando').toLowerCase();
+    var st     = normStatusPedido(p.status);
     var data   = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
     var nItens = Array.isArray(p.itens) ? p.itens.length : 0;
     var nome   = escHtml((p.cliente && p.cliente.name) || '—');
@@ -741,7 +749,8 @@ function renderCobrancas() {
 
 /* ── Histórico ── */
 function renderHistorico() {
-  var pedidos = getPedidos().filter(function(p) { return p.pago === true; })
+  // Pagamentos confirmados: flag manual OU status de pagamento confirmado
+  var pedidos = getPedidos().filter(function(p) { return isPedidoAtivo(p) && isPedidoPago(p); })
                 .sort(function(a, b) { return new Date(b.data) - new Date(a.data); });
 
   var container = document.getElementById('lista-historico');
@@ -750,7 +759,7 @@ function renderHistorico() {
     return;
   }
   container.innerHTML = pedidos.map(function(p) {
-    var st   = (p.status || 'aguardando').toLowerCase();
+    var st   = normStatusPedido(p.status);
     var data = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
     var nome = escHtml((p.cliente && p.cliente.name) || '—');
     return '<div class="cob-card cob-card--pago">' +
@@ -763,9 +772,10 @@ function renderHistorico() {
         '<div class="cob-total">' + formatBRL(p.total) + '</div>' +
         '<span class="status-pill ' + st + '">' + (STATUS_LABEL[st] || st) + '</span>' +
         '<span class="badge badge-pago"><i class="ti ti-check"></i> Pago</span>' +
-        '<div class="cob-actions">' +
-          '<button class="btn btn-secondary" style="font-size:11px;" onclick="desfazerPago(' + p.id + ')"><i class="ti ti-x"></i> Desfazer</button>' +
-        '</div>' +
+        // "Desfazer" só quando foi marcado manualmente; se o pago vem do status, altere em Pedidos
+        (p.pago === true
+          ? '<div class="cob-actions"><button class="btn btn-secondary" style="font-size:11px;" onclick="desfazerPago(' + p.id + ')"><i class="ti ti-x"></i> Desfazer</button></div>'
+          : '') +
       '</div>' +
     '</div>';
   }).join('');
@@ -778,12 +788,12 @@ function renderRelatorio() {
   /* Gráfico mensal (últimos 6 meses) */
   var meses = {};
   pedidos.forEach(function(p) {
-    if ((p.status || '').toLowerCase() === 'cancelado' || !p.data) return;
+    if (!isPedidoAtivo(p) || !p.data) return;
     var d   = new Date(p.data);
     var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     if (!meses[key]) meses[key] = { receita: 0, pagos: 0 };
     meses[key].receita += parseFloat(p.total) || 0;
-    if (p.pago) meses[key].pagos += parseFloat(p.total) || 0;
+    if (isPedidoPago(p)) meses[key].pagos += parseFloat(p.total) || 0;
   });
   var keys = Object.keys(meses).sort().slice(-6);
   var maxV = 0;
@@ -817,7 +827,7 @@ function renderRelatorio() {
   /* Top devedores — SVG bar chart */
   var pendObj = {};
   pedidos.forEach(function(p) {
-    if ((p.status || '').toLowerCase() === 'cancelado' || p.pago) return;
+    if (!isPedidoAtivo(p) || isPedidoPago(p)) return;
     var email = p.clienteEmail || (p.cliente && p.cliente.email) || '?';
     var nome  = (p.cliente && p.cliente.name) || email;
     if (!pendObj[email]) pendObj[email] = { nome: nome, total: 0, count: 0, email: email, wa: (p.cliente && p.cliente.whatsapp) || '' };
@@ -853,15 +863,15 @@ function renderRelatorio() {
   var statObj = {};
   var receitaTotal = 0;
   pedidos.forEach(function(p) {
-    var st = (p.status || 'aguardando').toLowerCase();
+    var st = normStatusPedido(p.status);
     if (!statObj[st]) statObj[st] = { count: 0, total: 0, pagos: 0 };
     statObj[st].count++;
     var t = parseFloat(p.total) || 0;
     statObj[st].total += t;
-    if (p.pago) statObj[st].pagos += t;
-    if (st !== 'cancelado') receitaTotal += t;
+    if (isPedidoPago(p)) statObj[st].pagos += t;
+    if (isPedidoAtivo(p)) receitaTotal += t;
   });
-  var stOrder = ['aguardando','preparando','enviado','concluido','cancelado'];
+  var stOrder = ['aguardando','pagamento_analise','pedido_analise','pago','nota_fiscal','separacao','transporte','negado','cancelado'];
   var tbody2 = document.getElementById('tabela-status-body');
   if (tbody2) {
     var rows = stOrder.filter(function(s) { return statObj[s]; }).map(function(s) {
@@ -871,7 +881,7 @@ function renderRelatorio() {
         '<td>' + d.count + '</td>' +
         '<td>' + formatBRL(d.total) + '</td>' +
         '<td>' + (d.pagos > 0 ? formatBRL(d.pagos) : '—') + '</td>' +
-        '<td>' + (s !== 'cancelado' ? pct(d.total, receitaTotal) : '—') + '</td>' +
+        '<td>' + (s !== 'cancelado' && s !== 'negado' ? pct(d.total, receitaTotal) : '—') + '</td>' +
       '</tr>';
     });
     tbody2.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Nenhum pedido.</td></tr>';
@@ -884,12 +894,12 @@ function renderRelatorio() {
       tbody3.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400);">Nenhum pedido registrado. <a href="pedidos.html" style="color:var(--pink-500);">Acessar pedidos</a></td></tr>';
     } else {
       tbody3.innerHTML = pedidos.slice().reverse().map(function(p) {
-        var st   = (p.status || 'aguardando').toLowerCase();
+        var st   = normStatusPedido(p.status);
         var data = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
-        var pagoHtml = p.pago
+        var pagoHtml = isPedidoPago(p)
           ? '<span class="badge badge-pago"><i class="ti ti-check"></i> Pago</span>'
           : '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="marcarPago(' + p.id + ')">Marcar pago</button>';
-        var desfHtml = p.pago
+        var desfHtml = p.pago === true
           ? '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;margin-left:4px;" onclick="desfazerPago(' + p.id + ')"><i class="ti ti-x"></i></button>'
           : '';
         return '<tr>' +
@@ -940,7 +950,7 @@ function cobrarWA(id) {
   if (!wa.startsWith('55')) wa = '55' + wa;
   var nome   = (p.cliente && p.cliente.name) || 'cliente';
   var numero = p.numero || ('#' + p.id);
-  var st     = (p.status || 'aguardando').toLowerCase();
+  var st     = normStatusPedido(p.status);
   var config = getStoreConfig();
   var loja   = config.nomeLoja || 'LaPink';
   var msg = 'Olá ' + nome + '! 👋\n\nPassando para lembrar sobre o seu pedido *#' + numero + '* na *' + loja + '* no valor de *' + formatBRL(p.total) + '*.\n\nStatus atual: ' + (STATUS_LABEL[st] || st) + '.\n\nAguardamos a confirmação do pagamento para darmos andamento! 💕\n\nQualquer dúvida é só chamar.';
