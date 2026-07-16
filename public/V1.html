@@ -1190,8 +1190,15 @@
         'Berloques': ['Berloques','Berloque'],
         'Chokers':   ['Chokers','Chocker']
       };
+      // Aliases da categoria filtrada: mapa conhecido OU singular genérico
+      // ("Tornozeleiras" também encontra produtos salvos como "Tornozeleira")
+      var aliasesCat = null;
+      if (cat) {
+        aliasesCat = CAT_ALIAS[cat] || [cat];
+        if (!CAT_ALIAS[cat] && /s$/i.test(cat)) aliasesCat = [cat, cat.slice(0, -1)];
+      }
       var filtrados = produtos.filter(function(p) {
-        var matchCat   = !cat || (CAT_ALIAS[cat] || [cat]).indexOf(p.categoria) >= 0;
+        var matchCat   = !cat || aliasesCat.indexOf((p.categoria || '').trim()) >= 0;
         var matchBusca = !busca || (p.nome||'').toLowerCase().includes(busca) ||
                                    (p.categoria||'').toLowerCase().includes(busca) ||
                                    (p.descricao||'').toLowerCase().includes(busca);
@@ -1974,22 +1981,11 @@ function renderDrawerCategories() {
   var lista = document.getElementById('drawerCatPanelList');
   if (!lista) return;
 
-  // Mostra TODAS as categorias criadas (de todos os produtos, mesmo sem estoque)
-  // unidas às categorias padrão da loja — para nenhuma faltar no menu.
-  var produtos = (function() {
-    try { return JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || []; }
-    catch (e) { return []; }
-  })();
-
-  var cats = {};
-  getCategoriasLoja().forEach(function(c) { cats[c] = true; });     // categorias da loja (admin)
-  produtos.forEach(function(p) {
-    var c = (p.categoria || '').trim();
-    if (c) cats[c] = true;                                          // criadas nos produtos
-  });
-
-  var catNames = Object.keys(cats).sort();
-  if (!catNames.length) catNames = getCategoriasLoja();
+  // FONTE ÚNICA: mostra exatamente as categorias do Gerenciar Categorias
+  // (painel admin), na ordem definida lá. Produtos antigos salvos no
+  // singular ("Anel", "Pulseira"…) continuam entrando no filtro da
+  // categoria correspondente — mas não geram itens duplicados no menu.
+  var catNames = getCategoriasLoja();
 
   lista.innerHTML = catNames.map(function(cat) {
     var icon   = CAT_ICONS[cat] || 'ti-tag';
