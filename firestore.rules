@@ -31,7 +31,8 @@ service cloud.firestore {
         'lapinkConfig',
         'lapinkPedidoCounter',
         'lapinkPedidos',
-        'lapinkCategorias'
+        'lapinkCategorias',
+        'lapinkBeneficios'
       ]
       // Partes de docs grandes (>1 MiB) — o cloud-sync divide catálogos com
       // fotos em lapinkProdutos_0, _1, … (idem pedidos/carrossel/config da loja)

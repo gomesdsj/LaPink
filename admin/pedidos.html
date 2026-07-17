@@ -549,6 +549,7 @@
         rastreioHtml +
         '<div class="pedido-footer" style="margin-top:10px;">' +
           '<select class="pedido-status-select" onchange="' + onChangeStatus + '">' + statusOptions + '</select>' +
+          '<button class="btn-icon" type="button" onclick="imprimirPedido(\'' + escHtml(cardId) + '\', ' + (isFS ? 'true' : 'false') + ')"><i class="ti ti-printer"></i> Imprimir</button>' +
           (!isFS ? '<button class="btn-icon" type="button" onclick="abrirEditarPedido(' + p.id + ')"><i class="ti ti-pencil"></i> Editar</button>' : '') +
           (waNum ? '<a href="' + waLink + '" target="_blank" rel="noopener" class="btn-icon wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>' : '') +
           (!isFS ? '<button class="btn-icon danger" type="button" onclick="excluirPedido(' + p.id + ')"><i class="ti ti-trash"></i> Excluir</button>' : '') +
@@ -556,6 +557,84 @@
       '</div>';
     }).join('');
   }
+
+  // ─── Nota de entrega (impressão) ───────────────────────────
+  // Lista simples do conteúdo da caixa, para o admin imprimir e colocar
+  // junto do pedido na hora de embalar/despachar. Sem valores/pagamento —
+  // é uma nota de separação, não uma nota fiscal.
+  function _localizarPedido(cardId, isFS) {
+    if (isFS) return _pedidosFirestore.find(function(x) { return x._id === cardId; }) || null;
+    var idNum = parseInt(cardId, 10);
+    return (getPedidos() || []).find(function(x) { return x.id === idNum; }) || null;
+  }
+
+  window.imprimirPedido = function(cardId, isFS) {
+    var p = _localizarPedido(cardId, isFS);
+    if (!p) { showToast('Pedido não encontrado.', 'erro'); return; }
+
+    var loja = {};
+    try { loja = JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}') || {}; } catch (e) {}
+    var nomeLoja = loja.nome || 'LaPink';
+
+    var nomeCli = (p.cliente && (p.cliente.nome || p.cliente.name)) || 'Cliente';
+    var telCli  = (p.cliente && (p.cliente.celular || p.cliente.whatsapp)) || '';
+    var data    = p.data || (p.createdAt && p.createdAt.seconds ? new Date(p.createdAt.seconds * 1000).toISOString() : '');
+    var dataFmt = data ? fmtData(data) : '—';
+    var itens   = Array.isArray(p.itens) ? p.itens : [];
+    var totalPecas = itens.reduce(function(s, it) { return s + (parseInt(it.qty) || 1); }, 0);
+
+    var enderecoTxt = p.endereco
+      ? [p.endereco.rua, p.endereco.numero, p.endereco.bairro,
+         (p.endereco.cidade || '') + (p.endereco.estado ? '/' + p.endereco.estado : ''),
+         p.endereco.cep].filter(Boolean).join(', ')
+      : '';
+
+    var itensHtml = itens.map(function(it) {
+      return '<tr><td class="qt">' + escHtml(String(it.qty || 1)) + '×</td><td>' + escHtml(it.nome || 'Item') + '</td></tr>';
+    }).join('') || '<tr><td colspan="2" style="color:#999;">Nenhum item.</td></tr>';
+
+    var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+      '<title>Nota de entrega — Pedido #' + escHtml(String(p.numero || '')) + '</title>' +
+      '<style>' +
+        '@page { size: A5; margin: 14mm; }' +
+        'body { font-family: Arial, Helvetica, sans-serif; color: #222; margin: 0; padding: 0; }' +
+        '.nota { max-width: 420px; margin: 0 auto; }' +
+        '.nota-head { text-align: center; border-bottom: 2px solid #D4537E; padding-bottom: 10px; margin-bottom: 14px; }' +
+        '.nota-head h1 { margin: 0; font-size: 20px; color: #D4537E; }' +
+        '.nota-head p { margin: 4px 0 0; font-size: 11px; color: #777; }' +
+        '.nota-info { font-size: 13px; margin-bottom: 14px; line-height: 1.6; }' +
+        '.nota-info strong { color: #000; }' +
+        '.nota-sec-title { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: .04em; color: #999; margin: 14px 0 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }' +
+        'table { width: 100%; border-collapse: collapse; font-size: 14px; }' +
+        'td { padding: 5px 0; border-bottom: 1px dashed #ddd; }' +
+        'td.qt { width: 34px; font-weight: bold; color: #D4537E; }' +
+        '.nota-total { text-align: right; font-size: 12px; color: #555; margin-top: 8px; font-weight: bold; }' +
+        '.nota-foot { text-align: center; font-size: 11px; color: #999; margin-top: 22px; border-top: 1px solid #eee; padding-top: 10px; }' +
+        '@media print { .no-print { display: none; } }' +
+      '</style></head><body>' +
+      '<div class="nota">' +
+        '<div class="nota-head"><h1>' + escHtml(nomeLoja) + '</h1><p>Nota de entrega — separação do pedido</p></div>' +
+        '<div class="nota-info">' +
+          '<strong>Pedido:</strong> #' + escHtml(String(p.numero || '—')) + '<br>' +
+          '<strong>Data:</strong> ' + escHtml(dataFmt) + '<br>' +
+          '<strong>Cliente:</strong> ' + escHtml(nomeCli) +
+          (telCli ? ' — ' + escHtml(telCli) : '') +
+          (enderecoTxt ? '<br><strong>Endereço:</strong> ' + escHtml(enderecoTxt) : '') +
+        '</div>' +
+        '<div class="nota-sec-title">Conteúdo da caixa</div>' +
+        '<table>' + itensHtml + '</table>' +
+        '<div class="nota-total">Total: ' + totalPecas + ' peça' + (totalPecas !== 1 ? 's' : '') + '</div>' +
+        '<div class="nota-foot">Confira os itens ao receber. Obrigada pela preferência! 💕</div>' +
+      '</div>' +
+      '<script>window.onload=function(){window.print();};<\/script>' +
+      '</body></html>';
+
+    var win = window.open('', '_blank', 'width=480,height=680');
+    if (!win) { showToast('Permita pop-ups para imprimir a nota.', 'erro'); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  };
 
   function toggleItens(id, btn) {
     var el = document.getElementById('itens-' + id);

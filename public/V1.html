@@ -565,21 +565,11 @@
     <div class="carousel-dots" id="carouselDots"></div>
   </div>
 
-  <!-- Faixa de benefícios (carrossel contínuo — todas as plataformas) -->
+  <!-- Faixa de benefícios (carrossel contínuo — todas as plataformas).
+       Conteúdo editável no admin (Editor Loja V1 → Benefícios); populado
+       por renderBeneficios() logo abaixo. -->
   <div class="benefits-strip" id="benefits-strip" aria-label="Vantagens da loja">
-    <div class="benefits-track">
-      <span class="benefit-item"><i class="ti ti-credit-card"></i> Parcele em até 3x sem juros</span>
-      <span class="benefit-item"><i class="ti ti-shield-check"></i> Compra 100% segura</span>
-      <span class="benefit-item"><i class="ti ti-truck-delivery"></i> Enviamos para todo o Brasil</span>
-      <span class="benefit-item"><i class="ti ti-brand-whatsapp"></i> Atendimento pelo WhatsApp</span>
-      <span class="benefit-item"><i class="ti ti-tag"></i> Preço de atacado para revendedoras</span>
-      <!-- duplicado para o loop contínuo sem emenda -->
-      <span class="benefit-item" aria-hidden="true"><i class="ti ti-credit-card"></i> Parcele em até 3x sem juros</span>
-      <span class="benefit-item" aria-hidden="true"><i class="ti ti-shield-check"></i> Compra 100% segura</span>
-      <span class="benefit-item" aria-hidden="true"><i class="ti ti-truck-delivery"></i> Enviamos para todo o Brasil</span>
-      <span class="benefit-item" aria-hidden="true"><i class="ti ti-brand-whatsapp"></i> Atendimento pelo WhatsApp</span>
-      <span class="benefit-item" aria-hidden="true"><i class="ti ti-tag"></i> Preço de atacado para revendedoras</span>
-    </div>
+    <div class="benefits-track" id="benefits-track"></div>
   </div>
 
   <!-- Produtos em destaque -->
@@ -1868,6 +1858,51 @@ if (installBtn) {
   if (closeBtn)  closeBtn.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeDrawer(); closeProfileModal(); } });
 })();
+</script>
+
+<script>
+// ── Faixa de benefícios (carrossel editável no admin) ─────
+// Formato salvo em lapinkBeneficios: [{icone:'ti-credit-card', texto:'...'}]
+var BENEFICIOS_PADRAO = [
+  { icone: 'ti-credit-card',    texto: 'Parcele em até 3x sem juros' },
+  { icone: 'ti-shield-check',   texto: 'Compra 100% segura' },
+  { icone: 'ti-truck-delivery', texto: 'Enviamos para todo o Brasil' },
+  { icone: 'ti-brand-whatsapp', texto: 'Atendimento pelo WhatsApp' },
+  { icone: 'ti-tag',            texto: 'Preço de atacado para revendedoras' }
+];
+
+function getBeneficiosLoja() {
+  try {
+    var arr = JSON.parse(localStorage.getItem('lapinkBeneficios') || 'null');
+    if (Array.isArray(arr) && arr.length) return arr;
+  } catch (e) {}
+  return BENEFICIOS_PADRAO.slice();
+}
+
+window.renderBeneficios = function() {
+  var track = document.getElementById('benefits-track');
+  var strip = document.getElementById('benefits-strip');
+  if (!track) return;
+  var itens = getBeneficiosLoja().filter(function(b) { return b && b.texto; });
+  if (!itens.length) { if (strip) strip.style.display = 'none'; return; }
+  if (strip) strip.style.display = '';
+
+  var escFn = typeof esc === 'function' ? esc : function(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  function itemHtml(b, hidden) {
+    var icone = escFn(b.icone || 'ti-star');
+    return '<span class="benefit-item"' + (hidden ? ' aria-hidden="true"' : '') + '>' +
+      '<i class="ti ' + icone + '"></i> ' + escFn(b.texto) + '</span>';
+  }
+  // Duplica a lista para o loop contínuo (marquee) sem emenda
+  track.innerHTML = itens.map(function(b) { return itemHtml(b, false); }).join('') +
+                     itens.map(function(b) { return itemHtml(b, true); }).join('');
+};
+
+renderBeneficios();
+document.addEventListener('lapinkBeneficiosAtualizados', renderBeneficios);
+window.addEventListener('storage', function(ev) {
+  if (ev && ev.key === 'lapinkBeneficios') renderBeneficios();
+});
 </script>
 
 <script>

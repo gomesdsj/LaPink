@@ -504,6 +504,7 @@
           <button class="tab-btn" data-tab="depoimentos"><i class="ti ti-message-circle"></i> Depoimentos</button>
           <button class="tab-btn" data-tab="newsletter"><i class="ti ti-mail"></i> Newsletter</button>
           <button class="tab-btn" data-tab="carrossel"><i class="ti ti-photo-up"></i> Carrossel</button>
+          <button class="tab-btn" data-tab="beneficios"><i class="ti ti-carousel-horizontal"></i> Benefícios</button>
         </div>
 
         <div class="v1-editor-wrap">
@@ -747,6 +748,22 @@
               <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
               Imagem ideal: 800×400 px, JPG ou PNG, até 2 MB. Se não houver imagem, um ícone decorativo é exibido.
             </p>
+          </div>
+
+          <!-- ─── TAB BENEFÍCIOS ─── -->
+          <div class="tab-content" id="tab-beneficios">
+            <div class="sub-section-header">
+              <span class="sub-badge">7</span>
+              <div>
+                <h2>Faixa de benefícios</h2>
+                <p>Frases em carrossel contínuo exibidas na home, logo abaixo do banner principal (ex.: parcelamento, compra segura, frete). Aparece em todas as telas.</p>
+              </div>
+            </div>
+            <div id="beneficios-editor"></div>
+            <div style="display:flex; gap:8px; margin-top:4px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="adicionarBeneficio()"><i class="ti ti-plus"></i> Novo item</button>
+              <button class="btn btn-secondary" onclick="restaurarBeneficiosDefault()" style="margin-left:auto;" title="Restaura os itens padrão"><i class="ti ti-refresh"></i> Restaurar padrões</button>
+            </div>
           </div>
 
         </div><!-- /v1-editor-wrap -->
@@ -1383,12 +1400,87 @@ function publicarAlteracoes() {
     localStorage.setItem('lapinkLojaConfig_ts', String(Date.now()));
     if (window.LaPinkSync) window.LaPinkSync.push('lapinkLojaConfig', config);
     salvarCarrossel();
+    salvarBeneficios();
     var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('save-status').textContent = 'Publicado às ' + hora;
     showToast('Alterações publicadas na loja!');
   } catch(e) {
     showToast('Erro ao salvar — armazenamento cheio.', 'erro');
   }
+}
+
+// ══ BENEFÍCIOS (faixa em carrossel na home) ═══════════════════════════
+var BENEFICIOS_DEFAULTS = [
+  { icone: 'ti-credit-card',    texto: 'Parcele em até 3x sem juros' },
+  { icone: 'ti-shield-check',   texto: 'Compra 100% segura' },
+  { icone: 'ti-truck-delivery', texto: 'Enviamos para todo o Brasil' },
+  { icone: 'ti-brand-whatsapp', texto: 'Atendimento pelo WhatsApp' },
+  { icone: 'ti-tag',            texto: 'Preço de atacado para revendedoras' }
+];
+// Ícones mais úteis para benefícios de loja (o campo aceita qualquer nome
+// válido do Tabler Icons — este select é só um atalho com os mais comuns)
+var BENEFICIO_ICONES = [
+  'ti-credit-card', 'ti-shield-check', 'ti-truck-delivery', 'ti-brand-whatsapp',
+  'ti-tag', 'ti-gift', 'ti-percentage', 'ti-clock', 'ti-map-pin', 'ti-star',
+  'ti-heart', 'ti-lock', 'ti-package', 'ti-rosette-discount', 'ti-thumb-up'
+];
+
+var beneficiosData = [];
+
+function getBeneficios() {
+  try {
+    var b = JSON.parse(localStorage.getItem('lapinkBeneficios') || 'null');
+    if (Array.isArray(b) && b.length) return b;
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(BENEFICIOS_DEFAULTS));
+}
+
+function renderBeneficiosEditor() {
+  var el = document.getElementById('beneficios-editor');
+  if (!el) return;
+  if (!beneficiosData.length) {
+    el.innerHTML = '<div class="sel-empty" style="padding:20px;">Nenhum item. Clique em "+ Novo item".</div>';
+    return;
+  }
+  el.innerHTML = beneficiosData.map(function(b, i) {
+    var iconeSelect = '<select onchange="beneficiosData[' + i + '].icone=this.value;renderBeneficiosEditor();" style="width:auto;flex-shrink:0;">' +
+      BENEFICIO_ICONES.map(function(ic) {
+        return '<option value="' + ic + '"' + (b.icone === ic ? ' selected' : '') + '>' + ic.replace('ti-', '') + '</option>';
+      }).join('') + '</select>';
+    return '<div class="slide-card" style="padding:12px 14px;">' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<i class="ti ' + escHtml(b.icone || 'ti-star') + '" style="font-size:20px;color:var(--pink-500);flex-shrink:0;width:24px;text-align:center;"></i>' +
+        iconeSelect +
+        '<input type="text" placeholder="Texto do benefício" value="' + escHtml(b.texto||'') + '" ' +
+          'oninput="beneficiosData[' + i + '].texto=this.value" style="flex:1;" />' +
+        '<button type="button" class="btn btn-secondary" style="color:var(--red-400);flex-shrink:0;" onclick="removerBeneficio(' + i + ')" title="Remover"><i class="ti ti-trash"></i></button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function adicionarBeneficio() {
+  if (beneficiosData.length >= 10) { showToast('Máximo de 10 itens.', 'erro'); return; }
+  beneficiosData.push({ icone: 'ti-star', texto: '' });
+  renderBeneficiosEditor();
+}
+
+function removerBeneficio(i) {
+  beneficiosData.splice(i, 1);
+  renderBeneficiosEditor();
+}
+
+function restaurarBeneficiosDefault() {
+  if (!confirm('Restaurar os itens padrão de benefícios? Os itens atuais serão substituídos.')) return;
+  beneficiosData = JSON.parse(JSON.stringify(BENEFICIOS_DEFAULTS));
+  renderBeneficiosEditor();
+  showToast('Benefícios restaurados! Clique em Publicar para salvar.');
+}
+
+function salvarBeneficios() {
+  var lista = beneficiosData.filter(function(b) { return b && b.texto && b.texto.trim(); });
+  localStorage.setItem('lapinkBeneficios', JSON.stringify(lista));
+  if (window.LaPinkSync) window.LaPinkSync.push('lapinkBeneficios', lista);
 }
 
 (function init() {
@@ -1429,6 +1521,9 @@ function publicarAlteracoes() {
 
   slidesData = getCarrossel().map(function(s) { return Object.assign({}, s); });
   renderCarrossel();
+
+  beneficiosData = getBeneficios().map(function(b) { return Object.assign({}, b); });
+  renderBeneficiosEditor();
 })();
 </script>
 <script src="js/sidebar.js"></script>
