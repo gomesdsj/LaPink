@@ -32,11 +32,16 @@ service cloud.firestore {
         'lapinkPedidoCounter',
         'lapinkPedidos',
         'lapinkCategorias',
-        'lapinkBeneficios'
+        'lapinkBeneficios',
+        'lapinkEmailConfig'
       ]
       // Partes de docs grandes (>1 MiB) — o cloud-sync divide catálogos com
       // fotos em lapinkProdutos_0, _1, … (idem pedidos/carrossel/config da loja)
       || doc.matches('(lapinkProdutos|lapinkPedidos|lapinkCarrossel|lapinkLojaConfig)_[0-9]+');
+      // OBS: lapinkEmailConfig guarda só a Public Key do EmailJS + IDs de
+      // serviço/template — por design do EmailJS essas informações são para
+      // uso no client-side (não são credenciais de acesso à conta). Precisa
+      // ser público para QUALQUER visitante disparar o e-mail de boas-vindas.
     }
 
     // Segredos (token Mercado Pago, Manda Bem/Melhor Envio, etc.).

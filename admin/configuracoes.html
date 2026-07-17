@@ -388,6 +388,44 @@
               </div>
             </div>
 
+            <!-- E-mail de boas-vindas (Newsletter + Cadastro) -->
+            <div class="section-card">
+              <h3><i class="ti ti-mail-heart"></i> E-mail de boas-vindas (Newsletter e Cadastro)</h3>
+              <p>Quando ativo, a cliente recebe um e-mail da loja ao se inscrever em <strong>"Receba novidades e ofertas"</strong> (na home) ou ao <strong>criar uma conta</strong> — avisando do desconto de primeira compra configurado no Editor Loja V1. Use o mesmo <strong>emailjs.com</strong> da seção acima; crie um <em>template separado</em> com as variáveis <code>{{to_email}}</code>, <code>{{to_name}}</code>, <code>{{discount_pct}}</code> e (opcional) <code>{{from_name}}</code>/<code>{{from_email}}</code>.</p>
+
+              <label class="toggle-row" style="border:none;padding:6px 0;">
+                <span style="font-size:13px;color:var(--gray-700);">Enviar e-mail de boas-vindas</span>
+                <span class="toggle-switch"><input type="checkbox" id="ewc-ativo" /><span class="toggle-slider"></span></span>
+              </label>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Public Key <small style="color:var(--gray-400)">(pode repetir a de cima)</small></label>
+                  <input type="text" id="ewc-pk" placeholder="user_XXXXXXXXXXXXXXXXXXXX" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label>Service ID <small style="color:var(--gray-400)">(pode repetir o de cima)</small></label>
+                  <input type="text" id="ewc-sid" placeholder="service_xxxxxxx" autocomplete="off" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Template ID de boas-vindas <small style="color:var(--gray-400)">(diferente do de recuperação)</small></label>
+                  <input type="text" id="ewc-tid" placeholder="template_xxxxxxx" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label>E-mail remetente</label>
+                  <input type="email" id="ewc-from" placeholder="loja@seudominio.com" autocomplete="off" />
+                </div>
+              </div>
+              <p style="font-size:11px;color:var(--gray-400);margin-top:2px;">
+                <i class="ti ti-info-circle"></i> Diferente do token do Mercado Pago/WhatsApp, estes dados do EmailJS não são secretos — ficam salvos de forma pública para que o e-mail funcione para qualquer visitante da loja.
+              </p>
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarEmailBoasVindas()"><i class="ti ti-device-floppy"></i> Salvar e-mail de boas-vindas</button>
+              </div>
+            </div>
+
             <!-- DNS / Domínio -->
             <div class="section-card">
               <h3><i class="ti ti-world"></i> DNS & Domínio</h3>
@@ -1011,6 +1049,35 @@
     document.getElementById('int-wba-biz-id').value  = cfg.wbaBizId       || '';
   }
 
+  // ─── E-mail de boas-vindas (Newsletter + Cadastro) — config PÚBLICA
+  // (lapinkEmailConfig), sincronizada para funcionar em qualquer visitante ───
+  function carregarEmailBoasVindas() {
+    var cfg = getObj('lapinkEmailConfig');
+    document.getElementById('ewc-ativo').checked = cfg.ativo === true;
+    document.getElementById('ewc-pk').value   = cfg.emailjsPk        || '';
+    document.getElementById('ewc-sid').value  = cfg.emailjsSid       || '';
+    document.getElementById('ewc-tid').value  = cfg.emailjsWelcomeTid|| '';
+    document.getElementById('ewc-from').value = cfg.emailjsFrom      || '';
+  }
+
+  function salvarEmailBoasVindas() {
+    var cfg = {
+      ativo:            document.getElementById('ewc-ativo').checked,
+      emailjsPk:        document.getElementById('ewc-pk').value.trim(),
+      emailjsSid:       document.getElementById('ewc-sid').value.trim(),
+      emailjsWelcomeTid:document.getElementById('ewc-tid').value.trim(),
+      emailjsFrom:      document.getElementById('ewc-from').value.trim(),
+      fromName:         'LaPink'
+    };
+    if (cfg.ativo && (!cfg.emailjsPk || !cfg.emailjsSid || !cfg.emailjsWelcomeTid)) {
+      showToast('Preencha Public Key, Service ID e Template ID antes de ativar.', 'erro');
+      return;
+    }
+    localStorage.setItem('lapinkEmailConfig', JSON.stringify(cfg));
+    if (window.LaPinkSync) window.LaPinkSync.push('lapinkEmailConfig', cfg);
+    showToast(cfg.ativo ? 'E-mail de boas-vindas ativado e salvo!' : 'E-mail de boas-vindas salvo (desativado).');
+  }
+
   // Salva Access Token do MP diretamente no Firestore (sem passar pelo localStorage)
   function salvarMPToken() {
     var token = (document.getElementById('int-mp-token').value || '').trim();
@@ -1381,6 +1448,7 @@
   carregarConta();
   carregarNotificacoes();
   carregarIntegracoes();
+  carregarEmailBoasVindas();
   carregarEntrega();
   // Setup dirty listeners na aba inicial
   setTimeout(function() { setupDirtyListeners('panel-loja'); }, 100);

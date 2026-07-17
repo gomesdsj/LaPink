@@ -107,6 +107,12 @@ async function _doRegister() {
 
   setLoggedClient({ name: name, email: email, role: 'client' });
 
+  // E-mail de boas-vindas com o desconto — configurável/desativável no admin
+  // (Configurações → E-mail de boas-vindas). Falha silenciosa.
+  if (typeof window.enviarEmailBoasVindas === 'function') {
+    window.enviarEmailBoasVindas(email, name);
+  }
+
   setRegisterMessage('Cadastro realizado! Entrando na loja...', true);
   setTimeout(function() { location.href = 'V1.html'; }, 900);
 }

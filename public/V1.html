@@ -1383,6 +1383,13 @@ function assinarNewsletter() {
   msg.textContent = '✓ Inscrição confirmada! Fique de olho no seu e-mail.';
   msg.className   = 'nl-msg ok';
   setTimeout(function() { msg.textContent = ''; msg.className = 'nl-msg'; }, 5000);
+
+  // E-mail de boas-vindas com o desconto — configurável/desativável no admin
+  // (Configurações → E-mail de boas-vindas). Falha silenciosa: nunca afeta
+  // a confirmação da inscrição, que já aconteceu acima.
+  if (typeof window.enviarEmailBoasVindas === 'function') {
+    window.enviarEmailBoasVindas(email, '');
+  }
 }
 
 // ── Ver detalhes da peça (produto.html) ──
@@ -1589,6 +1596,7 @@ window.verProdutoSheet = function() {
 <script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/email-boas-vindas.js"></script>
 <script src="js/v1.js"></script>
 <script>
 // Busca com debounce

@@ -14,7 +14,7 @@
 // cliente passam a ser locais ao dispositivo até a migração para Firebase Auth.
 
 (function () {
-  var SYNC_KEYS = ['lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkPaymentConfig', 'lapinkEntregaConfig', 'lapinkPedidoCounter', 'lapinkCategorias', 'lapinkBeneficios'];
+  var SYNC_KEYS = ['lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkPaymentConfig', 'lapinkEntregaConfig', 'lapinkPedidoCounter', 'lapinkCategorias', 'lapinkBeneficios', 'lapinkEmailConfig'];
   var MAX_RETRIES = 20; // 20 × 300ms = 6s máximo de espera pelo Firebase
 
   // ── Firestore helpers ─────────────────────────────────────────
