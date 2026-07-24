@@ -23,16 +23,23 @@ function writeDB(db) {
 }
 
 function _seedDB() {
+  // Senha aleatória a cada seed local (nunca fixa no código-fonte) —
+  // impressa uma vez no console para uso neste ambiente de dev.
+  const tempPassword = crypto.randomBytes(9).toString('base64url');
+  const tempHash = crypto.createHash('sha256').update(tempPassword).digest('hex');
   const db = {
     produtos: [], pedidos: [], clientes: [], config: {}, lojaConfig: {},
     users: [{
-      email: 'alexandrej529@hotmail.com',
-      password: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
-      name: 'Alexandre', role: 'superadmin',
+      email: 'admin@lapink.local',
+      password: tempHash,
+      name: 'Admin (dev local)', role: 'superadmin',
       createdAt: new Date().toISOString()
     }]
   };
   writeDB(db);
+  console.log('[dev-server] Banco local criado. Login de teste:');
+  console.log('[dev-server]   e-mail: admin@lapink.local');
+  console.log('[dev-server]   senha : ' + tempPassword);
   return db;
 }
 

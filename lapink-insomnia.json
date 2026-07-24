@@ -21,7 +21,7 @@
         "base_url": "http://localhost:3000",
         "token": "COLE_O_TOKEN_AQUI_APOS_LOGIN",
         "superadmin_email": "alexandrej529@hotmail.com",
-        "superadmin_password_sha256": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+        "superadmin_password_sha256": "COLE_O_SHA256_DA_SUA_SENHA_AQUI",
         "produto_id": 0,
         "pedido_id": 0,
         "admin_email": "admin@lapink.com"
@@ -37,7 +37,7 @@
         "base_url": "http://192.168.7.2:3000",
         "token": "COLE_O_TOKEN_AQUI_APOS_LOGIN",
         "superadmin_email": "alexandrej529@hotmail.com",
-        "superadmin_password_sha256": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+        "superadmin_password_sha256": "COLE_O_SHA256_DA_SUA_SENHA_AQUI",
         "produto_id": 0,
         "pedido_id": 0,
         "admin_email": "admin@lapink.com"
@@ -77,7 +77,7 @@
       "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"email\": \"{{ admin_email }}\",\n  \"password\": \"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92\"\n}"
+        "text": "{\n  \"email\": \"{{ admin_email }}\",\n  \"password\": \"COLE_O_SHA256_DA_SUA_SENHA_AQUI\"\n}"
       }
     },
 
@@ -331,7 +331,7 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"email\": \"{{ admin_email }}\",\n  \"name\": \"Admin Restrito\",\n  \"role\": \"admin\",\n  \"password\": \"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92\",\n  \"pages\": [\"pedidos\", \"clientes\"]\n}"
+        "text": "{\n  \"email\": \"{{ admin_email }}\",\n  \"name\": \"Admin Restrito\",\n  \"role\": \"admin\",\n  \"password\": \"COLE_O_SHA256_DA_SUA_SENHA_AQUI\",\n  \"pages\": [\"pedidos\", \"clientes\"]\n}"
       }
     },
 
@@ -348,7 +348,7 @@
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"email\": \"admin2@lapink.com\",\n  \"name\": \"Admin Total\",\n  \"role\": \"admin\",\n  \"password\": \"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92\",\n  \"pages\": null\n}"
+        "text": "{\n  \"email\": \"admin2@lapink.com\",\n  \"name\": \"Admin Total\",\n  \"role\": \"admin\",\n  \"password\": \"COLE_O_SHA256_DA_SUA_SENHA_AQUI\",\n  \"pages\": null\n}"
       }
     },
 
