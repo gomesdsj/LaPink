@@ -27,10 +27,45 @@ jobs:
       - name: Configurar Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload pasta public/
+      # Espelha a mesma estrutura servida pelo Firebase Hosting (raiz do
+      # repo = admin/ + public/ como irmãos), excluindo o que o firebase.json
+      # também ignora: código-fonte das Functions, dependências, dados
+      # internos e arquivos que não fazem parte do site.
+      - name: Montar site (espelha o ignore do firebase.json)
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='.firebase' \
+            --exclude='_site' \
+            --exclude='node_modules' \
+            --exclude='functions' \
+            --exclude='data' \
+            --exclude='screenshots' \
+            --exclude='*.md' \
+            --exclude='*.log' \
+            --exclude='.env' \
+            --exclude='firebase.json' \
+            --exclude='.firebaserc' \
+            --exclude='firestore.rules' \
+            --exclude='firestore.rules.secure' \
+            --exclude='firestore.indexes.json' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='dev-server.js' \
+            --exclude='serve.js' \
+            --exclude='verify.js' \
+            --exclude='verify_with_server.js' \
+            --exclude='check_getsession.js' \
+            --exclude='lapink-insomnia.json' \
+            ./ ./_site/
+
+      - name: Upload artefato do Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: ./_site
 
       - name: Deploy para GitHub Pages
         id: deployment

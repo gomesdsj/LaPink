@@ -77,11 +77,15 @@ service cloud.firestore {
     }
 
     // Endereços salvos pelo cliente (Minha conta / pagamento) — o painel admin
-    // lê para exibir no perfil do cliente. Mesmo padrão de risco de /abandonados
-    // e /pedidos (que já carregam endereço de entrega em doc público): sem
-    // senha/credencial, apenas dados de entrega. Delete só via Admin SDK.
+    // lê por e-mail (doc por ID conhecido) para exibir no perfil do cliente.
+    // "get" (1 doc, ID já conhecido) fica aberto — é o único jeito de uso hoje.
+    // "list" (dump da coleção inteira) fica bloqueado: ninguém no site faz
+    // list aqui, então bloquear não quebra nada e evita vazar o endereço de
+    // TODOS os clientes para quem descobrir que a coleção existe.
     match /enderecos/{id} {
-      allow read, create, update: if true;
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if true;
       allow delete: if false;
     }
 
