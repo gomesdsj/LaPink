@@ -727,3 +727,110 @@ exports.sincronizarClaimsAdmin = functions.https.onRequest(function (req, res) {
       });
   });
 });
+
+// ---------------------------------------------------------------------------
+// 6. enviarLinkRedefinicaoSenha — gera o link REAL de redefinição de senha
+//    (Admin SDK, não pode ser forjado) e manda por e-mail usando o MESMO
+//    EmailJS já configurado para o e-mail de boas-vindas, mas chamado do
+//    servidor (com a Private Key) em vez do padrão de envio do próprio
+//    Firebase Auth — que sai de um domínio genérico e costuma ser filtrado
+//    por provedores como Hotmail/Outlook. O front-end usa esta function
+//    como caminho principal e cai no sendPasswordResetEmail do Firebase
+//    (comportamento antigo) se esta não estiver configurada ou falhar.
+// ---------------------------------------------------------------------------
+
+// Limite simples de 1 pedido por e-mail a cada 2 minutos — evita que a
+// function seja usada para inundar a caixa de entrada de alguém.
+function _resetRateLimitOk(emailKey) {
+  var ref = db.collection('resetLimites').doc(emailKey);
+  return ref.get().then(function (snap) {
+    var ultimo = snap.exists ? snap.data().at : 0;
+    if (Date.now() - ultimo < 2 * 60 * 1000) return false;
+    return ref.set({ at: Date.now() }).then(function () { return true; });
+  });
+}
+
+// Busca a config (pública) do EmailJS de boas-vindas/reset + a Private Key
+// (secreta, em apiConfig — só o servidor lê).
+function _getEmailjsServerConfig() {
+  return Promise.all([
+    db.collection('lapink').doc('lapinkEmailConfig').get(),
+    db.collection('lapink').doc('apiConfig').get(),
+  ]).then(function (snaps) {
+    var pub = (snaps[0].exists && snaps[0].data() && snaps[0].data().data) || {};
+    var sec = (snaps[1].exists && snaps[1].data() && snaps[1].data().data) || {};
+    return {
+      pk: pub.emailjsPk,
+      sid: pub.emailjsSid,
+      resetTid: pub.emailjsResetTid,
+      fromName: pub.fromName || 'LaPink',
+      privateKey: sec.emailjsPrivateKey,
+    };
+  });
+}
+
+exports.enviarLinkRedefinicaoSenha = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    var email = String((req.body && req.body.email) || '').trim().toLowerCase();
+    if (!email || email.indexOf('@') === -1) {
+      res.status(400).json({ error: 'E-mail inválido.' });
+      return;
+    }
+    var emailKey = email.replace(/[^a-z0-9]/g, '_');
+
+    _resetRateLimitOk(emailKey)
+      .then(function (ok) {
+        if (!ok) { res.status(429).json({ error: 'Aguarde alguns minutos antes de pedir de novo.' }); return null; }
+        return _getEmailjsServerConfig();
+      })
+      .then(function (cfg) {
+        if (!cfg) return; // rate limit já respondeu
+        if (!cfg.pk || !cfg.sid || !cfg.resetTid || !cfg.privateKey) {
+          throw { _status: 503, message: 'E-mail de redefinição não configurado no painel.' };
+        }
+
+        // Link real de redefinição — só o Admin SDK gera isso, não dá pra forjar.
+        return admin.auth().generatePasswordResetLink(email).then(function (link) {
+          return fetch('https://api.emailjs.com/api/v1.0/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              service_id: cfg.sid,
+              template_id: cfg.resetTid,
+              user_id: cfg.pk,
+              accessToken: cfg.privateKey,
+              template_params: {
+                to_email: email,
+                reset_link: link,
+                from_name: cfg.fromName,
+              },
+            }),
+          });
+        });
+      })
+      .then(function (emailRes) {
+        if (!emailRes) return; // já respondido (rate limit) ou sem cfg
+        if (!emailRes.ok) {
+          return emailRes.text().then(function (t) {
+            throw new Error('EmailJS respondeu ' + emailRes.status + ': ' + t);
+          });
+        }
+        res.status(200).json({ ok: true });
+      })
+      .catch(function (err) {
+        // 'auth/user-not-found' não deve revelar se o e-mail existe ou não —
+        // responde como sucesso (mesmo comportamento visual do Firebase padrão).
+        if (err && err.code === 'auth/user-not-found') {
+          res.status(200).json({ ok: true });
+          return;
+        }
+        var status = (err && err._status) || 500;
+        if (status >= 500) functions.logger.error('enviarLinkRedefinicaoSenha erro', err);
+        if (!res.headersSent) res.status(status).json({ error: (err && err.message) || 'Erro ao enviar e-mail.' });
+      });
+  });
+});

@@ -443,6 +443,30 @@
               </div>
             </div>
 
+            <!-- Redefinição de senha por e-mail (link real, via EmailJS server-side) -->
+            <div class="section-card">
+              <h3><i class="ti ti-mail-cog"></i> Redefinição de senha por e-mail</h3>
+              <p>O "Esqueci minha senha" (tela de login) usa por padrão o envio automático do próprio Firebase — que sai de um domínio genérico e pode ser <strong>filtrado pelo Hotmail/Outlook</strong>. Configurando aqui, o link real de redefinição (gerado pelo Firebase, não pode ser forjado) passa a ser enviado pelo <strong>mesmo EmailJS</strong> de cima — normalmente com entrega bem melhor. Sem essa configuração, o site continua funcionando com o envio padrão do Firebase.</p>
+
+              <div class="form-group">
+                <label>Template ID de redefinição <small style="color:var(--gray-400)">(diferente dos outros — variáveis: <code>to_email</code>, <code>reset_link</code>, <code>from_name</code>)</small></label>
+                <input type="text" id="erl-tid" placeholder="template_xxxxxxx" autocomplete="off" />
+              </div>
+
+              <div class="form-group" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:8px;">
+                <label style="color:#92400e;font-weight:700;"><i class="ti ti-key"></i> Private Key do EmailJS (secreta — só o servidor usa)</label>
+                <input type="password" id="erl-private-key" placeholder="cole aqui a Private Key" autocomplete="new-password" style="font-family:monospace;" />
+                <div style="font-size:11px;color:#92400e;margin-top:6px;">
+                  Diferente da Public Key (que é segura para o navegador), esta é <strong>secreta</strong> — encontre em emailjs.com → <strong>Account → API Keys → Private Key</strong>.
+                  Salva de forma segura no banco de dados, nunca aparece no código do site.
+                </div>
+              </div>
+
+              <div class="form-actions" style="margin-top:8px;">
+                <button class="btn-save-form" type="button" onclick="salvarRedefinicaoSenhaEmail()"><i class="ti ti-lock"></i> Salvar redefinição de senha por e-mail</button>
+              </div>
+            </div>
+
             <!-- DNS / Domínio -->
             <div class="section-card">
               <h3><i class="ti ti-world"></i> DNS & Domínio</h3>
@@ -1097,15 +1121,17 @@
     document.getElementById('ewc-from').value = cfg.emailjsFrom      || '';
   }
 
+  // Nota: lapinkEmailConfig é compartilhado por boas-vindas E redefinição de
+  // senha (ambos via EmailJS) — sempre MESCLA com o que já existe (getObj),
+  // nunca substitui o objeto inteiro, senão salvar uma seção apaga a outra.
   function salvarEmailBoasVindas() {
-    var cfg = {
-      ativo:            document.getElementById('ewc-ativo').checked,
-      emailjsPk:        document.getElementById('ewc-pk').value.trim(),
-      emailjsSid:       document.getElementById('ewc-sid').value.trim(),
-      emailjsWelcomeTid:document.getElementById('ewc-tid').value.trim(),
-      emailjsFrom:      document.getElementById('ewc-from').value.trim(),
-      fromName:         'LaPink'
-    };
+    var cfg = getObj('lapinkEmailConfig');
+    cfg.ativo             = document.getElementById('ewc-ativo').checked;
+    cfg.emailjsPk         = document.getElementById('ewc-pk').value.trim();
+    cfg.emailjsSid        = document.getElementById('ewc-sid').value.trim();
+    cfg.emailjsWelcomeTid = document.getElementById('ewc-tid').value.trim();
+    cfg.emailjsFrom       = document.getElementById('ewc-from').value.trim();
+    cfg.fromName          = 'LaPink';
     if (cfg.ativo && (!cfg.emailjsPk || !cfg.emailjsSid || !cfg.emailjsWelcomeTid)) {
       showToast('Preencha Public Key, Service ID e Template ID antes de ativar.', 'erro');
       return;
@@ -1113,6 +1139,48 @@
     localStorage.setItem('lapinkEmailConfig', JSON.stringify(cfg));
     if (window.LaPinkSync) window.LaPinkSync.push('lapinkEmailConfig', cfg);
     showToast(cfg.ativo ? 'E-mail de boas-vindas ativado e salvo!' : 'E-mail de boas-vindas salvo (desativado).');
+  }
+
+  // ─── Redefinição de senha por e-mail (link real via EmailJS server-side) ──
+  function carregarRedefinicaoSenhaEmail() {
+    var cfg = getObj('lapinkEmailConfig');
+    var el = document.getElementById('erl-tid');
+    if (el) el.value = cfg.emailjsResetTid || '';
+  }
+
+  function salvarRedefinicaoSenhaEmail() {
+    var tid = (document.getElementById('erl-tid').value || '').trim();
+    var privateKey = (document.getElementById('erl-private-key').value || '').trim();
+    if (!tid) { showToast('Preencha o Template ID de redefinição.', 'erro'); return; }
+
+    // Template ID: não é secreto — mescla no doc público lapinkEmailConfig
+    var cfg = getObj('lapinkEmailConfig');
+    cfg.emailjsResetTid = tid;
+    localStorage.setItem('lapinkEmailConfig', JSON.stringify(cfg));
+    if (window.LaPinkSync) window.LaPinkSync.push('lapinkEmailConfig', cfg);
+
+    if (!privateKey) {
+      showToast('Template salvo! Falta a Private Key para ativar o envio.');
+      return;
+    }
+
+    var btn = document.querySelector('button[onclick="salvarRedefinicaoSenhaEmail()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .9s linear infinite"></i> Salvando...'; }
+    function restore() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-lock"></i> Salvar redefinição de senha por e-mail'; } }
+
+    var db = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!db) { showToast('Firebase não disponível.', 'erro'); restore(); return; }
+
+    db.collection('lapink').doc('apiConfig')
+      .set({ data: { emailjsPrivateKey: privateKey }, updatedAt: Date.now() }, { merge: true })
+      .then(function() {
+        showToast('Redefinição de senha por e-mail configurada e ativa!');
+        document.getElementById('erl-private-key').value = '';
+        restore();
+      }).catch(function(e) {
+        showToast('Erro ao salvar: ' + e.message, 'erro');
+        restore();
+      });
   }
 
   // Salva Access Token do MP diretamente no Firestore (sem passar pelo localStorage)
@@ -1514,6 +1582,7 @@
   carregarNotificacoes();
   carregarIntegracoes();
   carregarEmailBoasVindas();
+  carregarRedefinicaoSenhaEmail();
   carregarEntrega();
   // Setup dirty listeners na aba inicial
   setTimeout(function() { setupDirtyListeners('panel-loja'); }, 100);
