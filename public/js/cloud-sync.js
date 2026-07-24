@@ -24,6 +24,25 @@
       : null;
   }
 
+  // Espera a sessão do Firebase Auth ser restaurada (se o SDK de Auth estiver
+  // carregado nesta página) antes de gravar no Firestore — evita que a
+  // PRIMEIRA gravação logo após o login chegue sem a claim de admin ainda
+  // anexada (corrida entre restaurar a sessão e a gravação dispararem).
+  // Sem o SDK de Auth carregado (páginas públicas de visitante), resolve na
+  // hora — o cloud-sync grava normalmente como sempre gravou.
+  function _aguardarAuth() {
+    return new Promise(function (resolve) {
+      if (typeof firebase === 'undefined' || !firebase.auth) { resolve(); return; }
+      var feito = false;
+      var unsub = firebase.auth().onAuthStateChanged(function () {
+        if (feito) return; feito = true;
+        try { unsub(); } catch (e) {}
+        resolve();
+      });
+      setTimeout(function () { if (feito) return; feito = true; try { unsub(); } catch (e) {} resolve(); }, 2500);
+    });
+  }
+
   // Firestore limita cada documento a ~1 MiB. Catálogos com fotos (base64)
   // passam disso fácil — então arrays grandes são divididos em partes
   // (lapinkProdutos_0, _1, …) e o doc principal vira um índice {chunked, chunks}.
@@ -47,31 +66,33 @@
       var tamanho = JSON.stringify(data).length;
       var agora = Date.now();
 
-      if (!Array.isArray(data) || tamanho <= CHUNK_LIMIT) {
-        firestore.collection('lapink').doc(key).set({ data: data, updatedAt: agora })
-          .catch(_erroEscrita(key));
-        return;
-      }
+      _aguardarAuth().then(function () {
+        if (!Array.isArray(data) || tamanho <= CHUNK_LIMIT) {
+          firestore.collection('lapink').doc(key).set({ data: data, updatedAt: agora })
+            .catch(_erroEscrita(key));
+          return;
+        }
 
-      // Divide o array em partes respeitando o limite por documento
-      var partes = [];
-      var atual = [], atualLen = 2;
-      data.forEach(function (item) {
-        var s = JSON.stringify(item).length + 1;
-        if (atual.length && atualLen + s > CHUNK_LIMIT) { partes.push(atual); atual = []; atualLen = 2; }
-        atual.push(item); atualLen += s;
+        // Divide o array em partes respeitando o limite por documento
+        var partes = [];
+        var atual = [], atualLen = 2;
+        data.forEach(function (item) {
+          var s = JSON.stringify(item).length + 1;
+          if (atual.length && atualLen + s > CHUNK_LIMIT) { partes.push(atual); atual = []; atualLen = 2; }
+          atual.push(item); atualLen += s;
+        });
+        if (atual.length) partes.push(atual);
+
+        // Grava as partes primeiro; o doc principal (índice) por último —
+        // leitores só usam o índice novo depois que as partes existem
+        Promise.all(partes.map(function (arr, i) {
+          return firestore.collection('lapink').doc(key + '_' + i).set({ data: arr, updatedAt: agora });
+        })).then(function () {
+          return firestore.collection('lapink').doc(key).set({ chunked: true, chunks: partes.length, updatedAt: agora });
+        }).then(function () {
+          console.log('[sync] ' + key + ' → Firestore em ' + partes.length + ' partes (' + Math.round(tamanho / 1024) + ' KB)');
+        }).catch(_erroEscrita(key));
       });
-      if (atual.length) partes.push(atual);
-
-      // Grava as partes primeiro; o doc principal (índice) por último —
-      // leitores só usam o índice novo depois que as partes existem
-      Promise.all(partes.map(function (arr, i) {
-        return firestore.collection('lapink').doc(key + '_' + i).set({ data: arr, updatedAt: agora });
-      })).then(function () {
-        return firestore.collection('lapink').doc(key).set({ chunked: true, chunks: partes.length, updatedAt: agora });
-      }).then(function () {
-        console.log('[sync] ' + key + ' → Firestore em ' + partes.length + ' partes (' + Math.round(tamanho / 1024) + ' KB)');
-      }).catch(_erroEscrita(key));
     } catch (e) { console.warn('[sync] parse error:', e); }
   }
 

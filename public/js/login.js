@@ -1,13 +1,13 @@
 // ── Seed dos super admins fixos (espelha admin/js/auth.js) ──────────
-// Garante que os super admins existam no lapinkUsers deste navegador para
-// que o login funcione mesmo sem ter aberto o painel antes (navegador novo).
+// Garante que os DOIS super admins fixos apareçam como 'superadmin' neste
+// navegador (útil para a lista em gerenciar-usuarios.html e como fallback
+// de exibição) — SEM NENHUMA SENHA. A autenticação real dos dois é 100%
+// via Firebase Auth (ver _resolverRoleReal); nenhum hash fica no código.
 (function _seedSuperAdminsLogin() {
   try {
     var FIXED = [
-      { email: 'alexandrej529@hotmail.com', name: 'Alexandre', role: 'superadmin',
-        passwordHash: '5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a', travarSenha: false },
-      { email: 'crischavesk123@hotmail.com', name: 'Cristiane', role: 'superadmin',
-        passwordHash: 'a507a72cb3b73a3006224fb4314e004ad2c90072312d92e83ac73bd56ec61520', travarSenha: true }
+      { email: 'alexandrej529@hotmail.com', name: 'Alexandre' },
+      { email: 'crischavesk123@hotmail.com', name: 'Cristiane' }
     ];
     var users = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
     if (!Array.isArray(users)) users = [];
@@ -15,12 +15,10 @@
     FIXED.forEach(function (sa) {
       var idx = users.findIndex(function (u) { return u.email && u.email.toLowerCase() === sa.email.toLowerCase(); });
       if (idx === -1) {
-        users.push({ email: sa.email, password: sa.passwordHash, role: 'superadmin', name: sa.name, address: '', createdAt: new Date().toISOString() });
+        users.push({ email: sa.email, role: 'superadmin', name: sa.name, address: '', createdAt: new Date().toISOString() });
         changed = true;
-      } else {
-        if (users[idx].role !== 'superadmin') { users[idx].role = 'superadmin'; changed = true; }
-        if (sa.travarSenha) { if (users[idx].password !== sa.passwordHash) { users[idx].password = sa.passwordHash; changed = true; } }
-        else if (!users[idx].password) { users[idx].password = sa.passwordHash; changed = true; }
+      } else if (users[idx].role !== 'superadmin') {
+        users[idx].role = 'superadmin'; changed = true;
       }
     });
     if (changed) localStorage.setItem('lapinkUsers', JSON.stringify(users));
@@ -173,25 +171,35 @@ async function _applyAdminRole(email, client) {
   return client;
 }
 
-// Grava o role (admin/superadmin) como custom claim no token do Firebase Auth
-// — é o que permite as regras do Firestore confiarem no papel do usuário para
-// proteger dados sensíveis (ex.: lista de pedidos com CPF/endereço) sem exigir
-// login público. Silencioso: se o navegador ainda não tem sessão Firebase Auth
-// (login 100% legado, raro hoje em diante), simplesmente não sincroniza agora
-// — sincroniza no próximo login, sem travar o acesso ao painel.
-async function _sincronizarClaimsSeAdmin(client) {
+// Sincroniza o custom claim (role/pages) no token do Firebase Auth e usa a
+// claim resultante como FONTE DA VERDADE do papel do usuário — não depende
+// mais de ler lapinkUsers (que fica bloqueado pelas regras em navegador novo).
+// Roda para QUALQUER login com sessão Firebase Auth (não só quem já "parece"
+// admin): a Function decide o role de verdade (2 super admins fixos + o que
+// estiver em lapinkUsers, via Admin SDK) — o cliente nunca define o próprio
+// papel. Silencioso: se não houver sessão Firebase Auth ainda (login 100%
+// legado), mantém o role já resolvido por _applyAdminRole sem travar nada.
+async function _resolverRoleReal(client) {
   try {
-    if (!client || (client.role !== 'admin' && client.role !== 'superadmin')) return;
-    if (typeof firebase === 'undefined' || !firebase.auth) return;
+    if (!client) return client;
+    if (typeof firebase === 'undefined' || !firebase.auth) return client;
     var user = firebase.auth().currentUser;
-    if (!user) return;
+    if (!user) return client;
+
     var idToken = await user.getIdToken();
     await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/sincronizarClaimsAdmin', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + idToken }
     });
-    await user.getIdToken(true); // força refresh — pega a claim nova já nesta sessão
-  } catch (e) { /* nunca trava o login */ }
+
+    var fresh = await user.getIdTokenResult(true); // força refresh — pega a claim nova já nesta sessão
+    var claimRole = fresh && fresh.claims && fresh.claims.role;
+    if (claimRole === 'admin' || claimRole === 'superadmin') {
+      client.role = claimRole;
+      client.pages = fresh.claims.pages || null;
+    }
+  } catch (e) { /* nunca trava o login — mantém o role já resolvido antes */ }
+  return client;
 }
 
 async function _finishLogin(client, referrerPage) {
@@ -200,7 +208,6 @@ async function _finishLogin(client, referrerPage) {
 
   // Admin/Super Admin → grava sessão do painel e abre o painel.
   if (client && (client.role === 'admin' || client.role === 'superadmin')) {
-    await _sincronizarClaimsSeAdmin(client);
     _setAdminSession(client);
     setLoginMessage('Login de administrador! Abrindo painel...', true);
     var _dest = _adminRedirect(client);
@@ -247,7 +254,12 @@ async function _doLogin() {
 
   // ── 1) Firebase Authentication (se ativo). Se falhar, segue para o sistema atual. ──
   var authClient = await _firebaseAuthLogin(email, loginPassword);
-  if (authClient) { authClient = await _applyAdminRole(email, authClient); _finishLogin(authClient, referrerPage); return; }
+  if (authClient) {
+    authClient = await _applyAdminRole(email, authClient);  // heurística local (lapinkUsers, best-effort)
+    authClient = await _resolverRoleReal(authClient);       // fonte da verdade: custom claim (Admin SDK)
+    _finishLogin(authClient, referrerPage);
+    return;
+  }
 
   var clients = getClients();
   var client  = null;
@@ -292,5 +304,6 @@ async function _doLogin() {
 
   // Login legado bem-sucedido → migra a conta para o Firebase Auth (transparente)
   await _ensureAuthAccount(email, loginPassword, client);
+  client = await _resolverRoleReal(client); // fonte da verdade: custom claim (Admin SDK)
   _finishLogin(client, referrerPage);
 }

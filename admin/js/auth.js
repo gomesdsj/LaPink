@@ -48,35 +48,27 @@ function _hashPassword(str) {
 // ── Seed dos Super Admins fixos ───────────────────────────
 // Super admins permanentes: role 'superadmin' garantido a cada carga e
 // impossíveis de excluir (proteção em deleteUser). Recriados se sumirem.
-//   • alexandrej529@hotmail.com — senha 267267 (alterável pelo próprio)
-//   • crischavesk123@hotmail.com — senha FIXA Cris@1824 (sempre reforçada)
+// SEM SENHA aqui — a autenticação real dos dois é 100% via Firebase Auth
+// (login.js → _resolverRoleReal + Cloud Function sincronizarClaimsAdmin,
+// que já reconhece esses 2 e-mails independente deste registro local).
+// Este seed serve só para exibição (ex.: lista em gerenciar-usuarios.html)
+// e como dica local de role antes da claim confirmar.
+//   • alexandrej529@hotmail.com
+//   • crischavesk123@hotmail.com
 (function _seedSuperAdmins() {
   var FIXED = [
-    // Senha: 267267  — SHA-256
-    { email: 'alexandrej529@hotmail.com', name: 'Alexandre', role: 'superadmin',
-      passwordHash: '5768210eb5f7cc1aa57ed358079b7c5187ac5b8d56e93efa226e58810667d76a',
-      travarSenha: false },
-    // Senha: Cris@1824  — SHA-256 (super admin fixo; senha sempre esta)
-    { email: 'crischavesk123@hotmail.com', name: 'Cristiane', role: 'superadmin',
-      passwordHash: 'a507a72cb3b73a3006224fb4314e004ad2c90072312d92e83ac73bd56ec61520',
-      travarSenha: true }
+    { email: 'alexandrej529@hotmail.com', name: 'Alexandre' },
+    { email: 'crischavesk123@hotmail.com', name: 'Cristiane' }
   ];
   var users = _getUsers();
   var changed = false;
   FIXED.forEach(function(sa) {
     var idx = users.findIndex(function(u) { return u.email.toLowerCase() === sa.email.toLowerCase(); });
     if (idx === -1) {
-      users.push({ email: sa.email, password: sa.passwordHash, role: 'superadmin', name: sa.name, address: '', createdAt: new Date().toISOString() });
+      users.push({ email: sa.email, role: 'superadmin', name: sa.name, address: '', createdAt: new Date().toISOString() });
       changed = true;
-    } else {
-      if (users[idx].role !== 'superadmin') { users[idx].role = 'superadmin'; changed = true; }
-      if (sa.travarSenha) {
-        // Senha fixa: sempre reforça (qualquer alteração é revertida na próxima carga)
-        if (users[idx].password !== sa.passwordHash) { users[idx].password = sa.passwordHash; changed = true; }
-      } else if (!users[idx].password) {
-        // Alterável: só define a padrão se estiver vazia
-        users[idx].password = sa.passwordHash; changed = true;
-      }
+    } else if (users[idx].role !== 'superadmin') {
+      users[idx].role = 'superadmin'; changed = true;
     }
   });
   if (changed) _saveUsers(users);
@@ -413,8 +405,38 @@ function aguardarFirebaseAuth() {
   });
 }
 
+// Confere a sessão local contra o Firebase Auth de verdade — fecha a brecha
+// de alguém "entrar" no painel só escrevendo lapinkSession no localStorage
+// (checkAuth por si só não prova nada, é só uma flag local sem assinatura).
+// Roda em paralelo, sem atrasar o carregamento da página, e desloga se a
+// claim real (definida só pela Cloud Function, via Admin SDK) não confirmar
+// o papel que a sessão local está afirmando ter.
+function verificarSessaoReal() {
+  var session = getSession();
+  if (!session || (session.role !== 'admin' && session.role !== 'superadmin')) return;
+  if (typeof firebase === 'undefined' || !firebase.auth) return; // SDK não carregado nesta página
+
+  aguardarFirebaseAuth().then(function (user) {
+    if (!user) { logout(); return; } // sessão local diz admin, sem NENHUMA sessão Firebase Auth real
+
+    function checarClaim(tokenResult) {
+      var claimRole = tokenResult && tokenResult.claims && tokenResult.claims.role;
+      return claimRole === 'admin' || claimRole === 'superadmin';
+    }
+
+    user.getIdTokenResult().then(function (res) {
+      if (checarClaim(res)) return; // ok, confirmado
+      // Pode ser um token emitido antes da claim existir — força 1 refresh
+      // antes de decidir expulsar.
+      return user.getIdToken(true).then(function () { return user.getIdTokenResult(); })
+        .then(function (res2) { if (!checarClaim(res2)) logout(); });
+    }).catch(function () { /* erro de rede — não desloga por excesso de cautela */ });
+  });
+}
+
 // ── Init automático em páginas admin ─────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   renderSessionTopbar();
   applyAdminPermissions();
+  verificarSessaoReal();
 });

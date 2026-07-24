@@ -6,13 +6,24 @@ const fetch = require('node-fetch');
 const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
 
-// Valida a assinatura x-signature do webhook do Mercado Pago.
-// Retorna true se válida OU se nenhum segredo estiver configurado (modo permissivo
-// até o dono cadastrar MP_WEBHOOK_SECRET — evita travar antes da configuração).
-function validarAssinaturaMP(req, dataId) {
-  var secret = process.env.MP_WEBHOOK_SECRET;
+// Busca a chave secreta do Webhook do MP: variável de ambiente primeiro
+// (functions/.env), senão o Firestore (lapink/apiConfig.mpWebhookSecret,
+// salvo pelo admin em Configurações → Mercado Pago — mesmo padrão do
+// Access Token: leitura bloqueada nas rules, só a Function lê via Admin SDK).
+function getMpWebhookSecret() {
+  if (process.env.MP_WEBHOOK_SECRET) return Promise.resolve(process.env.MP_WEBHOOK_SECRET);
+  return db.collection('lapink').doc('apiConfig').get().then(function (snap) {
+    var data = snap.exists && snap.data();
+    return (data && data.data && data.data.mpWebhookSecret) || null;
+  }).catch(function () { return null; });
+}
+
+// Valida a assinatura x-signature do webhook do Mercado Pago contra o
+// segredo informado. secret nulo/vazio => modo permissivo (aceita, loga
+// aviso) até o admin configurar a chave.
+function validarAssinaturaMP(req, dataId, secret) {
   if (!secret) {
-    functions.logger.warn('mpWebhook: MP_WEBHOOK_SECRET não configurado — assinatura não verificada.');
+    functions.logger.warn('mpWebhook: chave do webhook não configurada — assinatura não verificada.');
     return true;
   }
   try {
@@ -322,17 +333,23 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
     return;
   }
 
-  // Valida a assinatura do Mercado Pago (se MP_WEBHOOK_SECRET estiver configurado)
+  // Valida a assinatura do Mercado Pago (se a chave estiver configurada —
+  // env var ou Firestore, ver getMpWebhookSecret)
   var dataIdAssinatura = (req.query && req.query['data.id']) || bodyDataId || paymentId;
-  if (!validarAssinaturaMP(req, dataIdAssinatura)) {
-    functions.logger.warn('mpWebhook: assinatura inválida — notificação descartada.', { paymentId });
-    return;
-  }
 
-  functions.logger.info('mpWebhook: processando payment_id=' + paymentId);
+  getMpWebhookSecret()
+    .then(function (secret) {
+      if (!validarAssinaturaMP(req, dataIdAssinatura, secret)) {
+        functions.logger.warn('mpWebhook: assinatura inválida — notificação descartada.', { paymentId });
+        return null;
+      }
 
-  getMpToken()
+      functions.logger.info('mpWebhook: processando payment_id=' + paymentId);
+      return getMpToken();
+    })
     .then(function (token) {
+      if (!token) return null; // assinatura inválida — encerra sem processar
+
       return fetch('https://api.mercadopago.com/v1/payments/' + paymentId, {
         method: 'GET',
         headers: {
@@ -341,6 +358,7 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
       });
     })
     .then(function (mpRes) {
+      if (!mpRes) return null; // assinatura inválida — encerra sem processar
       return mpRes.json().then(function (data) {
         if (!mpRes.ok) {
           throw new Error('Erro ao buscar pagamento MP: ' + JSON.stringify(data));
@@ -349,6 +367,7 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
       });
     })
     .then(function (payment) {
+      if (!payment) return null; // assinatura inválida — encerra sem processar
       var mpStatus = payment.status;
       var externalRef = payment.external_reference;
       var novoStatus = mapearStatus(mpStatus);

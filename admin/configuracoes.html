@@ -334,6 +334,22 @@
                 </button>
               </div>
 
+              <!-- Webhook Secret (salvo no Firestore, lido pelas Functions) -->
+              <div class="form-group" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+                <label style="color:#92400e;font-weight:700;"><i class="ti ti-shield-lock"></i> Chave secreta do Webhook (valida as notificações de pagamento)</label>
+                <input type="password" id="int-mp-webhook-secret" placeholder="cole aqui a chave secreta do webhook" autocomplete="new-password"
+                  style="font-family:monospace;" />
+                <div style="font-size:11px;color:#92400e;margin-top:6px;">
+                  Sem essa chave, o servidor aceita qualquer notificação de pagamento sem confirmar que veio mesmo do Mercado Pago
+                  (o site continua seguro contra fraude porque o valor do pagamento é sempre reconferido direto na API do MP, mas
+                  configurar a chave fecha esse ponto). Encontre em: mercadopago.com.br → <strong>Sua aplicação → Webhooks</strong>.
+                  Salva de forma segura no banco de dados e nunca aparece no código do site.
+                </div>
+                <button type="button" onclick="salvarMPWebhookSecret()" class="btn-save-form" style="margin-top:10px;background:#d97706;">
+                  <i class="ti ti-lock"></i> Salvar chave do Webhook com segurança
+                </button>
+              </div>
+
               <div class="form-group">
                 <label>Public Key <small style="color:var(--gray-400)">(começa com APP_USR-, usada no front-end)</small></label>
                 <input type="text" id="int-mp-pk" placeholder="APP_USR-xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
@@ -862,16 +878,34 @@
 
     var session = getSession();
 
-    // Troca de senha — valida primeiro via login, depois atualiza com SHA-256
+    // Troca de senha — troca a senha REAL do Firebase Auth (reautentica com a
+    // senha atual antes, exigido pelo próprio Firebase para essa operação).
+    // Não usa mais o hash local antigo: esse não é o que o login realmente
+    // confere hoje, então trocar só ele deixaria a senha "de verdade" intacta.
     if (senhaNova || senhaConf) {
       if (!senhaAtual) { showToast('Informe a senha atual.', 'erro'); return; }
       if (senhaNova !== senhaConf) { showToast('As senhas não conferem.', 'erro'); return; }
       if (senhaNova.length < 6) { showToast('A nova senha deve ter pelo menos 6 caracteres.', 'erro'); return; }
-      // Verifica senha atual contra auth.js (mesma validação do login)
-      var check = await login(session.email, senhaAtual, null);
-      if (!check.ok) { showToast('Senha atual incorreta.', 'erro'); return; }
-      var r = await updatePassword(session.email, senhaNova);
-      if (!r.ok) { showToast(r.error || 'Erro ao atualizar senha.', 'erro'); return; }
+
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        showToast('Firebase indisponível agora. Recarregue a página e tente de novo.', 'erro'); return;
+      }
+      var authUser = firebase.auth().currentUser;
+      if (!authUser) {
+        showToast('Sessão de segurança expirada. Saia e entre novamente para trocar a senha.', 'erro'); return;
+      }
+      try {
+        var cred = firebase.auth.EmailAuthProvider.credential(session.email, senhaAtual);
+        await authUser.reauthenticateWithCredential(cred);
+        await authUser.updatePassword(senhaNova);
+      } catch (e) {
+        var msgErro = (e && e.code === 'auth/wrong-password') ? 'Senha atual incorreta.'
+          : (e && e.code === 'auth/too-many-requests') ? 'Muitas tentativas. Aguarde alguns minutos.'
+          : (e && e.code === 'auth/weak-password') ? 'A nova senha é fraca demais.'
+          : 'Erro ao trocar a senha' + (e && e.message ? ': ' + e.message : '.');
+        showToast(msgErro, 'erro');
+        return;
+      }
     }
 
     // Atualiza nome de exibição no registro de usuários
@@ -1105,6 +1139,34 @@
       .then(function() {
         showToast('Access Token salvo com segurança no banco de dados!');
         document.getElementById('int-mp-token').value = '';
+        restore();
+      }).catch(function(e) {
+        showToast('Erro ao salvar: ' + e.message, 'erro');
+        restore();
+      });
+  }
+
+  // Salva a chave secreta do Webhook do MP no apiConfig (leitura bloqueada,
+  // mesmo padrão do Access Token). Lida pela função mpWebhook via Admin SDK.
+  function salvarMPWebhookSecret() {
+    var secret = (document.getElementById('int-mp-webhook-secret').value || '').trim();
+    if (!secret) { showToast('Cole a chave secreta do webhook antes de salvar.', 'erro'); return; }
+
+    var btn = document.querySelector('button[onclick="salvarMPWebhookSecret()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .9s linear infinite"></i> Salvando...'; }
+
+    function restore() {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-lock"></i> Salvar chave do Webhook com segurança'; }
+    }
+
+    var db = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
+    if (!db) { showToast('Firebase não disponível.', 'erro'); restore(); return; }
+
+    db.collection('lapink').doc('apiConfig')
+      .set({ data: { mpWebhookSecret: secret }, updatedAt: Date.now() }, { merge: true })
+      .then(function() {
+        showToast('Chave do Webhook salva com segurança no banco de dados!');
+        document.getElementById('int-mp-webhook-secret').value = '';
         restore();
       }).catch(function(e) {
         showToast('Erro ao salvar: ' + e.message, 'erro');
