@@ -62,6 +62,25 @@ jobs:
             --exclude='lapink-insomnia.json' \
             ./ ./_site/
 
+      # Redirect da raiz só para este mirror (GitHub Pages não tem "rewrites"
+      # como o firebase.json). Gerado aqui, direto na pasta de publicação —
+      # nunca fica commitado no repo nem entra no deploy do Firebase, que já
+      # resolve "/" → "/public/V1.html" pelo próprio rewrite nativo dele.
+      - name: Gerar redirect da raiz (só para o Pages)
+        run: |
+          cat > ./_site/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="pt-BR">
+          <head>
+          <meta charset="UTF-8" />
+          <meta http-equiv="refresh" content="0; url=public/V1.html" />
+          <link rel="canonical" href="public/V1.html" />
+          <script>location.replace('public/V1.html' + location.search);</script>
+          </head>
+          <body><p>Redirecionando… <a href="public/V1.html">Clique aqui</a> se não for automático.</p></body>
+          </html>
+          HTML
+
       - name: Upload artefato do Pages
         uses: actions/upload-pages-artifact@v3
         with:
