@@ -55,6 +55,7 @@
 .color-dot { width: 14px; height: 14px; border-radius: 50%; background: #D4537E; flex-shrink: 0; }
 </style>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script defer src="../public/js/firebase-init.js"></script>
 <script defer src="../public/js/cloud-sync.js"></script>
@@ -980,6 +981,8 @@
       lapinkNotifConfig:'Notificações', lapinkConfig:'Config. geral', lapinkPedidoCounter:'Contador de pedidos' };
 
     var partes = [], total = 0;
+
+    if (typeof aguardarFirebaseAuth === 'function') await aguardarFirebaseAuth();
 
     await Promise.all(docsPublicos.map(function (k) {
       return fs.collection('lapink').doc(k).get().then(function (snap) {

@@ -173,12 +173,34 @@ async function _applyAdminRole(email, client) {
   return client;
 }
 
-function _finishLogin(client, referrerPage) {
+// Grava o role (admin/superadmin) como custom claim no token do Firebase Auth
+// — é o que permite as regras do Firestore confiarem no papel do usuário para
+// proteger dados sensíveis (ex.: lista de pedidos com CPF/endereço) sem exigir
+// login público. Silencioso: se o navegador ainda não tem sessão Firebase Auth
+// (login 100% legado, raro hoje em diante), simplesmente não sincroniza agora
+// — sincroniza no próximo login, sem travar o acesso ao painel.
+async function _sincronizarClaimsSeAdmin(client) {
+  try {
+    if (!client || (client.role !== 'admin' && client.role !== 'superadmin')) return;
+    if (typeof firebase === 'undefined' || !firebase.auth) return;
+    var user = firebase.auth().currentUser;
+    if (!user) return;
+    var idToken = await user.getIdToken();
+    await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/sincronizarClaimsAdmin', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + idToken }
+    });
+    await user.getIdToken(true); // força refresh — pega a claim nova já nesta sessão
+  } catch (e) { /* nunca trava o login */ }
+}
+
+async function _finishLogin(client, referrerPage) {
   try { localStorage.removeItem('_loginAttempts'); } catch (e) {}
   setLoggedClient(client);
 
   // Admin/Super Admin → grava sessão do painel e abre o painel.
   if (client && (client.role === 'admin' || client.role === 'superadmin')) {
+    await _sincronizarClaimsSeAdmin(client);
     _setAdminSession(client);
     setLoginMessage('Login de administrador! Abrindo painel...', true);
     var _dest = _adminRedirect(client);

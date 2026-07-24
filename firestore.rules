@@ -13,11 +13,29 @@ service cloud.firestore {
     //   • lapinkApiConfig    → pode conter chaves (EmailJS/MP)
     //   • apiConfig          → token do Mercado Pago (lido só via Admin SDK)
     //
-    // OBS: a escrita dos docs públicos ainda é aberta porque o painel admin
-    // não usa Firebase Auth (publica via cloud-sync). Risco residual = vandalismo
-    // do catálogo. Lockdown total ("só admin escreve") exige migrar o login do
-    // painel para Firebase Auth — ver firestore.rules.secure.
+    // OBS: a ESCRITA dos docs públicos (catálogo/config) ainda é aberta porque
+    // o painel salva pelo cloud-sync sem exigir Firebase Auth para isso.
+    // Risco residual = vandalismo do catálogo. Lockdown total da escrita
+    // ("só admin grava") exige migrar TODAS as gravações do painel para
+    // exigir Firebase Auth — ver firestore.rules.secure.
+    //
+    // A LEITURA de coleções com PII (pedidos, abandonados) já usa Firebase
+    // Auth + custom claim (isAdmin(), função sincronizarClaimsAdmin): listar
+    // a coleção inteira agora exige admin logado; buscar 1 documento por ID
+    // já conhecido continua público (é como o cliente acompanha o próprio
+    // pedido, por exemplo).
     // ════════════════════════════════════════════════════════════════
+
+    // Painel admin agora sincroniza role/pages como CUSTOM CLAIM no Firebase
+    // Auth (função sincronizarClaimsAdmin, Admin SDK — cliente não escreve
+    // isso direto, então dá pra confiar aqui). Usado para proteger LISTAGEM
+    // de coleções com PII (pedidos, carrinhos abandonados) sem exigir que o
+    // catálogo/config pública deixe de ser aberta (isso ainda depende da
+    // migração completa descrita no comentário abaixo).
+    function isAdmin() {
+      return request.auth != null &&
+        (request.auth.token.role == 'admin' || request.auth.token.role == 'superadmin');
+    }
 
     function isDocPublico(doc) {
       return doc in [
@@ -69,10 +87,14 @@ service cloud.firestore {
                    && (!('role' in request.resource.data) || request.resource.data.role == 'client');
     }
 
-    // Carrinhos abandonados — cliente cria/atualiza o próprio; admin lê pelo painel.
-    // Delete só via Admin SDK.
+    // Carrinhos abandonados — cliente cria/atualiza o próprio (sem auth, é
+    // só o carrinho dele). "list" (dump de TODOS os carrinhos — nome,
+    // telefone, itens) agora exige admin autenticado; nada no site faz get
+    // avulso aqui hoje, então só liberar list pro admin não quebra nada.
     match /abandonados/{id} {
-      allow read, create, update: if true;
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update: if true;
       allow delete: if false;
     }
 
@@ -90,13 +112,26 @@ service cloud.firestore {
     }
 
     // Pedidos criados via Cloud Functions (Admin SDK ignora as rules).
-    // Leitura pública para o cliente acompanhar pelo ID.
-    // Criação/exclusão bloqueadas. Update do painel limitado a rastreio/status —
-    // impede terceiros de alterar total, itens, pagamento ou marcar estoqueBaixado.
+    // "get" (1 pedido por ID já conhecido, ex.: sucesso.html?pedido=LPK-XXX)
+    // continua público — é assim que o cliente acompanha a própria compra.
+    // "list" exige qualquer usuário AUTENTICADO (cliente ou admin) — fecha o
+    // furo real (visitante anônimo, sem conta nenhuma, listando TODOS os
+    // pedidos — nome, CPF, endereço, itens, total — só de saber que a
+    // coleção existe). meus-pedidos.html já faz a query filtrada pelo
+    // próprio e-mail (where cliente.email == ...), então continua só
+    // trazendo os pedidos do próprio cliente logado — não muda nada pra
+    // quem usa o site normalmente. Fechar 100% (nem cliente logado listar
+    // pedido alheio via query sem filtro) exigiria mover pedidos para uma
+    // subcoleção por usuário — melhoria maior, registrada para depois.
+    // Update: só admin, e mesmo assim só nos campos de rastreio/status —
+    // antes disso, QUALQUER PESSOA podia alterar o status ou o código de
+    // rastreio de um pedido alheio, sem autenticação nenhuma.
+    // Criação/exclusão continuam bloqueadas (só a Function cria/apaga).
     match /pedidos/{pedidoId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if request.auth != null;
       allow create, delete: if false;
-      allow update: if request.resource.data.diff(resource.data)
+      allow update: if isAdmin() && request.resource.data.diff(resource.data)
                       .affectedKeys().hasOnly(['rastreio', 'status', 'updatedAt']);
     }
   }

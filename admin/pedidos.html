@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LaPink — Pedidos</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="../public/js/firebase-init.js"></script>
 <script src="js/utils.js"></script>
@@ -277,19 +278,21 @@
   function carregarPedidosFirestore() {
     var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
     if (!firestore) return;
-    firestore.collection('pedidos').orderBy('createdAt', 'desc').limit(100).get()
-      .then(function(snap) {
-        _pedidosFirestore = [];
-        snap.forEach(function(doc) {
-          var d = doc.data();
-          d._id = doc.id;
-          d._fonte = 'firestore';
-          _pedidosFirestore.push(d);
-        });
-        renderStats();
-        renderPedidos();
-      })
-      .catch(function(e) { console.warn('[pedidos] Firestore load error:', e); });
+    aguardarFirebaseAuth().then(function() {
+      firestore.collection('pedidos').orderBy('createdAt', 'desc').limit(100).get()
+        .then(function(snap) {
+          _pedidosFirestore = [];
+          snap.forEach(function(doc) {
+            var d = doc.data();
+            d._id = doc.id;
+            d._fonte = 'firestore';
+            _pedidosFirestore.push(d);
+          });
+          renderStats();
+          renderPedidos();
+        })
+        .catch(function(e) { console.warn('[pedidos] Firestore load error:', e); });
+    });
   }
 
   // ─── Carrinhos abandonados ────────────────────────────────
@@ -300,16 +303,18 @@
     renderAbandonados();
     var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
     if (!firestore) return;
-    firestore.collection('abandonados').limit(100).get().then(function(snap) {
-      var remotos = [];
-      snap.forEach(function(doc) { var d = doc.data(); d.id = d.id || doc.id; remotos.push(d); });
-      // mescla por id (Firestore prioritário)
-      var ids = {};
-      remotos.forEach(function(a) { ids[a.id] = a; });
-      _abandonados.forEach(function(a) { if (!ids[a.id]) remotos.push(a); });
-      _abandonados = remotos;
-      renderAbandonados();
-    }).catch(function(e) { console.warn('[abandonados]', e); });
+    aguardarFirebaseAuth().then(function() {
+      firestore.collection('abandonados').limit(100).get().then(function(snap) {
+        var remotos = [];
+        snap.forEach(function(doc) { var d = doc.data(); d.id = d.id || doc.id; remotos.push(d); });
+        // mescla por id (Firestore prioritário)
+        var ids = {};
+        remotos.forEach(function(a) { ids[a.id] = a; });
+        _abandonados.forEach(function(a) { if (!ids[a.id]) remotos.push(a); });
+        _abandonados = remotos;
+        renderAbandonados();
+      }).catch(function(e) { console.warn('[abandonados]', e); });
+    });
   }
 
   function _msgWhatsAbandono(a) {

@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="css/public.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/dist/tabler-icons.min.css" />
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/storage.js"></script>
@@ -450,33 +451,42 @@ body { background: var(--gray-50); min-height: 100vh; }
     return todos;
   }
 
-  /* ── Busca principal ── */
+  /* ── Busca principal ──
+     As regras do Firestore exigem estar autenticado (Firebase Auth) pra
+     listar a coleção pedidos — fecha o furo de qualquer visitante anônimo
+     conseguir baixar todos os pedidos de todo mundo. Espera a sessão ser
+     restaurada antes de consultar; se mesmo assim falhar (ex.: sessão local
+     antiga sem Firebase Auth correspondente), cai no fallback de pedidos
+     locais abaixo — nunca trava a página. */
   function loadPedidos() {
     var email = _client.email;
 
-    firebase.firestore()
-      .collection('pedidos')
-      .where('cliente.email', '==', email)
-      .orderBy('createdAt', 'desc')
-      .limit(20)
-      .get()
-      .then(function(snap) {
-        var lista = [];
-        snap.forEach(function(doc) { lista.push(doc.data()); });
-        renderLista(mesclarEOrdenar(lista, email));
-      })
-      .catch(function(err) {
-        /* Índice composto não criado — fallback */
-        if (err && (err.code === 'failed-precondition' || err.code === 'unimplemented' || (err.message && err.message.indexOf('index') !== -1))) {
-          fetchAllAndFilter(email, function(err2, lista) {
-            if (err2) renderLista(mesclarEOrdenar([], email));
-            else renderLista(mesclarEOrdenar(lista, email));
-          });
-        } else {
-          /* Falha total no Firestore — mostra ao menos os pedidos locais */
-          renderLista(mesclarEOrdenar([], email));
-        }
-      });
+    aguardarFirebaseAuth().then(function() {
+      firebase.firestore()
+        .collection('pedidos')
+        .where('cliente.email', '==', email)
+        .orderBy('createdAt', 'desc')
+        .limit(20)
+        .get()
+        .then(function(snap) {
+          var lista = [];
+          snap.forEach(function(doc) { lista.push(doc.data()); });
+          renderLista(mesclarEOrdenar(lista, email));
+        })
+        .catch(function(err) {
+          /* Índice composto não criado — fallback */
+          if (err && (err.code === 'failed-precondition' || err.code === 'unimplemented' || (err.message && err.message.indexOf('index') !== -1))) {
+            fetchAllAndFilter(email, function(err2, lista) {
+              if (err2) renderLista(mesclarEOrdenar([], email));
+              else renderLista(mesclarEOrdenar(lista, email));
+            });
+          } else {
+            /* Falha total no Firestore (inclui permission-denied) — mostra
+               ao menos os pedidos locais deste navegador */
+            renderLista(mesclarEOrdenar([], email));
+          }
+        });
+    });
   }
 
   /* ── Init ── */

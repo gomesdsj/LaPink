@@ -389,6 +389,30 @@ function updateAddress(email, address) {
   return { ok: false, error: 'Usuário não encontrado.' };
 }
 
+// Espera o Firebase Auth restaurar a sessão persistida (IndexedDB) antes de
+// fazer consultas que dependem de request.auth nas regras do Firestore —
+// evita que a 1ª consulta da página (ex.: listar pedidos) chegue ANTES da
+// sessão de login ser restaurada e seja recusada por engano. Resolve assim
+// que o estado é conhecido (autenticado ou não), sem travar se nunca resolver.
+function aguardarFirebaseAuth() {
+  return new Promise(function (resolve) {
+    if (typeof firebase === 'undefined' || !firebase.auth) { resolve(null); return; }
+    var resolvido = false;
+    var unsub = firebase.auth().onAuthStateChanged(function (user) {
+      if (resolvido) return;
+      resolvido = true;
+      try { unsub(); } catch (e) {}
+      resolve(user);
+    });
+    setTimeout(function () {
+      if (resolvido) return;
+      resolvido = true;
+      try { unsub(); } catch (e) {}
+      resolve(firebase.auth().currentUser || null);
+    }, 3000);
+  });
+}
+
 // ── Init automático em páginas admin ─────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   renderSessionTopbar();

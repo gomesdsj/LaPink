@@ -190,6 +190,7 @@
 }
 </style>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script defer src="../public/js/firebase-init.js"></script>
 <script defer src="../public/js/cloud-sync.js"></script>
@@ -1144,28 +1145,30 @@ getPedidos = function() {
       if (retries < 20) { setTimeout(function() { tryLoad(retries + 1); }, 300); }
       return;
     }
-    firestore.collection('pedidos').limit(200).get().then(function(snap) {
-      _pedidosFS = [];
-      snap.forEach(function(doc) {
-        var d = doc.data();
-        d._id = doc.id;
-        // Normaliza campos para compatibilidade com renderVendas/renderClientes
-        d.total = d.total || 0;
-        d.cliente = d.cliente || {};
-        d.cliente.name = d.cliente.nome || d.cliente.name || '';
-        d.cliente.whatsapp = d.cliente.celular || d.cliente.whatsapp || '';
-        // Data unificada (Firestore usa createdAt timestamp)
-        if (!d.data && d.createdAt && d.createdAt.seconds) {
-          d.data = new Date(d.createdAt.seconds * 1000).toISOString();
+    aguardarFirebaseAuth().then(function() {
+      firestore.collection('pedidos').limit(200).get().then(function(snap) {
+        _pedidosFS = [];
+        snap.forEach(function(doc) {
+          var d = doc.data();
+          d._id = doc.id;
+          // Normaliza campos para compatibilidade com renderVendas/renderClientes
+          d.total = d.total || 0;
+          d.cliente = d.cliente || {};
+          d.cliente.name = d.cliente.nome || d.cliente.name || '';
+          d.cliente.whatsapp = d.cliente.celular || d.cliente.whatsapp || '';
+          // Data unificada (Firestore usa createdAt timestamp)
+          if (!d.data && d.createdAt && d.createdAt.seconds) {
+            d.data = new Date(d.createdAt.seconds * 1000).toISOString();
+          }
+          _pedidosFS.push(d);
+        });
+        if (_pedidosFS.length) {
+          renderVendas();
+          renderEstoque();
+          renderClientes();
         }
-        _pedidosFS.push(d);
-      });
-      if (_pedidosFS.length) {
-        renderVendas();
-        renderEstoque();
-        renderClientes();
-      }
-    }).catch(function(e) { console.warn('[relatorios] Firestore pedidos:', e); });
+      }).catch(function(e) { console.warn('[relatorios] Firestore pedidos:', e); });
+    });
   }
   tryLoad(0);
 })();

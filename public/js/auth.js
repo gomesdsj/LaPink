@@ -1,3 +1,26 @@
+// Espera o Firebase Auth restaurar a sessão persistida (IndexedDB) antes de
+// consultas que dependem de request.auth nas regras do Firestore (ex.:
+// listar os próprios pedidos em meus-pedidos.html) — evita que a consulta
+// chegue antes do login ser restaurado e seja recusada por engano.
+function aguardarFirebaseAuth() {
+  return new Promise(function (resolve) {
+    if (typeof firebase === 'undefined' || !firebase.auth) { resolve(null); return; }
+    var resolvido = false;
+    var unsub = firebase.auth().onAuthStateChanged(function (user) {
+      if (resolvido) return;
+      resolvido = true;
+      try { unsub(); } catch (e) {}
+      resolve(user);
+    });
+    setTimeout(function () {
+      if (resolvido) return;
+      resolvido = true;
+      try { unsub(); } catch (e) {}
+      resolve(firebase.auth().currentUser || null);
+    }, 3000);
+  });
+}
+
 function showToast(msg) {
   let el = document.getElementById('_lapink_toast');
   if (!el) {

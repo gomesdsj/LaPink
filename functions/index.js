@@ -645,3 +645,66 @@ exports.cotarFrete = functions.https.onRequest(function (req, res) {
       });
   });
 });
+
+// ---------------------------------------------------------------------------
+// 5. sincronizarClaimsAdmin — grava o role (admin/superadmin) como CUSTOM
+//    CLAIM no token do Firebase Auth, para o Firestore poder confiar nele
+//    nas rules (request.auth.token.role). Sem isso, o "role" só existia em
+//    documentos que o próprio navegador escreve — não dava pra usar como
+//    fonte de verdade em regra de segurança (qualquer um podia mentir).
+//
+//    Só o dono do token pode sincronizar A PRÓPRIA claim: o e-mail vem do ID
+//    token verificado pelo Admin SDK (não dá pra forjar), nunca do que o
+//    cliente manda no corpo da requisição. O role atribuído é o que já está
+//    gravado em lapink/lapinkUsers (lido via Admin SDK, ignora as rules) ou
+//    um dos dois super admins fixos do projeto — nunca inventado pelo cliente.
+// ---------------------------------------------------------------------------
+var SUPERADMINS_FIXOS = ['alexandrej529@hotmail.com', 'crischavesk123@hotmail.com'];
+
+exports.sincronizarClaimsAdmin = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    var authHeader = req.headers.authorization || '';
+    var idToken = authHeader.indexOf('Bearer ') === 0 ? authHeader.slice(7) : '';
+    if (!idToken) {
+      res.status(401).json({ error: 'Token de autenticação ausente.' });
+      return;
+    }
+
+    admin.auth().verifyIdToken(idToken)
+      .then(function (decoded) {
+        var uid = decoded.uid;
+        var email = String(decoded.email || '').toLowerCase();
+        if (!email) throw { _status: 400, message: 'Token sem e-mail.' };
+
+        if (SUPERADMINS_FIXOS.indexOf(email) !== -1) {
+          return { uid: uid, role: 'superadmin', pages: null };
+        }
+
+        return db.collection('lapink').doc('lapinkUsers').get().then(function (snap) {
+          var lista = (snap.exists && snap.data() && snap.data().data) || [];
+          var match = (Array.isArray(lista) ? lista : []).find(function (u) {
+            return u && String(u.email || '').toLowerCase() === email;
+          });
+          if (match && (match.role === 'admin' || match.role === 'superadmin')) {
+            return { uid: uid, role: match.role, pages: Array.isArray(match.pages) ? match.pages : null };
+          }
+          return { uid: uid, role: null, pages: null };
+        });
+      })
+      .then(function (resultado) {
+        var claims = resultado.role ? { role: resultado.role, pages: resultado.pages } : null;
+        return admin.auth().setCustomUserClaims(resultado.uid, claims).then(function () {
+          res.status(200).json({ role: resultado.role || null });
+        });
+      })
+      .catch(function (err) {
+        var status = (err && err._status) || (err && err.code === 'auth/id-token-expired' ? 401 : 500);
+        if (status >= 500) functions.logger.error('sincronizarClaimsAdmin erro', err);
+        res.status(status).json({ error: (err && err.message) || 'Erro ao sincronizar permissões.' });
+      });
+  });
+});
