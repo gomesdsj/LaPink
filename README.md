@@ -65,7 +65,3 @@ Hoje usa `localStorage` como backend. Para migrar para um banco real:
 2. Troque `USE_REMOTE` para `true`
 3. O restante do código permanece idêntico
 
-## Usuário padrão (Super Admin)
-
-- **E-mail:** alexandrej529@hotmail.com
-- **Senha:** 123456 (altere após o primeiro acesso em Configurações)
