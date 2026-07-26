@@ -52,7 +52,19 @@
     return function (e) {
       console.error('[sync] ERRO ao enviar ' + key + ' para a nuvem — os dados ficaram SÓ neste dispositivo:', e && e.message);
       try {
-        if (typeof showToast === 'function') showToast('Falha ao sincronizar com a nuvem (' + key + '). Tente novamente.', 'erro');
+        if (typeof showToast !== 'function') return;
+        // Sessão de admin com token desatualizado (comum logo após alguma
+        // mudança de permissão, ou sessão aberta há muito tempo): a regra do
+        // Firestore nega a gravação até o token ser renovado. Sair e entrar
+        // de novo resolve — mensagem clara em vez do genérico "falha ao
+        // sincronizar", que confundia (parecia bug, era só sessão desatualizada).
+        var ehPermissao = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+        showToast(
+          ehPermissao
+            ? 'Sua sessão de admin está desatualizada. Saia e entre novamente para salvar na nuvem.'
+            : 'Falha ao sincronizar com a nuvem (' + key + '). Tente novamente.',
+          'erro'
+        );
       } catch (_) {}
     };
   }

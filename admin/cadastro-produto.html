@@ -830,7 +830,9 @@
       const res   = todos.filter(p =>
         (!busca || p.nome.toLowerCase().includes(busca)) &&
         (!cat   || p.categoria === cat)
-      );
+      // Mais recente primeiro — id é Date.now() na criação, então o maior
+      // id é sempre o produto cadastrado por último.
+      ).sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
       renderProdutos(res);
     }
 
@@ -1337,8 +1339,12 @@
           custoTotal:       custo   || undefined,
           margemLucro:      margem  || undefined,
           descricao:        desc    || undefined,
-          icone:            _ICONS[cat] || 'ti-diamond',
-          imagem:           null
+          icone:            _ICONS[cat] || 'ti-diamond'
+          // SEM campo "imagem" aqui de propósito — planilha não carrega foto.
+          // Se colocássemos imagem:null, o merge com o produto já existente
+          // (modo "Atualizar dados") apagava a foto que já estava salva. Um
+          // produto novo (sem correspondente) simplesmente nasce sem foto e
+          // mostra o ícone padrão até alguém usar "Trocar foto".
         });
       });
       return result;
@@ -1439,11 +1445,21 @@
         finalList = existentes.concat(adicionados);
         novos = adicionados;
       } else {
+        // Atualiza só os campos que a planilha realmente trouxe (não-nulos/
+        // não-vazios) — nunca apaga algo que já existia no produto (foto,
+        // descrição, etc.) só porque a planilha não tem aquela coluna.
+        function _mergeSemApagar(base, novo) {
+          var r = Object.assign({}, base);
+          Object.keys(novo).forEach(function(k) {
+            if (novo[k] !== null && novo[k] !== undefined && novo[k] !== '') r[k] = novo[k];
+          });
+          return r;
+        }
         finalList = existentes.slice();
         novos.forEach(function(p){
           var idx = finalList.findIndex(function(e){ return e.nome.toLowerCase() === p.nome.toLowerCase(); });
           if (idx >= 0) {
-            finalList[idx] = Object.assign({}, finalList[idx], p, { id: finalList[idx].id, codigoPeca: finalList[idx].codigoPeca });
+            finalList[idx] = _mergeSemApagar(finalList[idx], Object.assign({}, p, { id: finalList[idx].id, codigoPeca: finalList[idx].codigoPeca }));
           } else {
             finalList.push(p);
           }
