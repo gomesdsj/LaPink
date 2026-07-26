@@ -234,16 +234,13 @@ async function _doLogin() {
     return;
   }
 
-  // Rate limiting: máximo 5 tentativas por 15 minutos
-  try {
-    var _now = Date.now();
-    var _att = JSON.parse(localStorage.getItem('_loginAttempts') || '[]');
-    _att = _att.filter(function(t) { return _now - t < 15 * 60 * 1000; });
-    if (_att.length >= 5) {
-      setLoginMessage('Muitas tentativas. Aguarde alguns minutos e tente novamente.', false);
-      return;
-    }
-  } catch(e) {}
+  // Rate limit por IP (servidor) — protege contra força bruta mesmo que o
+  // navegador seja trocado ou o localStorage seja limpo.
+  var _limite = await verificarLimiteIP('login');
+  if (_limite.bloqueado) {
+    setLoginMessage('Muitas tentativas deste endereço. Tente novamente em ' + _limite.retryAfterMin + ' min.', false);
+    return;
+  }
 
   // Destino pós-login — apenas caminhos relativos são aceitos
   var referrerPage = 'V1.html';
@@ -289,12 +286,6 @@ async function _doLogin() {
   }
 
   if (!client) {
-    // Registra tentativa falha
-    try {
-      var _a = JSON.parse(localStorage.getItem('_loginAttempts') || '[]');
-      _a.push(Date.now());
-      localStorage.setItem('_loginAttempts', JSON.stringify(_a));
-    } catch(e) {}
     setLoginMessage('E-mail ou senha incorretos.', false);
     return;
   }

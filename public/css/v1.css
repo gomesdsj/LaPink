@@ -18,6 +18,9 @@
   --r-sm:     10px;
   --r:        14px;
   --r-lg:     22px;
+  /* Largura máxima do conteúdo no desktop (>=1025px) — usada só dentro de
+     blocos @media (min-width:1025px); não afeta tablet/mobile. */
+  --content-max: 1280px;
 }
 
 /* ── Reset ── */
@@ -512,6 +515,14 @@ body {
   transition: color .18s;
 }
 .footer-col a:hover { color: var(--pk-500); }
+/* Blurb da marca (coluna "LaPink") — conteúdo novo, visível em todas as
+   larguras (não é só um ajuste visual de desktop). */
+.footer-blurb {
+  font-size: 12px;
+  color: var(--pk-mid);
+  line-height: 1.6;
+  margin: 2px 0 12px;
+}
 .footer-bottom {
   background: var(--pk-50);
   border-top: 1px solid var(--pk-200);
@@ -519,6 +530,33 @@ body {
   text-align: center;
 }
 .footer-bottom span { font-size: 11px; color: var(--pk-soft); }
+/* Formas de pagamento (barra inferior do rodapé) — conteúdo novo, visível
+   em todas as larguras; wrap cuida de telas pequenas sem precisar de media
+   query dedicada. */
+.footer-payments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-bottom: 10px;
+}
+.footer-payments-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pk-soft);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.footer-payment-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pk-mid);
+}
+.footer-payment-item i { font-size: 15px; color: var(--pk-400); }
 
 /* ── Badges de estoque (override) ── */
 .prod-badge--estoque-baixo { background: #e67e22 !important; }
@@ -706,6 +744,113 @@ body {
 .drawer-btn-out { background: var(--pk-50); color: var(--pk-mid); border: 1px solid var(--pk-200); display: none; }
 .drawer-btn-out:hover { background: var(--pk-100); }
 
+/* ── Desktop: volta ao cabeçalho tradicional (sem aba lateral fixa) — o
+   hambúrguer/drawer fica só para mobile/tablet, como era antes. A partir
+   daqui, refinamento visual completo do desktop (>=1025px): container de
+   conteúdo com largura máxima centralizada (fundo das seções continua
+   "full-bleed", só o respiro lateral cresce — sem precisar de wrapper novo
+   no HTML), cabeçalho com mais hierarquia, cards de produto com mais
+   presença, e ritmo vertical maior entre as seções. Nada aqui altera
+   tablet/mobile (abaixo de 1025px). ── */
+@media (min-width: 1025px) {
+  /* ── Cabeçalho ── */
+  .nav {
+    height: 68px;
+    padding-left: max(32px, calc((100% - var(--content-max)) / 2));
+    padding-right: max(32px, calc((100% - var(--content-max)) / 2));
+  }
+  .logo { font-size: 18px; gap: 8px; }
+  .search-bar { max-width: 360px; height: 40px; border-radius: 24px; margin: 0 28px; }
+  .search-bar input { font-size: 13px; }
+  .nav-links { gap: 32px; }
+  .nav-links a { font-size: 13px; position: relative; padding-bottom: 5px; }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 0; height: 2px;
+    background: var(--pk-500);
+    transition: width .2s ease;
+  }
+  .nav-links a:hover::after { width: 100%; }
+  .nav-actions { gap: 8px; }
+  .nav-icon { width: 40px; height: 40px; font-size: 19px; border-radius: 10px; }
+  .panel-nav-btn { padding: 8px 18px; font-size: 12.5px; }
+
+  /* ── Seções: container centralizado + mais respiro vertical ── */
+  .section {
+    padding-top: 48px;
+    padding-bottom: 48px;
+    padding-left: max(32px, calc((100% - var(--content-max)) / 2));
+    padding-right: max(32px, calc((100% - var(--content-max)) / 2));
+  }
+  .section-header { margin-bottom: 26px; }
+  .section-title { font-size: 20px; }
+  .section-link { font-size: 13px; }
+
+  /* ── Cards de produto: mais presença e hierarquia tipográfica ── */
+  .prod-grid { gap: 22px; }
+  .prod-card { border-radius: var(--r-lg); box-shadow: 0 2px 10px rgba(212,83,126,.07); }
+  .prod-card:hover { box-shadow: 0 14px 32px rgba(212,83,126,.16); }
+  .prod-img { background: linear-gradient(155deg, var(--pk-50) 0%, var(--pk-100) 100%); }
+  .prod-info { padding: 14px 16px 16px; }
+  .prod-name { font-size: 13px; }
+  .prod-price { font-size: 15px; }
+  .colecao-tile { border-radius: var(--r-lg); }
+  .colecao-tile-media { height: auto; aspect-ratio: 1 / 1; }
+
+  /* ── Banner atacado ── */
+  .banner {
+    margin-top: 44px;
+    margin-bottom: 44px;
+    margin-left: max(32px, calc((100% - var(--content-max)) / 2));
+    margin-right: max(32px, calc((100% - var(--content-max)) / 2));
+    padding: 40px 48px;
+  }
+  .banner-text h3 { font-size: 22px; }
+  .banner-text p { font-size: 13px; }
+  .banner-img { width: 108px; height: 98px; }
+  .banner-img i { font-size: 44px; }
+
+  /* ── Depoimentos ── */
+  .reviews { padding: 8px max(32px, calc((100% - var(--content-max)) / 2)) 56px; }
+  .rev-grid { gap: 24px; }
+  .rev-card { padding: 24px 22px; }
+  .rev-stars { font-size: 16px; }
+  .rev-text { font-size: 13px; }
+
+  /* ── Newsletter ── */
+  .newsletter {
+    margin-bottom: 48px;
+    margin-left: max(32px, calc((100% - var(--content-max)) / 2));
+    margin-right: max(32px, calc((100% - var(--content-max)) / 2));
+    padding: 48px 40px;
+  }
+  .newsletter h3 { font-size: 22px; }
+  .newsletter p { font-size: 14px; }
+  .nl-form { max-width: 440px; gap: 10px; }
+  .nl-input, .nl-btn { font-size: 13px; padding: 11px 20px; }
+
+  /* ── Rodapé ── */
+  .footer {
+    grid-template-columns: repeat(4, 1fr);
+    padding-top: 48px;
+    padding-bottom: 40px;
+    padding-left: max(32px, calc((100% - var(--content-max)) / 2));
+    padding-right: max(32px, calc((100% - var(--content-max)) / 2));
+    gap: 40px;
+  }
+  .footer-col h4 { font-size: 13px; margin-bottom: 14px; }
+  .footer-col a { font-size: 13px; margin-bottom: 10px; }
+  .footer-bottom { padding: 16px 32px; }
+
+  /* ── Faixa de benefícios ── */
+  .benefits-strip { padding: 15px 0; }
+  .benefit-item { font-size: 14px; gap: 10px; }
+  .benefit-item i { font-size: 20px; }
+  .benefits-track { gap: 72px; }
+}
+
 /* ── Faixa de benefícios (carrossel fino contínuo) ─────────── */
 .benefits-strip {
   background: #fff;
@@ -751,7 +896,10 @@ body {
   .section { padding: 22px 16px; }
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
   .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .prod-img { height: 140px; }
+  /* Mesma altura de foto do celular (abaixo de 640px) — abaixo do notebook
+     padrão (1025px), o card já usa 2 colunas largas; com 140px a foto ficava
+     baixa demais e cortava o produto quase todo (aparência de "não carregou"). */
+  .prod-img { height: 230px; }
   .reviews .rev-grid { grid-template-columns: repeat(2, 1fr); }
   .banner, .newsletter { margin: 0 16px 20px; }
   .footer { grid-template-columns: repeat(2, 1fr); padding: 22px 16px; }

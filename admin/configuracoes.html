@@ -67,7 +67,7 @@
 
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-bubble"><i class="ti ti-butterfly" style="color:#fff;font-size:18px"></i></div>
           <div class="logo-name">LaPink</div>
         </div>
         <div class="sidebar-nav">
@@ -608,10 +608,36 @@
               </div>
             </div>
 
+            <!-- Embalagem padrão -->
+            <div class="section-card">
+              <h3><i class="ti ti-package" style="color:var(--pink-500)"></i> Embalagem padrão</h3>
+              <p>Peso e tamanho da caixa/embalagem usados no cálculo do frete — somados ao peso e às dimensões dos produtos. Ajuste se trocar o tipo de caixa; o valor do frete muda conforme o tamanho da embalagem.</p>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="ent-emb-peso">Peso da embalagem (g)</label>
+                  <input type="number" id="ent-emb-peso" placeholder="75" min="0" step="1" />
+                </div>
+                <div class="form-group">
+                  <label for="ent-emb-altura">Altura (cm)</label>
+                  <input type="number" id="ent-emb-altura" placeholder="8,5" min="0" step="0.1" />
+                </div>
+              </div>
+              <div class="form-row" style="margin-bottom:0;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="ent-emb-largura">Largura (cm)</label>
+                  <input type="number" id="ent-emb-largura" placeholder="18" min="0" step="0.1" />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="ent-emb-comprimento">Profundidade / comprimento (cm)</label>
+                  <input type="number" id="ent-emb-comprimento" placeholder="12" min="0" step="0.1" />
+                </div>
+              </div>
+            </div>
+
             <!-- Cotação automática por CEP (Melhor Envio) -->
             <div class="section-card">
               <h3><i class="ti ti-truck-delivery" style="color:var(--pink-500)"></i> Cotação automática por CEP (Melhor Envio)</h3>
-              <p>Quando ativa, o checkout calcula o frete real até o CEP do cliente (Correios PAC/SEDEX + outras transportadoras). Enquanto não estiver configurada, o site usa a tabela manual por peso abaixo como reserva.</p>
+              <p>Quando ativa, o checkout calcula o frete real até o CEP do cliente (Correios PAC/SEDEX + outras transportadoras). Enquanto não estiver configurada, o site usa a tabela manual por peso abaixo como reserva. Pode ficar ativa <strong>junto com o Manda Bem</strong> — as cotações dos dois aparecem juntas no checkout e o cliente escolhe a mais barata.</p>
 
               <div class="form-row" style="margin-top:12px;">
                 <div class="form-group">
@@ -650,7 +676,7 @@
             <!-- Integração Manda Bem (chave de API) -->
             <div class="section-card">
               <h3><i class="ti ti-plug-connected" style="color:var(--pink-500)"></i> Integração Manda Bem</h3>
-              <p>Cole a <strong>chave de API do Manda Bem</strong> para cotar o frete real por CEP. A chave é salva com segurança no banco de dados e <strong>nunca aparece no código do site</strong> (leitura bloqueada; só o servidor a usa).</p>
+              <p>Cole a <strong>chave de API do Manda Bem</strong> para cotar o frete real por CEP. A chave é salva com segurança no banco de dados e <strong>nunca aparece no código do site</strong> (leitura bloqueada; só o servidor a usa). Pode ficar ativa <strong>junto com o Melhor Envio</strong> — as cotações dos dois aparecem juntas no checkout e o cliente escolhe a mais barata.</p>
 
               <div class="form-group">
                 <label for="ent-mandabem-id">API ID do Manda Bem</label>
@@ -1245,6 +1271,7 @@
   // Salva a chave de API do Manda Bem no apiConfig (leitura bloqueada) e define
   // o provedor de frete em lapinkEntregaConfig (não-secreto).
   function salvarMandaBemToken() {
+    try {
     var apiId = (document.getElementById('ent-mandabem-id').value || '').trim();
     var token = (document.getElementById('ent-mandabem-token').value || '').trim();
     var ativo = document.getElementById('ent-mandabem-ativo').checked;
@@ -1253,7 +1280,8 @@
     // Provedor de frete + API ID (não-secretos) na config de entrega
     try {
       var ent = getObj('lapinkEntregaConfig');
-      ent.freteProvider = ativo ? 'mandabem' : '';
+      ent.mandabemAtivo = ativo;
+      ent.freteProvider = ativo ? 'mandabem' : (ent.freteProvider === 'mandabem' ? '' : ent.freteProvider);
       if (apiId) ent.mandabemId = apiId;
       localStorage.setItem('lapinkEntregaConfig', JSON.stringify(ent));
     } catch (e) {}
@@ -1265,7 +1293,7 @@
     function restore() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-lock"></i> Salvar chave com segurança'; } }
 
     var db = (typeof firebase !== 'undefined' && firebase.apps.length) ? firebase.firestore() : null;
-    if (!db) { showToast('Firebase não disponível.', 'erro'); restore(); return; }
+    if (!db) { showToast('Firebase não disponível. Recarregue a página (Ctrl+Shift+R) e tente de novo.', 'erro'); restore(); return; }
     db.collection('lapink').doc('apiConfig')
       .set({ data: { mandabemToken: token }, updatedAt: Date.now() }, { merge: true })
       .then(function() {
@@ -1276,11 +1304,15 @@
         showToast('Erro ao salvar: ' + e.message, 'erro');
         restore();
       });
+    } catch (eGeral) {
+      showToast('Erro inesperado ao salvar: ' + eGeral.message + '. Recarregue a página (Ctrl+Shift+R) e tente de novo.', 'erro');
+    }
   }
 
   // Salva o token do Melhor Envio no apiConfig (leitura bloqueada) e define o
   // provedor de frete + CEP de origem em lapinkEntregaConfig (não-secretos).
   function salvarMelhorEnvioToken() {
+    try {
     var token = (document.getElementById('ent-me-token').value || '').trim();
     var ativo = document.getElementById('ent-me-ativo').checked;
     var soCorreios = document.getElementById('ent-me-correios').checked;
@@ -1290,8 +1322,8 @@
     // Config não-secreta (provedor, origem, filtro Correios, sandbox)
     try {
       var ent = getObj('lapinkEntregaConfig');
-      if (ativo) ent.freteProvider = 'melhorenvio';
-      else if (ent.freteProvider === 'melhorenvio') ent.freteProvider = '';
+      ent.meAtivo = ativo;
+      ent.freteProvider = ativo ? 'melhorenvio' : (ent.freteProvider === 'melhorenvio' ? '' : ent.freteProvider);
       ent.cepOrigem = cepOri;
       ent.meSomenteCorreios = soCorreios;
       ent.meSandbox = document.getElementById('ent-me-sandbox').checked;
@@ -1306,7 +1338,7 @@
     function restore() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-lock"></i> Salvar Melhor Envio com segurança'; } }
 
     var db = (typeof firebase !== 'undefined' && firebase.apps.length) ? firebase.firestore() : null;
-    if (!db) { showToast('Firebase não disponível.', 'erro'); restore(); return; }
+    if (!db) { showToast('Firebase não disponível. Recarregue a página (Ctrl+Shift+R) e tente de novo.', 'erro'); restore(); return; }
     db.collection('lapink').doc('apiConfig')
       .set({ data: { meToken: token }, updatedAt: Date.now() }, { merge: true })
       .then(function() {
@@ -1317,6 +1349,9 @@
         showToast('Erro ao salvar: ' + e.message, 'erro');
         restore();
       });
+    } catch (eGeral) {
+      showToast('Erro inesperado ao salvar: ' + eGeral.message + '. Recarregue a página (Ctrl+Shift+R) e tente de novo.', 'erro');
+    }
   }
 
   // Salva o token do WhatsApp Business + Phone ID no apiConfig (leitura bloqueada)
@@ -1497,18 +1532,26 @@
 
     document.getElementById('ent-obs').value = cfg.obs || '';
 
+    // Embalagem padrão — peso e dimensões da caixa (padrão da loja: 75g, 8,5×18×12 cm)
+    var emb = cfg.embalagem || {};
+    document.getElementById('ent-emb-peso').value        = emb.pesoG        != null ? emb.pesoG        : 75;
+    document.getElementById('ent-emb-altura').value      = emb.altura       != null ? emb.altura       : 8.5;
+    document.getElementById('ent-emb-largura').value     = emb.largura      != null ? emb.largura      : 18;
+    document.getElementById('ent-emb-comprimento').value = emb.comprimento  != null ? emb.comprimento  : 12;
+
     // Cotação automática (Melhor Envio) — origem padrão: Centro, Criciúma/SC
     var cepOri = cfg.cepOrigem || '88801000';
     document.getElementById('ent-cep-origem').value = cepOri.length === 8 ? cepOri.slice(0,5) + '-' + cepOri.slice(5) : cepOri;
     document.getElementById('ent-me-sandbox').checked = !!cfg.meSandbox;
     var meAtivoEl = document.getElementById('ent-me-ativo');
-    if (meAtivoEl) meAtivoEl.checked = (cfg.freteProvider === 'melhorenvio');
+    if (meAtivoEl) meAtivoEl.checked = cfg.meAtivo != null ? !!cfg.meAtivo : (cfg.freteProvider === 'melhorenvio');
     var meCorreiosEl = document.getElementById('ent-me-correios');
     if (meCorreiosEl) meCorreiosEl.checked = (cfg.meSomenteCorreios !== false);
 
-    // Provedor de frete (Manda Bem)
+    // Provedor de frete (Manda Bem) — pode estar ativo junto com o Melhor Envio;
+    // as cotações de ambos aparecem juntas no checkout, ordenadas por preço.
     var mbEl = document.getElementById('ent-mandabem-ativo');
-    if (mbEl) mbEl.checked = (cfg.freteProvider === 'mandabem');
+    if (mbEl) mbEl.checked = cfg.mandabemAtivo != null ? !!cfg.mandabemAtivo : (cfg.freteProvider === 'mandabem');
     var mbId = document.getElementById('ent-mandabem-id');
     if (mbId) mbId.value = cfg.mandabemId || '';
 
@@ -1540,6 +1583,8 @@
     var _antiga = getObj('lapinkEntregaConfig');
     var cfg = {
       freteProvider:     _antiga.freteProvider || '',
+      mandabemAtivo:     !!_antiga.mandabemAtivo,
+      meAtivo:           !!_antiga.meAtivo,
       mandabemId:        _antiga.mandabemId || undefined,
       meSomenteCorreios: _antiga.meSomenteCorreios,
       meUserAgent:       _antiga.meUserAgent || undefined,
@@ -1559,6 +1604,12 @@
         minimo: parseFloat(document.getElementById('ent-gratis-minimo').value) || 0
       },
       obs: document.getElementById('ent-obs').value.trim(),
+      embalagem: {
+        pesoG:       parseFloat(document.getElementById('ent-emb-peso').value)        || 75,
+        altura:      parseFloat(document.getElementById('ent-emb-altura').value)      || 8.5,
+        largura:     parseFloat(document.getElementById('ent-emb-largura').value)     || 18,
+        comprimento: parseFloat(document.getElementById('ent-emb-comprimento').value) || 12
+      },
       cepOrigem: (document.getElementById('ent-cep-origem').value || '').replace(/\D/g, ''),
       meSandbox: document.getElementById('ent-me-sandbox').checked,
       pac: {

@@ -172,3 +172,25 @@ function clearLoggedClient() {
     localStorage.removeItem('lapinkSession');
   } catch (e) {}
 }
+
+// ── Rate limit por IP (login/cadastro) — proteção contra força bruta e
+//    criação em massa de contas. Chama a Cloud Function ANTES de tentar o
+//    login/cadastro de verdade; se aquele IP já passou do limite pra essa
+//    ação, bloqueia por 1 hora. Falha aberta: qualquer erro de rede libera
+//    a tentativa (nunca trava um cliente legítimo por instabilidade). ──
+async function verificarLimiteIP(acao) {
+  try {
+    var resp = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/verificarLimiteIP', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: acao })
+    });
+    var data = await resp.json();
+    if (resp.status === 429 && data && data.bloqueado) {
+      return { bloqueado: true, retryAfterMin: data.retryAfterMin || 60 };
+    }
+    return { bloqueado: false };
+  } catch (e) {
+    return { bloqueado: false };
+  }
+}

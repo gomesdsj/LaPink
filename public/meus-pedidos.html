@@ -225,6 +225,14 @@ body { background: var(--gray-50); min-height: 100vh; }
 <script>
 (function () {
   /* ── helpers ── */
+  // Escapa nome/endereço/número do pedido antes de ir pro innerHTML — esses
+  // campos vêm do checkout público (createPreference não exige login), então
+  // sem isso um pedido malicioso vira XSS persistente pra quem abre "Meus
+  // pedidos" depois. O servidor já sanitiza no createPreference; isso aqui é
+  // a segunda camada, no ponto onde o dado realmente vira HTML.
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   function fmtR(v) {
     return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
   }
@@ -269,7 +277,7 @@ body { background: var(--gray-50); min-height: 100vh; }
   function itensCompacto(itens) {
     if (!itens || !itens.length) return 'Nenhum item';
     return itens.map(function(it) {
-      return (it.qty || 1) + 'x ' + (it.nome || 'Produto');
+      return (it.qty || 1) + 'x ' + esc(it.nome || 'Produto');
     }).join(', ');
   }
 
@@ -287,8 +295,8 @@ body { background: var(--gray-50); min-height: 100vh; }
       return '<div class="mp-detail-item">' +
         '<div class="mp-detail-item-icon"><i class="ti ti-sparkles"></i></div>' +
         '<div class="mp-detail-item-info">' +
-          '<div class="mp-detail-item-name">' + (it.nome || 'Produto') + '</div>' +
-          '<div class="mp-detail-item-qty">Qtd: ' + (it.qty || 1) + '</div>' +
+          '<div class="mp-detail-item-name">' + esc(it.nome || 'Produto') + '</div>' +
+          '<div class="mp-detail-item-qty">Qtd: ' + (Number(it.qty) || 1) + '</div>' +
         '</div>' +
         '<div class="mp-detail-item-price">' + fmtR((it.preco || 0) * (it.qty || 1)) + '</div>' +
       '</div>';
@@ -305,10 +313,10 @@ body { background: var(--gray-50); min-height: 100vh; }
       endHtml = '<div class="mp-detail-section">' +
         '<div class="mp-detail-section-title"><i class="ti ti-map-pin"></i> Endereço de entrega</div>' +
         '<div class="mp-detail-address">' +
-          (end.rua || '') + ', ' + (end.numero || '') +
-          (end.complemento ? ' — ' + end.complemento : '') + '<br>' +
-          (end.bairro || '') + ' — ' + (end.cidade || '') + '/' + (end.estado || '') + '<br>' +
-          'CEP: ' + (end.cep || '') +
+          esc(end.rua || '') + ', ' + esc(end.numero || '') +
+          (end.complemento ? ' — ' + esc(end.complemento) : '') + '<br>' +
+          esc(end.bairro || '') + ' — ' + esc(end.cidade || '') + '/' + esc(end.estado || '') + '<br>' +
+          'CEP: ' + esc(end.cep || '') +
         '</div>' +
       '</div>';
     }
@@ -317,7 +325,7 @@ body { background: var(--gray-50); min-height: 100vh; }
     var rastreioInlineHtml = rastreio ?
       '<div class="mp-order-tracking">' +
         '<span class="mp-tracking-label">Rastreio:</span>' +
-        '<span class="mp-tracking-code">' + rastreio + '</span>' +
+        '<span class="mp-tracking-code">' + esc(rastreio) + '</span>' +
         '<a href="https://rastreamento.correios.com.br/app/index.php?objetos=' + encodeURIComponent(rastreio) + '" target="_blank" rel="noopener" class="mp-tracking-btn"><i class="ti ti-external-link"></i> Acompanhar</a>' +
       '</div>' : '';
 
@@ -325,8 +333,8 @@ body { background: var(--gray-50); min-height: 100vh; }
       /* cabeçalho clicável */
       '<div class="mp-order-head" onclick="toggleOrder(\'' + id + '\')">' +
         '<div class="mp-order-num">' +
-          '<strong>#' + num + '</strong>' +
-          '<span>' + data + '</span>' +
+          '<strong>#' + esc(num) + '</strong>' +
+          '<span>' + esc(data) + '</span>' +
         '</div>' +
         badgeHtml(status) +
         '<i class="ti ti-chevron-down mp-chevron"></i>' +
@@ -351,7 +359,7 @@ body { background: var(--gray-50); min-height: 100vh; }
             itensDetHtml +
             '<div class="mp-detail-totals">' +
               '<div class="mp-detail-tot-row"><span>Subtotal</span><span>' + fmtR(pedido.subtotal || 0) + '</span></div>' +
-              '<div class="mp-detail-tot-row"><span>Frete (' + (pedido.modalidadeFrete || '—') + ')</span><span>' + freteLabel + '</span></div>' +
+              '<div class="mp-detail-tot-row"><span>Frete (' + esc(pedido.modalidadeFrete || '—') + ')</span><span>' + freteLabel + '</span></div>' +
               '<div class="mp-detail-tot-row bold"><span>Total</span><span>' + fmtR(pedido.total || 0) + '</span></div>' +
             '</div>' +
           '</div>'

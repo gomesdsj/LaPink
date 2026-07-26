@@ -453,6 +453,22 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* ── Desktop (>=1025px): carrossel com respiro proporcional ao container
+   de conteúdo centralizado usado no resto da página (v1.css), sem alterar
+   tablet/mobile. ── */
+@media (min-width: 1025px) {
+  .carousel-slide {
+    padding-left: max(80px, calc((100% - var(--content-max, 1280px)) / 2 + 48px));
+    padding-right: max(80px, calc((100% - var(--content-max, 1280px)) / 2 + 48px));
+    gap: 64px;
+    min-height: 480px;
+  }
+  .carousel-content { max-width: 460px; }
+  .carousel-title { font-size: 38px; }
+  .carousel-media { flex: 0 0 380px; height: 340px; }
+  .carousel-media-icon { font-size: 160px; }
+}
 </style>
 </head>
 <body>
@@ -460,14 +476,14 @@
 
   <!-- Barra de anúncio -->
   <div class="announce">
-    <span id="v1-anuncio"><i class="ti ti-truck"></i> Frete grátis acima de R$ 199 · Parcele em até 6x sem juros</span>
+    <span id="v1-anuncio"><i class="ti ti-truck"></i> Frete grátis para todo o Brasil acima de R$ 199 · Parcele em até 6x sem juros</span>
   </div>
 
   <!-- Overlay + Drawer lateral esquerdo (mobile) -->
   <div class="drawer-overlay" id="drawerOverlay"></div>
   <div class="nav-drawer" id="navDrawer" role="dialog" aria-label="Menu">
     <div class="drawer-header">
-      <div class="logo"><i class="ti ti-diamond" aria-hidden="true"></i> LaPink</div>
+      <div class="logo" onclick="drawerNav(limparFiltro)" style="cursor:pointer;"><i class="ti ti-butterfly" aria-hidden="true"></i> LaPink</div>
       <button class="drawer-close" id="drawerClose" aria-label="Fechar menu"><i class="ti ti-x"></i></button>
     </div>
     <nav class="drawer-links">
@@ -485,7 +501,7 @@
       <a href="checkout.html"><i class="ti ti-shopping-cart"></i> Carrinho</a>
 
       <!-- Conta / atalhos (apenas no menu) -->
-      <a id="drawerProfileBtn" onclick="closeDrawer(); openProfileModal();" style="display:none"><i class="ti ti-user-circle"></i> Minha conta</a>
+      <a id="drawerProfileBtn" href="minha-conta.html" style="display:none"><i class="ti ti-user-circle"></i> Minha conta</a>
       <a id="drawerOrdersBtn" href="meus-pedidos.html" style="display:none"><i class="ti ti-package"></i> Meus pedidos</a>
       <a id="drawerPanelBtn" href="../admin/admin.html" style="display:none"><i class="ti ti-layout-dashboard"></i> Ir para o Painel</a>
     </nav>
@@ -508,7 +524,7 @@
   <!-- Navbar -->
   <div class="nav">
     <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
-    <div class="logo"><i class="ti ti-diamond"></i> LaPink</div>
+    <div class="logo" onclick="limparFiltro()" style="cursor:pointer;"><i class="ti ti-butterfly"></i> LaPink</div>
     <div class="search-bar">
       <i class="ti ti-search"></i>
       <input type="text" id="v1-search" placeholder="Buscar semijoias, bolsas..." />
@@ -535,7 +551,7 @@
       <a href="../admin/admin.html" id="panelBtn" class="panel-nav-btn" title="Ir para o Painel Admin">
         <i class="ti ti-layout-dashboard"></i> Painel
       </a>
-      <button class="nav-icon" id="navUserBtn" aria-label="Minha conta" title="Minha conta" onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(c&&c.email){openProfileModal();}else{try{sessionStorage.setItem('referrerPage','V1.html');}catch(e){}location.href='login.html';}})()">
+      <button class="nav-icon" id="navUserBtn" aria-label="Minha conta" title="Minha conta" onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(c&&c.email){location.href='minha-conta.html';}else{try{sessionStorage.setItem('referrerPage','V1.html');}catch(e){}location.href='login.html';}})()">
         <i class="ti ti-user"></i>
       </button>
       <button class="nav-icon logout-btn" id="logoutBtn" title="Sair da conta" aria-label="Sair">
@@ -550,7 +566,7 @@
   <!-- Strip de frete grátis -->
   <div class="frete-strip" id="frete-strip" role="status" aria-live="polite">
     <i class="ti ti-truck-delivery"></i>
-    <span id="frete-strip-msg">Frete grátis em compras acima de R$ 300</span>
+    <span id="frete-strip-msg">Frete grátis a partir de R$ 300</span>
   </div>
 
   <!-- Carrossel -->
@@ -590,10 +606,6 @@
 
   <!-- Catálogo completo por categoria (todos os produtos, sempre visível) -->
   <div class="section" id="secao-catalogo">
-    <div class="section-header">
-      <span class="section-title">Catálogo completo</span>
-      <span style="font-size:12px; color:#aaa;" id="catalogo-count"></span>
-    </div>
     <div id="catalogo-por-cat"></div>
   </div>
 
@@ -629,6 +641,7 @@
   <!-- Rodapé -->
   <div class="footer">
     <div class="footer-col"><h4>LaPink</h4>
+      <p class="footer-blurb">Semijoias banhadas a ouro, escolhidas com carinho pra você brilhar em cada detalhe do dia a dia.</p>
       <a href="register.html">Seja revendedora</a>
       <a href="login.html">Minha conta</a>
       <a class="foot-wa" href="#" rel="noopener">Fale conosco</a>
@@ -639,12 +652,24 @@
       <a class="foot-wa" href="#" rel="noopener">Formas de pagamento</a>
       <a class="foot-wa" href="#" rel="noopener">Frete e prazo</a>
     </div>
+    <div class="footer-col"><h4>Institucional</h4>
+      <a href="privacidade.html">Política de privacidade</a>
+      <a href="termos.html">Termos de uso</a>
+    </div>
     <div class="footer-col"><h4>Siga-nos</h4>
       <a class="foot-wa" href="#" rel="noopener"><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> WhatsApp</a>
       <a class="foot-insta" href="#" target="_blank" rel="noopener"><i class="ti ti-brand-instagram" aria-hidden="true"></i> Instagram</a>
     </div>
   </div>
-  <div class="footer-bottom"><span id="foot-bottom">© <span id="foot-year"></span> LaPink · Todos os direitos reservados</span></div>
+  <div class="footer-bottom">
+    <div class="footer-payments" aria-label="Formas de pagamento aceitas">
+      <span class="footer-payments-label">Formas de pagamento</span>
+      <span class="footer-payment-item"><i class="ti ti-qrcode" aria-hidden="true"></i> Pix</span>
+      <span class="footer-payment-item"><i class="ti ti-credit-card" aria-hidden="true"></i> Cartão de crédito</span>
+      <span class="footer-payment-item"><i class="ti ti-barcode" aria-hidden="true"></i> Boleto</span>
+    </div>
+    <span id="foot-bottom">© <span id="foot-year"></span> LaPink · Todos os direitos reservados</span>
+  </div>
   <script>
   (function () {
     // Ano atual dinâmico
@@ -763,32 +788,32 @@
 
   // ── Defaults ──
   var DEFAULT = {
-    anuncio: 'Frete grátis acima de R$ 199 · Parcele em até 6x sem juros',
+    anuncio: 'Frete grátis para todo o Brasil acima de R$ 199 · Parcele em até 6x sem juros',
     hero: {
-      eyebrow: 'Nova coleção — verão 2025',
-      titulo:  'Elegância que\nconta sua história',
-      sub:     'Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.',
+      eyebrow: 'Coleção atual',
+      titulo:  'Elegância que\nconta a sua história',
+      sub:     'Semijoias, bolsas e acessórios escolhidos a dedo pra combinar com cada momento seu.',
       btn1:    'Ver coleção',
-      btn2:    'Promoções'
+      btn2:    'Ver promoções'
     },
     destaque:     [],
-    destaqueTitulo: 'Mais vendidos',
+    destaqueTitulo: 'Queridinhas da LaPink',
     destaqueOculto: false,
     banner: {
       ativo:   true,
       eyebrow: 'Para revendedoras',
-      titulo:  'Compre no atacado\ncom preços especiais',
-      sub:     'Cadastre-se como revendedora e acesse preços exclusivos.'
+      titulo:  'Transforme brilho\nem renda extra',
+      sub:     'Cadastre-se de graça e garanta preços de atacado em toda a coleção.'
     },
     depoimentos: [
-      { texto: 'Qualidade incrível! Os anéis são lindos e duraram muito mais do que eu esperava.',  autor: 'Ana P. — São Paulo'        },
-      { texto: 'Entrega rápida e embalagem super caprichada. Presente perfeito para minha mãe!',    autor: 'Carla M. — Rio de Janeiro' },
-      { texto: 'Virei revendedora e as minhas clientes amam! Produtos de altíssima qualidade.',     autor: 'Juliana R. — Curitiba'     }
+      { texto: 'Qualidade surpreendente! Os anéis são lindos e continuam impecáveis meses depois.',  autor: 'Ana P. — São Paulo'        },
+      { texto: 'Chegou rapidinho e a embalagem é um espetáculo à parte. Presente perfeito pra minha mãe!', autor: 'Carla M. — Rio de Janeiro' },
+      { texto: 'Virei revendedora e minhas clientes pedem sempre mais — qualidade que fideliza.',     autor: 'Juliana R. — Curitiba'     }
     ],
     newsletter: {
-      titulo: 'Receba novidades e ofertas exclusivas',
-      sub:    'Cadastre seu e-mail e ganhe 10% de desconto na primeira compra',
-      btn:    'Quero desconto'
+      titulo: 'Ganhe 10% de desconto na primeira compra',
+      sub:    'Cadastre seu e-mail e receba o cupom + novidades em primeira mão',
+      btn:    'Quero meu desconto'
     }
   };
 
@@ -810,11 +835,10 @@
   function getProdutos() {
     try {
       var arr = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]') || [];
-      // Não exibe na loja: produtos ocultos no editor admin OU sem estoque
-      return arr.filter(function(p) {
-        var est = parseInt(p.estoque) || 0;
-        return !p.oculto && est > 0;
-      });
+      // Só esconde o que o admin ocultou no editor. Sem estoque continua
+      // aparecendo (o card já mostra o card com o selo "Esgotado" — regra
+      // de negócio: cliente vê que existe, mesmo sem poder comprar agora).
+      return arr.filter(function(p) { return !p.oculto; });
     } catch { return []; }
   }
 
@@ -842,12 +866,15 @@
     if (window._v1FavMode) {
       // Na view de favoritos, remover atualiza a lista
       atualizarProdutos();
-    } else if (event && event.currentTarget) {
-      // Atualiza só o ícone clicado
-      var btn = event.currentTarget;
-      btn.classList.toggle('is-fav', agoraFav);
-      var ic = btn.querySelector('i');
-      if (ic) ic.className = 'ti ' + (agoraFav ? 'ti-heart-filled' : 'ti-heart');
+    } else {
+      // Atualiza TODOS os corações desse produto na página (o mesmo produto
+      // pode aparecer em mais de uma seção/grade ao mesmo tempo) — sem isso,
+      // só o card clicado ficava preenchido e os outros pareciam "esquecer".
+      document.querySelectorAll('.prod-fav[data-fid="' + sid.replace(/"/g,'') + '"]').forEach(function(btn) {
+        btn.classList.toggle('is-fav', agoraFav);
+        var ic = btn.querySelector('i');
+        if (ic) ic.className = 'ti ' + (agoraFav ? 'ti-heart-filled' : 'ti-heart');
+      });
     }
     if (typeof showToast === 'function') {
       showToast(agoraFav ? 'Adicionado aos favoritos ♥' : 'Removido dos favoritos');
@@ -917,7 +944,17 @@
   }
 
   // ── Renderiza cards de produto ──
+  // Esgotados sempre por último (ordenação estável — preserva a ordem
+  // original entre itens do mesmo grupo), em qualquer lista: destaque,
+  // catálogo completo, categoria, busca, favoritos, promoções, coleção.
   function renderCards(lista, emptyMsg) {
+    if (lista && lista.length) {
+      lista = lista.slice().sort(function(a, b) {
+        var eA = ((parseInt(a.produto.estoque) || 0) <= 0) ? 1 : 0;
+        var eB = ((parseInt(b.produto.estoque) || 0) <= 0) ? 1 : 0;
+        return eA - eB;
+      });
+    }
     if (!lista || !lista.length) {
       var msg = emptyMsg || 'Nenhum produto encontrado.';
       return '<div class="prod-empty"><i class="ti ti-mood-empty"></i>' + msg + '</div>';
@@ -962,11 +999,11 @@
       var precoPrincipal = atacado > 0 ? atacado : varejo;
       var preco         = 'R$ ' + precoPrincipal.toFixed(2).replace('.', ',');
       var fav           = (typeof isFavorito === 'function') && isFavorito(p.id);
-      var favHtml       = '<button type="button" class="prod-fav' + (fav ? ' is-fav' : '') + '" aria-label="' + (fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '" onclick="toggleFavorito(event, \'' + esc(String(p.id)) + '\')"><i class="ti ' + (fav ? 'ti-heart-filled' : 'ti-heart') + '"></i></button>';
+      var favHtml       = '<button type="button" class="prod-fav' + (fav ? ' is-fav' : '') + '" data-fid="' + esc(String(p.id)) + '" aria-label="' + (fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '" onclick="toggleFavorito(event, \'' + esc(String(p.id)) + '\')"><i class="ti ' + (fav ? 'ti-heart-filled' : 'ti-heart') + '"></i></button>';
 
       return '<div class="prod-card' + (esgotado ? ' prod-card--esgotado' : '') + '"' +
           ' data-id="' + esc(String(p.id)) + '" data-nome="' + esc(p.nome) + '" data-preco="' + precoPrincipal + '" data-imagem="' + esc(p.imagem || '') + '"' +
-          (esgotado ? '' : ' onclick="abrirQty(event,this)"') + '>' +
+          ' onclick="abrirQty(event,this)">' +
         '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
@@ -1304,13 +1341,10 @@
   function renderCatalogoCompleto() {
     var secao     = document.getElementById('secao-catalogo');
     var container = document.getElementById('catalogo-por-cat');
-    var countEl   = document.getElementById('catalogo-count');
     if (!secao || !container) return;
 
     var produtos = getProdutos();
     if (!produtos.length) { secao.style.display = 'none'; return; }
-
-    if (countEl) countEl.textContent = produtos.length + ' produtos';
 
     // Todos os produtos em grade contínua, sem separação por categoria
     // (a visão por categoria aparece apenas ao filtrar pelo menu/cards)
@@ -1401,6 +1435,11 @@ window.verProduto = function(id) {
 var _qtyProduto = null;
 var _fecharQtyTimer = null;
 
+// ── Escape helper (função local ao trecho acima não é acessível aqui) ──
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ── Abre modal de detalhes ao clicar no card ──
 window.abrirQty = function(event, card) {
   clearTimeout(_fecharQtyTimer);
@@ -1446,6 +1485,8 @@ window.abrirQty = function(event, card) {
       inner = '<i class="ti ti-diamond"></i>';
     }
     imgEl.innerHTML = inner + closeBtnHtml;
+    // Sem estoque: foto meio opaca (mesmo sinal visual do card na vitrine)
+    imgEl.style.opacity = (estoque <= 0) ? '.55' : '';
   }
 
   // Categoria
@@ -1468,14 +1509,27 @@ window.abrirQty = function(event, card) {
 
   // Disponibilidade — sem mostrar a quantidade em estoque ao cliente
   var estoqueEl = document.getElementById('qtySheetEstoque');
+  var qtyWrapEl = document.querySelector('.prod-modal-qty-wrap');
+  var addBtnEl  = document.getElementById('qtyAddBtn');
+  var esgotadoModal = estoque <= 0;
   if (estoqueEl) {
-    if (estoque <= 0) {
+    if (esgotadoModal) {
       estoqueEl.innerHTML = '<i class="ti ti-alert-circle" style="color:#c0392b"></i> Esgotado';
       estoqueEl.style.color = '#c0392b';
     } else {
       estoqueEl.innerHTML = '<i class="ti ti-check" style="color:#27ae60"></i> Disponível';
       estoqueEl.style.color = '#27ae60';
     }
+  }
+  // Sem estoque: dá pra ver as especificações, mas não pra comprar
+  if (qtyWrapEl) qtyWrapEl.style.display = esgotadoModal ? 'none' : '';
+  if (addBtnEl) {
+    addBtnEl.disabled = esgotadoModal;
+    addBtnEl.style.opacity = esgotadoModal ? '.5' : '';
+    addBtnEl.style.cursor  = esgotadoModal ? 'default' : '';
+    addBtnEl.innerHTML = esgotadoModal
+      ? '<i class="ti ti-alert-circle"></i> Produto esgotado'
+      : '<i class="ti ti-shopping-cart"></i> Adicionar ao carrinho';
   }
 
   document.getElementById('qtyInput').value = 1;
@@ -1671,9 +1725,9 @@ if (installBtn) {
 (function() {
   var DEFAULTS = [
     {
-      eyebrow: 'Nova coleção — Verão 2025',
-      titulo: 'Elegância que\nconta sua história',
-      subtitulo: 'Semijoias, bolsas e acessórios cuidadosamente selecionados para o seu estilo.',
+      eyebrow: 'Coleção atual',
+      titulo: 'Elegância que\nconta a sua história',
+      subtitulo: 'Semijoias, bolsas e acessórios escolhidos a dedo pra combinar com cada momento seu.',
       btn1Txt: 'Ver coleção', btn1Acao: 'colecao',
       btn2Txt: 'Ver promoções', btn2Acao: 'promocoes',
       imagem: '', icone: 'ti-diamond', cor: 'pink'
@@ -1681,23 +1735,23 @@ if (installBtn) {
     {
       eyebrow: 'Destaque da semana',
       titulo: 'Brincos que\nencantam',
-      subtitulo: 'Mais de 20 modelos exclusivos em prata e banho de ouro 18k.',
+      subtitulo: 'Mais de 20 modelos em prata e banho de ouro 18k — tem um par com o seu nome.',
       btn1Txt: 'Ver brincos', btn1Acao: 'brincos',
       btn2Txt: '', btn2Acao: '',
       imagem: '', icone: 'ti-star', cor: 'gold'
     },
     {
       eyebrow: 'Para revendedoras',
-      titulo: 'Compre no atacado\ncom preços especiais',
-      subtitulo: 'Cadastre-se como revendedora e acesse condições exclusivas de preço.',
-      btn1Txt: 'Saiba mais', btn1Acao: '',
+      titulo: 'Transforme brilho\nem renda extra',
+      subtitulo: 'Cadastre-se de graça e garanta condições exclusivas de preço de atacado.',
+      btn1Txt: 'Quero revender', btn1Acao: '',
       btn2Txt: '', btn2Acao: '',
       imagem: '', icone: 'ti-building-store', cor: 'dark'
     },
     {
       eyebrow: 'Anéis exclusivos',
       titulo: 'O anel perfeito\npara cada momento',
-      subtitulo: 'Clássicos, modernos ou delicados — encontre o seu.',
+      subtitulo: 'Clássicos, modernos ou delicados — encontre o seu e brilhe do seu jeito.',
       btn1Txt: 'Ver anéis', btn1Acao: 'aneis',
       btn2Txt: '', btn2Acao: '',
       imagem: '', icone: 'ti-circle', cor: 'rose'
@@ -1874,9 +1928,9 @@ if (installBtn) {
 var BENEFICIOS_PADRAO = [
   { icone: 'ti-credit-card',    texto: 'Parcele em até 3x sem juros' },
   { icone: 'ti-shield-check',   texto: 'Compra 100% segura' },
-  { icone: 'ti-truck-delivery', texto: 'Enviamos para todo o Brasil' },
-  { icone: 'ti-brand-whatsapp', texto: 'Atendimento pelo WhatsApp' },
-  { icone: 'ti-tag',            texto: 'Preço de atacado para revendedoras' }
+  { icone: 'ti-truck-delivery', texto: 'Entregamos em todo o Brasil' },
+  { icone: 'ti-brand-whatsapp', texto: 'Atendimento rápido pelo WhatsApp' },
+  { icone: 'ti-tag',            texto: 'Preço de atacado pra revendedoras' }
 ];
 
 function getBeneficiosLoja() {
@@ -2352,10 +2406,12 @@ window.saveProfileData = async function() {
   <div class="cart-panel-foot" id="cpFoot" style="display:none;">
     <div class="cp-totals">
       <div class="cp-tot-row"><span>Subtotal</span><span id="cp-subtotal">R$ 0,00</span></div>
-      <div class="cp-tot-row"><span id="cp-frete-label">Frete</span><span id="cp-frete-val">A combinar</span></div>
     </div>
     <div class="cp-tot-total"><span>Total</span><span id="cp-total">R$ 0,00</span></div>
-    <button type="button" class="cp-btn-checkout" style="margin-top:14px;width:100%;cursor:pointer;border:none;"
+    <div style="font-size:11px;color:#B08898;text-align:center;margin-top:8px;">
+      <i class="ti ti-truck-delivery" aria-hidden="true"></i> Frete e forma de pagamento são escolhidos na próxima etapa.
+    </div>
+    <button type="button" class="cp-btn-checkout" style="margin-top:10px;width:100%;cursor:pointer;border:none;"
       onclick="(function(){var c=typeof getLoggedClient==='function'?getLoggedClient():null;if(!c){sessionStorage.setItem('referrerPage','pagamento.html');location.href='login.html';}else{location.href='pagamento.html';}})()">
       <i class="ti ti-shopping-bag-check" aria-hidden="true"></i> Comprar agora
     </button>
@@ -2371,10 +2427,8 @@ window.saveProfileData = async function() {
 (function() {
 
   function _cfg()     { try { return JSON.parse(localStorage.getItem('lapinkEntregaConfig')||'{}');  } catch(e){return{};} }
-  function _payCfg()  { try { return JSON.parse(localStorage.getItem('lapinkPaymentConfig')||'{}'); } catch(e){return{};} }
   function _prods()   { try { return JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');       } catch(e){return[];} }
   function fmtR(v)    { return 'R$ '+Number(v).toFixed(2).replace('.',','); }
-  function fmtPeso(g) { return g>=1000?(g/1000).toFixed(1).replace('.',',')+' kg':g+' g'; }
 
   // Fecha o pedido pelo WhatsApp da loja (funciona sem gateway de pagamento).
   window.pedirPeloWhatsApp = function () {
@@ -2396,86 +2450,6 @@ window.saveProfileData = async function() {
               '\n\nPode me ajudar a finalizar?';
     window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
   };
-
-  var _PAY_META = {
-    pix:     { icon:'ti-qrcode',       label:'PIX',                    sub:'Pagamento instantâneo' },
-    cartao:  { icon:'ti-credit-card',  label:'Cartão de crédito/débito', sub:'Maquininha na entrega' },
-    transf:  { icon:'ti-building-bank',label:'Transferência bancária',  sub:'Transferência bancária' },
-    dinheiro:{ icon:'ti-cash',         label:'Dinheiro / na entrega',   sub:'Pagamento na entrega'  }
-  };
-
-  function calcularPagamentos() {
-    var c = _payCfg(); var opts = [];
-    ['pix','cartao','transf','dinheiro'].forEach(function(k){
-      var m = c[k];
-      if(m && m.ativo) {
-        var meta = _PAY_META[k];
-        var sub = meta.sub;
-        if(k==='cartao' && m.parcelaMax>1) sub='Parcelamento em até '+m.parcelaMax+'x sem juros';
-        opts.push({ key:k, icon:meta.icon, label:meta.label, sub:sub });
-      }
-    });
-    if(!opts.length) opts.push({ key:'acombinar', icon:'ti-cash', label:'Pagamento', sub:'A combinar com o vendedor' });
-    return opts;
-  }
-
-  function _pesoTotal() {
-    var cart=getCart(); var prods=_prods();
-    var peso = cart.reduce(function(s,i){
-      var p=prods.find(function(x){return String(x.id)===String(i.id);});
-      var unit = p ? Number(p.pesoEnvioGramas || p.pesoEnvioG || 0) : 0;
-      return s + unit*i.qty;
-    },0);
-    return peso ? peso + 300 : 0; // +300g embalagem (igual ao checkout)
-  }
-
-  function _consultarTabela(tabela, pesoG) {
-    var ord=tabela.slice().sort(function(a,b){return a.ateG-b.ateG;});
-    var f=ord.find(function(r){return pesoG<=r.ateG;});
-    return f?{preco:f.preco,caixa:f.caixa||''}:{preco:null,caixa:''};
-  }
-
-  function calcularEnvios() {
-    var cfg=_cfg(); var pesoG=_pesoTotal();
-    var sub=getCartTotal();
-    var gAtivo=cfg.gratis&&cfg.gratis.ativo;
-    var minimo=gAtivo?(cfg.gratis.minimo!=null?Number(cfg.gratis.minimo):300):0;
-    var envios=[];
-
-    if(gAtivo&&sub>=minimo) {
-      envios.push({key:'gratis',label:'Frete grátis',sub:'Parabéns! Pedido qualifica para frete grátis.',preco:0,gratis:true});
-      return envios;
-    }
-
-    if(pesoG>0) {
-      if(cfg.pac&&cfg.pac.ativo&&cfg.pac.tabela&&cfg.pac.tabela.length){
-        var r=_consultarTabela(cfg.pac.tabela,pesoG);
-        envios.push({key:'pac',label:'PAC'+(r.caixa?' — '+r.caixa:''),sub:'5 a 10 dias úteis · '+fmtPeso(pesoG),preco:r.preco});
-      }
-      if(cfg.sedex&&cfg.sedex.ativo&&cfg.sedex.tabela&&cfg.sedex.tabela.length){
-        var r2=_consultarTabela(cfg.sedex.tabela,pesoG);
-        envios.push({key:'sedex',label:'SEDEX'+(r2.caixa?' — '+r2.caixa:''),sub:'1 a 3 dias úteis · '+fmtPeso(pesoG),preco:r2.preco});
-      }
-      if(!envios.length&&cfg.tabelaPeso&&cfg.tabelaPeso.length){
-        var r3=_consultarTabela(cfg.tabelaPeso,pesoG);
-        envios.push({key:'correios',label:'Correios',sub:fmtPeso(pesoG),preco:r3.preco});
-      }
-    }
-
-    if(!envios.length) {
-      if(cfg.retirada&&cfg.retirada.ativo)
-        envios.push({key:'retirada',label:'Retirada no local',sub:cfg.retirada.horario||'',preco:0});
-      if(cfg.local&&cfg.local.ativo)
-        envios.push({key:'local',label:'Entrega local',sub:cfg.local.prazo||'',preco:cfg.local.taxa||0});
-      if(!envios.length)
-        envios.push({key:'acombinar',label:'Frete',sub:'A combinar',preco:null});
-    }
-
-    return envios;
-  }
-
-  var _selectedShip = null;
-  var _selectedPay  = null;
 
   function renderCP() {
     var cart   = getCart();
@@ -2530,94 +2504,20 @@ window.saveProfileData = async function() {
       '</div>';
     }
 
-    // Seção de entrega
-    var envios=calcularEnvios();
-    if(!_selectedShip||!envios.find(function(e){return e.key===_selectedShip;}))
-      _selectedShip=envios[0]&&envios[0].key;
-    if(_selectedShip) try{ localStorage.setItem('lapinkCartShipping',_selectedShip); }catch(e){}
-
-    var envHtml='<div class="cp-shipping">' +
-      '<div class="cp-shipping-title"><i class="ti ti-truck-delivery"></i> Entrega</div>';
-    envios.forEach(function(e){
-      var priceHtml=e.preco===null
-        ?' <span style="font-size:10px;color:#B08898;">A combinar</span>'
-        :'<span class="cp-ship-opt-price'+(e.preco===0?' gratis':'')+'">'+fmtR(e.preco)+'</span>';
-      envHtml+='<label class="cp-ship-opt" style="cursor:pointer;">' +
-        '<input type="radio" name="cpShip" value="'+e.key+'"'+(e.key===_selectedShip?' checked':'')+
-          ' onchange="cpSelectShip(\''+e.key+'\')" />' +
-        '<div class="cp-ship-opt-info">' +
-          '<div class="cp-ship-opt-label">'+e.label+'</div>' +
-          (e.sub?'<div class="cp-ship-opt-sub">'+e.sub+'</div>':'') +
-        '</div>' +
-        priceHtml +
-      '</label>';
-    });
-    envHtml+='</div>';
-    body.innerHTML+=envHtml;
-
-    // Seção de pagamento
-    var pagamentos=calcularPagamentos();
-    if(!_selectedPay||!pagamentos.find(function(p){return p.key===_selectedPay;}))
-      _selectedPay=pagamentos[0]&&pagamentos[0].key;
-
-    var payHtml='<div class="cp-payment">' +
-      '<div class="cp-shipping-title"><i class="ti ti-credit-card"></i> Pagamento</div>';
-    pagamentos.forEach(function(p){
-      payHtml+='<label class="cp-pay-opt" style="cursor:pointer;">' +
-        '<input type="radio" name="cpPay" value="'+p.key+'"'+(p.key===_selectedPay?' checked':'')+
-          ' onchange="cpSelectPay(\''+p.key+'\')" />' +
-        '<div class="cp-pay-opt-icon"><i class="ti '+p.icon+'"></i></div>' +
-        '<div class="cp-pay-opt-info">' +
-          '<div class="cp-pay-opt-label">'+p.label+'</div>' +
-          '<div class="cp-pay-opt-sub">'+p.sub+'</div>' +
-        '</div>' +
-      '</label>';
-    });
-    payHtml+='</div>';
-    body.innerHTML+=payHtml;
-
-    // Persiste escolha para o checkout
-    if(_selectedPay) try{ localStorage.setItem('lapinkCartPayment',_selectedPay); }catch(e){}
-
-    // Totais
+    // Frete e forma de pagamento são escolhidos na próxima etapa (pagamento.html),
+    // depois que o cliente informa o CEP — aqui no carrinho mostramos só o
+    // subtotal, pra não exibir um valor de frete que ainda não é o real.
     atualizarTotaisCP();
     if(foot) foot.style.display='';
   }
 
   function atualizarTotaisCP() {
-    var cfg=_cfg(); var sub=getCartTotal();
-    var gAtivo=cfg.gratis&&cfg.gratis.ativo;
-    var minimo=gAtivo?(cfg.gratis.minimo!=null?Number(cfg.gratis.minimo):300):0;
-    var frete=0; var freteLabel='A combinar'; var freteIsGratis=false;
-
-    if(gAtivo&&sub>=minimo){ frete=0; freteLabel='Grátis'; freteIsGratis=true; }
-    else {
-      var envios=calcularEnvios();
-      var sel=envios.find(function(e){return e.key===_selectedShip;})||envios[0];
-      if(sel){ frete=sel.preco||0; freteLabel=sel.preco===null?'A combinar':fmtR(sel.preco); freteIsGratis=sel.preco===0; }
-    }
-
-    var total=sub+(typeof frete==='number'?frete:0);
-    var flEl=document.getElementById('cp-frete-label');
-    var fvEl=document.getElementById('cp-frete-val');
+    var sub=getCartTotal();
     var stEl=document.getElementById('cp-subtotal');
     var ttEl=document.getElementById('cp-total');
     if(stEl) stEl.textContent=fmtR(sub);
-    if(flEl) flEl.textContent='Frete';
-    if(fvEl){ fvEl.textContent=freteLabel; fvEl.style.color=freteIsGratis?'#2E8B5A':''; }
-    if(ttEl) ttEl.textContent=fmtR(total);
+    if(ttEl) ttEl.textContent=fmtR(sub);
   }
-
-  window.cpSelectShip=function(key){
-    _selectedShip=key;
-    try{ localStorage.setItem('lapinkCartShipping',key); }catch(e){}
-    atualizarTotaisCP();
-  };
-
-  window.cpSelectPay=function(key){
-    _selectedPay=key;
-    try{ localStorage.setItem('lapinkCartPayment',key); }catch(e){}
-  };
 
   window.cpQty=function(id,action){
     var cart=getCart();
@@ -2678,7 +2578,7 @@ window.saveProfileData = async function() {
       var msg = document.getElementById('frete-strip-msg');
       if (!el || !msg) return;
       var val = minimo % 1 === 0 ? minimo.toFixed(0) : minimo.toFixed(2).replace('.', ',');
-      msg.textContent = 'Frete grátis em compras acima de R$ ' + val;
+      msg.textContent = 'Frete grátis a partir de R$ ' + val;
       el.style.display = 'flex';
     } catch(e) {}
   }

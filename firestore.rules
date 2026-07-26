@@ -4,7 +4,8 @@ service cloud.firestore {
 
     // ════════════════════════════════════════════════════════════════
     // POSTURA: default-deny. Só os documentos PÚBLICOS de catálogo/config
-    // (sem segredos, sem PII, sem credenciais) são liberados.
+    // (sem segredos, sem PII, sem credenciais) têm LEITURA liberada — e
+    // mesmo esses só podem ser ESCRITOS por um admin autenticado.
     //
     // NEGADOS por não estarem na lista (não há regra que os permita):
     //   • lapinkClients     → PII de clientes + hashes de senha
@@ -13,11 +14,14 @@ service cloud.firestore {
     //   • lapinkApiConfig    → pode conter chaves (EmailJS/MP)
     //   • apiConfig          → token do Mercado Pago (lido só via Admin SDK)
     //
-    // OBS: a ESCRITA dos docs públicos (catálogo/config) ainda é aberta porque
-    // o painel salva pelo cloud-sync sem exigir Firebase Auth para isso.
-    // Risco residual = vandalismo do catálogo. Lockdown total da escrita
-    // ("só admin grava") exige migrar TODAS as gravações do painel para
-    // exigir Firebase Auth — ver firestore.rules.secure.
+    // ESCRITA do catálogo/config e dos segredos (apiConfig) agora exige
+    // isAdmin() — todo o painel já carrega firebase-auth-compat.js, espera a
+    // sessão (aguardarFirebaseAuth) antes de listar/gravar, e sincroniza a
+    // claim de role via sincronizarClaimsAdmin no login. Antes disso, era
+    // aberto pra qualquer um (mesmo sem login nenhum): dava pra vandalizar o
+    // catálogo, sabotar o token do Mercado Pago, e — pior — injetar HTML/JS
+    // no nome de um produto, que o painel mostra sem escapar (some com a
+    // fonte de XSS persistente contra qualquer admin que abrir a lista).
     //
     // A LEITURA de coleções com PII (pedidos, abandonados) já usa Firebase
     // Auth + custom claim (isAdmin(), função sincronizarClaimsAdmin): listar
@@ -63,16 +67,17 @@ service cloud.firestore {
     }
 
     // Segredos (token Mercado Pago, Manda Bem/Melhor Envio, etc.).
-    // LEITURA NUNCA liberada (não vaza os tokens ao cliente). ESCRITA liberada
-    // para o admin salvar pelo painel (o painel ainda não usa Firebase Auth).
-    // As Cloud Functions leem via Admin SDK (ignoram as rules). Risco residual:
-    // alguém sobrescrever um token (sabota, não lê) — aceitável no momento.
+    // LEITURA NUNCA liberada (não vaza os tokens ao cliente). ESCRITA exige
+    // admin autenticado — antes bastava saber o nome do doc pra sobrescrever
+    // (sabotar) o token de pagamento/frete de qualquer navegador, sem login.
+    // As Cloud Functions leem via Admin SDK (ignoram as rules).
     match /lapink/apiConfig {
-      allow write: if true;   // read continua negado (sem allow read)
+      allow write: if isAdmin();   // read continua negado (sem allow read)
     }
 
     match /lapink/{doc} {
-      allow read, write: if isDocPublico(doc);
+      allow read: if isDocPublico(doc);
+      allow write: if isDocPublico(doc) && isAdmin();
       // Qualquer outro doc em /lapink/ (lapinkClients, lapinkUsers,
       // lapinkApiConfig…) → negado (sem allow = sem acesso).
     }

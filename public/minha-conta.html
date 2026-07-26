@@ -36,17 +36,6 @@
       return { ok: true };
     } catch(e) { return { ok: false, error: 'Erro ao salvar.' }; }
   }
-  async function updatePassword(email, nova) {
-    try {
-      var hash = await hashPassword(nova);
-      var users = getAllUsers();
-      var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
-      if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' };
-      users[idx].password = hash;
-      localStorage.setItem('lapinkClients', JSON.stringify(users));
-      return { ok: true };
-    } catch(e) { return { ok: false, error: 'Erro ao alterar senha.' }; }
-  }
 </script>
 <link rel="stylesheet" href="css/Principal.css" />
 <link rel="stylesheet" href="css/componentes.css" />
@@ -69,12 +58,12 @@
   .conta-topbar-actions a { font-size:12px; color:var(--gray-400); text-decoration:none; }
   .conta-topbar-actions a:hover { color:var(--pink-500); }
 
-  .conta-main { max-width: 800px; margin: 0 auto; padding: 32px 24px; }
+  .conta-main { max-width: 860px; margin: 0 auto; padding: 36px 24px 60px; }
 
   .conta-header {
-    display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+    display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
     background: var(--white); border: .5px solid var(--gray-200);
-    border-radius: var(--radius-xl); padding: 20px 24px;
+    border-radius: var(--radius-xl); padding: 22px 26px;
     box-shadow: var(--shadow-sm);
   }
   .conta-avatar {
@@ -88,7 +77,21 @@
   .conta-section-title {
     font-size: 13px; font-weight: 700; color: var(--gray-600);
     text-transform: uppercase; letter-spacing: .05em;
-    margin-bottom: 12px; margin-top: 24px;
+    margin-bottom: 12px; margin-top: 32px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .conta-section-title i { color: var(--pink-400); font-size: 14px; }
+
+  /* Cartões desta página ganham leve elevação ao passar o mouse — só aqui
+     (não mexe na regra compartilhada .card usada em outras páginas/painel). */
+  .conta-main .card,
+  .pedido-card {
+    transition: box-shadow var(--transition), border-color var(--transition);
+  }
+  .conta-main .card:hover,
+  .pedido-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--pink-200);
   }
 
   .pedido-card {
@@ -117,6 +120,14 @@
     transition: background var(--transition);
   }
   .btn-logout:hover { background: #fee2e2; }
+
+  /* Telas bem estreitas: menos respiro lateral pra sobrar mais espaço pro
+     conteúdo (form de endereço, cartões de pedido). */
+  @media (max-width: 480px) {
+    .conta-main { padding: 22px 16px 40px; }
+    .conta-header { padding: 16px 18px; gap: 12px; margin-bottom: 24px; }
+    .conta-topbar { padding: 0 16px; }
+  }
 </style>
 </head>
 <body>
@@ -125,7 +136,7 @@
 <!-- Topbar -->
 <header class="conta-topbar">
   <a href="V1.html" class="conta-brand">
-    <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:15px"></i></div>
+    <div class="logo-bubble"><i class="ti ti-butterfly" style="color:#fff;font-size:15px"></i></div>
     <span>LaPink</span>
   </a>
   <div class="conta-topbar-actions">
@@ -499,23 +510,41 @@
     if (!nova || nova.length < 6) { errEl.textContent = 'A nova senha deve ter no mínimo 6 caracteres.'; errEl.style.display = 'block'; return; }
     if (nova !== conf) { errEl.textContent = 'As senhas não coincidem.'; errEl.style.display = 'block'; return; }
 
-    // Verifica senha atual antes de alterar
-    var clients = typeof getAllUsers === 'function' ? getAllUsers() : [];
-    var user = clients.find(function(u) { return u.email.toLowerCase() === _session.email.toLowerCase(); });
-    if (!user) { errEl.textContent = 'Usuário não encontrado.'; errEl.style.display = 'block'; return; }
-    var hashAtual = await hashPassword(atual);
-    if (user.password !== hashAtual) { errEl.textContent = 'Senha atual incorreta.'; errEl.style.display = 'block'; return; }
-
-    var r = await updatePassword(_session.email, nova);
-    if (r.ok) {
-      document.getElementById('senha-atual').value = '';
-      document.getElementById('nova-senha').value = '';
-      document.getElementById('confirmar-senha').value = '';
-      _toast('Senha alterada com sucesso!');
-    } else {
-      errEl.textContent = r.error || 'Erro ao alterar senha.';
+    // Troca a senha REAL do Firebase Auth (reautentica com a senha atual
+    // antes, exigido pelo próprio Firebase para essa operação). Não compara
+    // mais contra um hash local: aquele não é o que o login realmente confere
+    // hoje (senhas ficam no Firebase Auth, não em lapinkClients), então só
+    // trocar o hash local deixaria a senha "de verdade" intacta e, pior,
+    // qualquer um com acesso ao console do navegador podia chamar a função
+    // antiga direto e trocar a senha de qualquer cliente sem saber a atual.
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+      errEl.textContent = 'Firebase indisponível agora. Recarregue a página e tente de novo.';
       errEl.style.display = 'block';
+      return;
     }
+    var authUser = firebase.auth().currentUser;
+    if (!authUser) {
+      errEl.textContent = 'Sessão de segurança expirada. Saia e entre novamente para trocar a senha.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try {
+      var cred = firebase.auth.EmailAuthProvider.credential(_session.email, atual);
+      await authUser.reauthenticateWithCredential(cred);
+      await authUser.updatePassword(nova);
+    } catch (e) {
+      errEl.textContent = (e && e.code === 'auth/wrong-password') ? 'Senha atual incorreta.'
+        : (e && e.code === 'auth/too-many-requests') ? 'Muitas tentativas. Aguarde alguns minutos.'
+        : (e && e.code === 'auth/weak-password') ? 'A nova senha é fraca demais.'
+        : 'Erro ao trocar a senha' + (e && e.message ? ': ' + e.message : '.');
+      errEl.style.display = 'block';
+      return;
+    }
+
+    document.getElementById('senha-atual').value = '';
+    document.getElementById('nova-senha').value = '';
+    document.getElementById('confirmar-senha').value = '';
+    _toast('Senha alterada com sucesso!');
   }
 </script>
 </body>

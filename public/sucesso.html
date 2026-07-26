@@ -196,6 +196,12 @@ body { background: var(--gray-50); min-height: 100vh; }
 <script>
 (function () {
   /* ── helpers ── */
+  // Escapa nome de item/modalidade de frete vindos do pedido — createPreference
+  // é checkout público (sem login), então esses campos precisam ser tratados
+  // como texto não confiável no ponto em que viram HTML.
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
   function fmtR(v) {
     return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
   }
@@ -342,8 +348,8 @@ body { background: var(--gray-50); min-height: 100vh; }
       return '<div class="suc-item">' +
         '<div class="suc-item-icon"><i class="ti ti-sparkles"></i></div>' +
         '<div class="suc-item-info">' +
-          '<div class="suc-item-name">' + (it.nome || 'Produto') + '</div>' +
-          '<div class="suc-item-qty">Qtd: ' + (it.qty || 1) + '</div>' +
+          '<div class="suc-item-name">' + esc(it.nome || 'Produto') + '</div>' +
+          '<div class="suc-item-qty">Qtd: ' + (Number(it.qty) || 1) + '</div>' +
         '</div>' +
         '<div class="suc-item-price">' + fmtR((it.preco || 0) * (it.qty || 1)) + '</div>' +
       '</div>';
@@ -358,7 +364,7 @@ body { background: var(--gray-50); min-height: 100vh; }
       (itensHtml || '<p style="font-size:13px;color:var(--gray-400);">Nenhum item encontrado.</p>') +
       '<div class="suc-totals">' +
         '<div class="suc-tot-row"><span>Subtotal</span><span>' + fmtR(pedido.subtotal || 0) + '</span></div>' +
-        '<div class="suc-tot-row"><span>Frete (' + (pedido.modalidadeFrete || '—') + ')</span><span>' + freteLabel + '</span></div>' +
+        '<div class="suc-tot-row"><span>Frete (' + esc(pedido.modalidadeFrete || '—') + ')</span><span>' + freteLabel + '</span></div>' +
         '<div class="suc-tot-row bold"><span>Total</span><span>' + fmtR(pedido.total || 0) + '</span></div>' +
       '</div>' +
     '</div>';
@@ -370,7 +376,7 @@ body { background: var(--gray-50); min-height: 100vh; }
       '<div class="suc-card-title"><i class="ti ti-truck-delivery"></i> Rastreamento</div>' +
       (rastreio ?
         '<div class="suc-tracking">' +
-          '<span class="suc-tracking-code">' + rastreio + '</span>' +
+          '<span class="suc-tracking-code">' + esc(rastreio) + '</span>' +
           '<a href="https://rastreamento.correios.com.br/app/index.php?objetos=' + encodeURIComponent(rastreio) + '" target="_blank" rel="noopener" class="suc-tracking-link"><i class="ti ti-external-link"></i> Acompanhar</a>' +
         '</div>' :
         '<p class="suc-tracking-pending"><i class="ti ti-clock" style="margin-right:5px;"></i>Aguardando envio pela loja</p>'

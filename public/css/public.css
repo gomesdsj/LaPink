@@ -5,8 +5,18 @@
 ═══════════════════════════════════════ */
 
 /* Auth background */
-body.auth-background { background: #FBEAF0; }
-body.auth-background .store-nav { background: transparent; border: none; padding: 18px 20px; }
+body.auth-background {
+  background: radial-gradient(ellipse 900px 700px at 50% 30%, #FFFFFF 0%, #FDF0F5 45%, #FBEAF0 100%);
+  background-attachment: fixed;
+}
+/* Páginas de auth (login/cadastro/recuperar/legais): logo + "Voltar" ficam
+   juntos no canto superior esquerdo (sem justify-content, cai no flex-start
+   padrão do .store-nav). Escopado só a body.auth-background para não afetar
+   o header padrão de outras páginas (checkout, produto, etc.).
+   position:static (em vez do sticky padrão do .store-nav) — nessas páginas
+   simples de formulário não precisa ficar fixo no topo ao rolar, e fixo
+   estava cobrindo campos do formulário ao rolar a página. */
+body.auth-background .store-nav { background: transparent; border: none; padding: 18px 20px; position: static; }
 body.auth-background .nav-actions { gap: 12px; }
 
 /* Ícone decorativo nas seções visuais */

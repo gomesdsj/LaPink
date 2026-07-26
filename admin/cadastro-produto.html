@@ -63,7 +63,7 @@
 
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-          <div class="logo-bubble"><i class="ti ti-diamond" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-bubble"><i class="ti ti-butterfly" style="color:#fff;font-size:18px"></i></div>
           <div class="logo-name">LaPink</div>
         </div>
         <div class="sidebar-nav">
@@ -96,16 +96,6 @@
         </header>
 
         <section class="admin-page show" style="padding:0;">
-
-          <!-- ── ABAS PRINCIPAIS ── -->
-          <div class="page-tabs">
-            <button class="tab-btn active" data-tab="estoque">
-              <i class="ti ti-box"></i> Estoque
-            </button>
-            <button class="tab-btn" data-tab="envio">
-              <i class="ti ti-truck"></i> Envio
-            </button>
-          </div>
 
           <!-- ════════════════════════════════════════
                ABA 1 — ESTOQUE
@@ -291,84 +281,6 @@
 
           </div>
           <!-- /tab-estoque -->
-
-
-          <!-- ════════════════════════════════════════
-               ABA 2 — ENVIO
-          ════════════════════════════════════════ -->
-          <div class="tab-content" id="tab-envio">
-
-            <div class="sub-section-header">
-              <span class="sub-badge">2.1</span>
-              <div>
-                <h2>Calculadora de Frete</h2>
-                <p>Estime o valor do envio com base no peso e na tabela dos Correios.</p>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:24px; flex-wrap:wrap; margin-top:16px;">
-
-              <!-- 2.2 Formulário de cálculo -->
-              <div class="card" style="flex:1; min-width:280px; max-width:400px;">
-                <div class="sub-section-header" style="margin-top:0; margin-bottom:20px;">
-                  <span class="sub-badge">2.2</span>
-                  <div>
-                    <h3 style="font-size:14px; font-weight:700; color:var(--gray-800); margin:0 0 2px;">Calcular por peso</h3>
-                    <p style="font-size:12px; color:var(--gray-400); margin:0;">Insira o peso do pacote para ver a estimativa.</p>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Peso do pacote <span class="unit-tag">gramas</span></label>
-                  <input id="frete-peso" type="number" min="0" step="1" placeholder="300" oninput="calcularFrete()" />
-                </div>
-
-                <div class="frete-result" id="frete-result">
-                  <div class="frete-result-row">
-                    <span class="frete-label"><i class="ti ti-package-import"></i> PAC</span>
-                    <span class="frete-value pac" id="res-pac">—</span>
-                  </div>
-                  <div class="frete-result-row">
-                    <span class="frete-label"><i class="ti ti-bolt"></i> SEDEX</span>
-                    <span class="frete-value sedex" id="res-sedex">—</span>
-                  </div>
-                  <div class="frete-result-row media-row">
-                    <span class="frete-label"><i class="ti ti-math-function"></i> Média estimada</span>
-                    <span class="frete-value media" id="res-media">—</span>
-                  </div>
-                  <p class="frete-aviso"><i class="ti ti-info-circle"></i> Valores aproximados. O frete real varia conforme os CEPs de origem e destino.</p>
-                </div>
-              </div>
-
-              <!-- 2.3 Tabela de referência -->
-              <div class="card" style="flex:1.5; min-width:300px;">
-                <div class="sub-section-header" style="margin-top:0; margin-bottom:20px;">
-                  <span class="sub-badge">2.3</span>
-                  <div>
-                    <h3 style="font-size:14px; font-weight:700; color:var(--gray-800); margin:0 0 2px;">Tabela de referência</h3>
-                    <p style="font-size:12px; color:var(--gray-400); margin:0;">Preços médios por faixa de peso — Correios 2024.</p>
-                  </div>
-                </div>
-                <table class="shipping-table">
-                  <thead>
-                    <tr>
-                      <th>Faixa de peso</th>
-                      <th><i class="ti ti-package-import"></i> PAC</th>
-                      <th><i class="ti ti-bolt"></i> SEDEX</th>
-                      <th>Média</th>
-                    </tr>
-                  </thead>
-                  <tbody id="shipping-table-body"></tbody>
-                </table>
-                <p style="font-size:10px; color:var(--gray-400); margin-top:10px; display:flex; align-items:flex-start; gap:5px; line-height:1.5;">
-                  <i class="ti ti-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
-                  Valores estimados para envios locais/regionais. Consulte o site dos Correios para simulação exata por CEP.
-                </p>
-              </div>
-
-            </div>
-          </div>
-          <!-- /tab-envio -->
 
         </section>
       </main>
@@ -578,18 +490,6 @@
       clearTimeout(el._t);
       el._t = setTimeout(function() { el.style.display = 'none'; }, 3000);
     }
-
-    // ─────────────────────────────────────────
-    //  Navegação por abas
-    // ─────────────────────────────────────────
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      });
-    });
 
     // ─────────────────────────────────────────
     //  Pré-visualização do produto (1.1)
@@ -865,28 +765,30 @@
 
       lista.forEach(p => {
         const low  = p.estoque <= 5 ? 'low' : '';
+        const idNum = Number(p.id) || 0; // sempre numérico nos onclick/attrs — id nunca é texto livre
+        const nomeEsc = escHtml(p.nome);
         const thumb = p.imagem
-          ? `<img src="${p.imagem}" alt="${p.nome}" loading="lazy" />`
-          : `<i class="ti ${p.icone || 'ti-diamond'}"></i>`;
+          ? `<img src="${escHtml(p.imagem)}" alt="${nomeEsc}" loading="lazy" />`
+          : `<i class="ti ${escHtml(p.icone || 'ti-diamond')}"></i>`;
 
         const div = document.createElement('div');
         div.className = 'prod-list-item';
         var lucroText  = typeof p.lucroUnitario === 'number' ? formatBRL(p.lucroUnitario) : '—';
         var lucroClass = typeof p.lucroUnitario === 'number' ? 'prod-list-lucro has-value' : 'prod-list-lucro';
         div.innerHTML = `
-          <label class="prod-list-check"><input type="checkbox" class="prod-check" value="${p.id}" onclick="onProdCheck()" aria-label="Selecionar ${p.nome}" /></label>
+          <label class="prod-list-check"><input type="checkbox" class="prod-check" value="${idNum}" onclick="onProdCheck()" aria-label="Selecionar ${nomeEsc}" /></label>
           <div class="prod-list-thumb">${thumb}</div>`;
         div.innerHTML += `
-          <span class="prod-list-name">${p.nome}<small class="prod-list-code">${p.codigoPeca ? '#' + p.codigoPeca : ''}</small></span>
-          <span class="prod-list-cat-badge">${p.categoria}</span>
+          <span class="prod-list-name">${nomeEsc}<small class="prod-list-code">${p.codigoPeca ? '#' + escHtml(p.codigoPeca) : ''}</small></span>
+          <span class="prod-list-cat-badge">${escHtml(p.categoria)}</span>
           <span class="prod-list-stock ${low}">${p.estoque} un</span>
           <span class="prod-list-price">R$ ${(p.precoAtacado || p.precoVarejo || 0).toFixed(2).replace('.', ',')}</span>
           <span class="${lucroClass}">${lucroText}</span>
           <div class="prod-list-actions">
-            <button class="btn-icon-sm" title="Trocar foto" onclick="document.getElementById('foto-inp-${p.id}').click()"><i class="ti ti-camera"></i></button>
-            <input type="file" id="foto-inp-${p.id}" accept="image/*" style="display:none" onchange="trocarFotoProduto(${p.id}, this)" />
-            <button class="btn-icon-sm edit"   title="Editar"  onclick="editarProduto(${p.id})"><i class="ti ti-pencil"></i></button>
-            <button class="btn-icon-sm danger" title="Excluir" onclick="excluirProduto(${p.id})"><i class="ti ti-trash"></i></button>
+            <button class="btn-icon-sm" title="Trocar foto" onclick="document.getElementById('foto-inp-${idNum}').click()"><i class="ti ti-camera"></i></button>
+            <input type="file" id="foto-inp-${idNum}" accept="image/*" style="display:none" onchange="trocarFotoProduto(${idNum}, this)" />
+            <button class="btn-icon-sm edit"   title="Editar"  onclick="editarProduto(${idNum})"><i class="ti ti-pencil"></i></button>
+            <button class="btn-icon-sm danger" title="Excluir" onclick="excluirProduto(${idNum})"><i class="ti ti-trash"></i></button>
           </div>`;
         container.appendChild(div);
       });
@@ -1170,56 +1072,6 @@
           }
         }, 500);
       }, 200);
-    }
-
-    // ─────────────────────────────────────────
-    //  Tabela dos Correios (2.2 e 2.3)
-    // ─────────────────────────────────────────
-    const freteTabela = [
-      { faixa: 'Até 300g',    maxG: 300,   pac: 18.00,  sedex: 22.50  },
-      { faixa: '301g – 500g', maxG: 500,   pac: 21.50,  sedex: 28.00  },
-      { faixa: '501g – 1kg',  maxG: 1000,  pac: 25.00,  sedex: 35.00  },
-      { faixa: '1kg – 2kg',   maxG: 2000,  pac: 31.50,  sedex: 48.00  },
-      { faixa: '2kg – 5kg',   maxG: 5000,  pac: 45.00,  sedex: 75.00  },
-      { faixa: '5kg – 10kg',  maxG: 10000, pac: 68.00,  sedex: 115.00 },
-      { faixa: '10kg – 20kg', maxG: 20000, pac: 95.00,  sedex: 185.00 },
-      { faixa: '20kg – 30kg', maxG: 30000, pac: 140.00, sedex: 260.00 },
-    ];
-
-    // Preencher tabela de referência
-    const tbody = document.getElementById('shipping-table-body');
-    freteTabela.forEach(row => {
-      const media = ((row.pac + row.sedex) / 2).toFixed(2).replace('.', ',');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${row.faixa}</td>
-        <td>R$ ${row.pac.toFixed(2).replace('.', ',')}</td>
-        <td>R$ ${row.sedex.toFixed(2).replace('.', ',')}</td>
-        <td><strong>R$ ${media}</strong></td>`;
-      tbody.appendChild(tr);
-    });
-
-    function calcularFrete() {
-      const peso = parseFloat(document.getElementById('frete-peso').value) || 0;
-
-      if (peso <= 0) {
-        document.getElementById('res-pac').textContent   = '—';
-        document.getElementById('res-sedex').textContent = '—';
-        document.getElementById('res-media').textContent = '—';
-        document.querySelectorAll('#shipping-table-body tr').forEach(tr => tr.classList.remove('row-active'));
-        return;
-      }
-
-      const entrada = freteTabela.find(r => peso <= r.maxG) || freteTabela[freteTabela.length - 1];
-      const media   = (entrada.pac + entrada.sedex) / 2;
-
-      document.getElementById('res-pac').textContent   = formatBRL(entrada.pac);
-      document.getElementById('res-sedex').textContent = formatBRL(entrada.sedex);
-      document.getElementById('res-media').textContent = formatBRL(media);
-
-      document.querySelectorAll('#shipping-table-body tr').forEach((tr, i) => {
-        tr.classList.toggle('row-active', freteTabela[i] === entrada);
-      });
     }
 
     // ─────────────────────────────────────────

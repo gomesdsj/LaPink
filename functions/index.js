@@ -49,6 +49,41 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // ---------------------------------------------------------------------------
+// Helpers: sanitização de texto vindo do cliente (cliente/endereço no
+// checkout) antes de gravar no Firestore. createPreference é uma rota
+// pública (checkout de visitante), então nome/endereço chegam sem
+// autenticação nenhuma — sem isso, esses campos viravam um vetor de XSS
+// persistente: o mesmo texto reaparece sem escape em meus-pedidos.html e
+// sucesso.html. Remove os caracteres que formam tags HTML (< >) e limita o
+// tamanho; não precisa ser um sanitizador de HTML completo, já que o único
+// objetivo aqui é impedir a formação de qualquer tag.
+function _sanitizarTexto(v, maxLen) {
+  return String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, maxLen || 200);
+}
+function _sanitizarCliente(c) {
+  c = c || {};
+  return {
+    nome: _sanitizarTexto(c.nome, 120),
+    email: _sanitizarTexto(c.email, 180),
+    cpf: String(c.cpf || '').replace(/\D/g, '').slice(0, 11),
+    celular: _sanitizarTexto(c.celular || c.whatsapp, 20)
+  };
+}
+function _sanitizarEndereco(e) {
+  e = e || {};
+  return {
+    cep: String(e.cep || '').replace(/\D/g, '').slice(0, 8),
+    rua: _sanitizarTexto(e.rua, 150),
+    numero: _sanitizarTexto(e.numero, 20),
+    complemento: _sanitizarTexto(e.complemento, 100),
+    bairro: _sanitizarTexto(e.bairro, 100),
+    cidade: _sanitizarTexto(e.cidade, 100),
+    estado: _sanitizarTexto(e.estado, 2).toUpperCase(),
+    referencia: _sanitizarTexto(e.referencia, 150)
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Helper: busca MP access token (env var ou Firestore)
 // ---------------------------------------------------------------------------
 async function getMpToken() {
@@ -147,7 +182,14 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
     }
 
     const body = req.body || {};
-    const { cliente, endereco, itens, subtotal, frete, total, modalidadeFrete } = body;
+    const { itens, subtotal, frete, total } = body;
+    // Sanitizados aqui: rota pública (checkout de visitante, sem
+    // autenticação), então nome/endereço/modalidade chegam como texto livre
+    // do cliente e não podem ir pro Firestore (nem pro payer do MP) sem
+    // passar por isso — ver _sanitizarCliente/_sanitizarEndereco.
+    const cliente = _sanitizarCliente(body.cliente);
+    const endereco = _sanitizarEndereco(body.endereco);
+    const modalidadeFrete = _sanitizarTexto(body.modalidadeFrete, 60);
 
     if (!itens || !Array.isArray(itens) || itens.length === 0) {
       res.status(400).json({ error: 'Campo "itens" é obrigatório e deve ser um array não vazio.' });
@@ -470,15 +512,51 @@ function decrementarEstoque(itensPedido) {
   });
 }
 
+// Verifica um Bearer token de admin/superadmin (mesmo critério usado em
+// sincronizarClaimsAdmin, definida mais abaixo — SUPERADMINS_FIXOS já está
+// atribuída quando isto roda, o módulo inteiro carrega antes de qualquer
+// requisição chegar). Usada pra travar functions que só o painel deve poder
+// chamar — sem isso, bastava saber a URL pra disparar a function por fora.
+function _exigirAdmin(req) {
+  var authHeader = req.headers.authorization || '';
+  var idToken = authHeader.indexOf('Bearer ') === 0 ? authHeader.slice(7) : '';
+  if (!idToken) {
+    return Promise.reject({ _status: 401, message: 'Token de autenticação ausente.' });
+  }
+  return admin.auth().verifyIdToken(idToken).then(function (decoded) {
+    var email = String(decoded.email || '').toLowerCase();
+    if (SUPERADMINS_FIXOS.indexOf(email) !== -1) return decoded;
+    return db.collection('lapink').doc('lapinkUsers').get().then(function (snap) {
+      var lista = (snap.exists && snap.data() && snap.data().data) || [];
+      var match = (Array.isArray(lista) ? lista : []).find(function (u) {
+        return u && String(u.email || '').toLowerCase() === email;
+      });
+      if (match && (match.role === 'admin' || match.role === 'superadmin')) return decoded;
+      var eForbidden = new Error('Acesso restrito a administradores.');
+      eForbidden._status = 403;
+      throw eForbidden;
+    });
+  }).catch(function (err) {
+    if (err && err._status) throw err;
+    var eAuth = new Error('Token inválido ou expirado.');
+    eAuth._status = 401;
+    throw eAuth;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // 3. cobrarAbandonados — envia WhatsApp para carrinhos abandonados (Cloud API)
-//    Requer: plano Blaze + WhatsApp Business Cloud API.
+//    Requer: plano Blaze + WhatsApp Business Cloud API + admin autenticado
+//    (Bearer <ID token>) — antes qualquer um que soubesse a URL conseguia
+//    disparar mensagens reais de WhatsApp pros clientes, sem nenhum controle.
 //    Config: process.env.WHATSAPP_TOKEN (token) e lapink/apiConfig.data.wbaPhoneId
-//    Acione manualmente (HTTP) ou via Cloud Scheduler. Janela: > 30 min abertos.
+//    Acione pelo painel (ou Cloud Scheduler usando uma conta de serviço admin).
+//    Janela: > 30 min abertos.
 // ---------------------------------------------------------------------------
 exports.cobrarAbandonados = functions.https.onRequest(function (req, res) {
   cors(req, res, function () {
-    db.collection('lapink').doc('apiConfig').get()
+    _exigirAdmin(req).then(function () {
+      return db.collection('lapink').doc('apiConfig').get()
       .then(function (snap) {
         var cfg = (snap.exists && snap.data() && snap.data().data) || {};
         var token = process.env.WHATSAPP_TOKEN || cfg.wbaToken;
@@ -523,20 +601,28 @@ exports.cobrarAbandonados = functions.https.onRequest(function (req, res) {
               });
             }, Promise.resolve()).then(function () { return { total: pendentes.length, enviados: enviados }; });
           });
-      })
+      });
+    })
       .then(function (r) { res.status(200).json(r); })
       .catch(function (err) {
-        functions.logger.error('cobrarAbandonados erro', err);
-        res.status(500).json({ error: err.message });
+        var status = (err && err._status) || 500;
+        if (status >= 500) functions.logger.error('cobrarAbandonados erro', err);
+        res.status(status).json({ error: (err && err.message) || 'Erro interno.' });
       });
   });
 });
 
 // ---------------------------------------------------------------------------
 // 4. cotarFrete — cotação de frete por CEP (Correios + transportadoras)
-//    Provedor definido em lapink/lapinkEntregaConfig.data.freteProvider:
-//      'mandabem'    → Manda Bem (plataforma_id + plataforma_chave)
-//      'melhorenvio' → Melhor Envio (token) [padrão]
+//    Provedores ativados independentemente em lapink/lapinkEntregaConfig.data:
+//      mandabemAtivo (bool) → Manda Bem (plataforma_id + plataforma_chave)
+//      meAtivo       (bool) → Melhor Envio (token)
+//    Com os dois ativos ao mesmo tempo, cotarFrete consulta ambos em paralelo
+//    e devolve todas as opções juntas, ordenadas do menor pro maior preço —
+//    o cliente escolhe a mais barata entre os provedores configurados. Se um
+//    provedor falhar (token errado, fora do ar), isso não derruba o outro.
+//    Compat: instalações antigas com só o campo freteProvider ('mandabem' /
+//    'melhorenvio') continuam funcionando com um único provedor ativo.
 //    Segredos em lapink/apiConfig.data (mandabemToken, meToken). Requer Blaze.
 //    O cliente envia cepDestino, pesoG e valor.
 // ---------------------------------------------------------------------------
@@ -549,7 +635,7 @@ function _freteMelhorEnvio(p) {
   var payload = {
     from: { postal_code: p.cepOrigem },
     to: { postal_code: p.cepDestino },
-    package: { weight: p.pesoKg, width: Number(p.dims.width) || 16, height: Number(p.dims.height) || 2, length: Number(p.dims.length) || 11 },
+    package: { weight: p.pesoKg, width: Number(p.dims.width) || 18, height: Number(p.dims.height) || 8.5, length: Number(p.dims.length) || 12 },
     options: { insurance_value: p.valor, receipt: false, own_hand: false }
   };
   return fetch(base + '/api/v2/me/shipment/calculate', {
@@ -585,9 +671,9 @@ function _freteMandaBem(p) {
     cep_origem: p.cepOrigem,
     cep_destino: p.cepDestino,
     peso: String(p.pesoKg),
-    altura: String(Number(p.dims.height) || 2),
-    largura: String(Number(p.dims.width) || 11),
-    comprimento: String(Number(p.dims.length) || 16),
+    altura: String(Number(p.dims.height) || 8.5),
+    largura: String(Number(p.dims.width) || 18),
+    comprimento: String(Number(p.dims.length) || 12),
     valor_seguro: (Number(p.valor) || 0).toFixed(2)
   };
   return Promise.all(servicos.map(function (sv) {
@@ -642,17 +728,66 @@ exports.cotarFrete = functions.https.onRequest(function (req, res) {
         var cepOrigem = String(entrega.cepOrigem || '88801000').replace(/\D/g, '');
         if (cepOrigem.length !== 8) cepOrigem = '88801000';
 
-        // Provedor: explícito na config, senão detecta pelo que estiver configurado.
-        var provider = entrega.freteProvider ||
-          ((process.env.MANDABEM_TOKEN || secret.mandabemToken) ? 'mandabem'
-            : (process.env.MELHOR_ENVIO_TOKEN || secret.meToken) ? 'melhorenvio' : '');
+        // Provedores ativos: flags independentes (mandabemAtivo/meAtivo). Sem
+        // nenhuma das duas gravada ainda (instalação antiga), cai pro campo
+        // único freteProvider e, na falta dele, detecta pelo que tiver segredo.
+        var temFlags = entrega.mandabemAtivo != null || entrega.meAtivo != null;
+        var mandabemAtivo, meAtivo;
+        if (temFlags) {
+          mandabemAtivo = !!entrega.mandabemAtivo;
+          meAtivo = !!entrega.meAtivo;
+        } else {
+          mandabemAtivo = entrega.freteProvider === 'mandabem';
+          meAtivo = entrega.freteProvider === 'melhorenvio';
+          if (!mandabemAtivo && !meAtivo && !entrega.freteProvider) {
+            if (process.env.MANDABEM_TOKEN || secret.mandabemToken) mandabemAtivo = true;
+            else if (process.env.MELHOR_ENVIO_TOKEN || secret.meToken) meAtivo = true;
+          }
+        }
 
         var comum = { cepOrigem: cepOrigem, cepDestino: cepDestino, pesoKg: pesoKg, valor: valor, dims: dims };
+        var chamadas = [];
 
-        if (provider === 'mandabem') {
-          return _freteMandaBem(Object.assign({ id: entrega.mandabemId, chave: secret.mandabemToken }, comum));
+        if (mandabemAtivo) {
+          chamadas.push(
+            Promise.resolve().then(function () {
+              return _freteMandaBem(Object.assign({ id: entrega.mandabemId, chave: secret.mandabemToken }, comum));
+            }).then(function (opcoes) {
+              return opcoes.map(function (o) { return Object.assign({ provedor: 'mandabem' }, o); });
+            }).catch(function (err) {
+              functions.logger.warn('cotarFrete: Manda Bem indisponível — ' + ((err && err.message) || err));
+              return [];
+            })
+          );
         }
-        return _freteMelhorEnvio(Object.assign({ token: secret.meToken, sandbox: entrega.meSandbox, userAgent: entrega.meUserAgent, somenteCorreios: entrega.meSomenteCorreios }, comum));
+        if (meAtivo) {
+          chamadas.push(
+            Promise.resolve().then(function () {
+              return _freteMelhorEnvio(Object.assign({ token: secret.meToken, sandbox: entrega.meSandbox, userAgent: entrega.meUserAgent, somenteCorreios: entrega.meSomenteCorreios }, comum));
+            }).then(function (opcoes) {
+              return opcoes.map(function (o) { return Object.assign({ provedor: 'melhorenvio' }, o); });
+            }).catch(function (err) {
+              functions.logger.warn('cotarFrete: Melhor Envio indisponível — ' + ((err && err.message) || err));
+              return [];
+            })
+          );
+        }
+
+        if (!chamadas.length) {
+          var eSemProvedor = new Error('Nenhum provedor de frete ativo. Configure o Manda Bem ou o Melhor Envio no painel.');
+          eSemProvedor._status = 503;
+          throw eSemProvedor;
+        }
+
+        return Promise.all(chamadas).then(function (listas) {
+          var todas = [].concat.apply([], listas).sort(function (a, b) { return (a.preco || 0) - (b.preco || 0); });
+          if (!todas.length) {
+            var eFalha = new Error('Não foi possível cotar o frete agora. Verifique as credenciais dos provedores no painel.');
+            eFalha._status = 502;
+            throw eFalha;
+          }
+          return todas;
+        });
       })
       .then(function (opcoes) {
         res.status(200).json({ opcoes: opcoes });
@@ -831,6 +966,87 @@ exports.enviarLinkRedefinicaoSenha = functions.https.onRequest(function (req, re
         var status = (err && err._status) || 500;
         if (status >= 500) functions.logger.error('enviarLinkRedefinicaoSenha erro', err);
         if (!res.headersSent) res.status(status).json({ error: (err && err.message) || 'Erro ao enviar e-mail.' });
+      });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// N. verificarLimiteIP — proteção contra força bruta / criação em massa de
+//    contas: limita quantas vezes o MESMO IP pode tentar 'login' ou
+//    'registro' num intervalo curto. Ao passar do limite, aquele IP fica
+//    bloqueado por 1 hora para essa ação (o cliente chama esta function
+//    ANTES de tentar o login/cadastro de verdade no Firebase Auth).
+//
+//    Isso é uma camada a mais de proteção — feita no navegador (login.js/
+//    register.js), então não substitui o rate limit nativo do próprio
+//    Firebase Auth (que já existe do lado do Google e não dá pra desligar).
+//    Falha aberta: se o Firestore não responder, libera a tentativa em vez
+//    de travar um cliente legítimo por causa de erro de infraestrutura.
+// ---------------------------------------------------------------------------
+var RATE_LIMIT_JANELA_MS      = 15 * 60 * 1000; // 15 min
+var RATE_LIMIT_MAX_TENTATIVAS = 5;              // 6ª tentativa na janela já bloqueia
+var RATE_LIMIT_BLOQUEIO_MS    = 60 * 60 * 1000; // 1 hora
+
+exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    var acao = String((req.body && req.body.acao) || '').trim();
+    if (acao !== 'login' && acao !== 'registro') {
+      res.status(400).json({ error: "Ação inválida (use 'login' ou 'registro')." });
+      return;
+    }
+
+    // req.ip já vem correto atrás do proxy confiável do Cloud Functions/Cloud
+    // Run — é a única fonte confiável aqui. X-Forwarded-For é enviado pelo
+    // próprio cliente (quem chama a function decide o valor) e NÃO deve ter
+    // prioridade nem ser usado: bastaria mandar um valor diferente a cada
+    // requisição pra reiniciar o bucket de rate limit e burlar o bloqueio.
+    var ip = (req.ip || 'desconhecido').toString().trim();
+    var docId = acao + '_' + ip.replace(/[^a-zA-Z0-9.:]/g, '_');
+    var ref = db.collection('rateLimites').doc(docId);
+    var agora = Date.now();
+
+    db.runTransaction(function (tx) {
+      return tx.get(ref).then(function (snap) {
+        var d = snap.exists ? snap.data() : {};
+        var bloqueadoAte = d.bloqueadoAte || 0;
+
+        if (bloqueadoAte > agora) {
+          return { bloqueado: true, restanteMs: bloqueadoAte - agora };
+        }
+
+        var dentroDaJanela = (agora - (d.janelaInicio || 0)) < RATE_LIMIT_JANELA_MS;
+        var tentativas  = dentroDaJanela ? (d.tentativas || 0) + 1 : 1;
+        var janelaInicio = dentroDaJanela ? d.janelaInicio : agora;
+        var novoBloqueio = (tentativas > RATE_LIMIT_MAX_TENTATIVAS) ? (agora + RATE_LIMIT_BLOQUEIO_MS) : 0;
+
+        tx.set(ref, {
+          tentativas: tentativas,
+          janelaInicio: janelaInicio,
+          bloqueadoAte: novoBloqueio,
+          ip: ip,
+          acao: acao,
+          updatedAt: agora
+        });
+
+        return novoBloqueio
+          ? { bloqueado: true, restanteMs: RATE_LIMIT_BLOQUEIO_MS }
+          : { bloqueado: false };
+      });
+    })
+      .then(function (resultado) {
+        if (resultado.bloqueado) {
+          res.status(429).json({ bloqueado: true, retryAfterMin: Math.max(1, Math.ceil(resultado.restanteMs / 60000)) });
+        } else {
+          res.status(200).json({ bloqueado: false });
+        }
+      })
+      .catch(function (err) {
+        functions.logger.error('verificarLimiteIP erro', err);
+        res.status(200).json({ bloqueado: false }); // falha aberta
       });
   });
 });

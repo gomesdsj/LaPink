@@ -26,6 +26,12 @@ async function _doRegister() {
     return;
   }
 
+  var aceiteEl = document.getElementById('register-aceite');
+  if (aceiteEl && !aceiteEl.checked) {
+    setRegisterMessage('Você precisa aceitar a Política de Privacidade e os Termos de Uso para se cadastrar.', false);
+    return;
+  }
+
   // Validação de e-mail básica
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     setRegisterMessage('E-mail inválido.', false);
@@ -46,6 +52,13 @@ async function _doRegister() {
 
   if (password !== confirm) {
     setRegisterMessage('As senhas não conferem.', false);
+    return;
+  }
+
+  // Proteção contra criação em massa de contas do mesmo IP
+  var limite = await verificarLimiteIP('registro');
+  if (limite.bloqueado) {
+    setRegisterMessage('Muitas tentativas de cadastro. Tente novamente em ' + limite.retryAfterMin + ' min.', false);
     return;
   }
 

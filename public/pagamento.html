@@ -533,6 +533,11 @@ if (!_cart.length) {
           <input type="text" id="pgEstado" placeholder="UF" maxlength="2" autocomplete="address-level1" style="text-transform: uppercase;" />
         </div>
       </div>
+
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--gray-600,#555);margin-top:6px;">
+        <input type="checkbox" id="pgSalvarEndereco" checked style="width:16px;height:16px;accent-color:var(--pink-500);flex-shrink:0;" />
+        Salvar este endereço para as próximas compras
+      </label>
     </div>
 
     <!-- Card: Forma de pagamento -->
@@ -648,7 +653,7 @@ if (!_cart.length) {
       var resp = await fetch(COTAR_FRETE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cepDestino: cepDestino, pesoG: pesoG, valor: valor })
+        body: JSON.stringify({ cepDestino: cepDestino, pesoG: pesoG, valor: valor, dimensoes: _dimensoesEmbalagem() })
       });
       if (!resp.ok) return null;
       var data = await resp.json();
@@ -787,8 +792,19 @@ if (!_cart.length) {
       var pesoUnit = p ? Number(p.pesoEnvioGramas || p.pesoEnvioG || 0) : 0;
       return s + pesoUnit * item.qty;
     }, 0);
-    peso += 300; // embalagem padrão
+    var emb = (_entCfg().embalagem) || {};
+    peso += Number(emb.pesoG) || 75; // embalagem padrão (peso da caixa)
     return peso;
+  }
+
+  /* ── Dimensões da caixa configuradas no painel (para a cotação por CEP) ── */
+  function _dimensoesEmbalagem() {
+    var emb = (_entCfg().embalagem) || {};
+    return {
+      height: Number(emb.altura)      || 8.5,
+      width:  Number(emb.largura)     || 18,
+      length: Number(emb.comprimento) || 12
+    };
   }
 
   /* ── Encontrar preço na tabela de frete ─────────────────── */
@@ -835,8 +851,16 @@ if (!_cart.length) {
     var excedeuTabela = false;
     var usouAPI = Array.isArray(_freteOpcoesAPI) && _freteOpcoesAPI.length > 0;
 
-    if (usouAPI) {
-      // Cotação real por CEP (Melhor Envio): Correios + outras transportadoras
+    // Só calcula/mostra valor de frete por entrega depois que o CEP for
+    // informado (digitado ou já registrado no perfil) — sem endereço, um
+    // preço por peso não corresponde ao destino real e engana o cliente.
+    // Enquanto isso, só a retirada na loja (que não depende de endereço)
+    // fica disponível.
+    var cepEl = document.getElementById('pgCep');
+    var temEndereco = !!(cepEl && cepEl.value.replace(/\D/g, '').length === 8);
+
+    if (temEndereco && usouAPI) {
+      // Cotação real por CEP (Manda Bem + Melhor Envio): Correios + outras transportadoras
       _freteOpcoesAPI.forEach(function (o) {
         opcoes.push({
           id: 'me_' + o.id,
@@ -847,7 +871,7 @@ if (!_cart.length) {
           isGratis: _freteGratisAtivo
         });
       });
-    } else {
+    } else if (temEndereco) {
       // Fallback: tabela manual por peso configurada pelo lojista (PAC/SEDEX)
       if (cfg.pac && cfg.pac.ativo) {
         var precoPac = precoNaTabela(cfg.pac.tabela, _pesoTotal);
@@ -882,7 +906,7 @@ if (!_cart.length) {
       }
     }
 
-    // Retirada na loja
+    // Retirada na loja — não depende de endereço, sempre disponível
     if (cfg.retirada && cfg.retirada.ativo) {
       opcoes.push({
         id: 'retirada',
@@ -894,8 +918,8 @@ if (!_cart.length) {
       });
     }
 
-    // Entrega local
-    if (cfg.local && cfg.local.ativo) {
+    // Entrega local — só faz sentido oferecer depois que o endereço é conhecido
+    if (temEndereco && cfg.local && cfg.local.ativo) {
       opcoes.push({
         id: 'local',
         label: 'Entrega local',
@@ -922,11 +946,14 @@ if (!_cart.length) {
       html += '<div class="pg-frete-gratis-badge"><i class="ti ti-sparkles" aria-hidden="true"></i> Frete grátis disponível neste pedido!</div>';
     }
 
-    // Peso
-    html += '<div class="pg-frete-peso"><i class="ti ti-weight" aria-hidden="true"></i> Peso estimado: <strong>' + _pesoTotal + 'g</strong> (incl. embalagem)</div>';
+    if (!temEndereco) {
+      html += '<div class="pg-frete-aviso"><i class="ti ti-map-pin" aria-hidden="true"></i> Informe o CEP acima para ver o valor do frete até o seu endereço.</div>';
+    }
 
     if (!opcoes.length) {
-      html += '<div class="pg-frete-aviso"><i class="ti ti-info-circle" aria-hidden="true"></i> Nenhuma modalidade de entrega disponível no momento.</div>';
+      if (temEndereco) {
+        html += '<div class="pg-frete-aviso"><i class="ti ti-info-circle" aria-hidden="true"></i> Nenhuma modalidade de entrega disponível no momento.</div>';
+      }
     } else {
       html += '<div class="pg-frete-opts">';
       opcoes.forEach(function (op, idx) {
@@ -1145,7 +1172,10 @@ if (!_cart.length) {
     if ((e.cep || '').replace(/\D/g, '').length === 8) { try { atualizarFretePorCep(); } catch (x) {} }
   };
 
-  /* ── Salva os dados informados no perfil (p/ próximas compras) ── */
+  /* ── Salva os dados informados no perfil (p/ próximas compras) ──
+     O endereço só é gravado no cadastro se a cliente marcar a opção
+     "Salvar este endereço" — se ela desmarcar, o endereço vale só
+     para este pedido. Se o endereço já estiver salvo, não duplica. */
   function _salvarPerfilCheckout() {
     try {
       var email = (_client && _client.email) || (JSON.parse(localStorage.getItem('lapinkSession') || '{}').email);
@@ -1157,27 +1187,36 @@ if (!_cart.length) {
       var cel = document.getElementById('pgCelular').value.replace(/\D/g, '');
       if (cpf) users[idx].cpf = cpf;
       if (cel) users[idx].whatsapp = cel;
-      var end = {
-        cep:         document.getElementById('pgCep').value.replace(/\D/g, ''),
-        rua:         document.getElementById('pgRua').value.trim(),
-        numero:      document.getElementById('pgNumero').value.trim(),
-        complemento: document.getElementById('pgComplemento').value.trim(),
-        bairro:      document.getElementById('pgBairro').value.trim(),
-        cidade:      document.getElementById('pgCidade').value.trim(),
-        uf:          document.getElementById('pgEstado').value.trim().toUpperCase(),
-        referencia:  (users[idx].endereco && users[idx].endereco.referencia) || ''
-      };
-      users[idx].endereco = end; // endereço usado agora vira o padrão
-      // Também guarda em "endereços salvos" (sem duplicar)
-      var arr = Array.isArray(users[idx].enderecos) ? users[idx].enderecos.slice()
-        : ((users[idx].endereco && users[idx].endereco.cep) ? [users[idx].endereco] : []);
-      var chave = function (e) { return [(e.cep || '').replace(/\D/g, ''), (e.rua || '').toLowerCase().trim(), (e.numero || '').trim()].join('|'); };
-      if (end.cep && end.rua && !arr.some(function (e) { return chave(e) === chave(end); })) arr.push(end);
-      users[idx].enderecos = arr;
-      localStorage.setItem('lapinkClients', JSON.stringify(users));
-      // Grava no banco por cliente (usuarios/{uid}) quando autenticado
-      if (typeof window.salvarEnderecosDB === 'function') {
-        window.salvarEnderecosDB(users[idx].enderecos || [], users[idx].endereco || null);
+
+      var chkSalvar = document.getElementById('pgSalvarEndereco');
+      var desejaSalvar = chkSalvar ? chkSalvar.checked : true;
+
+      if (desejaSalvar) {
+        var end = {
+          cep:         document.getElementById('pgCep').value.replace(/\D/g, ''),
+          rua:         document.getElementById('pgRua').value.trim(),
+          numero:      document.getElementById('pgNumero').value.trim(),
+          complemento: document.getElementById('pgComplemento').value.trim(),
+          bairro:      document.getElementById('pgBairro').value.trim(),
+          cidade:      document.getElementById('pgCidade').value.trim(),
+          uf:          document.getElementById('pgEstado').value.trim().toUpperCase(),
+          referencia:  (users[idx].endereco && users[idx].endereco.referencia) || ''
+        };
+        var arr = Array.isArray(users[idx].enderecos) ? users[idx].enderecos.slice()
+          : ((users[idx].endereco && users[idx].endereco.cep) ? [users[idx].endereco] : []);
+        var chave = function (e) { return [(e.cep || '').replace(/\D/g, ''), (e.rua || '').toLowerCase().trim(), (e.numero || '').trim()].join('|'); };
+        var jaSalvo = end.cep && end.rua && arr.some(function (e) { return chave(e) === chave(end); });
+        if (end.cep && end.rua && !jaSalvo) arr.push(end); // não tinha salvo ainda → salva
+        // já estava salvo → desconsidera (não duplica), só atualiza o padrão de uso
+        users[idx].endereco  = end; // endereço usado agora vira o padrão
+        users[idx].enderecos = arr;
+        localStorage.setItem('lapinkClients', JSON.stringify(users));
+        // Grava no banco por cliente (usuarios/{uid}) quando autenticado
+        if (typeof window.salvarEnderecosDB === 'function') {
+          window.salvarEnderecosDB(users[idx].enderecos || [], users[idx].endereco || null);
+        }
+      } else {
+        localStorage.setItem('lapinkClients', JSON.stringify(users)); // salva só cpf/celular
       }
     } catch (e) {}
   }

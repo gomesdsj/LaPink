@@ -17,12 +17,13 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/dist/tabler-icons.min.css" />
 <style>
   .auth-card-icon {
-    width: 52px; height: 52px; border-radius: var(--radius-lg);
+    width: 56px; height: 56px; border-radius: var(--radius-lg);
     background: var(--pink-50); color: var(--pink-500);
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px; margin: 0 auto 20px;
+    font-size: 25px; margin: 0 auto 20px;
+    box-shadow: 0 6px 18px rgba(153,53,86,.12);
   }
-  .auth-card h1 { text-align: center; font-size: 22px; font-weight: 800; color: var(--gray-800); margin-bottom: 4px; }
+  .auth-card h1 { text-align: center; font-size: 23px; font-weight: 800; color: var(--gray-800); margin-bottom: 4px; }
   .auth-card > p { text-align: center; }
 
   .input-icon-wrap { position: relative; }
@@ -37,6 +38,25 @@
     cursor: pointer; padding: 2px; line-height: 1;
   }
   .input-icon-wrap .toggle-pw:hover { color: var(--pink-500); }
+
+  /* Caixa de consentimento (Política de Privacidade / Termos de Uso) —
+     tratada como um pequeno cartão em vez de checkbox solto no formulário. */
+  .consent-box {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--gray-50); border: .5px solid var(--gray-200);
+    border-radius: var(--radius-md); padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .consent-box input[type="checkbox"] {
+    width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;
+    accent-color: var(--pink-500);
+  }
+  .consent-box label {
+    font-size: 12.5px; font-weight: 400; color: var(--gray-600);
+    line-height: 1.5;
+  }
+  .consent-box label a { color: var(--pink-500); font-weight: 600; text-decoration: underline; }
+  .consent-box label a:hover { color: var(--pink-600); }
 </style>
 </head>
 <body class="auth-background">
@@ -44,7 +64,7 @@
 
   <header class="store-nav">
     <a class="store-logo" href="index.html" aria-label="LaPink — início">
-      <i class="ti ti-diamond" aria-hidden="true"></i>
+      <i class="ti ti-butterfly" aria-hidden="true"></i>
       <span class="logo-name">LaPink</span>
     </a>
     <div class="nav-actions">
@@ -110,6 +130,16 @@
               <i class="ti ti-eye"></i>
             </button>
           </div>
+        </div>
+        <div class="consent-box">
+          <input type="checkbox" id="register-aceite" required />
+          <label for="register-aceite">
+            Li e aceito a
+            <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>
+            e os
+            <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a>
+            da LaPink.
+          </label>
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-full">Criar conta</button>
