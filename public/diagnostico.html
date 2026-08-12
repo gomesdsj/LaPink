@@ -41,6 +41,7 @@
   <h1><i class="ti ti-stethoscope"></i> Diagnóstico de acesso</h1>
   <p class="sub">Esta página verifica o armazenamento deste navegador — a causa mais comum de ficar preso no vai-e-volta da tela de login. Ela não envia nada para lugar nenhum: só olha e conserta o que está neste aparelho.</p>
 
+  <div class="card" id="card-endereco"></div>
   <div class="card" id="card-resumo"><h2>Verificando…</h2></div>
   <div class="card" id="card-chaves" style="display:none;"><h2>O que está ocupando espaço</h2><div id="tabela"></div></div>
   <div class="card" id="card-acoes" style="display:none;"><h2>Consertar</h2><div id="acoes"></div><div id="res-acao"></div></div>
@@ -81,7 +82,43 @@
 
   var LIMITE = 5 * 1024 * 1024; // limite típico por site
 
+  // De onde a página está sendo aberta. Abrir o arquivo direto do computador
+  // (file://) ou por um endereço diferente cria um "site" separado para o
+  // navegador: a sessão gravada no endereço certo não vale ali, e o Firebase
+  // Auth nem funciona — dá exatamente o mesmo sintoma de entrar e voltar.
+  var HOSTS_OK = ['lapink-82a39.web.app', 'lapink-82a39.firebaseapp.com'];
+
+  function renderEndereco() {
+    var proto = location.protocol;
+    var host = location.hostname;
+    var ehArquivo = proto === 'file:';
+    var ehLocal = host === 'localhost' || host === '127.0.0.1';
+    var ehOficial = HOSTS_OK.indexOf(host) !== -1;
+
+    var aviso = '';
+    if (ehArquivo) {
+      aviso = '<div class="aviso mau"><strong>Aqui está o problema.</strong> Você abriu o arquivo direto do computador ' +
+              '(endereço começando com <code>file://</code>), e não pelo endereço do site. Assim o navegador trata como ' +
+              'outro site: o login não vale e o painel devolve para a tela de entrada.<br><br>' +
+              'Abra sempre por: <a href="https://lapink-82a39.web.app/admin/admin.html">lapink-82a39.web.app/admin/admin.html</a></div>';
+    } else if (!ehOficial && !ehLocal) {
+      aviso = '<div class="aviso med"><strong>Endereço diferente do oficial.</strong> Cada endereço tem seu próprio ' +
+              'armazenamento — se você entrou por um e abriu o painel por outro, a sessão não acompanha.<br><br>' +
+              'Use sempre: <a href="https://lapink-82a39.web.app/admin/admin.html">lapink-82a39.web.app/admin/admin.html</a></div>';
+    } else {
+      aviso = '<div class="aviso bom">Endereço correto — não é esse o problema.</div>';
+    }
+
+    document.getElementById('card-endereco').innerHTML =
+      '<h2>Por onde você abriu</h2>' +
+      '<div class="linha"><span>Endereço</span><b>' + String(location.origin || proto).replace(/[<>&]/g, '') + '</b></div>' +
+      '<div class="linha"><span>Tipo</span><b class="' + (ehArquivo ? 'ruim' : (ehOficial ? 'ok' : 'alerta')) + '">' +
+        (ehArquivo ? 'Arquivo local (file://)' : (ehOficial ? 'Site oficial' : (ehLocal ? 'Servidor local' : 'Outro endereço'))) + '</b></div>' +
+      aviso;
+  }
+
   function render() {
+    renderEndereco();
     var m = medir();
     var podeGravar = testarEscrita();
     var temSessao = !!localStorage.getItem('lapinkSession');
