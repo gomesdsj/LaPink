@@ -111,26 +111,57 @@ var _ADMIN_PAGES = [
 ];
 
 // Grava a sessão do painel (mesma chave/forma que admin/js/auth.js espera).
+// Devolve true/false: antes esta função engolia qualquer erro em silêncio, e
+// quando o localStorage estava cheio a sessão simplesmente não era gravada —
+// o login anunciava "abrindo painel", redirecionava, o checkAuth não achava
+// sessão nenhuma e mandava de volta para o login. Era o loop de "entra e volta".
 function _setAdminSession(client) {
-  try {
-    var pages = Array.isArray(client.pages) ? client.pages : null;
-    // Garante 'pages' a partir do lapinkUsers local, se o objeto não trouxe.
-    if (client.role === 'admin' && !pages) {
-      try {
-        var us = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
-        var u = us.find(function (x) { return x.email && x.email.toLowerCase() === client.email.toLowerCase(); });
-        if (u && Array.isArray(u.pages)) pages = u.pages;
-      } catch (e) {}
-    }
-    var session = {
-      email: client.email,
-      role: client.role,
-      name: client.name || client.email,
-      pages: (client.role === 'admin') ? pages : null,
-      expiresAt: Date.now() + 8 * 60 * 60 * 1000
-    };
-    localStorage.setItem('lapinkSession', JSON.stringify(session));
-  } catch (e) {}
+  var pages = Array.isArray(client.pages) ? client.pages : null;
+  // Garante 'pages' a partir do lapinkUsers local, se o objeto não trouxe.
+  if (client.role === 'admin' && !pages) {
+    try {
+      var us = JSON.parse(localStorage.getItem('lapinkUsers') || '[]');
+      var u = us.find(function (x) { return x.email && x.email.toLowerCase() === client.email.toLowerCase(); });
+      if (u && Array.isArray(u.pages)) pages = u.pages;
+    } catch (e) {}
+  }
+  var session = {
+    email: client.email,
+    role: client.role,
+    name: client.name || client.email,
+    pages: (client.role === 'admin') ? pages : null,
+    expiresAt: Date.now() + 8 * 60 * 60 * 1000
+  };
+  return _gravarSessaoAdmin(session);
+}
+
+// Grava a sessão e CONFERE relendo. Se não couber (localStorage cheio),
+// libera o catálogo em cache e tenta de novo: lapinkProdutos é só cache —
+// a fonte da verdade é o Firestore, e o cloud-sync rebaixa tudo na próxima
+// carga. Melhor perder o cache do que trancar o admin fora do painel.
+function _gravarSessaoAdmin(session) {
+  var json = JSON.stringify(session);
+
+  function tentar() {
+    try {
+      localStorage.setItem('lapinkSession', json);
+      return !!JSON.parse(localStorage.getItem('lapinkSession') || 'null');
+    } catch (e) { return false; }
+  }
+
+  if (tentar()) return true;
+
+  console.warn('[login] localStorage cheio — liberando o cache do catálogo para gravar a sessão.');
+  var descartaveis = ['lapinkProdutos', 'lapinkProdutos_ts', 'lapinkCarrossel', 'lapinkCarrossel_ts', 'lapinkPedidos', 'lapinkPedidos_ts'];
+  for (var i = 0; i < descartaveis.length; i++) {
+    try { localStorage.removeItem(descartaveis[i]); } catch (e) {}
+    // Partes de documentos grandes (lapinkProdutos_0, _1, …)
+    try {
+      for (var n = 0; n < 40; n++) localStorage.removeItem(descartaveis[i] + '_' + n);
+    } catch (e) {}
+    if (tentar()) return true;
+  }
+  return false;
 }
 
 // Destino do painel conforme o role (superadmin/admin total → dashboard;
@@ -208,7 +239,14 @@ async function _finishLogin(client, referrerPage) {
 
   // Admin/Super Admin → grava sessão do painel e abre o painel.
   if (client && (client.role === 'admin' || client.role === 'superadmin')) {
-    _setAdminSession(client);
+    // Só redireciona se a sessão REALMENTE ficou gravada — senão o painel
+    // devolveria para cá e o usuário ficaria preso no vai-e-volta sem
+    // nenhuma explicação na tela.
+    if (!_setAdminSession(client)) {
+      setLoginMessage('Não foi possível abrir o painel: o armazenamento deste navegador está cheio. ' +
+                      'Limpe os dados do site (ou use uma aba anônima) e entre de novo.', false);
+      return;
+    }
     setLoginMessage('Login de administrador! Abrindo painel...', true);
     var _dest = _adminRedirect(client);
     setTimeout(function () {

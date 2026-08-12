@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Diagnóstico de acesso</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/dist/tabler-icons.min.css" />
+<style>
+  :root{--rosa:#d6336c;--rosa-esc:#a61e4d;--cinza:#6b7280;--borda:#e5e7eb;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#faf7f8;color:#1f2937;padding:24px 16px;line-height:1.55;}
+  .wrap{max-width:720px;margin:0 auto;}
+  h1{font-size:20px;margin:0 0 4px;display:flex;align-items:center;gap:9px;}
+  h1 i{color:var(--rosa);}
+  .sub{color:var(--cinza);font-size:13.5px;margin:0 0 22px;}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+  .card h2{font-size:14px;margin:0 0 12px;color:#374151;}
+  .linha{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-bottom:1px solid #f3f4f6;}
+  .linha:last-child{border-bottom:none;}
+  .linha b{font-weight:700;}
+  .ok{color:#166534;}.alerta{color:#92400e;}.ruim{color:#991b1b;}
+  .barra{background:#f3f4f6;border-radius:20px;height:14px;overflow:hidden;margin:10px 0 4px;}
+  .barra span{display:block;height:14px;background:var(--rosa);}
+  .aviso{border-radius:9px;padding:12px 14px;font-size:13px;margin-top:12px;}
+  .aviso.bom{background:#dcfce7;border:1px solid #86efac;color:#166534;}
+  .aviso.mau{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;}
+  .aviso.med{background:#fef3c7;border:1px solid #fcd34d;color:#92400e;}
+  button{font-family:inherit;font-size:13.5px;font-weight:700;border-radius:9px;padding:11px 18px;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:7px;margin:6px 8px 0 0;}
+  .b1{background:var(--rosa);color:#fff;} .b1:hover{background:var(--rosa-esc);}
+  .b2{background:#fff;color:var(--rosa);border:1px solid #f3c6d5;}
+  .b3{background:#dc2626;color:#fff;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+  td{padding:5px 0;border-bottom:1px solid #f3f4f6;}
+  td:last-child{text-align:right;color:var(--cinza);white-space:nowrap;}
+  code{background:#f3f4f6;padding:1px 6px;border-radius:4px;font-size:12px;}
+  a{color:var(--rosa);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><i class="ti ti-stethoscope"></i> Diagnóstico de acesso</h1>
+  <p class="sub">Esta página verifica o armazenamento deste navegador — a causa mais comum de ficar preso no vai-e-volta da tela de login. Ela não envia nada para lugar nenhum: só olha e conserta o que está neste aparelho.</p>
+
+  <div class="card" id="card-resumo"><h2>Verificando…</h2></div>
+  <div class="card" id="card-chaves" style="display:none;"><h2>O que está ocupando espaço</h2><div id="tabela"></div></div>
+  <div class="card" id="card-acoes" style="display:none;"><h2>Consertar</h2><div id="acoes"></div><div id="res-acao"></div></div>
+</div>
+
+<script>
+(function () {
+  function fmt(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  // Tamanho aproximado em bytes (UTF-16: ~2 bytes por caractere)
+  function tamanho(v) { return (String(v || '').length) * 2; }
+
+  function medir() {
+    var itens = [], total = 0;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      var t = tamanho(k) + tamanho(localStorage.getItem(k));
+      total += t;
+      itens.push({ chave: k, bytes: t });
+    }
+    itens.sort(function (a, b) { return b.bytes - a.bytes; });
+    return { itens: itens, total: total };
+  }
+
+  // Testa se ainda dá para gravar (é isso que trava o login quando estoura)
+  function testarEscrita() {
+    var chave = '__lapink_teste__';
+    try {
+      localStorage.setItem(chave, 'x');
+      localStorage.removeItem(chave);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  var LIMITE = 5 * 1024 * 1024; // limite típico por site
+
+  function render() {
+    var m = medir();
+    var podeGravar = testarEscrita();
+    var temSessao = !!localStorage.getItem('lapinkSession');
+    var pct = Math.min(100, Math.round(m.total / LIMITE * 100));
+
+    var classe = pct > 85 ? 'ruim' : (pct > 60 ? 'alerta' : 'ok');
+    document.getElementById('card-resumo').innerHTML =
+      '<h2>Resumo</h2>' +
+      '<div class="linha"><span>Espaço usado neste site</span><b class="' + classe + '">' + fmt(m.total) + ' (~' + pct + '% do limite)</b></div>' +
+      '<div class="barra"><span style="width:' + pct + '%"></span></div>' +
+      '<div class="linha"><span>Consegue gravar dados?</span><b class="' + (podeGravar ? 'ok' : 'ruim') + '">' + (podeGravar ? 'Sim' : 'NÃO — está cheio') + '</b></div>' +
+      '<div class="linha"><span>Sessão de admin gravada</span><b class="' + (temSessao ? 'ok' : 'alerta') + '">' + (temSessao ? 'Sim' : 'Não') + '</b></div>' +
+      '<div class="linha"><span>Chaves guardadas</span><b>' + m.itens.length + '</b></div>' +
+      (!podeGravar
+        ? '<div class="aviso mau"><strong>Encontrado o problema.</strong> O armazenamento deste navegador está cheio, então a sessão do login não consegue ser gravada — por isso o painel devolve para a tela de login. Use o botão <em>“Liberar espaço”</em> abaixo.</div>'
+        : (temSessao
+            ? '<div class="aviso bom">O armazenamento está saudável e existe uma sessão gravada. Se o painel ainda não abrir, o problema é outro — me avise o que aparece aqui.</div>'
+            : '<div class="aviso med">O armazenamento está saudável, mas não há sessão gravada — normal se você ainda não entrou. Faça o login e volte aqui se o problema continuar.</div>'));
+
+    var linhas = m.itens.slice(0, 12).map(function (it) {
+      return '<tr><td><code>' + it.chave.replace(/[<>&]/g, '') + '</code></td><td>' + fmt(it.bytes) + '</td></tr>';
+    }).join('');
+    document.getElementById('tabela').innerHTML = '<table>' + linhas + '</table>';
+    document.getElementById('card-chaves').style.display = 'block';
+
+    document.getElementById('acoes').innerHTML =
+      '<button class="b1" onclick="liberarCache()"><i class="ti ti-broom"></i> Liberar espaço (recomendado)</button>' +
+      '<button class="b2" onclick="location.href=\'login.html\'"><i class="ti ti-login"></i> Ir para o login</button>' +
+      '<button class="b3" onclick="limparTudo()"><i class="ti ti-trash"></i> Limpar tudo deste site</button>' +
+      '<p style="font-size:12px;color:#6b7280;margin:14px 0 0;line-height:1.6;">' +
+      '<b>Liberar espaço</b> apaga só o catálogo/pedidos guardados <em>neste aparelho</em>. ' +
+      'Nada é perdido: esses dados moram no servidor e são baixados de novo na próxima abertura.<br>' +
+      '<b>Limpar tudo</b> apaga também a sessão e preferências locais — você vai precisar entrar de novo.</p>';
+    document.getElementById('card-acoes').style.display = 'block';
+  }
+
+  window.liberarCache = function () {
+    var prefixos = ['lapinkProdutos', 'lapinkPedidos', 'lapinkCarrossel', 'lapinkClients', 'lapinkLojaConfig'];
+    var apagadas = 0;
+    var chaves = [];
+    for (var i = 0; i < localStorage.length; i++) chaves.push(localStorage.key(i));
+    chaves.forEach(function (k) {
+      for (var p = 0; p < prefixos.length; p++) {
+        if (k.indexOf(prefixos[p]) === 0) {
+          try { localStorage.removeItem(k); apagadas++; } catch (e) {}
+          break;
+        }
+      }
+    });
+    document.getElementById('res-acao').innerHTML =
+      '<div class="aviso bom" style="margin-top:16px;"><strong>' + apagadas + ' item(ns) liberados.</strong> ' +
+      'Agora entre no painel normalmente — os dados voltam do servidor sozinhos.</div>';
+    render();
+  };
+
+  window.limparTudo = function () {
+    if (!confirm('Apagar todos os dados deste site guardados neste navegador?\n\nVocê vai precisar fazer login de novo. Nenhum dado do servidor é afetado.')) return;
+    try { localStorage.clear(); } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
+    document.getElementById('res-acao').innerHTML =
+      '<div class="aviso bom" style="margin-top:16px;"><strong>Limpo.</strong> Vá para o login e entre de novo.</div>';
+    render();
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
