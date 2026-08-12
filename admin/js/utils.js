@@ -25,7 +25,18 @@ function getProdutos() {
 }
 
 function saveProdutos(arr) {
-  localStorage.setItem('lapinkProdutos', JSON.stringify(arr));
+  try {
+    localStorage.setItem('lapinkProdutos', JSON.stringify(arr));
+  } catch (e) {
+    // Fotos em base64 deixam o catálogo perto do limite do navegador (~5 MB).
+    // Estourando o limite, o setItem lança e NADA é salvo — antes isso
+    // acontecia em silêncio e parecia que o produto tinha sido gravado.
+    console.error('[produtos] falha ao salvar no navegador:', e && e.message);
+    if (typeof showToast === 'function') {
+      showToast('Armazenamento do navegador cheio — o produto NÃO foi salvo. Remova fotos ou produtos antigos e tente de novo.', 'erro');
+    }
+    throw e;
+  }
 }
 
 /* ── Categorias da loja (fonte única: localStorage lapinkCategorias) ── */
@@ -177,22 +188,85 @@ function parseCustoG(v) {
   return parseFloat(String(v || '0').replace(',', '.')) || 0;
 }
 
-// ─── Seed v3 — carrega de data/produtos.json (pasta como servidor) ───
+// ─── Seed v3 — SÓ para instalação vazia, e NUNCA sobe para a nuvem ───
+//
+// ATENÇÃO ao mexer aqui: este seed já apagou o catálogo real três vezes.
+// Ele rodava sempre que a chave lapinkSeedV não estivesse neste navegador
+// (navegador novo, "limpar dados", aba anônima, outro computador, ou a
+// expiração automática de storage do Safari/iOS) e chamava saveProdutos()
+// direto. Como o cloud-sync intercepta o setItem, os 61 produtos SEM FOTO
+// de data/produtos.json subiam para o Firestore e substituíam o catálogo
+// real — apagando as fotos de todos os produtos, para todo mundo.
+//
+// Agora existem três travas independentes:
+//   1. se já existe catálogo neste dispositivo, o seed nem chega a rodar;
+//   2. antes de semear, espera (e força) o download do catálogo da nuvem;
+//   3. o seed grava com o setItem ORIGINAL, capturado antes do cloud-sync
+//      instalar o interceptador — ou seja, fica só neste navegador e é
+//      incapaz, por construção, de sobrescrever o catálogo da nuvem.
+var _rawSetItem = Storage.prototype.setItem; // nativo: utils.js carrega antes do cloud-sync
+
 window.lapinkReady = (function() {
   if (localStorage.getItem('lapinkSeedV') === '3') return Promise.resolve();
 
+  function _temCatalogo() {
+    try {
+      var a = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]');
+      return Array.isArray(a) && a.length > 0;
+    } catch (e) { return false; }
+  }
+
+  function _marcarFeito() {
+    try { _rawSetItem.call(localStorage, 'lapinkSeedV', '3'); } catch (e) {}
+  }
+
+  // Trava 1 — já tem catálogo aqui: não há nada para semear.
+  if (_temCatalogo()) { _marcarFeito(); return Promise.resolve(); }
+
+  // Trava 2 — catálogo local vazio quase sempre significa "navegador novo",
+  // e não "loja nova": o catálogo real ainda está vindo da nuvem. Espera o
+  // cloud-sync entregar (forçando um pull, que ignora o intervalo mínimo).
+  function _esperarNuvem(msMax) {
+    return new Promise(function(resolve) {
+      var t0 = Date.now(), forcou = false;
+      (function tick() {
+        if (_temCatalogo()) return resolve(true);
+        if (!forcou && window.LaPinkSync && window.LaPinkSync.pull) {
+          forcou = true;
+          try { window.LaPinkSync.pull(); } catch (e) {}
+        }
+        if (Date.now() - t0 >= msMax) return resolve(false);
+        setTimeout(tick, 300);
+      })();
+    });
+  }
+
   function _aplicarLista(lista) {
-    saveProdutos(lista);
+    // Trava 3 — reconfere na hora de gravar (a nuvem pode ter chegado
+    // durante o fetch) e grava sem passar pelo interceptador do cloud-sync.
+    if (_temCatalogo()) { _marcarFeito(); return; }
+    try {
+      _rawSetItem.call(localStorage, 'lapinkProdutos', JSON.stringify(lista));
+    } catch (e) {
+      console.warn('[seed] não foi possível gravar o catálogo local:', e && e.message);
+      return;
+    }
     var cfg = {};
     try { cfg = JSON.parse(localStorage.getItem('lapinkLojaConfig')) || {}; } catch(e) {}
     if (!Array.isArray(cfg.destaque) || cfg.destaque.length < 5) {
       cfg.destaque = lista.slice(0, 15).map(function(p) { return { id: p.id, badge: '' }; });
-      localStorage.setItem('lapinkLojaConfig', JSON.stringify(cfg));
+      try { _rawSetItem.call(localStorage, 'lapinkLojaConfig', JSON.stringify(cfg)); } catch(e) {}
     }
-    localStorage.setItem('lapinkSeedV', '3');
+    _marcarFeito();
     document.dispatchEvent(new CustomEvent('lapinkProdutosAtualizados'));
   }
 
+  return _esperarNuvem(12000).then(function(veioDaNuvem) {
+    if (veioDaNuvem || _temCatalogo()) { _marcarFeito(); return; }
+    return _semearDoArquivo();
+  });
+
+  function _semearDoArquivo() {
   return fetch('../data/produtos.json')
     .then(function(r) { return r.json(); })
     .then(function(lista) { _aplicarLista(lista); })
@@ -275,4 +349,5 @@ window.lapinkReady = (function() {
       });
       _aplicarLista(fb);
     });
+  }
 })();

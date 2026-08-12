@@ -53,8 +53,10 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script defer src="../public/js/firebase-init.js"></script>
 <script defer src="../public/js/cloud-sync.js"></script>
+<script defer src="js/fotos.js"></script>
 </head>
 <body>
 <script>checkAuth(['superadmin', 'admin']);</script>
@@ -102,116 +104,9 @@
           ════════════════════════════════════════ -->
           <div class="tab-content active" id="tab-estoque">
 
-            <!-- 1.1 Cadastrar produto -->
+            <!-- 1.1 Calcular valor por peso -->
             <div class="sub-section-header">
               <span class="sub-badge">1.1</span>
-              <div>
-                <h2>Cadastrar produto</h2>
-                <p>Preencha os dados e veja a pré-visualização na direita.</p>
-              </div>
-            </div>
-
-            <div class="form-wrap" id="form-cadastro">
-              <form class="card form-cadastro-card" onsubmit="salvarProduto(event)">
-                <div class="form-group">
-                  <label for="nome">Nome do produto</label>
-                  <input id="nome" type="text" placeholder="Anel solitário rosê" oninput="atualizarPreview()" />
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="categoria">Categoria</label>
-                    <select id="categoria" required onchange="atualizarPreview()">
-                      <option value="">-- Selecione --</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="estoque-input">Estoque</label>
-                    <input id="estoque-input" type="number" min="0" placeholder="24" oninput="atualizarPreview()" />
-                  </div>
-                </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="preco-varejo">Preço de atacado</label>
-                    <input id="preco-varejo" type="text" placeholder="R$ 59,90" oninput="recalcularLucro('preco')" />
-                  </div>
-                </div>
-                <!-- Custo da peça -->
-                <div class="cost-section">
-                  <div class="cost-section-label">
-                    <i class="ti ti-scale"></i> Custo da peça
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label for="p-preco-bruto">Preço da peça bruta <span class="unit-tag">R$</span></label>
-                      <input id="p-preco-bruto" type="text" placeholder="5,70" oninput="recalcularLucro('custo')" />
-                    </div>
-                    <div class="form-group">
-                      <label for="p-peso-bruto-g">Peso da peça bruta <span class="unit-tag">g</span></label>
-                      <input id="p-peso-bruto-g" type="number" min="0" step="0.01" placeholder="8" oninput="recalcularLucro('custo')" />
-                    </div>
-                  </div>
-                  <div class="form-row">
-                    <div class="form-group">
-                      <label for="p-valor-banho">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
-                      <input id="p-valor-banho" type="text" placeholder="0,30" oninput="recalcularLucro('custo')" />
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label for="p-margem">Margem para sugerir preço <span class="unit-tag">%</span> <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(opcional)</span></label>
-                    <input id="p-margem" type="number" min="0" max="500" placeholder="40" oninput="recalcularLucro('margem')" />
-                    <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Preencha para o sistema sugerir o preço de atacado. Ou digite o preço direto acima — o lucro aparece sozinho.</div>
-                  </div>
-
-                  <div class="cost-result-bar" id="cost-result-bar" style="display:none">
-                    <span class="crb-item neutral"><i class="ti ti-box"></i> Bruto: <strong id="crb-bruto">—</strong></span>
-                    <span class="crb-item neutral"><i class="ti ti-droplet"></i> Banho: <strong id="crb-banho">—</strong></span>
-                    <span class="crb-item neutral"><i class="ti ti-coin"></i> Preço pago: <strong id="crb-custo">—</strong></span>
-                    <span class="crb-item green"><i class="ti ti-building-store"></i> Atacado: <strong id="crb-varejo">—</strong></span>
-                    <span class="crb-item pink"><i class="ti ti-moneybag"></i> Lucro/un: <strong id="crb-lucro">—</strong></span>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="peso-envio-g">Peso para envio <span class="unit-tag">g</span></label>
-                  <input id="peso-envio-g" type="number" min="0" step="1" placeholder="120" />
-                  <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Peso do produto já embalado — usado para calcular o frete no carrinho.</div>
-                </div>
-
-                <div class="form-group">
-                  <label for="descricao">Descrição</label>
-                  <textarea id="descricao" placeholder="Descrição do produto" oninput="atualizarPreview()"></textarea>
-                </div>
-                <div class="form-group">
-                  <label for="imagem">Fotos do produto <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(até 3 — a 1ª é a capa)</span></label>
-                  <input id="imagem" type="file" accept="image/*" multiple onchange="atualizarImagensPreview(this)" />
-                  <div class="img-thumbs" id="novo-img-thumbs" style="display:none;"></div>
-                </div>
-                <div class="form-actions">
-                  <button type="button" class="btn-cancel-form" onclick="limparFormulario()">Cancelar</button>
-                  <button type="submit" class="btn-save-form"><i class="ti ti-device-floppy"></i> Salvar produto</button>
-                </div>
-              </form>
-
-              <aside class="product-preview-card form-preview-card">
-                <div class="preview-img" id="preview-img-wrap">
-                  <img id="preview-img-photo" src="" alt="" style="display:none;" />
-                  <i class="ti ti-diamond preview-img-icon" id="preview-img-icon"></i>
-                </div>
-                <div class="preview-info">
-                  <div class="preview-name" id="pv-nome">Nome do produto</div>
-                  <div class="preview-desc" id="pv-desc">Descrição do produto aparecerá aqui.</div>
-                  <div class="preview-prices">
-                    <div class="retail-price" id="pv-varejo">R$ 0,00</div>
-                    <div class="profit-line" id="pv-lucro">Lucro estimado —</div>
-                  </div>
-                  <div class="preview-stock"><i class="ti ti-stack"></i> Estoque: <span id="pv-estoque">0</span> unidades</div>
-                </div>
-              </aside>
-            </div>
-
-            <!-- 1.2 Calcular valor por peso -->
-            <div class="sub-section-header" style="margin-top:36px;">
-              <span class="sub-badge">1.2</span>
               <div>
                 <h2>Calcular valor por peso</h2>
                 <p>Informe o peso e o custo por grama para obter o preço sugerido.</p>
@@ -245,9 +140,9 @@
               </div>
             </div>
 
-            <!-- 1.3 Lista de estoque com fotos -->
+            <!-- 1.2 Lista de estoque com fotos -->
             <div class="sub-section-header" style="margin-top:36px;">
-              <span class="sub-badge">1.3</span>
+              <span class="sub-badge">1.2</span>
               <div>
                 <h2>Lista de estoque</h2>
                 <p>Visualize, edite ou remova produtos do catálogo.</p>
@@ -260,11 +155,17 @@
                 <option value="">Todos os produtos</option>
               </select>
               <button class="btn btn-secondary" onclick="filtrarProdutos()">Filtrar</button>
+              <button class="btn btn-primary" onclick="abrirModalNovoProduto()" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+                <i class="ti ti-plus"></i> Adicionar produto
+              </button>
               <button class="btn btn-secondary" onclick="abrirModalImport()" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
                 <i class="ti ti-file-import"></i> Importar Planilha
               </button>
               <button class="btn btn-secondary" onclick="abrirModalCategorias()" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
                 <i class="ti ti-layout-grid"></i> Gerenciar Categorias
+              </button>
+              <button class="btn btn-secondary" onclick="location.href='recuperar-fotos.html'" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+                <i class="ti ti-history"></i> Recuperar fotos
               </button>
             </div>
             <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(event)" />
@@ -354,6 +255,113 @@
     </div>
   </div>
 
+  <!-- ═══ Modal: Adicionar produto ═══ -->
+  <div class="modal-overlay" id="modal-novo-produto" role="dialog" aria-modal="true" aria-labelledby="modal-novo-title">
+    <div class="modal modal--novo-produto">
+      <button class="modal-close" onclick="fecharModalNovoProduto()" aria-label="Fechar">&times;</button>
+      <h2 id="modal-novo-title">Adicionar produto</h2>
+      <p class="modal-sub">Preencha os dados e veja a pré-visualização na direita.</p>
+
+      <div class="form-wrap" id="form-cadastro" style="margin-top:16px;">
+        <form class="card form-cadastro-card" onsubmit="salvarProduto(event)">
+          <div class="form-group">
+            <label for="nome">Nome do produto</label>
+            <input id="nome" type="text" placeholder="Anel solitário rosê" oninput="atualizarPreview()" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="categoria">Categoria</label>
+              <select id="categoria" required onchange="atualizarPreview()">
+                <option value="">-- Selecione --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="estoque-input">Estoque</label>
+              <input id="estoque-input" type="number" min="0" placeholder="24" oninput="atualizarPreview()" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="preco-varejo">Preço de atacado</label>
+              <input id="preco-varejo" type="text" placeholder="R$ 59,90" oninput="recalcularLucro('preco')" />
+            </div>
+          </div>
+          <!-- Custo da peça -->
+          <div class="cost-section">
+            <div class="cost-section-label">
+              <i class="ti ti-scale"></i> Custo da peça
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-preco-bruto">Preço da peça bruta <span class="unit-tag">R$</span></label>
+                <input id="p-preco-bruto" type="text" placeholder="5,70" oninput="recalcularLucro('custo')" />
+              </div>
+              <div class="form-group">
+                <label for="p-peso-bruto-g">Peso da peça bruta <span class="unit-tag">g</span></label>
+                <input id="p-peso-bruto-g" type="number" min="0" step="0.01" placeholder="8" oninput="recalcularLucro('custo')" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-valor-banho">Valor do banho por grama <span class="unit-tag">R$/g</span></label>
+                <input id="p-valor-banho" type="text" placeholder="0,30" oninput="recalcularLucro('custo')" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="p-margem">Margem desejada <span class="unit-tag">%</span> <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(opcional)</span></label>
+              <input id="p-margem" type="number" min="0" max="500" placeholder="40" oninput="recalcularLucro('margem')" />
+              <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Enquanto o "Preço de atacado" acima estiver vazio, o "Atacado" da barra abaixo mostra uma ideia de preço com base nessa margem. Assim que você digitar o preço, ele passa a valer — e a margem vira só a % que aquele preço representa.</div>
+            </div>
+
+            <div class="cost-result-bar" id="cost-result-bar" style="display:none">
+              <span class="crb-item neutral"><i class="ti ti-box"></i> Bruto: <strong id="crb-bruto">—</strong></span>
+              <span class="crb-item neutral"><i class="ti ti-droplet"></i> Banho: <strong id="crb-banho">—</strong></span>
+              <span class="crb-item neutral"><i class="ti ti-coin"></i> Preço pago: <strong id="crb-custo">—</strong></span>
+              <span class="crb-item green"><i class="ti ti-building-store"></i> Atacado: <strong id="crb-varejo">—</strong></span>
+              <span class="crb-item pink"><i class="ti ti-moneybag"></i> Lucro/un: <strong id="crb-lucro">—</strong></span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="peso-envio-g">Peso para envio <span class="unit-tag">g</span></label>
+            <input id="peso-envio-g" type="number" min="0" step="1" placeholder="120" />
+            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Peso do produto já embalado — usado para calcular o frete no carrinho.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <textarea id="descricao" placeholder="Descrição do produto" oninput="atualizarPreview()"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="imagem">Fotos do produto <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(até 3 — a 1ª é a capa)</span></label>
+            <input id="imagem" type="file" accept="image/*" multiple onchange="atualizarImagensPreview(this)" />
+            <div class="img-thumbs" id="novo-img-thumbs" style="display:none;"></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-cancel-form" onclick="cancelarNovoProduto()">Cancelar</button>
+            <button type="submit" class="btn-save-form"><i class="ti ti-device-floppy"></i> Salvar produto</button>
+          </div>
+        </form>
+
+        <aside class="product-preview-card form-preview-card">
+          <div class="preview-img" id="preview-img-wrap">
+            <img id="preview-img-photo" src="" alt="" style="display:none;" />
+            <i class="ti ti-diamond preview-img-icon" id="preview-img-icon"></i>
+          </div>
+          <div class="preview-info">
+            <div class="preview-name" id="pv-nome">Nome do produto</div>
+            <div class="preview-desc" id="pv-desc">Descrição do produto aparecerá aqui.</div>
+            <div class="preview-prices">
+              <div class="retail-price" id="pv-varejo">R$ 0,00</div>
+              <div class="profit-line" id="pv-lucro">Lucro estimado —</div>
+            </div>
+            <div class="preview-stock"><i class="ti ti-stack"></i> Estoque: <span id="pv-estoque">0</span> unidades</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ Modal: Editar produto ═══ -->
   <div class="modal-overlay" id="modal-editar" role="dialog" aria-modal="true" aria-labelledby="modal-edit-title">
     <div class="modal modal--edit-produto">
@@ -416,8 +424,9 @@
               </div>
             </div>
             <div class="form-group">
-              <label for="modal-margem">Porcentagem de lucro <span class="unit-tag">%</span></label>
+              <label for="modal-margem">Margem desejada <span class="unit-tag">%</span> <span style="font-weight:400;color:var(--gray-400);font-size:11px;">(opcional)</span></label>
               <input id="modal-margem" type="number" min="0" max="500" placeholder="40" oninput="calcularModalPreco()" />
+              <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Enquanto o "Preço de atacado" acima estiver vazio, o "Atacado" da barra abaixo mostra uma ideia de preço com base nessa margem. Assim que você digitar o preço, ele passa a valer — e a margem vira só a % que aquele preço representa.</div>
             </div>
 
             <div class="cost-result-bar" id="modal-cost-bar" style="display:none">
@@ -577,7 +586,9 @@
     var _novoImagens = [];
     var _editImagens = [];
 
-    // Comprime e adiciona vários arquivos ao array, preservando a ordem
+    // Comprime, sobe para o Storage e guarda a URL (não mais o base64).
+    // Se o upload falhar, uploadFotoOuManter devolve o base64 — a foto nunca
+    // se perde; no pior caso fica no formato antigo e a migração converte.
     function _addImagens(files, arr, onDone) {
       var slots = _MAX_FOTOS - arr.length;
       if (slots <= 0) { showToast('Máximo de ' + _MAX_FOTOS + ' fotos por produto.', 'erro'); if (onDone) onDone(); return; }
@@ -586,9 +597,12 @@
       var results = new Array(list.length);
       var done = 0;
       function step() { if (++done === list.length) { results.forEach(function(r) { if (r) arr.push(r); }); if (onDone) onDone(); } }
+      showToast(list.length > 1 ? 'Enviando ' + list.length + ' fotos…' : 'Enviando foto…');
       list.forEach(function(file, i) {
         if (!_validarArquivoImagem(file)) { results[i] = null; step(); return; }
-        _comprimirImagem(file).then(function(b64) { results[i] = b64; step(); })
+        _comprimirImagem(file)
+          .then(function(b64) { return uploadFotoOuManter(b64); })
+          .then(function(v) { results[i] = v; step(); })
           .catch(function() { results[i] = null; step(); });
       });
     }
@@ -694,25 +708,31 @@
       var precoEl  = document.getElementById('preco-varejo');
       var precoNum = parseFloat((precoEl.value || '').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
 
-      // Só a margem sugere/sobrescreve o preço — digitar peça/banho não mexe no preço que você pôs.
-      if (origem === 'margem' && custoTotal > 0 && margem > 0) {
-        precoNum = custoTotal * (1 + margem / 100);
-        precoEl.value = formatBRL(precoNum);
-      }
+      // O campo "Preço de atacado" NUNCA é escrito por aqui — só o que a
+      // barra de resultado MOSTRA muda: sem preço digitado ainda, mostra uma
+      // ideia de preço/lucro baseada na margem (marcada como "sugestão");
+      // assim que o preço real é digitado, ele manda e a % exibida passa a
+      // ser a margem que ESSE preço representa (não mais a margem desejada).
+      var precoSugerido = (custoTotal > 0 && margem > 0) ? custoTotal * (1 + margem / 100) : 0;
 
       if (custoTotal <= 0 && precoNum <= 0) { bar.style.display = 'none'; atualizarPreview(); return; }
 
-      var temLucro = precoNum > 0 && custoTotal > 0;
-      var lucroUn  = precoNum - custoTotal;
-      var lucroPct = custoTotal > 0 ? (lucroUn / custoTotal * 100) : 0;
+      var usaSugestao  = precoNum <= 0 && precoSugerido > 0;
+      var precoExibido = precoNum > 0 ? precoNum : precoSugerido;
+      var temValor     = precoExibido > 0 && custoTotal > 0;
+      var lucroExibido = temValor ? precoExibido - custoTotal : 0;
+      var pctExibido   = temValor ? (lucroExibido / custoTotal * 100) : 0;
 
       document.getElementById('crb-bruto').textContent   = precoBruto > 0 ? formatBRL(precoBruto) : '—';
       document.getElementById('crb-banho').textContent   = custoBanho > 0 ? formatBRL(custoBanho) : '—';
       document.getElementById('crb-custo').textContent   = custoTotal > 0 ? formatBRL(custoTotal) : '—';
-      document.getElementById('crb-varejo').textContent  = precoNum   > 0 ? formatBRL(precoNum)   : '—';
-      document.getElementById('crb-lucro').textContent   = temLucro
-        ? formatBRL(lucroUn) + ' (' + lucroPct.toFixed(0) + '%)'
+      document.getElementById('crb-varejo').textContent  = precoExibido > 0
+        ? formatBRL(precoExibido) + (usaSugestao ? ' (sugestão)' : '')
         : '—';
+      document.getElementById('crb-lucro').textContent   = temValor
+        ? formatBRL(lucroExibido) + ' (' + pctExibido.toFixed(0) + '%)'
+        : '—';
+
       bar.style.display = 'flex';
 
       atualizarPreview();
@@ -741,6 +761,10 @@
     //  Lista de estoque com fotos (1.3)
     // ─────────────────────────────────────────
     function renderProdutos(lista) {
+      // Mais recente primeiro sempre — direto aqui (não só em filtrarProdutos)
+      // pra valer em toda chamada: carga inicial da página, depois de
+      // importar planilha, e depois de sincronizar com a nuvem.
+      lista = lista.slice().sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
       const container = document.getElementById('prod-list');
       container.innerHTML = `
         <div class="prod-list-header">
@@ -798,20 +822,27 @@
       var file = input.files[0];
       if (!file) return;
       if (!_validarArquivoImagem(file)) { input.value = ''; return; }
-      _comprimirImagem(file).then(function(base64) {
-        var lista = getProdutos();
-        var idx = lista.findIndex(function(p) { return p.id === id; });
-        if (idx >= 0) {
+      showToast('Enviando foto…');
+      _comprimirImagem(file)
+        .then(function(b64) { return uploadFotoOuManter(b64); })
+        .then(function(foto) {
+          var lista = getProdutos();
+          var idx = lista.findIndex(function(p) { return p.id === id; });
+          if (idx < 0) return;
           // Atualiza a capa (1ª foto) preservando as demais
           var arr = _imagensDoProduto(lista[idx]);
-          if (arr.length) arr[0] = base64; else arr = [base64];
+          if (arr.length) arr[0] = foto; else arr = [foto];
           lista[idx].imagens = arr;
           lista[idx].imagem = arr[0];
           saveProdutos(lista);
           filtrarProdutos();
           showToast('Foto da capa atualizada!');
-        }
-      });
+        })
+        .catch(function(e) {
+          showToast('Não foi possível atualizar a foto.', 'erro');
+          console.warn('[fotos] trocarFotoProduto:', e && e.message);
+        });
+      input.value = '';
     }
 
     // Debounce leve (~250ms) só para a busca — evita reconstruir a lista
@@ -830,10 +861,8 @@
       const res   = todos.filter(p =>
         (!busca || p.nome.toLowerCase().includes(busca)) &&
         (!cat   || p.categoria === cat)
-      // Mais recente primeiro — id é Date.now() na criação, então o maior
-      // id é sempre o produto cadastrado por último.
-      ).sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
-      renderProdutos(res);
+      );
+      renderProdutos(res); // já ordena (mais recente primeiro) internamente
     }
 
     function excluirProduto(id) {
@@ -933,18 +962,35 @@
       var custoBanho = valorBanho * pesoBrutoG;
       var custoTotal = custoBanho + precoBruto;
 
-      if (custoTotal <= 0) { bar.style.display = 'none'; return; }
+      var precoEl  = document.getElementById('modal-atacado');
+      var precoNum = parseFloat((precoEl.value || '').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
 
-      var varejo  = custoTotal * (1 + margem / 100);
-      var lucroUn = varejo - custoTotal;
+      // O campo "Preço de atacado" NUNCA é escrito por aqui — só o que a
+      // barra de resultado MOSTRA muda: sem preço digitado ainda, mostra uma
+      // ideia de preço/lucro baseada na margem (marcada como "sugestão");
+      // assim que o preço real é digitado, ele manda e a % exibida passa a
+      // ser a margem que ESSE preço representa (não mais a margem desejada).
+      var precoSugerido = (custoTotal > 0 && margem > 0) ? custoTotal * (1 + margem / 100) : 0;
+
+      if (custoTotal <= 0 && precoNum <= 0) { bar.style.display = 'none'; return; }
+
+      var usaSugestao  = precoNum <= 0 && precoSugerido > 0;
+      var precoExibido = precoNum > 0 ? precoNum : precoSugerido;
+      var temValor     = precoExibido > 0 && custoTotal > 0;
+      var lucroExibido = temValor ? precoExibido - custoTotal : 0;
+      var pctExibido   = temValor ? (lucroExibido / custoTotal * 100) : 0;
 
       document.getElementById('modal-crb-bruto').textContent   = precoBruto > 0 ? formatBRL(precoBruto) : '—';
       document.getElementById('modal-crb-banho').textContent   = custoBanho > 0 ? formatBRL(custoBanho) : '—';
-      document.getElementById('modal-crb-custo').textContent   = formatBRL(custoTotal);
-      document.getElementById('modal-crb-atacado').textContent  = formatBRL(varejo);
-      document.getElementById('modal-crb-lucro').textContent   = formatBRL(lucroUn);
+      document.getElementById('modal-crb-custo').textContent   = custoTotal > 0 ? formatBRL(custoTotal) : '—';
+      document.getElementById('modal-crb-atacado').textContent = precoExibido > 0
+        ? formatBRL(precoExibido) + (usaSugestao ? ' (sugestão)' : '')
+        : '—';
+      document.getElementById('modal-crb-lucro').textContent   = temValor
+        ? formatBRL(lucroExibido) + ' (' + pctExibido.toFixed(0) + '%)'
+        : '—';
+
       bar.style.display = 'flex';
-      document.getElementById('modal-atacado').value  = formatBRL(varejo);
     }
 
     function salvarEdicaoModal() {
@@ -1011,6 +1057,22 @@
       atualizarPreview();
     }
 
+    // ─────────────────────────────────────────
+    //  Modal: Adicionar produto
+    // ─────────────────────────────────────────
+    function abrirModalNovoProduto() {
+      limparFormulario();
+      document.getElementById('modal-novo-produto').classList.add('show');
+      setTimeout(function() { document.getElementById('nome').focus(); }, 100);
+    }
+    function fecharModalNovoProduto() {
+      document.getElementById('modal-novo-produto').classList.remove('show');
+    }
+    function cancelarNovoProduto() {
+      limparFormulario();
+      fecharModalNovoProduto();
+    }
+
     function salvarProduto(e) {
       e.preventDefault();
       var nome = document.getElementById('nome').value.trim();
@@ -1058,6 +1120,7 @@
       saveProdutos(todos);
       filtrarProdutos();
       limparFormulario();
+      fecharModalNovoProduto();
 
       showToast('✓ "' + nome + '" adicionado ao estoque!');
 
@@ -1066,11 +1129,12 @@
       setTimeout(function() {
         lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
         setTimeout(function() {
+          // Produto novo agora é o PRIMEIRO da lista (não mais o último)
           var itens = lista.querySelectorAll('.prod-list-item');
-          var ultimo = itens[itens.length - 1];
-          if (ultimo) {
-            ultimo.classList.add('prod-list-item--new');
-            setTimeout(function() { ultimo.classList.remove('prod-list-item--new'); }, 2000);
+          var recente = itens[0];
+          if (recente) {
+            recente.classList.add('prod-list-item--new');
+            setTimeout(function() { recente.classList.remove('prod-list-item--new'); }, 2000);
           }
         }, 500);
       }, 200);
@@ -1193,8 +1257,11 @@
     document.getElementById('modal-editar').addEventListener('click', function(e) {
       if (e.target === this) fecharModalEditar();
     });
+    document.getElementById('modal-novo-produto').addEventListener('click', function(e) {
+      if (e.target === this) fecharModalNovoProduto();
+    });
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') { fecharModalEditar(); fecharModalImport(); fecharModalCategorias(); }
+      if (e.key === 'Escape') { fecharModalEditar(); fecharModalImport(); fecharModalCategorias(); fecharModalNovoProduto(); }
     });
 
     // ─────────────────────────────────────────

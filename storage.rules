@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// ════════════════════════════════════════════════════════════════
+// Fotos de produto — Firebase Storage
+//
+// As fotos saíram do Firestore (eram base64 dentro do catálogo, o que
+// estourava o limite de ~5 MB do localStorage e de 1 MiB por documento).
+// Agora ficam aqui e o catálogo guarda só a URL.
+//
+// LEITURA pública: a vitrine mostra as fotos para qualquer visitante.
+// ESCRITA só de admin autenticado (mesma claim isAdmin() das regras do
+// Firestore), limitada a arquivos de imagem de até 5 MB.
+// ════════════════════════════════════════════════════════════════
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null &&
+        (request.auth.token.role == 'admin' || request.auth.token.role == 'superadmin');
+    }
+
+    function ehImagemValida() {
+      return request.resource != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /produtos/{arquivo} {
+      allow read: if true;
+      allow create, update: if isAdmin() && ehImagemValida();
+      allow delete: if isAdmin();
+    }
+
+    // Qualquer outro caminho fica negado (sem allow = sem acesso).
+    match /{caminho=**} {
+      allow read, write: if false;
+    }
+  }
+}

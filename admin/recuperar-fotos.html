@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Recuperar fotos</title>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/dist/tabler-icons.min.css" />
+<style>
+.rec-box{background:var(--white);border:.5px solid var(--pink-100);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-sm);margin-bottom:16px;}
+.rec-stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;}
+.rec-stat{flex:1;min-width:150px;background:var(--gray-50);border-radius:var(--radius-md);padding:14px 16px;}
+.rec-stat .rs-label{display:block;font-size:11px;color:var(--gray-400);font-weight:600;margin-bottom:5px;}
+.rec-stat .rs-val{display:block;font-size:22px;font-weight:800;color:var(--gray-800);}
+.rec-stat.green .rs-val{color:var(--green-400);}
+.rec-stat.pink  .rs-val{color:var(--pink-500);}
+.rec-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;max-height:280px;overflow-y:auto;}
+.rec-thumb{width:74px;text-align:center;}
+.rec-thumb img{width:74px;height:74px;object-fit:cover;border-radius:8px;border:1.5px solid var(--gray-200);display:block;}
+.rec-thumb span{display:block;font-size:9px;color:var(--gray-500);margin-top:3px;line-height:1.25;word-break:break-word;}
+.rec-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+.rec-warn{background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin-top:14px;}
+.rec-log{font-family:monospace;font-size:11.5px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:12px 14px;margin-top:14px;max-height:200px;overflow-y:auto;white-space:pre-wrap;display:none;}
+.btn-danger-solid{background:#dc2626;color:#fff;border:none;border-radius:var(--radius-md);padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.btn-danger-solid:hover{background:#b91c1c;}
+</style>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="../public/js/firebase-init.js"></script>
+<script defer src="../public/js/cloud-sync.js"></script>
+</head>
+<body>
+<script>checkAuth(['superadmin', 'admin']);</script>
+  <div id="app-admin">
+    <div class="admin-layout">
+
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-butterfly" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">LaPink</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Loja</div>
+          <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
+          <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+          <a class="sidebar-link active" href="recuperar-fotos.html"><i class="ti ti-history"></i> Recuperar fotos</a>
+          <a class="sidebar-link" href="migrar-fotos.html"><i class="ti ti-cloud-upload"></i> Migrar fotos</a>
+          <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
+          <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+          <button onclick="logout()" style="margin-top:6px;"><i class="ti ti-logout"></i> Sair</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Recuperar fotos</h1>
+        </header>
+
+        <section class="admin-page show">
+
+          <div class="sub-section-header">
+            <span class="sub-badge"><i class="ti ti-history"></i></span>
+            <div>
+              <h2>Restaurar de uma versão anterior do catálogo</h2>
+              <p>Quando o catálogo é grande, ele é salvo na nuvem em partes — e as partes antigas ficam guardadas. Esta página lê essas partes e devolve as fotos perdidas.</p>
+            </div>
+          </div>
+
+          <div class="rec-box" id="box-status">
+            <div id="rec-carregando" style="display:flex;align-items:center;gap:10px;color:var(--gray-500);font-size:13.5px;">
+              <i class="ti ti-loader-2" style="font-size:18px;animation:spin 1s linear infinite;"></i>
+              Procurando versões anteriores do catálogo na nuvem…
+            </div>
+            <div id="rec-resultado" style="display:none;"></div>
+          </div>
+
+          <div class="rec-log" id="rec-log"></div>
+
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    var _backup = [];     // produtos da versão anterior encontrada
+    var _backupTs = 0;    // data dessa versão
+
+    function log(msg) {
+      var el = document.getElementById('rec-log');
+      el.style.display = 'block';
+      el.textContent += msg + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function _temFoto(p) {
+      return !!(p && (p.imagem || (Array.isArray(p.imagens) && p.imagens.length)));
+    }
+
+    function _fotoDe(p) {
+      if (Array.isArray(p.imagens) && p.imagens.length) return p.imagens[0];
+      return p.imagem || '';
+    }
+
+    // Espera o Firebase carregar (scripts defer)
+    function _esperarFirebase() {
+      return new Promise(function(resolve, reject) {
+        var t0 = Date.now();
+        (function tick() {
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) return resolve();
+          if (Date.now() - t0 > 10000) return reject(new Error('Firebase não carregou.'));
+          setTimeout(tick, 200);
+        })();
+      });
+    }
+
+    // Lê lapinkProdutos_0, _1, … até acabar. Agrupa por data de gravação e
+    // devolve o grupo MAIS RECENTE (partes de gravações antigas ficam para trás
+    // e não devem ser misturadas com as da última gravação).
+    function carregarBackup() {
+      return _esperarFirebase().then(function() {
+        var db = firebase.firestore();
+        var partes = [];
+        function lerParte(i) {
+          if (i > 40) return Promise.resolve();
+          return db.collection('lapink').doc('lapinkProdutos_' + i).get().then(function(snap) {
+            if (!snap.exists) return;
+            var d = snap.data() || {};
+            if (!Array.isArray(d.data)) return;
+            partes.push({ i: i, ts: Number(d.updatedAt) || 0, itens: d.data });
+            log('parte ' + i + ': ' + d.data.length + ' produtos (' + new Date(Number(d.updatedAt) || 0).toLocaleString('pt-BR') + ')');
+            return lerParte(i + 1);
+          });
+        }
+        return lerParte(0).then(function() { return partes; });
+      });
+    }
+
+    function montarResultado(partes) {
+      document.getElementById('rec-carregando').style.display = 'none';
+      var box = document.getElementById('rec-resultado');
+      box.style.display = 'block';
+
+      if (!partes.length) {
+        box.innerHTML = '<p style="font-size:13.5px;color:var(--gray-600);">Nenhuma versão anterior encontrada na nuvem. Não há o que restaurar por aqui.</p>';
+        return;
+      }
+
+      // Só as partes da gravação mais recente
+      var maxTs = partes.reduce(function(m, p) { return Math.max(m, p.ts); }, 0);
+      var grupo = partes.filter(function(p) { return p.ts === maxTs; }).sort(function(a, b) { return a.i - b.i; });
+      log('--- usando ' + grupo.length + ' parte(s) de ' + new Date(maxTs).toLocaleString('pt-BR'));
+
+      var vistos = {};
+      _backup = [];
+      grupo.forEach(function(p) {
+        p.itens.forEach(function(item) {
+          if (!item || vistos[String(item.id)]) return;
+          vistos[String(item.id)] = 1;
+          _backup.push(item);
+        });
+      });
+      _backupTs = maxTs;
+
+      var atual = getProdutos();
+      var idsAtual = {};
+      atual.forEach(function(p) { idsAtual[String(p.id)] = p; });
+
+      var comFoto   = _backup.filter(_temFoto);
+      var faltando  = _backup.filter(function(p) { return !idsAtual[String(p.id)]; });
+      var restaura  = comFoto.filter(function(p) {
+        var a = idsAtual[String(p.id)];
+        return !a || !_temFoto(a);
+      });
+
+      var atualComFoto = atual.filter(_temFoto).length;
+
+      box.innerHTML =
+        '<p style="font-size:13.5px;color:var(--gray-700);margin:0;">Versão encontrada de <strong>' +
+          escHtml(new Date(maxTs).toLocaleString('pt-BR')) + '</strong>.</p>' +
+        '<div class="rec-stat-row">' +
+          '<div class="rec-stat"><span class="rs-label">Catálogo hoje</span><span class="rs-val">' + atual.length + '</span></div>' +
+          '<div class="rec-stat"><span class="rs-label">Com foto hoje</span><span class="rs-val">' + atualComFoto + '</span></div>' +
+          '<div class="rec-stat green"><span class="rs-label">Fotos recuperáveis</span><span class="rs-val">' + restaura.length + '</span></div>' +
+          '<div class="rec-stat pink"><span class="rs-label">Produtos sumidos</span><span class="rs-val">' + faltando.length + '</span></div>' +
+        '</div>' +
+        (comFoto.length ? '<div class="rec-thumbs">' + comFoto.slice(0, 60).map(function(p) {
+          return '<div class="rec-thumb"><img src="' + escHtml(_fotoDe(p)) + '" alt="" loading="lazy" />' +
+                 '<span>' + escHtml(String(p.nome || '').slice(0, 26)) + '</span></div>';
+        }).join('') + '</div>' : '') +
+        '<div class="rec-warn"><strong>Antes de restaurar:</strong> a causa do apagamento já foi corrigida, então o que for restaurado agora não será apagado de novo pelo mesmo motivo. Ainda assim, faça a restauração em UMA aba só e espere a confirmação.</div>' +
+        '<div class="rec-actions">' +
+          '<button class="btn-save-form" onclick="restaurarMerge()"><i class="ti ti-photo-check"></i> Restaurar fotos (recomendado)</button>' +
+          '<button class="btn-danger-solid" onclick="restaurarTudo()"><i class="ti ti-rotate-clockwise"></i> Voltar catálogo inteiro para essa versão</button>' +
+        '</div>' +
+        '<p style="font-size:11.5px;color:var(--gray-400);margin-top:10px;line-height:1.6;">' +
+          '<strong>Restaurar fotos</strong>: devolve as fotos aos produtos que já existem e traz de volta os ' + faltando.length + ' produto(s) que sumiram. Não apaga nada do catálogo atual.<br>' +
+          '<strong>Voltar catálogo inteiro</strong>: deixa o catálogo exatamente como estava em ' + escHtml(new Date(maxTs).toLocaleString('pt-BR')) + ' (' + _backup.length + ' produtos) — os outros ' + Math.max(0, atual.length - _backup.length) + ' produto(s) de hoje serão removidos.' +
+        '</p>';
+    }
+
+    // Modo seguro: devolve fotos + reinsere produtos que sumiram, sem apagar nada.
+    function restaurarMerge() {
+      if (!_backup.length) return;
+      var atual = getProdutos();
+      var porId = {};
+      atual.forEach(function(p) { porId[String(p.id)] = p; });
+
+      var fotosRestauradas = 0, reinseridos = 0;
+      _backup.forEach(function(b) {
+        var a = porId[String(b.id)];
+        if (!a) {
+          atual.push(b);
+          porId[String(b.id)] = b;
+          reinseridos++;
+          return;
+        }
+        // Só preenche o que está faltando — nunca sobrescreve foto existente
+        if (_temFoto(b) && !_temFoto(a)) {
+          if (Array.isArray(b.imagens) && b.imagens.length) a.imagens = b.imagens.slice();
+          a.imagem = _fotoDe(b);
+          fotosRestauradas++;
+        }
+      });
+
+      if (!fotosRestauradas && !reinseridos) {
+        showToast('Nada a restaurar — o catálogo já está completo.');
+        return;
+      }
+      if (!confirm('Restaurar ' + fotosRestauradas + ' foto(s) e reinserir ' + reinseridos + ' produto(s)?\n\nNenhum produto atual será apagado.')) return;
+
+      _salvar(atual, 'Pronto: ' + fotosRestauradas + ' foto(s) restaurada(s), ' + reinseridos + ' produto(s) de volta.');
+    }
+
+    // Modo destrutivo: substitui o catálogo pela versão do backup.
+    function restaurarTudo() {
+      if (!_backup.length) return;
+      var atual = getProdutos();
+      var removidos = Math.max(0, atual.length - _backup.length);
+      if (!confirm('Voltar o catálogo inteiro para a versão de ' + new Date(_backupTs).toLocaleString('pt-BR') + '?\n\n' +
+                   'Ficará com ' + _backup.length + ' produtos. Cerca de ' + removidos + ' produto(s) que existem hoje serão REMOVIDOS.\n\nEssa ação não pode ser desfeita por aqui.')) return;
+      _salvar(_backup.slice(), 'Catálogo restaurado para a versão de ' + new Date(_backupTs).toLocaleString('pt-BR') + '.');
+    }
+
+    function _salvar(lista, msgOk) {
+      try {
+        saveProdutos(lista);
+      } catch (e) {
+        showToast('Não foi possível salvar: armazenamento do navegador cheio.', 'erro');
+        return;
+      }
+      log('salvo: ' + lista.length + ' produtos (' + lista.filter(_temFoto).length + ' com foto)');
+      showToast(msgOk);
+      setTimeout(function() {
+        alert(msgOk + '\n\nAguarde alguns segundos para a sincronização com a nuvem terminar antes de fechar esta aba.' +
+              '\n\nEssas fotos voltaram no formato antigo (dentro do catálogo). Passe em "Migrar fotos" para enviá-las ' +
+              'ao Storage e deixar o catálogo leve.');
+        location.href = 'migrar-fotos.html';
+      }, 300);
+    }
+
+    carregarBackup()
+      .then(montarResultado)
+      .catch(function(e) {
+        document.getElementById('rec-carregando').style.display = 'none';
+        var box = document.getElementById('rec-resultado');
+        box.style.display = 'block';
+        box.innerHTML = '<p style="font-size:13.5px;color:#dc2626;">Erro ao ler as versões anteriores: ' + escHtml(e && e.message) + '</p>';
+      });
+  </script>
+  <script src="js/sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LaPink — Migrar fotos para a nuvem</title>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+<link rel="stylesheet" href="css/Principal.css" />
+<link rel="stylesheet" href="css/componentes.css" />
+<link rel="stylesheet" href="css/PrincipalPainelAdmin.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/dist/tabler-icons.min.css" />
+<style>
+.mig-box{background:var(--white);border:.5px solid var(--pink-100);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-sm);margin-bottom:16px;}
+.mig-stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;}
+.mig-stat{flex:1;min-width:150px;background:var(--gray-50);border-radius:var(--radius-md);padding:14px 16px;}
+.mig-stat .ms-label{display:block;font-size:11px;color:var(--gray-400);font-weight:600;margin-bottom:5px;}
+.mig-stat .ms-val{display:block;font-size:22px;font-weight:800;color:var(--gray-800);}
+.mig-stat.pink .ms-val{color:var(--pink-500);}
+.mig-stat.green .ms-val{color:var(--green-400);}
+.mig-bar-wrap{background:var(--gray-100);border-radius:20px;height:12px;overflow:hidden;margin-top:16px;display:none;}
+.mig-bar{height:12px;background:var(--pink-500);width:0;transition:width .25s;}
+.mig-warn{background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin-top:14px;}
+.mig-erro{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.6;margin-top:14px;}
+.mig-ok{background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin-top:14px;}
+.mig-log{font-family:monospace;font-size:11.5px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:12px 14px;margin-top:14px;max-height:220px;overflow-y:auto;white-space:pre-wrap;display:none;}
+.mig-erro code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px;}
+</style>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script defer src="../public/js/firebase-init.js"></script>
+<script defer src="../public/js/cloud-sync.js"></script>
+<script defer src="js/fotos.js"></script>
+</head>
+<body>
+<script>checkAuth(['superadmin', 'admin']);</script>
+  <div id="app-admin">
+    <div class="admin-layout">
+
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-bubble"><i class="ti ti-butterfly" style="color:#fff;font-size:18px"></i></div>
+          <div class="logo-name">LaPink</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-section-label">Visão geral</div>
+          <a class="sidebar-link" href="admin.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+          <a class="sidebar-link" href="cadastro-produto.html"><i class="ti ti-package"></i> Produtos</a>
+          <a class="sidebar-link" href="pedidos.html"><i class="ti ti-shopping-cart"></i> Pedidos</a>
+          <a class="sidebar-link" href="clientes.html"><i class="ti ti-users"></i> Clientes</a>
+          <div class="nav-section-label">Loja</div>
+          <a class="sidebar-link" href="loja-v1.html"><i class="ti ti-layout"></i> Editor Loja V1</a>
+          <div class="nav-section-label">Auxiliar</div>
+          <a class="sidebar-link" href="relatorios.html"><i class="ti ti-chart-bar"></i> Relatórios</a>
+          <a class="sidebar-link" href="financeiro.html"><i class="ti ti-coin"></i> Financeiro</a>
+          <a class="sidebar-link" href="configuracoes.html"><i class="ti ti-settings"></i> Configurações</a>
+          <a class="sidebar-link" href="recuperar-fotos.html"><i class="ti ti-history"></i> Recuperar fotos</a>
+          <a class="sidebar-link active" href="migrar-fotos.html"><i class="ti ti-cloud-upload"></i> Migrar fotos</a>
+          <div class="nav-section-label" id="sec-sistema" style="display:none">Sistema</div>
+          <a class="sidebar-link" href="gerenciar-usuarios.html" id="link-gerenciar-usuarios" style="display:none"><i class="ti ti-shield-lock"></i> Usuários</a>
+        </div>
+        <div class="sidebar-footer">
+          <button onclick="location.href='../public/V1.html'"><i class="ti ti-arrow-left"></i> Ver loja</button>
+          <button onclick="logout()" style="margin-top:6px;"><i class="ti ti-logout"></i> Sair</button>
+        </div>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="hamburger" id="sidebarToggle" aria-label="Abrir menu"><i class="ti ti-menu"></i></button>
+          <h1>Migrar fotos</h1>
+        </header>
+
+        <section class="admin-page show">
+
+          <div class="sub-section-header">
+            <span class="sub-badge"><i class="ti ti-cloud-upload"></i></span>
+            <div>
+              <h2>Tirar as fotos de dentro do catálogo</h2>
+              <p>As fotos antigas estão embutidas no catálogo em base64. Esta página envia cada uma para o Firebase Storage e deixa só o link no lugar — o catálogo fica leve e para de estourar o limite do navegador.</p>
+            </div>
+          </div>
+
+          <div class="mig-box">
+            <div id="mig-analise"></div>
+            <div class="mig-bar-wrap" id="mig-bar-wrap"><div class="mig-bar" id="mig-bar"></div></div>
+            <div id="mig-msg"></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;" id="mig-acoes"></div>
+          </div>
+
+          <div class="mig-log" id="mig-log"></div>
+
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    var _rodando = false;
+
+    function log(msg) {
+      var el = document.getElementById('mig-log');
+      el.style.display = 'block';
+      el.textContent += msg + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function fotosDoProduto(p) {
+      if (Array.isArray(p.imagens) && p.imagens.length) return p.imagens.slice();
+      if (p.imagem) return [p.imagem];
+      return [];
+    }
+
+    function formatarMB(bytes) {
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+
+    function analisar() {
+      var prods = getProdutos();
+      var base64 = 0, urls = 0, bytes = 0, prodsComBase64 = 0;
+      prods.forEach(function(p) {
+        var arr = fotosDoProduto(p);
+        var temB64 = false;
+        arr.forEach(function(f) {
+          if (fotoEhBase64(f)) { base64++; bytes += f.length; temB64 = true; }
+          else if (fotoEhUrl(f)) urls++;
+        });
+        if (temB64) prodsComBase64++;
+      });
+      return { prods: prods, base64: base64, urls: urls, bytes: bytes, prodsComBase64: prodsComBase64 };
+    }
+
+    function renderAnalise() {
+      var a = analisar();
+      document.getElementById('mig-analise').innerHTML =
+        '<div class="mig-stat-row">' +
+          '<div class="mig-stat"><span class="ms-label">Produtos no catálogo</span><span class="ms-val">' + a.prods.length + '</span></div>' +
+          '<div class="mig-stat pink"><span class="ms-label">Fotos no formato antigo</span><span class="ms-val">' + a.base64 + '</span></div>' +
+          '<div class="mig-stat"><span class="ms-label">Peso dessas fotos</span><span class="ms-val">' + formatarMB(a.bytes) + '</span></div>' +
+          '<div class="mig-stat green"><span class="ms-label">Já na nuvem</span><span class="ms-val">' + a.urls + '</span></div>' +
+        '</div>';
+
+      var acoes = document.getElementById('mig-acoes');
+      var msg = document.getElementById('mig-msg');
+      acoes.innerHTML = '';
+      msg.innerHTML = '';
+
+      if (a.base64 === 0) {
+        msg.innerHTML = '<div class="mig-ok"><strong>Nada a migrar.</strong> Todas as fotos do catálogo já estão na nuvem — o catálogo está no formato leve.</div>';
+        return;
+      }
+
+      msg.innerHTML = '<div class="mig-warn">Vão ser enviadas <strong>' + a.base64 + ' foto(s)</strong> de ' + a.prodsComBase64 +
+        ' produto(s), liberando cerca de <strong>' + formatarMB(a.bytes) + '</strong> do catálogo. ' +
+        'Deixe esta aba aberta até terminar — o progresso é salvo aos poucos, então se algo interromper dá para continuar de onde parou.</div>';
+      acoes.innerHTML = '<button class="btn-save-form" id="btn-migrar" onclick="migrar()"><i class="ti ti-cloud-upload"></i> Enviar fotos para a nuvem</button>';
+    }
+
+    function _esperarStorage() {
+      return new Promise(function(resolve, reject) {
+        var t0 = Date.now();
+        (function tick() {
+          if (typeof storageDisponivel === 'function' && storageDisponivel()) return resolve();
+          if (Date.now() - t0 > 12000) return reject(new Error('O Firebase Storage não carregou nesta página.'));
+          setTimeout(tick, 200);
+        })();
+      });
+    }
+
+    function migrar() {
+      if (_rodando) return;
+      _rodando = true;
+      var btn = document.getElementById('btn-migrar');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Enviando…'; }
+
+      var barWrap = document.getElementById('mig-bar-wrap');
+      var bar = document.getElementById('mig-bar');
+      barWrap.style.display = 'block';
+
+      _esperarStorage().then(function() {
+        var prods = getProdutos();
+        var alvos = prods.filter(function(p) { return fotosDoProduto(p).some(fotoEhBase64); });
+        var totalFotos = alvos.reduce(function(s, p) { return s + fotosDoProduto(p).filter(fotoEhBase64).length; }, 0);
+        var feitas = 0, falhas = 0, desdeSalvou = 0;
+
+        log('migrando ' + totalFotos + ' foto(s) de ' + alvos.length + ' produto(s)…');
+
+        function salvar() {
+          try { saveProdutos(prods); log('  progresso salvo'); }
+          catch (e) { log('  ERRO ao salvar: ' + (e && e.message)); }
+        }
+
+        // Um produto de cada vez, e dentro dele uma foto de cada vez.
+        return alvos.reduce(function(cadeia, prod) {
+          return cadeia.then(function() {
+            var fotos = fotosDoProduto(prod);
+            return fotos.reduce(function(c2, foto, idx) {
+              return c2.then(function() {
+                if (!fotoEhBase64(foto)) return;
+                return uploadFoto(foto).then(function(url) {
+                  fotos[idx] = url;
+                  feitas++;
+                }).catch(function(e) {
+                  falhas++;
+                  log('  FALHA em "' + String(prod.nome || '').slice(0, 30) + '": ' + (e && e.message));
+                });
+              });
+            }, Promise.resolve()).then(function() {
+              prod.imagens = fotos;
+              prod.imagem = fotos[0] || null;
+              log('✓ ' + String(prod.nome || '').slice(0, 40) + ' (' + fotos.length + ' foto(s))');
+              bar.style.width = Math.round((feitas + falhas) / Math.max(1, totalFotos) * 100) + '%';
+              if (++desdeSalvou >= 5) { desdeSalvou = 0; salvar(); }
+            });
+          });
+        }, Promise.resolve()).then(function() {
+          salvar();
+          bar.style.width = '100%';
+          _rodando = false;
+          var msg = document.getElementById('mig-msg');
+          if (falhas === 0) {
+            msg.innerHTML = '<div class="mig-ok"><strong>Migração concluída.</strong> ' + feitas +
+              ' foto(s) enviadas para a nuvem. O catálogo agora guarda só os links. ' +
+              'Espere alguns segundos para a sincronização terminar antes de fechar a aba.</div>';
+          } else {
+            msg.innerHTML = '<div class="mig-warn"><strong>Terminou com pendências.</strong> ' + feitas +
+              ' foto(s) enviadas, ' + falhas + ' falharam e continuam no formato antigo. ' +
+              'Pode rodar de novo — só as que faltam serão tentadas.</div>';
+          }
+          document.getElementById('mig-acoes').innerHTML =
+            '<button class="btn btn-secondary" onclick="location.reload()"><i class="ti ti-refresh"></i> Reanalisar</button>' +
+            '<button class="btn btn-primary" onclick="location.href=\'cadastro-produto.html\'"><i class="ti ti-package"></i> Ver produtos</button>';
+          renderAnaliseDepois();
+        });
+      }).catch(function(e) {
+        _rodando = false;
+        bar.style.width = '0';
+        var storageNaoConfigurado = /storage|bucket|not.*exist|404/i.test(String(e && e.message));
+        document.getElementById('mig-msg').innerHTML =
+          '<div class="mig-erro"><strong>Não foi possível migrar.</strong><br>' + escHtml(String(e && e.message)) +
+          (storageNaoConfigurado
+            ? '<br><br>Se o Firebase Storage ainda não foi ativado no projeto, abra o <a href="https://console.firebase.google.com/project/lapink-82a39/storage" target="_blank" rel="noopener">Console do Firebase</a>, clique em <strong>“Começar” / “Get started”</strong> e confirme. Depois volte aqui e recarregue esta página.'
+            : '') +
+          '</div>';
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-cloud-upload"></i> Tentar de novo'; }
+      });
+    }
+
+    function renderAnaliseDepois() {
+      var a = analisar();
+      document.getElementById('mig-analise').innerHTML =
+        '<div class="mig-stat-row">' +
+          '<div class="mig-stat"><span class="ms-label">Produtos no catálogo</span><span class="ms-val">' + a.prods.length + '</span></div>' +
+          '<div class="mig-stat pink"><span class="ms-label">Ainda no formato antigo</span><span class="ms-val">' + a.base64 + '</span></div>' +
+          '<div class="mig-stat green"><span class="ms-label">Já na nuvem</span><span class="ms-val">' + a.urls + '</span></div>' +
+        '</div>';
+    }
+
+    // js/fotos.js é carregado com defer (roda depois deste script inline),
+    // então a análise só pode começar quando ele já estiver definido.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', renderAnalise);
+    } else {
+      renderAnalise();
+    }
+  </script>
+  <script src="js/sidebar.js"></script>
+</body>
+</html>

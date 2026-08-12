@@ -7,6 +7,9 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "hosting": {
     "public": ".",
     "ignore": [
@@ -35,7 +38,8 @@
       ".vscode/**",
       "firestore.rules",
       "firestore.rules.secure",
-      "firestore.indexes.json"
+      "firestore.indexes.json",
+      "storage.rules"
     ],
     "rewrites": [
       {

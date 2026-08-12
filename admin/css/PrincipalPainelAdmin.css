@@ -400,6 +400,12 @@
   .modal-edit-preview { flex-direction: row; flex: none; align-self: stretch; }
 }
 
+/* ── Modal: Adicionar produto ── */
+.modal--novo-produto { width: 1000px; }
+@media (max-width: 640px) {
+  .modal--novo-produto { width: 100%; }
+}
+
 /* ── Empty states ── */
 .empty-state {
   text-align: center;
