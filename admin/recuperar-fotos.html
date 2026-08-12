@@ -24,6 +24,7 @@
 .rec-thumb span{display:block;font-size:9px;color:var(--gray-500);margin-top:3px;line-height:1.25;word-break:break-word;}
 .rec-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
 .rec-warn{background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;margin-top:14px;}
+.rec-ok-msg{background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.55;}
 .rec-log{font-family:monospace;font-size:11.5px;color:var(--gray-600);background:var(--gray-50);border-radius:8px;padding:12px 14px;margin-top:14px;max-height:200px;overflow-y:auto;white-space:pre-wrap;display:none;}
 .btn-danger-solid{background:#dc2626;color:#fff;border:none;border-radius:var(--radius-md);padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
 .btn-danger-solid:hover{background:#b91c1c;}
@@ -31,8 +32,10 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script defer src="../public/js/firebase-init.js"></script>
 <script defer src="../public/js/cloud-sync.js"></script>
+<script defer src="js/fotos.js"></script>
 </head>
 <body>
 <script>checkAuth(['superadmin', 'admin']);</script>
@@ -207,10 +210,11 @@
                  '<span>' + escHtml(String(p.nome || '').slice(0, 26)) + '</span></div>';
         }).join('') + '</div>' : '') +
         '<div class="rec-warn"><strong>Antes de restaurar:</strong> a causa do apagamento já foi corrigida, então o que for restaurado agora não será apagado de novo pelo mesmo motivo. Ainda assim, faça a restauração em UMA aba só e espere a confirmação.</div>' +
-        '<div class="rec-actions">' +
+        '<div class="rec-actions" id="rec-actions">' +
           '<button class="btn-save-form" onclick="restaurarMerge()"><i class="ti ti-photo-check"></i> Restaurar fotos (recomendado)</button>' +
           '<button class="btn-danger-solid" onclick="restaurarTudo()"><i class="ti ti-rotate-clockwise"></i> Voltar catálogo inteiro para essa versão</button>' +
         '</div>' +
+        '<div id="rec-acoes-run" style="margin-top:14px;"></div>' +
         '<p style="font-size:11.5px;color:var(--gray-400);margin-top:10px;line-height:1.6;">' +
           '<strong>Restaurar fotos</strong>: devolve as fotos aos produtos que já existem e traz de volta os ' + faltando.length + ' produto(s) que sumiram. Não apaga nada do catálogo atual.<br>' +
           '<strong>Voltar catálogo inteiro</strong>: deixa o catálogo exatamente como estava em ' + escHtml(new Date(maxTs).toLocaleString('pt-BR')) + ' (' + _backup.length + ' produtos) — os outros ' + Math.max(0, atual.length - _backup.length) + ' produto(s) de hoje serão removidos.' +
@@ -260,21 +264,85 @@
       _salvar(_backup.slice(), 'Catálogo restaurado para a versão de ' + new Date(_backupTs).toLocaleString('pt-BR') + '.');
     }
 
+    function _esperarStorage() {
+      return new Promise(function(resolve, reject) {
+        var t0 = Date.now();
+        (function tick() {
+          if (typeof storageDisponivel === 'function' && storageDisponivel()) return resolve();
+          if (Date.now() - t0 > 12000) return reject(new Error('O Firebase Storage não carregou nesta página.'));
+          setTimeout(tick, 200);
+        })();
+      });
+    }
+
+    /* Sobe para o Storage toda foto que ainda esteja em base64 e troca pelo
+       link. Isso é feito ANTES de salvar: o catálogo nunca chega a guardar
+       as fotos pesadas, então a restauração não corre risco de estourar o
+       limite de ~5 MB do localStorage — que é justamente o que derrubaria
+       uma restauração de 27 fotos feita do jeito antigo. */
+    function _subirFotos(lista, onProg) {
+      var itens = [];
+      lista.forEach(function(p) {
+        var arr = (Array.isArray(p.imagens) && p.imagens.length) ? p.imagens.slice()
+                : (p.imagem ? [p.imagem] : []);
+        if (!arr.length) return;
+        p.imagens = arr;
+        p.imagem = arr[0] || null;
+        arr.forEach(function(f, i) { if (fotoEhBase64(f)) itens.push({ arr: arr, i: i, p: p }); });
+      });
+      var total = itens.length, feitas = 0, falhas = 0;
+      if (!total) return Promise.resolve({ total: 0, feitas: 0, falhas: 0 });
+      return itens.reduce(function(cadeia, it) {
+        return cadeia.then(function() {
+          return uploadFoto(it.arr[it.i]).then(function(url) {
+            it.arr[it.i] = url;
+            it.p.imagem = it.arr[0];
+            feitas++;
+          }).catch(function(e) {
+            falhas++;
+            log('  falha ao enviar foto de "' + String(it.p.nome || '').slice(0, 30) + '": ' + (e && e.message));
+          }).then(function() {
+            if (onProg) onProg(feitas + falhas, total);
+          });
+        });
+      }, Promise.resolve()).then(function() {
+        return { total: total, feitas: feitas, falhas: falhas };
+      });
+    }
+
     function _salvar(lista, msgOk) {
-      try {
-        saveProdutos(lista);
-      } catch (e) {
-        showToast('Não foi possível salvar: armazenamento do navegador cheio.', 'erro');
-        return;
-      }
-      log('salvo: ' + lista.length + ' produtos (' + lista.filter(_temFoto).length + ' com foto)');
-      showToast(msgOk);
-      setTimeout(function() {
-        alert(msgOk + '\n\nAguarde alguns segundos para a sincronização com a nuvem terminar antes de fechar esta aba.' +
-              '\n\nEssas fotos voltaram no formato antigo (dentro do catálogo). Passe em "Migrar fotos" para enviá-las ' +
-              'ao Storage e deixar o catálogo leve.');
-        location.href = 'migrar-fotos.html';
-      }, 300);
+      var botoes = document.getElementById('rec-actions');
+      if (botoes) botoes.style.display = 'none'; // evita clique duplo durante o envio
+      var acoes = document.getElementById('rec-acoes-run');
+      if (acoes) acoes.innerHTML = '<div style="font-size:13px;color:var(--gray-600);display:flex;align-items:center;gap:8px;">' +
+        '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> <span id="rec-prog">Enviando fotos para a nuvem…</span></div>';
+
+      _esperarStorage().then(function() {
+        return _subirFotos(lista, function(feito, total) {
+          var el = document.getElementById('rec-prog');
+          if (el) el.textContent = 'Enviando fotos para a nuvem… ' + feito + '/' + total;
+        });
+      }).then(function(r) {
+        log('fotos enviadas: ' + r.feitas + '/' + r.total + (r.falhas ? ' (' + r.falhas + ' falharam)' : ''));
+        try {
+          saveProdutos(lista);
+        } catch (e) {
+          showToast('Não foi possível salvar: armazenamento do navegador cheio.', 'erro');
+          if (acoes) acoes.innerHTML = '<div class="rec-warn">O catálogo não coube no navegador. ' +
+            'Como as fotos já subiram para a nuvem, recarregue esta página e tente de novo.</div>';
+          return;
+        }
+        log('salvo: ' + lista.length + ' produtos (' + lista.filter(_temFoto).length + ' com foto)');
+        showToast(msgOk);
+        if (acoes) acoes.innerHTML = '<div class="rec-ok-msg">' + escHtml(msgOk) +
+          '<br>As fotos já foram para o Storage — não precisa passar pela migração.</div>' +
+          '<button class="btn btn-primary" style="margin-top:12px;" onclick="location.href=\'cadastro-produto.html\'">' +
+          '<i class="ti ti-package"></i> Ver produtos</button>';
+      }).catch(function(e) {
+        showToast('Falha na restauração.', 'erro');
+        if (acoes) acoes.innerHTML = '<div class="rec-warn">Não foi possível concluir: ' + escHtml(String(e && e.message)) +
+          '<br>Se o erro for de permissão, saia e entre de novo no painel para renovar a sessão de admin.</div>';
+      });
     }
 
     carregarBackup()
