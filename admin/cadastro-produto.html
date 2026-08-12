@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
 <title>LaPink — Produtos</title>
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
@@ -1276,8 +1279,40 @@
       'Piercing Pressão':'ti-circle-dot','Pulseira':'ti-bracelet','Bolsa':'ti-shopping-bag'
     };
 
+    // Leitores de planilha (PapaParse ~7 KB + SheetJS ~269 KB) só entram
+    // quando o usuário abre a importação. Antes eram carregados em TODA
+    // abertura da tela de Produtos — 276 KB baixados e ~900 KB de JS
+    // interpretados para um recurso usado de vez em quando, o que deixava
+    // a troca de abas visivelmente mais lenta.
+    var _libsImport = null;
+    function _carregarLibsImport() {
+      if (_libsImport) return _libsImport;
+      function carregar(src) {
+        return new Promise(function(resolve, reject) {
+          var s = document.createElement('script');
+          s.src = src;
+          s.async = true;
+          s.onload = resolve;
+          s.onerror = function() { reject(new Error('Falha ao carregar ' + src)); };
+          document.head.appendChild(s);
+        });
+      }
+      _libsImport = Promise.all([
+        typeof Papa !== 'undefined' ? Promise.resolve()
+          : carregar('https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'),
+        typeof XLSX !== 'undefined' ? Promise.resolve()
+          : carregar('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js')
+      ]);
+      _libsImport.catch(function() { _libsImport = null; }); // permite tentar de novo
+      return _libsImport;
+    }
+
     function abrirModalImport() {
       document.getElementById('modal-import-overlay').classList.add('open');
+      // Já começa a baixar enquanto o usuário escolhe o arquivo.
+      _carregarLibsImport().catch(function() {
+        showToast('Não foi possível carregar o leitor de planilhas. Verifique a internet.', 'erro');
+      });
     }
     function fecharModalImport() {
       document.getElementById('modal-import-overlay').classList.remove('open');
@@ -1449,7 +1484,16 @@
       document.getElementById('btn-confirmar-import').disabled = (_importDados.length === 0);
     }
 
+    // Garante que os leitores estejam carregados antes de processar.
     function processarArquivoImport(file) {
+      _carregarLibsImport()
+        .then(function() { _processarArquivoImport(file); })
+        .catch(function() {
+          showToast('Não foi possível carregar o leitor de planilhas. Verifique a internet.', 'erro');
+        });
+    }
+
+    function _processarArquivoImport(file) {
       var ext = file.name.split('.').pop().toLowerCase();
       if (ext === 'csv') {
         if (typeof Papa === 'undefined') { showToast('Parser CSV não carregado ainda. Aguarde.', 'erro'); return; }
@@ -1540,8 +1584,6 @@
     }
 
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="js/sidebar.js"></script>
 </body>
 </html>

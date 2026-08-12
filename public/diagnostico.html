@@ -147,6 +147,7 @@
     document.getElementById('acoes').innerHTML =
       '<button class="b1" onclick="liberarCache()"><i class="ti ti-broom"></i> Liberar espaço (recomendado)</button>' +
       '<button class="b2" onclick="location.href=\'login.html\'"><i class="ti ti-login"></i> Ir para o login</button>' +
+      '<button class="b2" onclick="resetarCache()"><i class="ti ti-refresh"></i> Recarregar o app do zero</button>' +
       '<button class="b3" onclick="limparTudo()"><i class="ti ti-trash"></i> Limpar tudo deste site</button>' +
       '<p style="font-size:12px;color:#6b7280;margin:14px 0 0;line-height:1.6;">' +
       '<b>Liberar espaço</b> apaga só o catálogo/pedidos guardados <em>neste aparelho</em>. ' +
@@ -172,6 +173,30 @@
       '<div class="aviso bom" style="margin-top:16px;"><strong>' + apagadas + ' item(ns) liberados.</strong> ' +
       'Agora entre no painel normalmente — os dados voltam do servidor sozinhos.</div>';
     render();
+  };
+
+  // Descarta os arquivos guardados pelo app (service workers + caches) e
+  // recarrega. Serve quando a tela fica servindo uma versão antiga, ou como
+  // válvula de escape se o cache do painel der problema.
+  window.resetarCache = function () {
+    var tarefas = [];
+    if ('serviceWorker' in navigator) {
+      tarefas.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+        return Promise.all(rs.map(function (r) { return r.unregister(); }));
+      }).catch(function () {}));
+    }
+    if (window.caches && caches.keys) {
+      tarefas.push(caches.keys().then(function (ks) {
+        return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+      }).catch(function () {}));
+    }
+    document.getElementById('res-acao').innerHTML =
+      '<div class="aviso med" style="margin-top:16px;">Limpando os arquivos guardados…</div>';
+    Promise.all(tarefas).then(function () {
+      document.getElementById('res-acao').innerHTML =
+        '<div class="aviso bom" style="margin-top:16px;"><strong>Pronto.</strong> Recarregando com tudo do zero…</div>';
+      setTimeout(function () { location.reload(true); }, 900);
+    });
   };
 
   window.limparTudo = function () {

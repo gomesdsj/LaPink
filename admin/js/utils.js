@@ -1,5 +1,17 @@
 /* LaPink — Utilitários compartilhados admin */
 
+// Service Worker do painel: serve CSS/JS/fontes do cache na hora e atualiza
+// em segundo plano, o que tira a ida ao servidor por arquivo a cada troca de
+// aba. Nunca guarda HTML (ver admin/sw-admin.js). Escopo /admin/ — não
+// interfere no service worker da loja, que fica em /public/.
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw-admin.js').catch(function (e) {
+      console.warn('[admin] service worker não registrado:', e && e.message);
+    });
+  });
+}
+
 function formatBRL(v) {
   return 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
