@@ -347,6 +347,14 @@
       }).join('');
     }
 
+    /* Foto que não carrega (link antigo, arquivo removido do Storage, sem
+       internet) volta para o ícone padrão, em vez de deixar o retângulo de
+       imagem quebrada na tabela. */
+    function fotoThumbFallback(img, icone) {
+      img.onerror = null;
+      if (img.parentNode) img.parentNode.innerHTML = '<i class="ti ' + (icone || 'ti-diamond') + '"></i>';
+    }
+
     /* ── Tabela de produtos ── */
     function renderTabela() {
       var produtos = getProdutos();
@@ -377,15 +385,28 @@
         var est = parseInt(p.estoque) || 0;
         var preco = getPrecoProduto(p);
         var lucro = getLucroProduto(p);
-        var icone = escHtml(p.icone || 'ti-diamond');
+        // Nome de ícone só com [a-z0-9-]: entra em atributo E dentro de uma
+        // string JS no onerror, então não pode carregar aspas.
+        var icone = String(p.icone || 'ti-diamond').replace(/[^a-z0-9-]/gi, '');
         var statusBadge = est <= 5
           ? '<span class="badge badge-amber">Estoque baixo</span>'
           : '<span class="badge badge-green">Ativo</span>';
 
+        // Esta tabela nunca mostrou a foto: desenhava sempre o ícone, sem
+        // olhar para imagem/imagens. Aceita os dois formatos — imagens[] (novo)
+        // e imagem (legado) — e o conteúdo é URL do Storage ou base64 antigo,
+        // que em <img src> funcionam igual.
+        var fotos = (Array.isArray(p.imagens) && p.imagens.length)
+          ? p.imagens
+          : (p.imagem ? [p.imagem] : []);
+        var thumb = fotos.length
+          ? '<img src="' + escHtml(fotos[0]) + '" alt="' + escHtml(p.nome || '') + '" loading="lazy" onerror="fotoThumbFallback(this,\'' + icone + '\')" />'
+          : '<i class="ti ' + icone + '"></i>';
+
         return (
           '<tr>' +
           '<td style="display:flex;align-items:center;gap:10px;">' +
-          '<div class="prod-thumb"><i class="ti ' + icone + '"></i></div>' +
+          '<div class="prod-thumb">' + thumb + '</div>' +
           '<span>' + escHtml(p.nome || '—') + '</span>' +
           '</td>' +
           '<td>' + escHtml(p.categoria || '—') + '</td>' +
