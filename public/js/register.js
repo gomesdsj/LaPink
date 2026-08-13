@@ -118,6 +118,12 @@ async function _doRegister() {
   clients.push(newClient);
   saveClients(clients);
 
+  // Conta criada de fato → consome uma unidade do limite deste IP. Para
+  // cadastro o abuso é a criação em MASSA de contas, então o que conta é o
+  // sucesso, não a falha (antes, a simples consulta é que contava, e formar
+  // um cadastro válido cinco vezes bloqueava a rede inteira por 1 hora).
+  try { registrarFalhaLimiteIP('registro'); } catch (e) {}
+
   setLoggedClient({ name: name, email: email, role: 'client' });
 
   // E-mail de boas-vindas com o desconto — configurável/desativável no admin

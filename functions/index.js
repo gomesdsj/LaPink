@@ -983,9 +983,23 @@ exports.enviarLinkRedefinicaoSenha = functions.https.onRequest(function (req, re
 //    Falha aberta: se o Firestore não responder, libera a tentativa em vez
 //    de travar um cliente legítimo por causa de erro de infraestrutura.
 // ---------------------------------------------------------------------------
-var RATE_LIMIT_JANELA_MS      = 15 * 60 * 1000; // 15 min
-var RATE_LIMIT_MAX_TENTATIVAS = 5;              // 6ª tentativa na janela já bloqueia
-var RATE_LIMIT_BLOQUEIO_MS    = 60 * 60 * 1000; // 1 hora
+// Conta FALHAS, não tentativas. A versão anterior era chamada antes de cada
+// login e incrementava sempre — então até login BEM-SUCEDIDO gastava uma das
+// 5 vagas, e 5 entradas normais em 15 min já rendiam 1 hora de bloqueio.
+//
+// O limite também é por IP, e uma rede corporativa inteira sai por um único
+// IP público: 5 tentativas para um escritório todo é apertado demais. Com a
+// contagem só de falhas, o número pode ser bem mais folgado sem abrir a
+// guarda contra força bruta — e quem erra a senha de uma conta específica
+// ainda esbarra no limite por e-mail do próprio Firebase Auth.
+var RATE_LIMIT_JANELA_MS   = 15 * 60 * 1000; // 15 min
+var RATE_LIMIT_MAX_FALHAS  = 15;             // falhas por IP na janela
+var RATE_LIMIT_BLOQUEIO_MS = 15 * 60 * 1000; // 15 min de bloqueio
+
+// Versão da política. Documento gravado por uma política antiga é descartado
+// na primeira leitura — senão um bloqueio de 1 hora criado pela regra velha
+// continuaria valendo depois deste ajuste, prendendo quem já está preso.
+var RATE_LIMIT_REGRA_V = 2;
 
 exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
   cors(req, res, function () {
@@ -999,6 +1013,23 @@ exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
       return;
     }
 
+    // modo:
+    //   'checar'   (padrão) → só consulta, NÃO gasta nada
+    //   'consumir'          → gasta uma unidade do limite
+    //   'limpar'            → zera o contador daquele IP
+    //
+    // O que "consumir" significa depende da ação, e são coisas diferentes:
+    //   login    → consome em FALHA de autenticação (força bruta);
+    //   registro → consome em cadastro CONCLUÍDO (criação em massa de contas).
+    //
+    // Cliente antigo em cache manda só {acao} e cai em 'checar' — sem contar.
+    // É temporário, até o cache do navegador atualizar, e falha para o lado
+    // seguro (libera) em vez de bloquear alguém legítimo.
+    var modo = String((req.body && req.body.modo) || 'checar').trim();
+    if (modo === 'falha')   modo = 'consumir'; // nomes da 1ª versão
+    if (modo === 'sucesso') modo = 'limpar';
+    if (['checar', 'consumir', 'limpar'].indexOf(modo) === -1) modo = 'checar';
+
     // req.ip já vem correto atrás do proxy confiável do Cloud Functions/Cloud
     // Run — é a única fonte confiável aqui. X-Forwarded-For é enviado pelo
     // próprio cliente (quem chama a function decide o valor) e NÃO deve ter
@@ -1009,22 +1040,62 @@ exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
     var ref = db.collection('rateLimites').doc(docId);
     var agora = Date.now();
 
-    db.runTransaction(function (tx) {
-      return tx.get(ref).then(function (snap) {
-        var d = snap.exists ? snap.data() : {};
-        var bloqueadoAte = d.bloqueadoAte || 0;
+    // 'limpar' zera o contador, então PRECISA de prova de que a autenticação
+    // aconteceu: um token válido do Firebase Auth. Sem essa exigência o
+    // endpoint seria um botão público de "reiniciar meu próprio limite", e
+    // bastaria chamá-lo após cada senha errada para tentar infinitamente.
+    // Sem token válido, a chamada é rebaixada para simples consulta.
+    var preparar = Promise.resolve(modo);
+    if (modo === 'limpar') {
+      var authHeader = req.headers.authorization || '';
+      var idToken = authHeader.indexOf('Bearer ') === 0 ? authHeader.slice(7) : '';
+      preparar = !idToken
+        ? Promise.resolve('checar')
+        : admin.auth().verifyIdToken(idToken)
+            .then(function () { return 'limpar'; })
+            .catch(function () { return 'checar'; });
+    }
 
+    preparar.then(function (modoFinal) {
+    modo = modoFinal;
+    return db.runTransaction(function (tx) {
+      return tx.get(ref).then(function (snap) {
+        var d = (snap.exists ? snap.data() : {}) || {};
+
+        // Bucket gravado por uma política antiga não vale mais: descarta.
+        // É isso que solta quem ficou preso 1 hora pela regra anterior.
+        if (d.v !== RATE_LIMIT_REGRA_V) d = {};
+
+        // Autenticou de verdade (token do Firebase Auth já conferido antes da
+        // transação): limpa o histórico do IP, mesmo que houvesse bloqueio —
+        // quem provou a identidade não deve arrastar tentativas anteriores.
+        if (modo === 'limpar') {
+          tx.set(ref, {
+            v: RATE_LIMIT_REGRA_V, falhas: 0, janelaInicio: 0, bloqueadoAte: 0,
+            ip: ip, acao: acao, updatedAt: agora
+          });
+          return { bloqueado: false };
+        }
+
+        var bloqueadoAte = d.bloqueadoAte || 0;
         if (bloqueadoAte > agora) {
           return { bloqueado: true, restanteMs: bloqueadoAte - agora };
         }
 
+        // Consulta pura: não grava nada, não gasta tentativa.
+        if (modo === 'checar') {
+          return { bloqueado: false };
+        }
+
+        // modo === 'consumir'
         var dentroDaJanela = (agora - (d.janelaInicio || 0)) < RATE_LIMIT_JANELA_MS;
-        var tentativas  = dentroDaJanela ? (d.tentativas || 0) + 1 : 1;
+        var falhas       = dentroDaJanela ? (d.falhas || 0) + 1 : 1;
         var janelaInicio = dentroDaJanela ? d.janelaInicio : agora;
-        var novoBloqueio = (tentativas > RATE_LIMIT_MAX_TENTATIVAS) ? (agora + RATE_LIMIT_BLOQUEIO_MS) : 0;
+        var novoBloqueio = (falhas > RATE_LIMIT_MAX_FALHAS) ? (agora + RATE_LIMIT_BLOQUEIO_MS) : 0;
 
         tx.set(ref, {
-          tentativas: tentativas,
+          v: RATE_LIMIT_REGRA_V,
+          falhas: falhas,
           janelaInicio: janelaInicio,
           bloqueadoAte: novoBloqueio,
           ip: ip,
@@ -1036,6 +1107,7 @@ exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
           ? { bloqueado: true, restanteMs: RATE_LIMIT_BLOQUEIO_MS }
           : { bloqueado: false };
       });
+    });
     })
       .then(function (resultado) {
         if (resultado.bloqueado) {

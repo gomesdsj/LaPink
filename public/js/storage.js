@@ -178,19 +178,50 @@ function clearLoggedClient() {
 //    login/cadastro de verdade; se aquele IP já passou do limite pra essa
 //    ação, bloqueia por 1 hora. Falha aberta: qualquer erro de rede libera
 //    a tentativa (nunca trava um cliente legítimo por instabilidade). ──
-async function verificarLimiteIP(acao) {
+async function _chamarLimiteIP(acao, modo) {
   try {
+    var headers = { 'Content-Type': 'application/json' };
+    // Zerar o contador exige provar que a autenticação aconteceu — o servidor
+    // recusa 'limpar' sem um token válido (senão seria um botão público de
+    // reiniciar o próprio limite). Sem token, vira simples consulta.
+    if (modo === 'limpar') {
+      try {
+        if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+          headers['Authorization'] = 'Bearer ' + (await firebase.auth().currentUser.getIdToken());
+        }
+      } catch (e) {}
+    }
     var resp = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/verificarLimiteIP', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ acao: acao })
+      headers: headers,
+      body: JSON.stringify({ acao: acao, modo: modo })
     });
     var data = await resp.json();
     if (resp.status === 429 && data && data.bloqueado) {
-      return { bloqueado: true, retryAfterMin: data.retryAfterMin || 60 };
+      return { bloqueado: true, retryAfterMin: data.retryAfterMin || 15 };
     }
     return { bloqueado: false };
   } catch (e) {
     return { bloqueado: false };
   }
+}
+
+// Consulta se este IP está bloqueado. NÃO gasta tentativa: antes esta mesma
+// chamada incrementava o contador, então entrar cinco vezes com a senha certa
+// já rendia bloqueio — e, como o limite é por IP, uma rede corporativa
+// inteira (todo mundo saindo pelo mesmo IP) estourava rápido.
+async function verificarLimiteIP(acao) {
+  return _chamarLimiteIP(acao, 'checar');
+}
+
+// Gasta uma unidade do limite daquele IP. O que conta muda com a ação:
+// em 'login' é a FALHA de autenticação (força bruta); em 'registro' é o
+// cadastro CONCLUÍDO (criação em massa de contas).
+async function registrarFalhaLimiteIP(acao) {
+  return _chamarLimiteIP(acao, 'consumir');
+}
+
+// Autenticou: zera o contador daquele IP.
+async function registrarSucessoLimiteIP(acao) {
+  return _chamarLimiteIP(acao, 'limpar');
 }

@@ -235,6 +235,9 @@ async function _resolverRoleReal(client) {
 
 async function _finishLogin(client, referrerPage) {
   try { localStorage.removeItem('_loginAttempts'); } catch (e) {}
+  // Autenticou: limpa o contador de falhas deste IP, para que tentativas
+  // anteriores não continuem empurrando quem já entrou rumo a um bloqueio.
+  try { registrarSucessoLimiteIP('login'); } catch (e) {}
   setLoggedClient(client);
 
   // Admin/Super Admin → grava sessão do painel e abre o painel.
@@ -324,6 +327,9 @@ async function _doLogin() {
   }
 
   if (!client) {
+    // Só AQUI a tentativa conta contra o limite do IP: quando a autenticação
+    // realmente falhou. Entrar com a senha certa não consome mais nada.
+    try { await registrarFalhaLimiteIP('login'); } catch (e) {}
     setLoginMessage('E-mail ou senha incorretos.', false);
     return;
   }
