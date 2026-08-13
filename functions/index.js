@@ -6,6 +6,38 @@ const fetch = require('node-fetch');
 const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
 
+// ---------------------------------------------------------------------------
+// IP real do visitante — usado por todo limite/dedupe baseado em IP
+// (verificarLimiteIP, registrarVisita, registrarVisualizacaoProduto).
+//
+// NUNCA usar req.ip diretamente: o Express que o Functions Framework monta
+// roda com "trust proxy" ativado (necessário, pois o Google Front End É um
+// proxy legítimo) — e isso faz req.ip usar automaticamente o cabeçalho
+// X-Forwarded-For, pegando o PRIMEIRO valor da lista. Esse primeiro valor é
+// justamente o que o CLIENTE controla: um atacante manda
+// "X-Forwarded-For: qualquer-coisa" na requisição e vira req.ip.
+//
+// Confirmado ao vivo nesta função em produção: forjar esse header zerava o
+// bloqueio do limitador de login a cada tentativa — apesar de uma correção
+// anterior já ter trocado headers['x-forwarded-for'] por req.ip pensando
+// que isso bastava (não basta: o bug estava um nível abaixo, dentro do
+// próprio req.ip).
+//
+// O valor confiável é o ÚLTIMO da lista: o Google Front End SEMPRE anexa o
+// IP real do cliente como o último hop ao encaminhar para o Cloud
+// Functions — tudo antes dele é o que o cliente (ou um proxy do lado dele)
+// inseriu, e não pode ser usado para decidir bloqueio.
+// https://cloud.google.com/load-balancing/docs/https#x-forwarded-for_header
+function _ipReal(req) {
+  var xff = req.headers && req.headers['x-forwarded-for'];
+  if (xff) {
+    var partes = String(xff).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (partes.length) return partes[partes.length - 1];
+  }
+  var direto = req.connection && req.connection.remoteAddress;
+  return (direto || 'desconhecido').toString().trim();
+}
+
 // Busca a chave secreta do Webhook do MP: variável de ambiente primeiro
 // (functions/.env), senão o Firestore (lapink/apiConfig.mpWebhookSecret,
 // salvo pelo admin em Configurações → Mercado Pago — mesmo padrão do
@@ -1030,12 +1062,7 @@ exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
     if (modo === 'sucesso') modo = 'limpar';
     if (['checar', 'consumir', 'limpar'].indexOf(modo) === -1) modo = 'checar';
 
-    // req.ip já vem correto atrás do proxy confiável do Cloud Functions/Cloud
-    // Run — é a única fonte confiável aqui. X-Forwarded-For é enviado pelo
-    // próprio cliente (quem chama a function decide o valor) e NÃO deve ter
-    // prioridade nem ser usado: bastaria mandar um valor diferente a cada
-    // requisição pra reiniciar o bucket de rate limit e burlar o bloqueio.
-    var ip = (req.ip || 'desconhecido').toString().trim();
+    var ip = _ipReal(req);
     var docId = acao + '_' + ip.replace(/[^a-zA-Z0-9.:]/g, '_');
     var ref = db.collection('rateLimites').doc(docId);
     var agora = Date.now();
@@ -1119,6 +1146,108 @@ exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
       .catch(function (err) {
         functions.logger.error('verificarLimiteIP erro', err);
         res.status(200).json({ bloqueado: false }); // falha aberta
+      });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// O. Analytics leves — visitas ao site e visualizações de produto.
+//
+// Sem cookies, sem fingerprinting: cada evento é deduplicado no servidor por
+// IP + dia (para visita) ou IP + dia + produto (para visualização), usando a
+// coleção 'analyticsDedupe'. Isso aproxima "quantas pessoas entraram no
+// site" de visitantes únicos por dia, em vez de contar cada page view — e
+// evita que um script simples inflando chamadas exploda o contador.
+//
+// Limitação honesta: uma rede com IP compartilhado (ex.: escritório atrás de
+// um único IP público — o mesmo cenário que afetou o limitador de login)
+// conta como 1 pessoa por dia, mesmo com várias pessoas diferentes atrás
+// dele. Para uma métrica aproximada de painel interno, essa margem de erro
+// é aceitável; para uma métrica de precisão, seria necessário Google
+// Analytics de verdade (campo já existe em Configurações → Integrações).
+//
+// Os documentos usam FieldValue.increment (atômico) dentro de um objeto
+// aninhado + set(..., {merge:true}) — evita ler-then-escrever (race
+// condition) mesmo com várias requisições simultâneas.
+//
+// Regra do Firestore: 'analytics/*' só é LIDO pelo painel admin (isAdmin());
+// a ESCRITA é sempre negada ao cliente — só a Function grava, via Admin SDK.
+// 'analyticsDedupe/*' é negado por completo ao cliente (não tem por quê ser
+// lido nem escrito fora daqui).
+// ---------------------------------------------------------------------------
+
+var ANALYTICS_TTL_DIAS = 35; // usado só se um TTL policy for configurado no console
+
+function _analyticsDedupe(chave) {
+  var ref = db.collection('analyticsDedupe').doc(chave);
+  return ref.get().then(function (snap) {
+    if (snap.exists) return false; // já contado hoje
+    var expiresAt = new Date(Date.now() + ANALYTICS_TTL_DIAS * 24 * 60 * 60 * 1000);
+    return ref.set({ ts: Date.now(), expiresAt: expiresAt }).then(function () { return true; });
+  });
+}
+
+exports.registrarVisita = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    var ip = _ipReal(req);
+    var hoje = new Date().toISOString().slice(0, 10);
+    var dedupeKey = 'visita_' + hoje + '_' + ip.replace(/[^a-zA-Z0-9.:]/g, '_');
+
+    _analyticsDedupe(dedupeKey)
+      .then(function (novo) {
+        if (!novo) return { contado: false };
+        var incremento = {};
+        incremento[hoje] = admin.firestore.FieldValue.increment(1);
+        return db.collection('analytics').doc('visitas').set({
+          total: admin.firestore.FieldValue.increment(1),
+          porDia: incremento
+        }, { merge: true }).then(function () { return { contado: true }; });
+      })
+      .then(function (r) { res.status(200).json({ ok: true, contado: r.contado }); })
+      .catch(function (err) {
+        functions.logger.error('registrarVisita erro', err);
+        res.status(200).json({ ok: false }); // nunca deve travar a navegação do visitante
+      });
+  });
+});
+
+exports.registrarVisualizacaoProduto = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    // Produto sempre tem id numérico (Date.now() na criação) — mesma
+    // validação usada em outros pontos do sistema para nunca deixar texto
+    // livre entrar num nome de campo do Firestore.
+    var produtoId = String((req.body && req.body.produtoId) || '').trim();
+    if (!/^[0-9]{1,20}$/.test(produtoId)) {
+      res.status(400).json({ error: 'produtoId inválido.' });
+      return;
+    }
+
+    var ip = _ipReal(req);
+    var hoje = new Date().toISOString().slice(0, 10);
+    var dedupeKey = 'view_' + produtoId + '_' + hoje + '_' + ip.replace(/[^a-zA-Z0-9.:]/g, '_');
+
+    _analyticsDedupe(dedupeKey)
+      .then(function (novo) {
+        if (!novo) return { contado: false };
+        var incremento = {};
+        incremento[produtoId] = admin.firestore.FieldValue.increment(1);
+        return db.collection('analytics').doc('produtosViews').set({
+          total: admin.firestore.FieldValue.increment(1),
+          produtos: incremento
+        }, { merge: true }).then(function () { return { contado: true }; });
+      })
+      .then(function (r) { res.status(200).json({ ok: true, contado: r.contado }); })
+      .catch(function (err) {
+        functions.logger.error('registrarVisualizacaoProduto erro', err);
+        res.status(200).json({ ok: false });
       });
   });
 });

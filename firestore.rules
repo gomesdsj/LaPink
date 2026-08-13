@@ -139,5 +139,21 @@ service cloud.firestore {
       allow update: if isAdmin() && request.resource.data.diff(resource.data)
                       .affectedKeys().hasOnly(['rastreio', 'status', 'updatedAt']);
     }
+
+    // Analytics leves (visitas ao site, visualizações de produto). Só
+    // gravado pelas Cloud Functions registrarVisita/registrarVisualizacao-
+    // Produto via Admin SDK (ignora estas rules) — o cliente NUNCA escreve
+    // aqui direto, senão bastaria chamar setDoc pra inflar os números.
+    // Leitura só para admin (é o que alimenta a aba de Analytics do painel).
+    match /analytics/{doc} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Dedupe interno das Functions acima (1 doc por IP+dia). Não tem por
+    // que ser lido nem escrito por ninguém fora da Function.
+    match /analyticsDedupe/{doc} {
+      allow read, write: if false;
+    }
   }
 }
