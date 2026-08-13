@@ -231,35 +231,51 @@ async function registrarSucessoLimiteIP(acao) {
 // dentro da Cloud Function). O sessionStorage aqui só evita uma chamada de
 // rede redundante a cada navegação dentro da MESMA aba no MESMO dia — a
 // contagem de verdade (e a proteção contra spam) é sempre no servidor.
-function _analyticsJaEnviouHoje(chave) {
+//
+// Importante: a chave só é marcada como "enviada" DEPOIS de confirmar
+// sucesso (resposta ok). Marcar antes (como a 1ª versão fazia) significa
+// que qualquer falha na primeira tentativa — rede instável, bloqueador de
+// anúncios/rastreadores barrando a chamada para cloudfunctions.net, aba
+// perdendo o foco no meio do fetch — silenciava TODAS as tentativas
+// seguintes no mesmo dia/aba, mesmo que a rede voltasse a funcionar.
+function _jaEnviouHoje(chave) {
   var hoje = new Date().toISOString().slice(0, 10);
-  try {
-    if (sessionStorage.getItem(chave) === hoje) return true;
-    sessionStorage.setItem(chave, hoje);
-  } catch (e) {}
-  return false;
+  try { return sessionStorage.getItem(chave) === hoje; } catch (e) { return false; }
+}
+function _marcarEnviadoHoje(chave) {
+  var hoje = new Date().toISOString().slice(0, 10);
+  try { sessionStorage.setItem(chave, hoje); } catch (e) {}
 }
 
 function registrarVisitaSite() {
-  if (_analyticsJaEnviouHoje('lapinkVisitaEnviada')) return;
-  try {
-    fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarVisita', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{}'
-    }).catch(function () {});
-  } catch (e) {}
+  if (_jaEnviouHoje('lapinkVisitaEnviada')) return;
+  fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarVisita', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}'
+  }).then(function (res) {
+    if (res && res.ok) _marcarEnviadoHoje('lapinkVisitaEnviada');
+    else console.warn('[analytics] registrarVisita: resposta HTTP ' + (res && res.status));
+  }).catch(function (e) {
+    // Falha de rede OU bloqueio por extensão do navegador (ad/tracker
+    // blocker) chegam aqui como TypeError "Failed to fetch" — sem marcar
+    // como enviado, a próxima navegação tenta de novo.
+    console.warn('[analytics] registrarVisita não chegou ao servidor (rede ou bloqueio do navegador):', e && e.message);
+  });
 }
 
 function registrarVisualizacaoProduto(produtoId) {
   if (produtoId == null) return;
   var chave = 'lapinkViewProd_' + produtoId;
-  if (_analyticsJaEnviouHoje(chave)) return;
-  try {
-    fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarVisualizacaoProduto', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ produtoId: String(produtoId) })
-    }).catch(function () {});
-  } catch (e) {}
+  if (_jaEnviouHoje(chave)) return;
+  fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarVisualizacaoProduto', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ produtoId: String(produtoId) })
+  }).then(function (res) {
+    if (res && res.ok) _marcarEnviadoHoje(chave);
+    else console.warn('[analytics] registrarVisualizacaoProduto: resposta HTTP ' + (res && res.status));
+  }).catch(function (e) {
+    console.warn('[analytics] registrarVisualizacaoProduto não chegou ao servidor (rede ou bloqueio do navegador):', e && e.message);
+  });
 }

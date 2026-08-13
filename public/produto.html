@@ -353,7 +353,15 @@
 <script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
 <script>
-  if (window._produtoIdAnalytics != null) registrarVisualizacaoProduto(window._produtoIdAnalytics);
+  try {
+    if (window._produtoIdAnalytics != null && typeof registrarVisualizacaoProduto === 'function') {
+      registrarVisualizacaoProduto(window._produtoIdAnalytics);
+    } else if (window._produtoIdAnalytics != null) {
+      console.warn('[analytics] registrarVisualizacaoProduto indisponível — js/storage.js não carregou a tempo.');
+    }
+  } catch (e) {
+    console.warn('[analytics] falha ao registrar visualização:', e && e.message);
+  }
 </script>
 <script src="js/auth.js"></script>
 </body>
