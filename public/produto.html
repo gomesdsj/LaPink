@@ -196,6 +196,10 @@
     return;
   }
 
+  // Guarda o id para o registro de visualização, disparado mais abaixo
+  // (depois que js/storage.js carrega — este bloco roda antes dele).
+  window._produtoIdAnalytics = produto.id;
+
   // Atualiza metadados
   document.title = produto.nome + ' — LaPink';
   var bcNome = document.getElementById('breadcrumb-nome');
@@ -348,6 +352,9 @@
 <script src="js/cloud-sync.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
+<script>
+  if (window._produtoIdAnalytics != null) registrarVisualizacaoProduto(window._produtoIdAnalytics);
+</script>
 <script src="js/auth.js"></script>
 </body>
 </html>

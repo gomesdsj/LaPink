@@ -225,3 +225,41 @@ async function registrarFalhaLimiteIP(acao) {
 async function registrarSucessoLimiteIP(acao) {
   return _chamarLimiteIP(acao, 'limpar');
 }
+
+// ── Analytics leves: visitas ao site + visualização de produto ────────────
+// Sem cookies, sem fingerprinting: quem deduplica é o servidor (por IP+dia,
+// dentro da Cloud Function). O sessionStorage aqui só evita uma chamada de
+// rede redundante a cada navegação dentro da MESMA aba no MESMO dia — a
+// contagem de verdade (e a proteção contra spam) é sempre no servidor.
+function _analyticsJaEnviouHoje(chave) {
+  var hoje = new Date().toISOString().slice(0, 10);
+  try {
+    if (sessionStorage.getItem(chave) === hoje) return true;
+    sessionStorage.setItem(chave, hoje);
+  } catch (e) {}
+  return false;
+}
+
+function registrarVisitaSite() {
+  if (_analyticsJaEnviouHoje('lapinkVisitaEnviada')) return;
+  try {
+    fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarVisita', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    }).catch(function () {});
+  } catch (e) {}
+}
+
+function registrarVisualizacaoProduto(produtoId) {
+  if (produtoId == null) return;
+  var chave = 'lapinkViewProd_' + produtoId;
+  if (_analyticsJaEnviouHoje(chave)) return;
+  try {
+    fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarVisualizacaoProduto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ produtoId: String(produtoId) })
+    }).catch(function () {});
+  } catch (e) {}
+}
