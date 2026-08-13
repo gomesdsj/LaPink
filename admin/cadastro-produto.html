@@ -1001,6 +1001,17 @@
       var nome = document.getElementById('modal-nome').value.trim();
       if (!nome) { showToast('Preencha o nome do produto.', 'erro'); return; }
 
+      // Mesma regra do cadastro novo: renomear para um nome que já pertence
+      // a OUTRO produto criaria a mesma ambiguidade de estoque duplicado.
+      var nomeNorm = nome.toLowerCase();
+      var conflito = getProdutos().find(function(p) {
+        return p.id !== id && String(p.nome || '').trim().toLowerCase() === nomeNorm;
+      });
+      if (conflito) {
+        showToast('Já existe outro produto chamado "' + conflito.nome + '" no catálogo. Escolha um nome diferente ou edite aquele produto.', 'erro');
+        return;
+      }
+
       function parsePreco(v) {
         return parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
       }
@@ -1082,6 +1093,22 @@
       if (!nome) { showToast('Preencha o nome do produto.', 'erro'); return; }
       var cat = document.getElementById('categoria').value;
       if (!cat) { showToast('Selecione uma categoria.', 'erro'); document.getElementById('categoria').focus(); return; }
+
+      // Regra de negócio: um produto cadastrado de novo vira um CARD SEPARADO
+      // com estoque próprio. Cadastrar a mesma peça de novo (por engano, ou
+      // achando que era assim que se somava estoque) cria dois produtos
+      // vendáveis independentes mostrando estoque em dobro, quando só existe
+      // 1 peça física — foi exatamente esse bug que motivou esta trava.
+      // Em vez de deixar duplicar, abre o produto já existente para o estoque
+      // ser atualizado ali.
+      var nomeNorm = nome.toLowerCase();
+      var existente = getProdutos().find(function(p) { return String(p.nome || '').trim().toLowerCase() === nomeNorm; });
+      if (existente) {
+        fecharModalNovoProduto();
+        showToast('Já existe "' + existente.nome + '" no catálogo (estoque atual: ' + (parseInt(existente.estoque) || 0) + '). Abrindo para você atualizar em vez de duplicar.', 'erro');
+        editarProduto(existente.id);
+        return;
+      }
 
       function parsePreco(v) {
         return parseFloat((v || '0').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
