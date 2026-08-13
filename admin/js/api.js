@@ -129,6 +129,63 @@ var LaPinkAPI = (function () {
     return Promise.resolve(_get(K.pedidos) || []);
   }
 
+  /* Pedidos da coleção 'pedidos' do Firestore — é onde a Cloud Function grava
+     as compras que passam pelo Mercado Pago. O localStorage (lapinkPedidos) só
+     guarda os pedidos lançados à mão no painel. As telas de Pedidos e
+     Relatórios já liam as duas fontes; o Dashboard lia só o localStorage e por
+     isso ignorava as vendas de verdade. */
+  function _pedidosFirestore() {
+    try {
+      if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) {
+        return Promise.resolve([]);
+      }
+      var espera = (typeof aguardarFirebaseAuth === 'function')
+        ? aguardarFirebaseAuth()
+        : Promise.resolve();
+
+      return espera
+        .then(function () {
+          return firebase.firestore().collection('pedidos')
+            .orderBy('createdAt', 'desc').limit(200).get();
+        })
+        .then(function (snap) {
+          var out = [];
+          snap.forEach(function (doc) {
+            var d = doc.data() || {};
+            d._id = doc.id;
+            d._fonte = 'firestore';
+            // Pedido do Firestore usa createdAt (Timestamp); o resto do
+            // sistema espera 'data' como string ISO.
+            if (!d.data && d.createdAt && d.createdAt.seconds) {
+              d.data = new Date(d.createdAt.seconds * 1000).toISOString();
+            }
+            out.push(d);
+          });
+          return out;
+        })
+        .catch(function (e) {
+          console.warn('[api] não foi possível ler a coleção pedidos:', e && e.message);
+          return []; // falha aberta: segue com o que houver no localStorage
+        });
+    } catch (e) {
+      return Promise.resolve([]);
+    }
+  }
+
+  /* Une as duas fontes. O Firestore tem prioridade quando o mesmo número de
+     pedido existe nos dois lados (mesma regra usada em pedidos.html). */
+  function getPedidosUnificados() {
+    if (USE_REMOTE) return _fetch('GET', '/api/pedidos');
+    return Promise.all([getPedidos(), _pedidosFirestore()])
+      .then(function (r) {
+        var locais = r[0] || [], remotos = r[1] || [];
+        var numsRemotos = {};
+        remotos.forEach(function (p) { if (p && p.numero) numsRemotos[p.numero] = true; });
+        var soLocais = locais.filter(function (p) { return !(p && p.numero && numsRemotos[p.numero]); });
+        return remotos.concat(soLocais);
+      });
+  }
+
   function savePedido(pedido) {
     if (USE_REMOTE) {
       return pedido.id
@@ -204,7 +261,7 @@ var LaPinkAPI = (function () {
   function getDashboardStats() {
     if (USE_REMOTE) return _fetch('GET', '/api/dashboard/stats');
 
-    return Promise.all([getProdutos(), getPedidos(), getClients()])
+    return Promise.all([getProdutos(), getPedidosUnificados(), getClients()])
       .then(function (res) {
         var produtos = res[0], pedidos = res[1], clientes = res[2];
 
@@ -217,8 +274,17 @@ var LaPinkAPI = (function () {
         var pedidosMes = 0;
         var vendasPorMes   = {};
         var vendasPorStatus = {};
-        var vendasPorCategoria = {};
+        var receitaPorCategoria = {};
         var topProdutos    = {};
+
+        // Índices para cruzar item de pedido → produto e descobrir a
+        // categoria. Tenta pelo id e, se o pedido for antigo e não tiver
+        // gravado o id, cai para o nome.
+        var prodPorId = {}, prodPorNome = {};
+        produtos.forEach(function (p) {
+          prodPorId[String(p.id)] = p;
+          prodPorNome[String(p.nome || '').trim().toLowerCase()] = p;
+        });
 
         pedidos.forEach(function (p) {
           var st    = normStatusPedido(p.status);
@@ -252,22 +318,36 @@ var LaPinkAPI = (function () {
           // A receber (financeiro) — pago = flag manual OU status confirmado
           if (!isPedidoPago(p)) { aReceber += total; pedidosPendentes++; }
 
-          // Top produtos
+          // Top produtos e receita por categoria — ambos saem dos ITENS
+          // vendidos, que é a única fonte real de "o que foi vendido".
           if (Array.isArray(p.itens)) {
             p.itens.forEach(function (item) {
               var n = item.nome || 'Produto';
+              var valorItem = (parseFloat(item.preco) || 0) * (parseInt(item.qty) || 1);
+
               if (!topProdutos[n]) topProdutos[n] = { qtd: 0, receita: 0 };
-              topProdutos[n].qtd     += item.qty || 1;
-              topProdutos[n].receita += (item.preco || 0) * (item.qty || 1);
+              topProdutos[n].qtd     += parseInt(item.qty) || 1;
+              topProdutos[n].receita += valorItem;
+
+              var prod = (item.id != null && prodPorId[String(item.id)]) ||
+                         prodPorNome[String(n).trim().toLowerCase()];
+              var cat = (prod && prod.categoria) || 'Outros';
+              receitaPorCategoria[cat] = (receitaPorCategoria[cat] || 0) + valorItem;
             });
           }
         });
 
-        // Valor em estoque por categoria (estoque × preço de atacado)
+        // Valor PARADO em estoque (estoque × preço de atacado). É outra coisa
+        // que receita: mede o quanto está investido em mercadoria, não o que
+        // foi vendido. Antes os dois viviam no mesmo campo, e o dashboard
+        // mostrava valor de estoque debaixo do título "Receita por categoria".
+        var estoquePorCategoria = {};
+        var valorEstoqueTotal = 0;
         produtos.forEach(function (p) {
           var cat = p.categoria || 'Outros';
           var val = getPrecoProduto(p) * (parseInt(p.estoque) || 0);
-          vendasPorCategoria[cat] = (vendasPorCategoria[cat] || 0) + val;
+          estoquePorCategoria[cat] = (estoquePorCategoria[cat] || 0) + val;
+          valorEstoqueTotal += val;
         });
 
         var estoqueBaixo = produtos
@@ -284,9 +364,13 @@ var LaPinkAPI = (function () {
           financeiro       : { aReceber: aReceber, cobPendentes: pedidosPendentes },
           clientes         : { total: clientes.length },
           produtos         : { total: produtos.length, estoqueBaixo: estoqueBaixo.length },
+          estoque          : { valorTotal: valorEstoqueTotal, porCategoria: estoquePorCategoria },
           vendasPorMes     : vendasPorMes,
           vendasPorStatus  : vendasPorStatus,
-          vendasCategoria  : vendasPorCategoria,
+          receitaCategoria : receitaPorCategoria,
+          pedidosRecentes  : pedidos.slice().sort(function (a, b) {
+                               return new Date(b.data || 0) - new Date(a.data || 0);
+                             }).slice(0, 5),
           topProdutos      : Object.keys(topProdutos)
                               .map(function (n) { return { nome: n, qtd: topProdutos[n].qtd, receita: topProdutos[n].receita }; })
                               .sort(function (a, b) { return b.receita - a.receita; })
@@ -382,6 +466,7 @@ var LaPinkAPI = (function () {
     // Analytics
     getDashboardStats    : getDashboardStats,
     getVendasPorPeriodo  : getVendasPorPeriodo,
+    getPedidosUnificados : getPedidosUnificados,
 
     // Configurações
     getStoreConfig  : getStoreConfig,

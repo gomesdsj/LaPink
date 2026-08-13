@@ -176,7 +176,7 @@
           <!-- Estoque baixo + Pedidos recentes -->
           <div class="chart-grid-3">
             <div class="card">
-              <div class="section-header"><span class="section-title">Estoque baixo</span></div>
+              <div class="section-header"><span class="section-title">Estoque baixo <small style="font-weight:500;color:var(--gray-400);font-size:11px;">(≤ 10 un)</small></span></div>
               <ul class="stock-list" id="lista-estoque-baixo">
                 <li><span class="s-name" style="color:var(--gray-400);">Carregando...</span></li>
               </ul>
@@ -240,24 +240,23 @@
     /* ── Dados (getProdutos, getClients → utils.js) ── */
 
 
-    /* ── SVG bar chart — receita por categoria ── */
-    function renderChartCategoria() {
-      var produtos = getProdutos();
-      var categorias = {};
-      produtos.forEach(function(p) {
-        var cat = p.categoria || 'Outros';
-        var preco = getPrecoProduto(p);
-        var est = parseInt(p.estoque) || 0;
-        categorias[cat] = (categorias[cat] || 0) + preco * est;
-      });
+    /* ── SVG bar chart — receita por categoria ──
+       Vem dos ITENS DOS PEDIDOS (o que foi realmente vendido). Antes esta
+       função somava preço × estoque, ou seja, mostrava valor parado em
+       mercadoria debaixo do título "Receita por categoria" — um produto
+       encalhado com estoque alto liderava o gráfico sem ter vendido nada. */
+    function renderChartCategoria(receitaCategoria) {
+      var categorias = receitaCategoria || {};
 
       var entries = Object.keys(categorias).map(function(k) {
         return { label: k, value: categorias[k] };
-      }).sort(function(a, b) { return b.value - a.value; }).slice(0, 6);
+      }).filter(function(e) { return e.value > 0; })
+        .sort(function(a, b) { return b.value - a.value; }).slice(0, 6);
 
       var container = document.getElementById('chart-categoria');
+      if (!container) return;
       if (!entries.length) {
-        container.innerHTML = '<div class="map-placeholder"><i class="ti ti-chart-bar"></i><span>Sem dados</span></div>';
+        container.innerHTML = '<div class="map-placeholder"><i class="ti ti-chart-bar-off"></i><span>Nenhuma venda registrada ainda</span></div>';
         return;
       }
 
@@ -290,38 +289,35 @@
       );
     }
 
-    /* ── Top 5 produtos por valor ── */
-    function renderTopProdutos() {
-      var produtos = getProdutos();
+    /* ── Top 5 produtos MAIS VENDIDOS ──
+       Usa stats.topProdutos, que a API monta a partir dos itens dos pedidos.
+       Esse cálculo já existia e não era usado: o gráfico ranqueava por
+       preço × estoque, então mostrava quem tem mais mercadoria parada, e não
+       quem mais vendeu. */
+    function renderTopProdutos(topProdutos) {
       var container = document.getElementById('chart-top-produtos');
+      if (!container) return;
 
-      if (!produtos.length) {
-        container.innerHTML = '<div class="map-placeholder"><i class="ti ti-package"></i><span>Sem produtos</span></div>';
+      var lista = (topProdutos || []).filter(function(p) { return (p.receita || 0) > 0; }).slice(0, 5);
+      if (!lista.length) {
+        container.innerHTML = '<div class="map-placeholder"><i class="ti ti-shopping-cart-off"></i><span>Nenhuma venda registrada ainda</span></div>';
         return;
       }
 
-      var sorted = produtos.slice().sort(function(a, b) {
-        var va = getPrecoProduto(a) * (parseInt(a.estoque) || 0);
-        var vb = getPrecoProduto(b) * (parseInt(b.estoque) || 0);
-        return vb - va;
-      }).slice(0, 5);
+      var max = lista[0].receita || 1;
 
-      var max = getPrecoProduto(sorted[0]) * (parseInt(sorted[0].estoque) || 0) || 1;
-
-      var html = sorted.map(function(p) {
-        var val = getPrecoProduto(p) * (parseInt(p.estoque) || 0);
-        var pct = Math.round((val / max) * 100);
-        var nome = escHtml((p.nome || 'Produto').length > 22 ? (p.nome || '').slice(0, 21) + '…' : (p.nome || 'Produto'));
+      container.innerHTML = lista.map(function(p) {
+        var pct = Math.round((p.receita / max) * 100);
+        var nomeCru = p.nome || 'Produto';
+        var nome = escHtml(nomeCru.length > 22 ? nomeCru.slice(0, 21) + '…' : nomeCru);
         return (
-          '<div class="top-item">' +
-          '<span class="top-item-name">' + nome + '</span>' +
+          '<div class="top-item" title="' + escHtml(nomeCru) + ' — ' + (p.qtd || 0) + ' vendida(s)">' +
+          '<span class="top-item-name">' + nome + '<small style="display:block;font-size:9px;color:var(--gray-400);font-weight:600;">' + (p.qtd || 0) + ' un vendidas</small></span>' +
           '<div class="top-bar-wrap"><div class="top-bar" style="width:' + pct + '%"></div></div>' +
-          '<span class="top-val">' + formatBRL(val) + '</span>' +
+          '<span class="top-val">' + formatBRL(p.receita) + '</span>' +
           '</div>'
         );
       }).join('');
-
-      container.innerHTML = html;
     }
 
     /* ── Lista estoque baixo ── */
@@ -450,12 +446,10 @@
         document.getElementById('stat-vendas-mes').textContent = formatBRL(stats.receita.mes);
         document.getElementById('stat-areceber').textContent   = formatBRL(stats.financeiro.aReceber);
 
-        // Valor em estoque (calculado localmente, não vem no stats)
-        var valorTotal = 0;
-        getProdutos().forEach(function(p) {
-          valorTotal += getPrecoProduto(p) * (parseInt(p.estoque) || 0);
-        });
-        document.getElementById('stat-valor').textContent = formatBRL(valorTotal);
+        // Valor em estoque — agora vem pronto da API (era recalculado aqui,
+        // repetindo a mesma conta em dois lugares).
+        document.getElementById('stat-valor').textContent =
+          formatBRL((stats.estoque && stats.estoque.valorTotal) || 0);
 
         // Delta mês vs mês anterior
         var deltaEl = document.getElementById('stat-vendas-delta');
@@ -475,15 +469,11 @@
           subEl.innerHTML = '<i class="ti ti-clock-dollar"></i> ' + n + ' cobrança' + (n !== 1 ? 's' : '') + ' pendente' + (n !== 1 ? 's' : '');
         }
 
-        // Gráfico mensal
+        // Tudo que depende dos pedidos (já unificados: Firestore + local)
         renderChartMensal(stats.vendasPorMes);
-
-        // Demais renders
-        renderChartCategoria();
-        renderTopProdutos();
-        renderEstoqueBaixo();
-        renderPedidosRecentes();
-        renderTabela();
+        renderChartCategoria(stats.receitaCategoria);
+        renderTopProdutos(stats.topProdutos);
+        renderPedidosRecentes(stats.pedidosRecentes);
       }).catch(function(e) {
         console.error('[LaPink] Erro no dashboard:', e);
         // Fallback síncrono
@@ -500,13 +490,49 @@
         document.getElementById('stat-valor').textContent   = formatBRL(val);
         document.getElementById('stat-receita').textContent = formatBRL(rec);
         document.getElementById('stat-critico').textContent = crit;
-        renderChartCategoria(); renderTopProdutos(); renderEstoqueBaixo(); renderPedidosRecentes(); renderTabela();
+        // Mesmos gráficos, calculados aqui — se a API falhar, eles continuam
+        // mostrando venda de verdade em vez de ficarem vazios.
+        var local = _vendasLocais(produtos, pedidos);
+        renderChartCategoria(local.receitaCategoria);
+        renderTopProdutos(local.topProdutos);
       });
     }
 
-    /* ── Pedidos recentes ── */
-    function renderPedidosRecentes() {
-      var pedidos = getPedidos();
+    /* Receita por categoria e mais vendidos a partir dos pedidos locais —
+       espelha o cálculo da API (admin/js/api.js), usado só no fallback. */
+    function _vendasLocais(produtos, pedidos) {
+      var porId = {}, porNome = {};
+      produtos.forEach(function(p) {
+        porId[String(p.id)] = p;
+        porNome[String(p.nome || '').trim().toLowerCase()] = p;
+      });
+      var cats = {}, tops = {};
+      pedidos.forEach(function(ped) {
+        if (!isPedidoAtivo(ped) || !Array.isArray(ped.itens)) return;
+        ped.itens.forEach(function(item) {
+          var nome = item.nome || 'Produto';
+          var valor = (parseFloat(item.preco) || 0) * (parseInt(item.qty) || 1);
+          if (!tops[nome]) tops[nome] = { nome: nome, qtd: 0, receita: 0 };
+          tops[nome].qtd += parseInt(item.qty) || 1;
+          tops[nome].receita += valor;
+          var prod = (item.id != null && porId[String(item.id)]) ||
+                     porNome[String(nome).trim().toLowerCase()];
+          var cat = (prod && prod.categoria) || 'Outros';
+          cats[cat] = (cats[cat] || 0) + valor;
+        });
+      });
+      return {
+        receitaCategoria: cats,
+        topProdutos: Object.keys(tops).map(function(k) { return tops[k]; })
+                       .sort(function(a, b) { return b.receita - a.receita; })
+      };
+    }
+
+    /* ── Pedidos recentes ──
+       Recebe a lista já unificada (Firestore + localStorage). Sem argumento,
+       usa só os locais — é a pintura inicial, antes da nuvem responder. */
+    function renderPedidosRecentes(lista) {
+      var pedidos = lista || getPedidos();
       var cont = document.getElementById('lista-pedidos-recentes');
       if (!pedidos.length) {
         cont.innerHTML = '<div class="empty-state" style="padding:16px 0;"><i class="ti ti-shopping-cart"></i><p style="font-size:12px;">Nenhum pedido ainda</p></div>';
@@ -527,7 +553,10 @@
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--gray-100);gap:8px;">' +
           '<div style="font-size:12px;">' +
             '<strong>#' + escHtml(p.numero || String(p.id).slice(-4)) + '</strong>' +
-            '<div style="font-size:11px;color:var(--gray-400);">' + escHtml((p.cliente && p.cliente.name) || '—') + '</div>' +
+            // Pedido do Mercado Pago grava cliente.nome; o lançado à mão no
+            // painel grava cliente.name. Antes só o segundo era lido, então
+            // toda venda real aparecia como "—".
+            '<div style="font-size:11px;color:var(--gray-400);">' + escHtml((p.cliente && (p.cliente.nome || p.cliente.name)) || '—') + '</div>' +
           '</div>' +
           '<div style="text-align:right;">' +
             '<div style="font-size:12px;font-weight:700;color:var(--pink-500);">' + formatBRL(p.total || 0) + '</div>' +
@@ -538,14 +567,16 @@
       '<a href="pedidos.html" style="display:block;text-align:center;font-size:11px;color:var(--pink-500);font-weight:700;text-decoration:none;padding:8px 0;">Ver todos →</a>';
     }
 
-    /* ── Init ── */
+    /* ── Init ──
+       As listas locais (estoque, pedidos recentes, tabela) desenham na hora;
+       os gráficos que dependem dos pedidos entram quando renderStats resolve.
+       Antes tudo era desenhado DUAS vezes: aqui e de novo dentro do .then()
+       do renderStats. */
     function init() {
-      renderStats();
-      renderChartCategoria();
-      renderTopProdutos();
       renderEstoqueBaixo();
       renderPedidosRecentes();
       renderTabela();
+      renderStats();
     }
 
     init();
