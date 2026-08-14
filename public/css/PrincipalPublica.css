@@ -155,6 +155,18 @@ body.auth-background { background: #FBEAF0; }
 .auth-page { min-height: calc(100vh - 90px); display: flex; align-items: center; justify-content: center; padding: 56px 20px; }
 .auth-footer-text { margin-top: 18px; text-align: center; }
 
+/* ── Mensagem de formulário (login/cadastro/recuperar senha) ──
+   Sem isto o texto de retorno (erro/sucesso) aparecia solto, sem card, sem
+   fundo — só uma linha de texto colorida destoando do resto da página. */
+.form-message { display: none; }
+.form-message.show {
+  display: block; margin-top: 14px; padding: 10px 14px;
+  border-radius: var(--radius-md); font-size: 12.5px; font-weight: 600;
+  line-height: 1.5; text-align: center;
+}
+.form-message.show.success { background: var(--green-50); color: var(--green-400); border: .5px solid var(--green-400); }
+.form-message.show.error   { background: var(--red-50);   color: var(--red-400);   border: .5px solid var(--red-400); }
+
 /* ── Product page */
 .product-page { display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 90px); padding-top: 40px; padding-bottom: 40px; }
 .product-preview-card { max-width: 360px; width: 100%; }

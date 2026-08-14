@@ -128,7 +128,7 @@
     function showMsg(msg, erro) {
       var el = document.getElementById('recMessage');
       el.textContent = msg;
-      el.style.color = erro ? 'var(--red-500, #ef4444)' : 'var(--green-600, #16a34a)';
+      el.className = 'form-message show ' + (erro ? 'error' : 'success');
     }
 
     // Lê um documento da coleção lapink no Firestore (fallback p/ guia anônima / outro dispositivo)

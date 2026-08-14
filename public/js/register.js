@@ -4,7 +4,7 @@ var registerMessage = document.getElementById('registerMessage');
 function setRegisterMessage(text, success) {
   if (!registerMessage) return;
   registerMessage.textContent = text;
-  registerMessage.style.color = success ? '#1e7e34' : '#c82333';
+  registerMessage.className = 'form-message show ' + (success ? 'success' : 'error');
 }
 
 if (registerForm) {

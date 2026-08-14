@@ -31,7 +31,7 @@ var loginMessage = document.getElementById('loginMessage');
 function setLoginMessage(text, success) {
   if (!loginMessage) return;
   loginMessage.textContent = text;
-  loginMessage.style.color = success ? '#1e7e34' : '#c82333';
+  loginMessage.className = 'form-message show ' + (success ? 'success' : 'error');
 }
 
 if (loginForm) {
@@ -40,6 +40,33 @@ if (loginForm) {
     _doLogin();
   });
 }
+
+// ── Pré-aquecimento das Cloud Functions usadas no login ────────────────
+// Medido nos logs de produção: uma instância "fria" de verificarLimiteIP
+// ou sincronizarClaimsAdmin leva de 4 a 5 SEGUNDOS só para inicializar —
+// e o login chama as duas, uma depois da outra, sem poder seguir sem
+// resposta. É a maior fatia do "login demorado".
+//
+// Dispara as duas assim que a página carrega (ainda dando tempo de digitar
+// e-mail/senha) para a instância já estar de pé quando o forms for enviado
+// de verdade. Sem token/dados reais — o resultado é descartado, o único
+// efeito colateral é o container ficar quente.
+(function _preAquecerLogin() {
+  try {
+    fetch('https://us-central1-lapink-82a39.cloudfunctions.net/verificarLimiteIP', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: 'login', modo: 'checar' })
+    }).catch(function () {});
+  } catch (e) {}
+  try {
+    fetch('https://us-central1-lapink-82a39.cloudfunctions.net/sincronizarClaimsAdmin', {
+      method: 'POST'
+      // Sem Authorization de propósito — a function rejeita rápido (401),
+      // mas o container já subiu, que é tudo que este aquecimento quer.
+    }).catch(function () {});
+  } catch (e) {}
+})();
 
 function _isSafeRedirect(url) {
   if (!url || typeof url !== 'string') return false;
@@ -252,10 +279,13 @@ async function _finishLogin(client, referrerPage) {
     }
     setLoginMessage('Login de administrador! Abrindo painel...', true);
     var _dest = _adminRedirect(client);
+    // Só o suficiente para a mensagem de sucesso aparecer na tela antes da
+    // troca de página — não precisa ser 1s inteiro. A demora que o usuário
+    // sente vem de antes daqui (chamadas de rede já concluídas neste ponto).
     setTimeout(function () {
       try { sessionStorage.removeItem('referrerPage'); } catch (e) {}
       location.href = _dest;
-    }, 1000);
+    }, 300);
     return;
   }
 
@@ -263,7 +293,7 @@ async function _finishLogin(client, referrerPage) {
   setTimeout(function () {
     try { sessionStorage.removeItem('referrerPage'); } catch (e) {}
     location.href = referrerPage;
-  }, 1200);
+  }, 300);
 }
 
 async function _doLogin() {
