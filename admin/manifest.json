@@ -1,0 +1,19 @@
+{
+  "name": "LaPink Admin",
+  "short_name": "LaPink Admin",
+  "description": "Painel administrativo da LaPink — pedidos, produtos e notificações de venda.",
+  "start_url": "./admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#F04A86",
+  "icons": [
+    {
+      "src": "../public/assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
