@@ -633,13 +633,12 @@ function _enviarPushTodasInscricoes(payload, apenasEmail) {
 
 // Chamado pelo mpWebhook assim que um pedido vira 'pago' pela primeira vez.
 function _notificarVendaAdmins(pedido, numeroPedido) {
-  var nomeCliente = (pedido.cliente && (pedido.cliente.nome || pedido.cliente.name)) || 'Cliente';
   var total = parseFloat(pedido.total) || 0;
   var totalFmt = 'R$ ' + total.toFixed(2).replace('.', ',');
   var numero = numeroPedido || pedido.numero || '';
   return _enviarPushTodasInscricoes({
     title: '🎉 Nova venda — ' + totalFmt,
-    body: String(nomeCliente).slice(0, 60) + (numero ? ' • pedido #' + numero : ''),
+    body: numero ? 'Pedido #' + numero : 'Toque para ver os detalhes',
     url: '/admin/pedidos.html',
     tag: 'venda-' + (numero || Date.now())
   });
