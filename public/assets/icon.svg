@@ -4,28 +4,12 @@
   <!-- Brilho sutil no topo -->
   <ellipse cx="256" cy="160" rx="200" ry="120" fill="rgba(255,255,255,0.10)"/>
 
-  <!-- Gema (diamante) -->
-  <!-- Coroa: topo da gema -->
-  <polygon points="256,98 170,210 342,210" fill="rgba(255,255,255,0.95)"/>
-  <!-- Faceta esquerda da coroa -->
-  <polygon points="256,98 170,210 218,210" fill="rgba(255,255,255,0.70)"/>
-  <!-- Faceta central da coroa (mais brilhante) -->
-  <polygon points="256,98 218,210 294,210" fill="rgba(255,255,255,0.90)"/>
-  <!-- Faceta direita da coroa -->
-  <polygon points="256,98 294,210 342,210" fill="rgba(255,255,255,0.78)"/>
-
-  <!-- Pavilhão: corpo inferior -->
-  <!-- Faceta esquerda -->
-  <polygon points="118,210 170,210 256,414" fill="rgba(255,255,255,0.60)"/>
-  <!-- Faceta centro-esquerda -->
-  <polygon points="170,210 218,210 256,414" fill="rgba(255,255,255,0.78)"/>
-  <!-- Faceta centro-direita -->
-  <polygon points="218,210 294,210 256,414" fill="rgba(255,255,255,0.88)"/>
-  <!-- Faceta direita -->
-  <polygon points="294,210 342,210 256,414" fill="rgba(255,255,255,0.68)"/>
-  <!-- Faceta extrema direita -->
-  <polygon points="342,210 394,210 256,414" fill="rgba(255,255,255,0.55)"/>
-
-  <!-- Linha de cintura (girdle) -->
-  <line x1="118" y1="210" x2="394" y2="210" stroke="rgba(255,255,255,0.30)" stroke-width="1.5"/>
+  <!-- Borboleta — traço oficial do Tabler Icons (ti-butterfly, versão filled),
+       mesmo ícone já usado em toda a marca (sidebar, headers, favicons).
+       viewBox original 24x24 escalado 12.5x e centralizado no canvas 512x512. -->
+  <g transform="translate(106,106) scale(12.5)" fill="rgba(255,255,255,0.95)">
+    <path d="M17.117 6.244l.228 .076a5.5 5.5 0 0 1 1.24 9.738l-.063 .039l.02 .034a4 4 0 0 1 .101 3.533l-.093 .19a4 4 0 0 1 -5.55 1.608v-14.857a5.5 5.5 0 0 1 4.118 -.36" />
+    <path d="M8.505 6c.885 0 1.736 .21 2.495 .597v14.87a4 4 0 0 1 -1.012 .41l-.196 .045a4 4 0 0 1 -4.424 -5.587l.118 -.238l-.035 -.023a5.5 5.5 0 0 1 -2.397 -5.258l.034 -.233a5.5 5.5 0 0 1 5.417 -4.583" />
+    <path d="M14.445 2.168a1 1 0 0 1 1.11 1.664l-3 2a1 1 0 0 1 -1.11 0l-3 -2a1 1 0 0 1 1.11 -1.664l2.444 1.63z" />
+  </g>
 </svg>

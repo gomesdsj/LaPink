@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
+<link rel="icon" href="../public/assets/icon.svg" type="image/svg+xml" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -14,10 +15,11 @@
      estas tags, o atalho adicionado abre o Safari por cima em vez de rodar
      "solo" — e por isso a notificação continuaria não funcionando mesmo
      depois de adicionado.
-     Ícone ainda é o SVG antigo (diamante, não a borboleta) — apple-touch-
-     icon tradicionalmente só aceita PNG, então até isso ser substituído
-     por um PNG de verdade, o ícone da tela de início pode não aparecer
-     como esperado (o iOS usa uma miniatura da página como alternativa). -->
+     Ícone já é o SVG da borboleta (padrão da marca) — mas apple-touch-icon
+     tradicionalmente só garante PNG; enquanto não existir uma versão PNG,
+     o ícone da tela de início pode cair para uma miniatura da página em
+     vez do ícone de verdade, dependendo da versão do iOS. -->
+
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#F04A86" />
 <meta name="mobile-web-app-capable" content="yes" />
