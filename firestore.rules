@@ -155,5 +155,14 @@ service cloud.firestore {
     match /analyticsDedupe/{doc} {
       allow read, write: if false;
     }
+
+    // Inscrições de notificação push (venda concluída → aviso no navegador
+    // do admin). Só a Function grava (salvarInscricaoPush/removerInscricaoPush,
+    // via Admin SDK) e só a Function lê (pra enviar o push). Cliente nunca
+    // acessa direto — mesmo endpoint+chaves não sendo segredo de alto valor,
+    // não tem razão nenhuma pra abrir leitura/escrita fora da Function.
+    match /pushSubscriptions/{doc} {
+      allow read, write: if false;
+    }
   }
 }

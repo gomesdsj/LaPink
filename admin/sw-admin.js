@@ -74,3 +74,45 @@ self.addEventListener('fetch', function (e) {
     })
   );
 });
+
+/* ── Notificação de venda concluída (Web Push) ──────────────────────────
+   O service worker já está registrado em TODA página do painel (via
+   admin/js/utils.js), então a inscrição pode ser feita de qualquer tela —
+   não precisa de um SW separado só para isto. */
+self.addEventListener('push', function (e) {
+  var dados = {};
+  try { dados = e.data ? e.data.json() : {}; } catch (err) {}
+
+  var titulo = dados.title || 'LaPink';
+  var opcoes = {
+    body: dados.body || '',
+    icon: '../public/assets/icon.svg',
+    badge: '../public/assets/icon.svg',
+    tag: dados.tag || 'lapink-push',
+    // Venda é informação que importa — fica na tela até o admin interagir,
+    // em vez de sumir sozinha como uma notificação comum.
+    requireInteraction: true,
+    data: { url: dados.url || './admin.html' }
+  };
+
+  e.waitUntil(self.registration.showNotification(titulo, opcoes));
+});
+
+/* Clique na notificação: foca uma aba do painel já aberta (navegando pra
+   a página certa) ou abre uma nova se não houver nenhuma. */
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var destino = new URL((e.notification.data && e.notification.data.url) || './admin.html', self.location.href).href;
+
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (lista) {
+      for (var i = 0; i < lista.length; i++) {
+        if (lista[i].url.indexOf(self.location.origin) === 0 && 'focus' in lista[i]) {
+          if ('navigate' in lista[i]) lista[i].navigate(destino);
+          return lista[i].focus();
+        }
+      }
+      return self.clients.openWindow(destino);
+    })
+  );
+});

@@ -5,6 +5,7 @@ const admin = require('firebase-admin');
 const fetch = require('node-fetch');
 const crypto = require('crypto');
 const cors = require('cors')({ origin: true });
+const webpush = require('web-push');
 
 // ---------------------------------------------------------------------------
 // IP real do visitante — usado por todo limite/dedupe baseado em IP
@@ -475,6 +476,12 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
             // Após baixar, marca estoqueBaixado:true no próprio pedido (idempotência).
             var jaBaixado = snap.exists && snap.data().estoqueBaixado === true;
             if (novoStatus === 'pago' && statusAnterior !== 'pago' && !jaBaixado && snap.exists) {
+              // Notifica o(s) admin(s) (push no navegador) em paralelo com a
+              // baixa de estoque — nunca deve atrasar nem travar o
+              // processamento do pedido em si; erro aqui só fica logado.
+              _notificarVendaAdmins(snap.data(), externalRef).catch(function (e) {
+                functions.logger.warn('notificação de venda falhou (pedido processado normalmente): ' + (e && e.message));
+              });
               return decrementarEstoque(snap.data().itens || []).then(function () {
                 return orderRef.update({ estoqueBaixado: true, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
               });
@@ -573,6 +580,68 @@ function _exigirAdmin(req) {
     var eAuth = new Error('Token inválido ou expirado.');
     eAuth._status = 401;
     throw eAuth;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Notificações push (Web Push) — usado para avisar o(s) admin(s) quando uma
+// venda é confirmada, sem precisar de aplicativo: é o mesmo mecanismo por
+// trás das notificações nativas de qualquer site (Gmail, Twitter, etc.),
+// funciona com o navegador em segundo plano em Android/Chrome.
+//
+// Inscrições ficam em pushSubscriptions/{hash-do-endpoint} — só a Function
+// grava/lê (Admin SDK); o cliente nunca acessa essa coleção direto (ver
+// firestore.rules). Uma "inscrição morta" (permissão revogada, navegador
+// desinstalado, dados do site limpos) é removida sozinha na primeira vez
+// que o envio falhar com 404/410 — sem isso, o envio ficaria tentando pra
+// sempre contra um destino que nunca mais vai responder.
+// ---------------------------------------------------------------------------
+function _webpushConfigurado() {
+  return !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+}
+
+function _enviarPushTodasInscricoes(payload, apenasEmail) {
+  if (!_webpushConfigurado()) {
+    functions.logger.warn('push: VAPID não configurado (functions/.env) — notificação não enviada.');
+    return Promise.resolve({ enviados: 0, total: 0 });
+  }
+  webpush.setVapidDetails('mailto:contato@lapink.com.br', process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+
+  var query = db.collection('pushSubscriptions');
+  if (apenasEmail) query = query.where('email', '==', apenasEmail);
+
+  return query.get().then(function (qs) {
+    var docs = [];
+    qs.forEach(function (d) { docs.push(d); });
+    if (!docs.length) return { enviados: 0, total: 0 };
+
+    var corpo = JSON.stringify(payload);
+    var enviados = 0;
+    return Promise.all(docs.map(function (doc) {
+      var sub = doc.data();
+      return webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, corpo)
+        .then(function () { enviados++; })
+        .catch(function (err) {
+          if (err && (err.statusCode === 404 || err.statusCode === 410)) {
+            return doc.ref.delete().catch(function () {});
+          }
+          functions.logger.warn('push falhou p/ ' + (sub.email || doc.id) + ': ' + (err && err.message));
+        });
+    })).then(function () { return { enviados: enviados, total: docs.length }; });
+  });
+}
+
+// Chamado pelo mpWebhook assim que um pedido vira 'pago' pela primeira vez.
+function _notificarVendaAdmins(pedido, numeroPedido) {
+  var nomeCliente = (pedido.cliente && (pedido.cliente.nome || pedido.cliente.name)) || 'Cliente';
+  var total = parseFloat(pedido.total) || 0;
+  var totalFmt = 'R$ ' + total.toFixed(2).replace('.', ',');
+  var numero = numeroPedido || pedido.numero || '';
+  return _enviarPushTodasInscricoes({
+    title: '🎉 Nova venda — ' + totalFmt,
+    body: String(nomeCliente).slice(0, 60) + (numero ? ' • pedido #' + numero : ''),
+    url: '/admin/pedidos.html',
+    tag: 'venda-' + (numero || Date.now())
   });
 }
 
@@ -1248,6 +1317,95 @@ exports.registrarVisualizacaoProduto = functions.https.onRequest(function (req, 
       .catch(function (err) {
         functions.logger.error('registrarVisualizacaoProduto erro', err);
         res.status(200).json({ ok: false });
+      });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P. Push (Web Push) — inscrição/remoção do navegador do admin e teste.
+//    O envio de verdade (_notificarVendaAdmins) é disparado pelo mpWebhook.
+//    Todas exigem admin autenticado — a coleção pushSubscriptions guarda só
+//    endpoint+chaves públicas de inscrição (não é PII sensível, mas mesmo
+//    assim não faz sentido nenhuma escrita vinda de fora de um admin logado).
+// ---------------------------------------------------------------------------
+
+exports.salvarInscricaoPush = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    _exigirAdmin(req).then(function (decoded) {
+      var sub = req.body && req.body.subscription;
+      var endpoint = sub && String(sub.endpoint || '');
+      var keys = sub && sub.keys;
+      if (!endpoint || !/^https:\/\//.test(endpoint) || !keys || !keys.p256dh || !keys.auth) {
+        var eBad = new Error('Inscrição de notificação inválida.');
+        eBad._status = 400;
+        throw eBad;
+      }
+      var docId = crypto.createHash('sha256').update(endpoint).digest('hex').slice(0, 40);
+      return db.collection('pushSubscriptions').doc(docId).set({
+        email: String(decoded.email || '').toLowerCase(),
+        endpoint: endpoint,
+        keys: { p256dh: String(keys.p256dh), auth: String(keys.auth) },
+        userAgent: _sanitizarTexto(req.body && req.body.userAgent, 200),
+        updatedAt: Date.now()
+      }, { merge: true });
+    })
+      .then(function () { res.status(200).json({ ok: true }); })
+      .catch(function (err) {
+        var status = (err && err._status) || 500;
+        if (status >= 500) functions.logger.error('salvarInscricaoPush erro', err);
+        res.status(status).json({ error: (err && err.message) || 'Erro interno.' });
+      });
+  });
+});
+
+exports.removerInscricaoPush = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    _exigirAdmin(req).then(function () {
+      var endpoint = String((req.body && req.body.endpoint) || '');
+      if (!endpoint) return;
+      var docId = crypto.createHash('sha256').update(endpoint).digest('hex').slice(0, 40);
+      return db.collection('pushSubscriptions').doc(docId).delete();
+    })
+      .then(function () { res.status(200).json({ ok: true }); })
+      .catch(function (err) {
+        var status = (err && err._status) || 500;
+        if (status >= 500) functions.logger.error('removerInscricaoPush erro', err);
+        res.status(status).json({ error: (err && err.message) || 'Erro interno.' });
+      });
+  });
+});
+
+// Manda uma notificação de teste só para os dispositivos do PRÓPRIO admin
+// que chamou (nunca para os outros) — para confirmar que a inscrição
+// funciona sem precisar esperar uma venda de verdade.
+exports.enviarNotificacaoTeste = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    _exigirAdmin(req).then(function (decoded) {
+      var email = String(decoded.email || '').toLowerCase();
+      return _enviarPushTodasInscricoes({
+        title: '🔔 Notificação de teste',
+        body: 'Se você está vendo isso, as notificações de venda estão funcionando!',
+        url: '/admin/admin.html',
+        tag: 'teste-' + Date.now()
+      }, email);
+    })
+      .then(function (r) { res.status(200).json(r); })
+      .catch(function (err) {
+        var status = (err && err._status) || 500;
+        if (status >= 500) functions.logger.error('enviarNotificacaoTeste erro', err);
+        res.status(status).json({ error: (err && err.message) || 'Erro interno.' });
       });
   });
 });
