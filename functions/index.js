@@ -801,6 +801,76 @@ function _freteMandaBem(p) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// 3b. verificarCarrinhosAbandonados — avisa o(s) admin(s) por push assim que
+//    um carrinho fica parado tempo suficiente pra contar como abandonado.
+//    Diferente de cobrarAbandonados (que manda WhatsApp pro CLIENTE e só
+//    roda quando alguém clica no painel): esta aqui roda sozinha, em
+//    intervalo fixo, e notifica o ADMIN — não o cliente, nada é enviado
+//    pra fora da loja.
+//
+//    "Abandonado" aqui não é um evento único (como um pagamento aprovado):
+//    é uma peça de estado (abandonados/{id}, status:'aberto') que só vira
+//    "abandono de verdade" pela PASSAGEM DO TEMPO sem o cliente voltar. Por
+//    isso precisa de um agendamento (Cloud Scheduler) em vez de um gatilho
+//    único — não existe um "webhook de abandono".
+//
+//    Limiar: 15 min sem interação (updatedAt, que é tocado a cada blur nos
+//    campos de nome/celular do checkout — reflete a ÚLTIMA atividade, não
+//    quando o carrinho começou). Roda a cada 10 min. Cada carrinho é
+//    notificado UMA vez (campo notificadoAdmin) — sem isso, o mesmo
+//    carrinho pareceria "abandonado de novo" a cada execução seguinte.
+//
+//    _EPOCH_ABANDONO evita uma enxurrada de notificações de carrinhos
+//    antigos no primeiro deploy: só processa quem ficou parado DEPOIS do
+//    momento em que este recurso entrou no ar (carrinhos de antes já
+//    estavam ali, sem ninguém observando — não faz sentido avisar agora).
+//
+//    Requer plano Blaze (Cloud Scheduler) — mesmo plano que já é exigido
+//    pelas demais Functions que fazem chamada de saída (Mercado Pago,
+//    WhatsApp, fretes). Custo da própria função: irrelevante (6
+//    execuções/hora, bem dentro da faixa gratuita do Cloud Functions).
+// ---------------------------------------------------------------------------
+var _EPOCH_ABANDONO = 1786671408438; // Date.now() no momento em que este recurso foi criado
+
+exports.verificarCarrinhosAbandonados = functions.pubsub.schedule('every 10 minutes').onRun(function () {
+  var LIMIAR_MS = 15 * 60 * 1000; // 15 min sem interação
+  var corte = Date.now() - LIMIAR_MS;
+
+  return db.collection('abandonados').where('status', '==', 'aberto').limit(50).get()
+    .then(function (qs) {
+      var novos = [];
+      qs.forEach(function (doc) {
+        var a = doc.data();
+        var ultimaAtividade = a.updatedAt || a.createdAt || 0;
+        if (ultimaAtividade >= _EPOCH_ABANDONO && ultimaAtividade <= corte && !a.notificadoAdmin) {
+          novos.push(Object.assign({ _id: doc.id }, a));
+        }
+      });
+      if (!novos.length) return { notificados: 0 };
+
+      return novos.reduce(function (chain, a) {
+        return chain.then(function () {
+          var nome = String(a.nome || 'Alguém').split(' ')[0];
+          var qtdItens = Array.isArray(a.itens) ? a.itens.length : 0;
+          var totalFmt = 'R$ ' + (parseFloat(a.total) || 0).toFixed(2).replace('.', ',');
+          return _enviarPushTodasInscricoes({
+            title: '🛒 Carrinho abandonado',
+            body: nome + ' deixou ' + qtdItens + ' item(ns) no carrinho (' + totalFmt + ') sem finalizar.',
+            url: '/admin/pedidos.html',
+            tag: 'abandono-' + a._id
+          }).then(function () {
+            return db.collection('abandonados').doc(a._id)
+              .set({ notificadoAdmin: true, notificadoAdminAt: Date.now() }, { merge: true });
+          });
+        });
+      }, Promise.resolve()).then(function () { return { notificados: novos.length }; });
+    })
+    .catch(function (err) {
+      functions.logger.error('verificarCarrinhosAbandonados erro', err);
+    });
+});
+
 exports.cotarFrete = functions.https.onRequest(function (req, res) {
   cors(req, res, function () {
     if (req.method !== 'POST') {
