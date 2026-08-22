@@ -440,8 +440,10 @@ function verificarSessaoReal() {
 var _adminFirebasePromise = null;
 function garantirAdminFirebase() {
   if (_adminFirebasePromise) return _adminFirebasePromise;
+  var usuarioFirebase = null;
   _adminFirebasePromise = aguardarFirebaseAuth().then(function (user) {
     if (!user) throw new Error('Sessão Firebase ausente. Saia e entre novamente.');
+    usuarioFirebase = user;
     return user.getIdToken().then(function (token) {
       return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/sincronizarClaimsAdmin', {
         method: 'POST',
@@ -452,7 +454,7 @@ function garantirAdminFirebase() {
         if (!resp.ok || (data.role !== 'admin' && data.role !== 'superadmin')) {
           throw new Error(data.error || 'Sua conta não possui permissão administrativa.');
         }
-        return user.getIdToken(true).then(function () { return user; });
+        return usuarioFirebase.getIdToken(true).then(function () { return usuarioFirebase; });
       });
     });
   }).catch(function (e) {

@@ -108,3 +108,13 @@ test('filtros de pedidos normalizam status e usam listener explícito', () => {
   assert.match(pedidos, /getElementById\('statusTabs'\)\.addEventListener\('click'/);
   assert.match(pedidos, /var passaStatus = filtroAtual === 'todos' \|\| st === filtroAtual/);
 });
+
+test('renovação de claim devolve o usuário e exclusão em massa arquiva pedidos MP', () => {
+  const auth = read('admin/js/auth.js');
+  const pedidos = read('admin/pedidos.html');
+  assert.match(auth, /var usuarioFirebase = null/);
+  assert.match(auth, /usuarioFirebase\.getIdToken\(true\)/);
+  assert.match(pedidos, /function _arquivarPedidoRemoto/);
+  assert.match(pedidos, /Promise\.all\(arquivamentos\)/);
+  assert.doesNotMatch(pedidos, /Use o botão Arquivar no pedido do Mercado Pago/);
+});

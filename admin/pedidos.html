@@ -295,7 +295,7 @@
     var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
     if (!firestore) return;
     garantirAdminFirebase().then(function() {
-      firestore.collection('pedidos').orderBy('createdAt', 'desc').limit(100).get()
+      return firestore.collection('pedidos').orderBy('createdAt', 'desc').limit(100).get()
         .then(function(snap) {
           _pedidosFirestore = [];
           snap.forEach(function(doc) {
@@ -307,7 +307,10 @@
           renderStats();
           renderPedidos();
         })
-        .catch(function(e) { console.warn('[pedidos] Firestore load error:', e); });
+        .catch(function(e) { throw e; });
+    }).catch(function(e) {
+      console.warn('[pedidos] Firestore load error:', e);
+      showToast('Não foi possível carregar os pedidos da nuvem: ' + (e.message || 'tente entrar novamente.'), 'erro');
     });
   }
 
@@ -439,9 +442,8 @@
     }).catch(function(e) { showToast('Erro: ' + e.message, 'erro'); });
   }
 
-  function arquivarPedidoFirestore(pedidoId, numero) {
-    if (!confirm('Arquivar o pedido #' + (numero || pedidoId) + '? Ele sairá da lista, mas o histórico financeiro será preservado.')) return;
-    garantirAdminFirebase().then(function(user) { return user.getIdToken(); }).then(function(token) {
+  function _arquivarPedidoRemoto(pedidoId) {
+    return garantirAdminFirebase().then(function(user) { return user.getIdToken(); }).then(function(token) {
       return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/arquivarPedido', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -451,7 +453,12 @@
       return resp.json().catch(function() { return {}; }).then(function(data) {
         if (!resp.ok) throw new Error(data.error || 'Não foi possível arquivar o pedido.');
       });
-    }).then(function() {
+    });
+  }
+
+  function arquivarPedidoFirestore(pedidoId, numero) {
+    if (!confirm('Arquivar o pedido #' + (numero || pedidoId) + '? Ele sairá da lista, mas o histórico financeiro será preservado.')) return;
+    _arquivarPedidoRemoto(pedidoId).then(function() {
       _pedidosFirestore = _pedidosFirestore.filter(function(p) { return p._id !== pedidoId; });
       renderStats();
       renderPedidos();
@@ -1003,8 +1010,8 @@
     if (!alvos.length) return;
     var locais = alvos.filter(function(a) { return a.fonte === 'local'; });
     var fs = alvos.filter(function(a) { return a.fonte === 'fs'; });
-    if (!locais.length) { showToast('Use o botão Arquivar no pedido do Mercado Pago.', 'erro'); return; }
-    var msg = 'Excluir ' + locais.length + ' pedido(s) selecionado(s)?' + (fs.length ? ' (' + fs.length + ' pedido(s) MP serão ignorados.)' : '');
+    var msg = 'Remover ' + alvos.length + ' pedido(s) selecionado(s)?' +
+      (fs.length ? ' Os ' + fs.length + ' pedido(s) do Mercado Pago serão arquivados para preservar o histórico financeiro.' : '');
     if (!confirm(msg)) return;
     var ids = locais.map(function(a) { return parseInt(a.pid); });
     var pedidos = getPedidos() || [];
@@ -1023,10 +1030,18 @@
     });
     saveProdutos(produtos);
     setPedidos(pedidos.filter(function(p) { return ids.indexOf(p.id) === -1; }));
-    renderStats();
-    renderPedidos();
-    _atualizarBulkBarPed();
-    showToast(ids.length + ' pedido(s) excluído(s).');
+    var arquivamentos = fs.map(function(a) { return _arquivarPedidoRemoto(a.pid); });
+    Promise.all(arquivamentos).then(function() {
+      var fsIds = fs.map(function(a) { return a.pid; });
+      _pedidosFirestore = _pedidosFirestore.filter(function(p) { return fsIds.indexOf(p._id) === -1; });
+      renderStats();
+      renderPedidos();
+      _atualizarBulkBarPed();
+      showToast(locais.length + ' pedido(s) local(is) excluído(s) e ' + fs.length + ' pedido(s) MP arquivado(s).');
+    }).catch(function(e) {
+      carregarPedidosFirestore();
+      showToast('Alguns pedidos não puderam ser arquivados: ' + (e.message || 'tente novamente.'), 'erro');
+    });
   }
   function _initBulkStatusPed() {
     var sel = document.getElementById('bulk-status-ped');
