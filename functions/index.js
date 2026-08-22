@@ -140,7 +140,14 @@ const ORIGENS_PERMITIDAS = [
   'https://lapink-82a39.web.app',
   'https://lapink-82a39.firebaseapp.com',
 ];
-function baseUrlDe(req) {
+function baseUrlDe(req, domainConfig) {
+  var configurada = domainConfig && domainConfig.dnsUrl;
+  if (configurada) {
+    try {
+      var url = new URL(String(configurada));
+      if (url.protocol === 'https:' && !url.username && !url.password) return url.origin;
+    } catch (e) {}
+  }
   const origem = (req.headers && req.headers.origin) || '';
   return ORIGENS_PERMITIDAS.indexOf(origem) >= 0 ? origem : 'https://www.lapinkacessorios.com.br';
 }
@@ -273,13 +280,15 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
     var _descontoInfo = { pct: 0, valor: 0 };
     var _ownerUid = null;
     var _descontoReservado = false;
+    var _domainConfig = {};
 
     Promise.all([
       getMpToken(),
       lerCatalogo(), // suporta catálogo particionado (fotos > 1 MiB)
       db.collection('lapink').doc('lapinkLojaConfig').get(), // desconto boas-vindas
       usuarioOpcional(req),
-      db.collection('lapink').doc('lapinkEntregaConfig').get()
+      db.collection('lapink').doc('lapinkEntregaConfig').get(),
+      db.collection('lapink').doc('lapinkDomainConfig').get()
     ])
       .then(function (arr) {
         var token = arr[0];
@@ -287,6 +296,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         var lojaCfg = (arr[2].exists && arr[2].data() && arr[2].data().data) || {};
         var usuario = arr[3];
         var entregaCfg = (arr[4].exists && arr[4].data() && arr[4].data().data) || {};
+        _domainConfig = (arr[5].exists && arr[5].data() && arr[5].data().data) || {};
         _ownerUid = usuario ? usuario.uid : null;
         var mapa = {};
         (Array.isArray(prods) ? prods : []).forEach(function (p) { if (p && typeof p.id !== 'undefined') mapa[String(p.id)] = p; });
@@ -385,9 +395,9 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           items: mpItems,
           payer: payer,
           back_urls: {
-            success: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId + '&acesso=' + acessoPedido,
-            failure: baseUrlDe(req) + '/public/pagamento.html?erro=pagamento',
-            pending: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId + '&acesso=' + acessoPedido + '&pendente=1',
+            success: baseUrlDe(req, _domainConfig) + '/public/sucesso.html?pedido=' + orderId + '&acesso=' + acessoPedido,
+            failure: baseUrlDe(req, _domainConfig) + '/public/pagamento.html?erro=pagamento',
+            pending: baseUrlDe(req, _domainConfig) + '/public/sucesso.html?pedido=' + orderId + '&acesso=' + acessoPedido + '&pendente=1',
           },
           auto_return: 'approved',
           notification_url: 'https://us-central1-lapink-82a39.cloudfunctions.net/mpWebhook',

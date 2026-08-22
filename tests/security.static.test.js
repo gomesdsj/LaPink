@@ -49,3 +49,14 @@ test('hosting envia cabeçalhos mínimos de segurança', () => {
     assert.match(firebase, new RegExp(header));
   }
 });
+
+test('domínio personalizado persiste no Firebase e alimenta retornos do pagamento', () => {
+  const rules = read('firestore.rules');
+  const functions = read('functions/index.js');
+  const config = read('admin/configuracoes.html');
+  assert.match(rules, /lapinkDomainConfig/);
+  assert.match(rules, /match \/lapink\/lapinkDomainConfig[\s\S]*?allow write: if isSuperAdmin\(\)/);
+  assert.match(functions, /baseUrlDe\(req, _domainConfig\)/);
+  assert.match(config, /doc\(['"]lapinkDomainConfig['"]\)/);
+  assert.match(config, /function salvarDominio/);
+});

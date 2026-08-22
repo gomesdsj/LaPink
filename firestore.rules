@@ -41,6 +41,10 @@ service cloud.firestore {
         (request.auth.token.role == 'admin' || request.auth.token.role == 'superadmin');
     }
 
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.role == 'superadmin';
+    }
+
     function isOwner(field) {
       return request.auth != null && field == request.auth.uid;
     }
@@ -76,6 +80,13 @@ service cloud.firestore {
     // As Cloud Functions leem via Admin SDK (ignoram as rules).
     match /lapink/apiConfig {
       allow write: if isAdmin();   // read continua negado (sem allow read)
+    }
+
+    // Domínio altera URLs de retorno de pagamento: leitura pública para o
+    // site, mas escrita somente pelo Super Admin.
+    match /lapink/lapinkDomainConfig {
+      allow read: if true;
+      allow write: if isSuperAdmin();
     }
 
     match /lapink/{doc} {

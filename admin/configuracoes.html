@@ -475,7 +475,7 @@
             <!-- DNS / Domínio -->
             <div class="section-card">
               <h3><i class="ti ti-world"></i> DNS & Domínio</h3>
-              <p>Configure o domínio customizado onde a loja está publicada. Usado em links de compartilhamento e notificações.</p>
+              <p>Salva o domínio oficial no Firebase e passa a usá-lo nos retornos do pagamento. O domínio precisa estar previamente conectado no Firebase Hosting e apontado no provedor de DNS.</p>
               <div class="form-group">
                 <label>URL pública da loja</label>
                 <input type="url" id="int-dns-url" placeholder="https://www.lapink.com.br" />
@@ -485,8 +485,9 @@
                 <input type="url" id="int-dns-admin" placeholder="https://admin.lapink.com.br" />
               </div>
               <div class="form-actions" style="margin-top:8px;">
-                <button class="btn-save-form" type="button" onclick="salvarIntegracoes()"><i class="ti ti-device-floppy"></i> Salvar DNS</button>
+                <button class="btn-save-form" id="btn-salvar-dominio" type="button" onclick="salvarDominio()"><i class="ti ti-device-floppy"></i> Salvar domínio</button>
               </div>
+              <div id="dns-status" style="font-size:11px;color:var(--gray-400);margin-top:10px;"></div>
             </div>
 
             <!-- Google Analytics -->
@@ -1149,6 +1150,64 @@
     document.getElementById('int-ga-id').value       = cfg.gaId           || '';
     document.getElementById('int-wba-phone-id').value= cfg.wbaPhoneId     || '';
     document.getElementById('int-wba-biz-id').value  = cfg.wbaBizId       || '';
+    carregarDominio();
+  }
+
+  function normalizarDominio(valor, obrigatorio) {
+    valor = String(valor || '').trim();
+    if (!valor && !obrigatorio) return '';
+    try {
+      var u = new URL(valor);
+      if (u.protocol !== 'https:' || u.username || u.password || u.pathname !== '/' || u.search || u.hash) return null;
+      return u.origin;
+    } catch (e) { return null; }
+  }
+
+  function carregarDominio() {
+    var db = (typeof firebase !== 'undefined' && firebase.apps.length) ? firebase.firestore() : null;
+    if (!db) return;
+    db.collection('lapink').doc('lapinkDomainConfig').get().then(function(snap) {
+      var cfg = (snap.exists && snap.data() && snap.data().data) || {};
+      if (cfg.dnsUrl) document.getElementById('int-dns-url').value = cfg.dnsUrl;
+      if (cfg.dnsAdmin) document.getElementById('int-dns-admin').value = cfg.dnsAdmin;
+      document.getElementById('dns-status').textContent = cfg.dnsUrl
+        ? 'Domínio oficial salvo no Firebase: ' + cfg.dnsUrl
+        : 'Nenhum domínio personalizado salvo no Firebase.';
+    }).catch(function(e) {
+      document.getElementById('dns-status').textContent = 'Não foi possível carregar o domínio: ' + e.message;
+    });
+  }
+
+  function salvarDominio() {
+    var sessao = typeof getSession === 'function' ? getSession() : null;
+    if (!sessao || sessao.role !== 'superadmin') {
+      showToast('Somente o Super Admin pode alterar o domínio oficial.', 'erro');
+      return;
+    }
+    var loja = normalizarDominio(document.getElementById('int-dns-url').value, true);
+    var painel = normalizarDominio(document.getElementById('int-dns-admin').value, false);
+    if (!loja || painel === null) {
+      showToast('Informe URLs HTTPS completas, sem caminho. Ex.: https://www.seudominio.com.br', 'erro');
+      return;
+    }
+    var db = (typeof firebase !== 'undefined' && firebase.apps.length) ? firebase.firestore() : null;
+    var user = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
+    if (!db || !user) { showToast('Entre novamente como administrador para salvar o domínio.', 'erro'); return; }
+    var btn = document.getElementById('btn-salvar-dominio');
+    btn.disabled = true;
+    db.collection('lapink').doc('lapinkDomainConfig').set({
+      data: { dnsUrl: loja, dnsAdmin: painel },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: user.uid
+    }).then(function() {
+      var local = getObj('lapinkApiConfig');
+      local.dnsUrl = loja; local.dnsAdmin = painel;
+      localStorage.setItem('lapinkApiConfig', JSON.stringify(local));
+      document.getElementById('dns-status').textContent = 'Domínio oficial salvo no Firebase: ' + loja;
+      showToast('Domínio salvo! Novos pagamentos usarão essa URL de retorno.');
+    }).catch(function(e) {
+      showToast('Erro ao salvar domínio: ' + e.message, 'erro');
+    }).finally(function() { btn.disabled = false; });
   }
 
   // ─── E-mail de boas-vindas (Newsletter + Cadastro) — config PÚBLICA
@@ -1396,8 +1455,6 @@
       emailjsSid:  document.getElementById('int-ejs-sid').value.trim(),
       emailjsTid:  document.getElementById('int-ejs-tid').value.trim(),
       emailjsFrom: document.getElementById('int-ejs-from').value.trim(),
-      dnsUrl:      document.getElementById('int-dns-url').value.trim(),
-      dnsAdmin:    document.getElementById('int-dns-admin').value.trim(),
       gaId:        document.getElementById('int-ga-id').value.trim(),
       wbaPhoneId:  document.getElementById('int-wba-phone-id').value.trim(),
       wbaBizId:    document.getElementById('int-wba-biz-id').value.trim()
