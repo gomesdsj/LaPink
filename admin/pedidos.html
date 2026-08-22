@@ -521,6 +521,9 @@
       }
 
       var obsHtml = p.obs ? '<div class="pedido-obs"><i class="ti ti-note"></i> ' + escHtml(p.obs) + '</div>' : '';
+      var estoqueAlertaHtml = p.revisaoEstoque
+        ? '<div class="pedido-obs" style="background:#fff7ed;color:#9a3412;border:1px solid #fdba74;"><i class="ti ti-alert-triangle"></i> Pagamento confirmado, mas revise o estoque: ' + escHtml((p.estoquePendente || []).join(', ')) + '</div>'
+        : '';
       var waNum = telCli.replace(/\D/g, '');
       var waMsg = 'Olá ' + nomeCli + ', temos uma atualização sobre seu pedido #' + p.numero + '.';
       var waLink = 'https://wa.me/55' + waNum + '?text=' + encodeURIComponent(waMsg);
@@ -552,6 +555,7 @@
           '<div class="pedido-total">' + fmtMoeda(p.total) + '</div>' +
           (isFS && p.frete ? '<div style="font-size:11px;color:var(--gray-400)">Subtotal ' + fmtMoeda(p.subtotal) + ' + Frete ' + fmtMoeda(p.frete) + ' (' + (p.modalidadeFrete||'') + ')</div>' : '') +
           obsHtml +
+          estoqueAlertaHtml +
         '</div>' +
         '<button class="toggle-itens-btn" onclick="toggleItens(\'' + escHtml(cardId) + '\', this)"><i class="ti ti-chevron-down"></i> Ver itens (' + (p.itens||[]).length + ')</button>' +
         '<ul class="pedido-itens" id="itens-' + escHtml(cardId) + '">' + itensHtml + '</ul>' +

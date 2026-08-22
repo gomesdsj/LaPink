@@ -234,6 +234,7 @@ function mapearStatus(mpStatus) {
     case 'rejected':
     case 'cancelled':
     case 'refunded':
+    case 'charged_back':
       return 'cancelado';
     default:
       return 'aguardando_pagamento';
@@ -271,6 +272,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
     var _itensCalc = [], _subtotalCalc = 0, _freteCalc = 0, _totalCalc = 0, _pesoCalc = 0;
     var _descontoInfo = { pct: 0, valor: 0 };
     var _ownerUid = null;
+    var _descontoReservado = false;
 
     Promise.all([
       getMpToken(),
@@ -391,6 +393,9 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           notification_url: 'https://us-central1-lapink-82a39.cloudfunctions.net/mpWebhook',
           external_reference: orderId,
           statement_descriptor: 'LAPINK',
+          expires: true,
+          expiration_date_from: new Date().toISOString(),
+          expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         };
 
         var reservarDesconto = Promise.resolve();
@@ -398,10 +403,17 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           var usoRef = db.collection('descontoBoasVindasUsos').doc(_ownerUid);
           reservarDesconto = db.runTransaction(function (tx) {
             return tx.get(usoRef).then(function (uso) {
-              if (uso.exists) throw new Error('O desconto de boas-vindas já foi utilizado nesta conta.');
-              tx.set(usoRef, { pedidoId: orderId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+              var atual = uso.exists ? (uso.data() || {}) : {};
+              var expirou = atual.status === 'reservado' && Number(atual.expiresAt || 0) <= Date.now();
+              if (uso.exists && !expirou) throw new Error('O desconto de boas-vindas já foi utilizado ou está reservado em outro pagamento.');
+              tx.set(usoRef, {
+                pedidoId: orderId,
+                status: 'reservado',
+                expiresAt: Date.now() + 30 * 60 * 1000,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+              });
             });
-          });
+          }).then(function () { _descontoReservado = true; });
         }
         return reservarDesconto.then(function () { return fetch('https://api.mercadopago.com/checkout/preferences', {
           method: 'POST',
@@ -464,7 +476,21 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
       })
       .catch(function (err) {
         functions.logger.error('createPreference erro', err);
-        res.status(500).json({ error: err.message || 'Erro interno ao processar preferência.' });
+        var liberar = Promise.resolve();
+        if (_descontoReservado && _ownerUid) {
+          var reservaRef = db.collection('descontoBoasVindasUsos').doc(_ownerUid);
+          liberar = db.runTransaction(function (tx) {
+            return tx.get(reservaRef).then(function (snap) {
+              var d = snap.exists ? (snap.data() || {}) : {};
+              if (d.status === 'reservado' && d.pedidoId === orderId) tx.delete(reservaRef);
+            });
+          }).catch(function (e) {
+            functions.logger.error('Falha ao liberar reserva de desconto', e);
+          });
+        }
+        liberar.then(function () {
+          res.status(500).json({ error: err.message || 'Erro interno ao processar preferência.' });
+        });
       });
   });
 });
@@ -504,9 +530,6 @@ exports.obterPedido = functions.https.onRequest(function (req, res) {
 // 2. mpWebhook — recebe notificações do Mercado Pago
 // ---------------------------------------------------------------------------
 exports.mpWebhook = functions.https.onRequest(function (req, res) {
-  // Responde 200 imediatamente para o MP não retentar
-  res.status(200).send('OK');
-
   var paymentId = null;
 
   var bodyType = req.body && req.body.type;
@@ -523,6 +546,7 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
       type: bodyType,
       topic: queryTopic,
     });
+    res.status(200).send('IGNORED');
     return;
   }
 
@@ -534,15 +558,15 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
     .then(function (secret) {
       if (!validarAssinaturaMP(req, dataIdAssinatura, secret)) {
         functions.logger.warn('mpWebhook: assinatura inválida — notificação descartada.', { paymentId });
-        return null;
+        var eAssinatura = new Error('Assinatura inválida.');
+        eAssinatura._status = 403;
+        throw eAssinatura;
       }
 
       functions.logger.info('mpWebhook: processando payment_id=' + paymentId);
       return getMpToken();
     })
     .then(function (token) {
-      if (!token) return null; // assinatura inválida — encerra sem processar
-
       return fetch('https://api.mercadopago.com/v1/payments/' + paymentId, {
         method: 'GET',
         headers: {
@@ -551,7 +575,6 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
       });
     })
     .then(function (mpRes) {
-      if (!mpRes) return null; // assinatura inválida — encerra sem processar
       return mpRes.json().then(function (data) {
         if (!mpRes.ok) {
           throw new Error('Erro ao buscar pagamento MP: ' + JSON.stringify(data));
@@ -560,58 +583,127 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
       });
     })
     .then(function (payment) {
-      if (!payment) return null; // assinatura inválida — encerra sem processar
-      var mpStatus = payment.status;
-      var externalRef = payment.external_reference;
-      var novoStatus = mapearStatus(mpStatus);
-
-      if (!externalRef) {
-        functions.logger.warn('mpWebhook: pagamento sem external_reference', { paymentId });
-        return;
+      return processarPagamentoAtomico(payment, paymentId);
+    })
+    .then(function (resultado) {
+      if (resultado && resultado.notificar) {
+        _notificarVendaAdmins(resultado.pedido, resultado.orderId).catch(function (e) {
+          functions.logger.warn('notificação de venda falhou (pedido processado normalmente): ' + (e && e.message));
+        });
       }
-
-      var orderRef = db.collection('pedidos').doc(externalRef);
-
-      return orderRef.get().then(function (snap) {
-        var statusAnterior = snap.exists ? snap.data().status : null;
-
-        return orderRef
-          .update({
-            status: novoStatus,
-            mp_payment_id: paymentId,
-            mp_status: mpStatus,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          })
-          .then(function () {
-            functions.logger.info('mpWebhook: pedido atualizado', {
-              orderId: externalRef,
-              novoStatus,
-              mpStatus,
-            });
-
-            // Decrementa estoque apenas quando muda para 'pago' pela primeira vez
-            // E somente se ainda NÃO foi baixado (campo estoqueBaixado evita baixa dupla).
-            // Após baixar, marca estoqueBaixado:true no próprio pedido (idempotência).
-            var jaBaixado = snap.exists && snap.data().estoqueBaixado === true;
-            if (novoStatus === 'pago' && statusAnterior !== 'pago' && !jaBaixado && snap.exists) {
-              // Notifica o(s) admin(s) (push no navegador) em paralelo com a
-              // baixa de estoque — nunca deve atrasar nem travar o
-              // processamento do pedido em si; erro aqui só fica logado.
-              _notificarVendaAdmins(snap.data(), externalRef).catch(function (e) {
-                functions.logger.warn('notificação de venda falhou (pedido processado normalmente): ' + (e && e.message));
-              });
-              return decrementarEstoque(snap.data().itens || []).then(function () {
-                return orderRef.update({ estoqueBaixado: true, updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-              });
-            }
-            return Promise.resolve();
-          });
-      });
+      if (!res.headersSent) res.status(200).send('OK');
     })
     .catch(function (err) {
       functions.logger.error('mpWebhook erro ao processar payment_id=' + paymentId, err);
+      if (!res.headersSent) res.status((err && err._status) || 500).send('ERROR');
     });
 });
+
+// Atualiza pedido e estoque na MESMA transação. Isso torna o webhook
+// idempotente mesmo quando o Mercado Pago envia a mesma notificação em
+// paralelo, e impede que duas vendas sobrescrevam a baixa de estoque uma da outra.
+function processarPagamentoAtomico(payment, paymentId) {
+  var externalRef = String(payment.external_reference || '');
+  if (!/^LPK-[A-Z0-9-]{4,40}$/.test(externalRef)) {
+    var eRef = new Error('Pagamento sem referência de pedido válida.');
+    eRef._status = 400;
+    return Promise.reject(eRef);
+  }
+  var orderRef = db.collection('pedidos').doc(externalRef);
+  var resultado = { orderId: externalRef, notificar: false, pedido: null };
+
+  return db.runTransaction(function (tx) {
+    return tx.get(orderRef).then(function (orderSnap) {
+      if (!orderSnap.exists) {
+        var ePedido = new Error('Pedido do pagamento não encontrado.');
+        ePedido._status = 404;
+        throw ePedido;
+      }
+      var pedido = orderSnap.data() || {};
+      var recebido = Math.round(Number(payment.transaction_amount) * 100);
+      var esperado = Math.round(Number(pedido.total) * 100);
+      if (!Number.isFinite(recebido) || recebido !== esperado || String(payment.currency_id || '') !== 'BRL') {
+        var eValor = new Error('Valor ou moeda do pagamento não corresponde ao pedido.');
+        eValor._status = 409;
+        throw eValor;
+      }
+
+      var novoStatus = mapearStatus(payment.status);
+      var primeiraBaixa = novoStatus === 'pago' && pedido.estoqueProcessado !== true;
+      var restaurarEstoque = (payment.status === 'refunded' || payment.status === 'charged_back')
+        && pedido.estoqueBaixado === true && pedido.estoqueEstornado !== true;
+      var updatePedido = {
+        status: novoStatus,
+        mp_payment_id: String(paymentId),
+        mp_status: payment.status,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      resultado.pedido = pedido;
+
+      if (!primeiraBaixa && !restaurarEstoque) {
+        tx.update(orderRef, updatePedido);
+        return;
+      }
+
+      var catalogRef = db.collection('lapink').doc('lapinkProdutos');
+      return tx.get(catalogRef).then(function (catalogSnap) {
+        if (!catalogSnap.exists) throw new Error('Catálogo não encontrado para baixa de estoque.');
+        var catalog = catalogSnap.data() || {};
+        var refs = [];
+        if (catalog.chunked && Number(catalog.chunks) > 0) {
+          for (var i = 0; i < Number(catalog.chunks); i++) refs.push(db.collection('lapink').doc('lapinkProdutos_' + i));
+        }
+        return Promise.all(refs.map(function (ref) { return tx.get(ref); })).then(function (chunkSnaps) {
+          var partes = refs.length
+            ? chunkSnaps.map(function (s) { var d = s.exists ? s.data() : {}; return Array.isArray(d.data) ? d.data : []; })
+            : [Array.isArray(catalog.data) ? catalog.data : []];
+          var faltas = [];
+          (pedido.itens || []).forEach(function (item) {
+            var prod = null;
+            for (var p = 0; p < partes.length && !prod; p++) {
+              prod = partes[p].find(function (x) { return String(x.id) === String(item.id); });
+            }
+            var qtd = Math.max(1, Number(item.qty) || 1);
+            if (restaurarEstoque && prod) {
+              prod.estoque = Number(prod.estoque || 0) + qtd;
+            } else if (!prod || Number(prod.estoque || 0) < qtd) {
+              faltas.push(String(item.nome || item.id));
+            } else {
+              prod.estoque = Number(prod.estoque) - qtd;
+            }
+          });
+          var agora = Date.now();
+          if (refs.length) {
+            refs.forEach(function (ref, idx) { tx.set(ref, { data: partes[idx], updatedAt: agora }); });
+            tx.set(catalogRef, { chunked: true, chunks: refs.length, updatedAt: agora }, { merge: true });
+          } else {
+            tx.set(catalogRef, { data: partes[0], updatedAt: agora }, { merge: true });
+          }
+          if (restaurarEstoque) {
+            updatePedido.estoqueEstornado = true;
+          } else {
+            updatePedido.estoqueProcessado = true;
+            updatePedido.estoqueBaixado = faltas.length === 0;
+          }
+          if (!restaurarEstoque && faltas.length) {
+            updatePedido.revisaoEstoque = true;
+            updatePedido.estoquePendente = faltas;
+          }
+          tx.update(orderRef, updatePedido);
+          resultado.notificar = primeiraBaixa;
+
+          if (pedido.ownerUid && Number(pedido.descontoPct || 0) > 0) {
+            tx.set(db.collection('descontoBoasVindasUsos').doc(pedido.ownerUid), {
+              pedidoId: externalRef,
+              status: 'usado',
+              usedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          }
+        });
+      });
+    });
+  }).then(function () { return resultado; });
+}
 
 // ---------------------------------------------------------------------------
 // Helper: decrementa estoque dos produtos no Firestore

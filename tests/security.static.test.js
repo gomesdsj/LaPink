@@ -31,3 +31,21 @@ test('cadastro local nunca persiste credencial de cliente', () => {
   assert.match(storage, /delete seguro\.password/);
   assert.doesNotMatch(register, /password:\s*hash/);
 });
+
+test('webhook valida valor e atualiza estoque de forma transacional', () => {
+  const functions = read('functions/index.js');
+  assert.match(functions, /function processarPagamentoAtomico/);
+  assert.match(functions, /payment\.transaction_amount/);
+  assert.match(functions, /payment\.currency_id/);
+  assert.match(functions, /estoqueProcessado/);
+  assert.match(functions, /estoqueEstornado/);
+  assert.match(functions, /db\.runTransaction/);
+  assert.doesNotMatch(functions, /Responde 200 imediatamente para o MP não retentar/);
+});
+
+test('hosting envia cabeçalhos mínimos de segurança', () => {
+  const firebase = read('firebase.json');
+  for (const header of ['Content-Security-Policy', 'X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy']) {
+    assert.match(firebase, new RegExp(header));
+  }
+});
