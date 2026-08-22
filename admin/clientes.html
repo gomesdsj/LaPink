@@ -460,10 +460,9 @@
       (function buscarEnderecosFS() {
         var db = (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) ? firebase.firestore() : null;
         if (!db) return;
-        var emailKey = emailLow.replace(/[^a-z0-9]/g, '_');
-        db.collection('enderecos').doc(emailKey).get().then(function(snap) {
-          if (!snap.exists || _cliModalEmail !== email) return;
-          var d = snap.data() || {};
+        db.collection('enderecos').where('email', '==', emailLow).limit(1).get().then(function(query) {
+          if (query.empty || _cliModalEmail !== email) return;
+          var d = query.docs[0].data() || {};
           var arr = Array.isArray(d.enderecos) && d.enderecos.length ? d.enderecos
                   : (d.endereco ? [d.endereco] : []);
           if (!arr.length) return;
@@ -737,4 +736,3 @@
   <script src="js/sidebar.js"></script>
 </body>
 </html>
-

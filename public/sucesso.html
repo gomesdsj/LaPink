@@ -221,6 +221,7 @@ body { background: var(--gray-50); min-height: 100vh; }
   /* ── variáveis ── */
   var page     = document.getElementById('sucPage');
   var orderId  = qs('pedido');
+  var acessoPedido = qs('acesso');
   var pendente = qs('pendente') === '1';
   var ehLocalOrder = qs('local') === '1';
   var pollingTimer = null;
@@ -235,11 +236,17 @@ body { background: var(--gray-50); min-height: 100vh; }
 
   /* ── Busca no Firestore ── */
   function fetchOrder(id, cb) {
-    firebase.firestore().collection('pedidos').doc(id).get()
-      .then(function(snap) {
-        if (snap.exists) cb(null, snap.data());
-        else cb('notfound', null);
+    fetch('https://us-central1-lapink-82a39.cloudfunctions.net/obterPedido', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pedidoId: id, acesso: acessoPedido })
+    })
+      .then(function(resp) {
+        if (resp.status === 404) { cb('notfound', null); return null; }
+        if (!resp.ok) throw new Error('Acesso ao pedido negado.');
+        return resp.json();
       })
+      .then(function(data) { if (data) cb(null, data.pedido); })
       .catch(function(err) { cb(err, null); });
   }
 

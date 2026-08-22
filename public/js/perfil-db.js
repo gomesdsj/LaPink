@@ -33,11 +33,6 @@
     });
   }
 
-  // Chave estável derivada do e-mail (mesma usada pelo painel admin para ler).
-  function _emailKey(email) {
-    return String(email || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
-  }
-
   // E-mail/nome do cliente logado (sessão local — não depende do Firebase Auth).
   function _clienteLogado() {
     try {
@@ -55,25 +50,18 @@
     if (!db) return Promise.resolve(false);
     var payload = { enderecos: enderecos || [], endereco: padrao || null, updatedAt: Date.now() };
 
-    var gravacoes = [];
-
-    var cli = _clienteLogado();
-    if (cli) {
-      var docPub = Object.assign({ email: cli.email, nome: cli.name || '' }, payload);
-      gravacoes.push(
-        db.collection('enderecos').doc(_emailKey(cli.email)).set(docPub, { merge: true })
-          .then(function () { return true; }).catch(function () { return false; })
-      );
-    }
-
-    gravacoes.push(_uidReady().then(function (uid) {
+    return _uidReady().then(function (uid) {
       if (!uid) return false;
-      return db.collection('usuarios').doc(uid).set(payload, { merge: true })
-        .then(function () { return true; }).catch(function () { return false; });
-    }));
-
-    return Promise.all(gravacoes).then(function (rs) {
-      return rs.some(function (ok) { return ok; });
+      var cli = _clienteLogado();
+      var privado = Object.assign({
+        ownerUid: uid,
+        email: (cli && cli.email) || '',
+        nome: (cli && cli.name) || ''
+      }, payload);
+      return Promise.all([
+        db.collection('enderecos').doc(uid).set(privado, { merge: true }),
+        db.collection('usuarios').doc(uid).set(payload, { merge: true })
+      ]).then(function () { return true; }).catch(function () { return false; });
     });
   };
 
@@ -83,7 +71,7 @@
     if (!db) return Promise.resolve(null);
     return _uidReady().then(function (uid) {
       if (!uid) return null;
-      return db.collection('usuarios').doc(uid).get().then(function (s) {
+      return db.collection('enderecos').doc(uid).get().then(function (s) {
         if (!s.exists) return null;
         var d = s.data() || {};
         if (!Array.isArray(d.enderecos) && !d.endereco) return null;

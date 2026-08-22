@@ -412,28 +412,6 @@ body { background: var(--gray-50); min-height: 100vh; }
       '</div>';
   }
 
-  /* ── Fallback: filtro no client ── */
-  function fetchAllAndFilter(email, cb) {
-    firebase.firestore().collection('pedidos').limit(200).get()
-      .then(function(snap) {
-        var lista = [];
-        snap.forEach(function(doc) {
-          var d = doc.data();
-          if (d.cliente && d.cliente.email && d.cliente.email.toLowerCase() === email.toLowerCase()) {
-            lista.push(d);
-          }
-        });
-        /* ordenar por createdAt desc */
-        lista.sort(function(a, b) {
-          var ta = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
-          var tb = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
-          return tb - ta;
-        });
-        cb(null, lista.slice(0, 20));
-      })
-      .catch(function(err) { cb(err, null); });
-  }
-
   /* ── Pedidos locais (lapinkPedidos) do cliente — funciona sem Blaze ── */
   function pedidosLocais(email) {
     try {
@@ -470,10 +448,12 @@ body { background: var(--gray-50); min-height: 100vh; }
   function loadPedidos() {
     var email = _client.email;
 
-    aguardarFirebaseAuth().then(function() {
+    aguardarFirebaseAuth().then(function(user) {
+      user = user || (firebase.auth && firebase.auth().currentUser);
+      if (!user) { renderLista(mesclarEOrdenar([], email)); return; }
       firebase.firestore()
         .collection('pedidos')
-        .where('cliente.email', '==', email)
+        .where('ownerUid', '==', user.uid)
         .orderBy('createdAt', 'desc')
         .limit(20)
         .get()
@@ -483,17 +463,10 @@ body { background: var(--gray-50); min-height: 100vh; }
           renderLista(mesclarEOrdenar(lista, email));
         })
         .catch(function(err) {
-          /* Índice composto não criado — fallback */
-          if (err && (err.code === 'failed-precondition' || err.code === 'unimplemented' || (err.message && err.message.indexOf('index') !== -1))) {
-            fetchAllAndFilter(email, function(err2, lista) {
-              if (err2) renderLista(mesclarEOrdenar([], email));
-              else renderLista(mesclarEOrdenar(lista, email));
-            });
-          } else {
-            /* Falha total no Firestore (inclui permission-denied) — mostra
-               ao menos os pedidos locais deste navegador */
-            renderLista(mesclarEOrdenar([], email));
-          }
+          /* Nunca baixa a coleção inteira para filtrar dados pessoais no
+             navegador. Em falha/ausência de índice, mostra só o cache local. */
+          console.warn('[meus-pedidos] consulta segura falhou:', err && err.message);
+          renderLista(mesclarEOrdenar([], email));
         });
     });
   }

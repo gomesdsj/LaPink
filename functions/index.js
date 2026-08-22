@@ -145,6 +145,42 @@ function baseUrlDe(req) {
   return ORIGENS_PERMITIDAS.indexOf(origem) >= 0 ? origem : 'https://www.lapinkacessorios.com.br';
 }
 
+// Autentica quando o cliente estiver logado, sem impedir checkout de visitante.
+function usuarioOpcional(req) {
+  var header = (req.headers && req.headers.authorization) || '';
+  var token = header.indexOf('Bearer ') === 0 ? header.slice(7) : '';
+  if (!token) return Promise.resolve(null);
+  return admin.auth().verifyIdToken(token).catch(function () { return null; });
+}
+
+function hashAcessoPedido(token) {
+  return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+
+function assinarCotacaoFrete(opcao, cep, segredo) {
+  var dados = {
+    id: 'me_' + String(opcao.id),
+    preco: Math.round(Number(opcao.preco) * 100) / 100,
+    cep: String(cep),
+    exp: Date.now() + 15 * 60 * 1000
+  };
+  var payload = Buffer.from(JSON.stringify(dados)).toString('base64url');
+  var assinatura = crypto.createHmac('sha256', segredo).update(payload).digest('base64url');
+  return payload + '.' + assinatura;
+}
+
+function validarCotacaoFrete(token, segredo) {
+  try {
+    var partes = String(token || '').split('.');
+    if (partes.length !== 2) return null;
+    var esperada = crypto.createHmac('sha256', segredo).update(partes[0]).digest();
+    var informada = Buffer.from(partes[1], 'base64url');
+    if (esperada.length !== informada.length || !crypto.timingSafeEqual(esperada, informada)) return null;
+    var dados = JSON.parse(Buffer.from(partes[0], 'base64url').toString('utf8'));
+    return dados.exp >= Date.now() ? dados : null;
+  } catch (e) { return null; }
+}
+
 // ---------------------------------------------------------------------------
 // Helper: lê o catálogo completo, remontando as partes quando o doc principal
 // está particionado ({chunked, chunks} — catálogos com fotos > 1 MiB).
@@ -224,25 +260,32 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
     const endereco = _sanitizarEndereco(body.endereco);
     const modalidadeFrete = _sanitizarTexto(body.modalidadeFrete, 60);
 
-    if (!itens || !Array.isArray(itens) || itens.length === 0) {
+    if (!itens || !Array.isArray(itens) || itens.length === 0 || itens.length > 50) {
       res.status(400).json({ error: 'Campo "itens" é obrigatório e deve ser um array não vazio.' });
       return;
     }
 
     const orderId = gerarOrderId();
+    const acessoPedido = crypto.randomBytes(32).toString('hex');
     // Valores recalculados no servidor (não confiar no payload do cliente)
-    var _itensCalc = [], _subtotalCalc = 0, _freteCalc = 0, _totalCalc = 0;
+    var _itensCalc = [], _subtotalCalc = 0, _freteCalc = 0, _totalCalc = 0, _pesoCalc = 0;
     var _descontoInfo = { pct: 0, valor: 0 };
+    var _ownerUid = null;
 
     Promise.all([
       getMpToken(),
       lerCatalogo(), // suporta catálogo particionado (fotos > 1 MiB)
-      db.collection('lapink').doc('lapinkLojaConfig').get() // desconto boas-vindas
+      db.collection('lapink').doc('lapinkLojaConfig').get(), // desconto boas-vindas
+      usuarioOpcional(req),
+      db.collection('lapink').doc('lapinkEntregaConfig').get()
     ])
       .then(function (arr) {
         var token = arr[0];
         var prods = arr[1].prods;
         var lojaCfg = (arr[2].exists && arr[2].data() && arr[2].data().data) || {};
+        var usuario = arr[3];
+        var entregaCfg = (arr[4].exists && arr[4].data() && arr[4].data().data) || {};
+        _ownerUid = usuario ? usuario.uid : null;
         var mapa = {};
         (Array.isArray(prods) ? prods : []).forEach(function (p) { if (p && typeof p.id !== 'undefined') mapa[String(p.id)] = p; });
 
@@ -253,6 +296,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         var descCfg = lojaCfg.descontoBoasVindas || {};
         var descontoPct = 0;
         if (descCfg.ativo && Number(descCfg.percentual) > 0 && Number(body.descontoPct) > 0) {
+          if (!usuario) throw new Error('Entre na sua conta para usar o desconto de boas-vindas.');
           descontoPct = Math.min(Number(body.descontoPct), Number(descCfg.percentual), 90);
         }
         var fatorDesc = 1 - descontoPct / 100;
@@ -263,7 +307,11 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           var p = mapa[String(item.id)];
           if (!p) throw new Error('Produto inválido no carrinho: ' + (item.nome || item.id));
           var estoque = (typeof p.estoque !== 'undefined') ? (parseInt(p.estoque) || 0) : null;
-          var qty = Math.max(1, Number(item.qty) || 1);
+          var qtyOriginal = Number(item.qty);
+          if (!Number.isInteger(qtyOriginal) || qtyOriginal < 1 || qtyOriginal > 100) {
+            throw new Error('Quantidade inválida no carrinho.');
+          }
+          var qty = qtyOriginal;
           if (estoque !== null) {
             if (estoque <= 0) throw new Error('Produto esgotado: ' + (p.nome || item.id));
             if (qty > estoque) qty = estoque; // limita ao estoque disponível
@@ -272,6 +320,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           // Preço cobrado no MP já com o desconto aplicado (proporcional por item)
           var precoCobrado = Math.round(preco * fatorDesc * 100) / 100;
           _subtotalCalc += preco * qty;
+          _pesoCalc += (Number(p.pesoEnvioGramas || p.pesoEnvioG) || 0) * qty;
           _itensCalc.push({ id: p.id, nome: p.nome, qty: qty, preco: preco });
           mpItems.push({ id: String(p.id), title: String(p.nome || 'Produto'), quantity: qty, unit_price: precoCobrado, currency_id: 'BRL' });
         });
@@ -282,8 +331,35 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         }, 0) * 100) / 100;
         _descontoCalc = Math.round((_subtotalCalc - _descontoCalc) * 100) / 100; // valor do desconto
 
-        // Frete: aceita só número não-negativo do cliente (tabela depende da config)
-        _freteCalc = Math.max(0, Number(frete) || 0);
+        // Frete sempre recalculado ou validado por assinatura do servidor.
+        _pesoCalc += Number(entregaCfg.embalagem && entregaCfg.embalagem.pesoG) || 75;
+        var gratis = !!(entregaCfg.gratis && entregaCfg.gratis.ativo
+          && _subtotalCalc >= Number(entregaCfg.gratis.minimo || 0));
+        function tabelaPreco(tipo) {
+          var cfg = entregaCfg[tipo] || {};
+          if (!cfg.ativo || !Array.isArray(cfg.tabela)) return null;
+          var faixa = cfg.tabela.slice().sort(function (a, b) { return Number(a.ateG) - Number(b.ateG); })
+            .find(function (r) { return _pesoCalc <= Number(r.ateG); });
+          return faixa ? Number(faixa.preco) : null;
+        }
+        if (modalidadeFrete === 'retirada' && entregaCfg.retirada && entregaCfg.retirada.ativo) {
+          _freteCalc = 0;
+        } else if (modalidadeFrete === 'local' && entregaCfg.local && entregaCfg.local.ativo) {
+          _freteCalc = gratis ? 0 : Number(entregaCfg.local.taxa || 0);
+        } else if (modalidadeFrete === 'pac' || modalidadeFrete === 'sedex') {
+          var tabela = tabelaPreco(modalidadeFrete);
+          if (tabela === null || !Number.isFinite(tabela)) throw new Error('Modalidade de frete indisponível.');
+          _freteCalc = gratis ? 0 : tabela;
+        } else if (modalidadeFrete.indexOf('me_') === 0) {
+          var cotacao = validarCotacaoFrete(body.freteToken, token);
+          if (!cotacao || cotacao.id !== modalidadeFrete || cotacao.cep !== endereco.cep) {
+            throw new Error('Cotação de frete inválida ou expirada. Calcule o frete novamente.');
+          }
+          _freteCalc = gratis ? 0 : Number(cotacao.preco);
+        } else {
+          throw new Error('Modalidade de frete inválida.');
+        }
+        if (!Number.isFinite(_freteCalc) || _freteCalc < 0 || _freteCalc > 10000) throw new Error('Valor de frete inválido.');
         _totalCalc = Math.round((_subtotalCalc - _descontoCalc + _freteCalc) * 100) / 100;
         if (_freteCalc > 0) {
           mpItems.push({ id: 'FRETE', title: 'Frete', quantity: 1, unit_price: _freteCalc, currency_id: 'BRL' });
@@ -307,9 +383,9 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           items: mpItems,
           payer: payer,
           back_urls: {
-            success: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId,
+            success: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId + '&acesso=' + acessoPedido,
             failure: baseUrlDe(req) + '/public/pagamento.html?erro=pagamento',
-            pending: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId + '&pendente=1',
+            pending: baseUrlDe(req) + '/public/sucesso.html?pedido=' + orderId + '&acesso=' + acessoPedido + '&pendente=1',
           },
           auto_return: 'approved',
           notification_url: 'https://us-central1-lapink-82a39.cloudfunctions.net/mpWebhook',
@@ -317,14 +393,24 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           statement_descriptor: 'LAPINK',
         };
 
-        return fetch('https://api.mercadopago.com/checkout/preferences', {
+        var reservarDesconto = Promise.resolve();
+        if (_ownerUid && _descontoInfo.pct) {
+          var usoRef = db.collection('descontoBoasVindasUsos').doc(_ownerUid);
+          reservarDesconto = db.runTransaction(function (tx) {
+            return tx.get(usoRef).then(function (uso) {
+              if (uso.exists) throw new Error('O desconto de boas-vindas já foi utilizado nesta conta.');
+              tx.set(usoRef, { pedidoId: orderId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            });
+          });
+        }
+        return reservarDesconto.then(function () { return fetch('https://api.mercadopago.com/checkout/preferences', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token,
           },
           body: JSON.stringify(preference),
-        });
+        }); });
       })
       .then(function (mpRes) {
         return mpRes.json().then(function (mpData) {
@@ -354,6 +440,8 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           modalidadeFrete: modalidadeFrete || '',
           pagamento: 'mercadopago',
           rastreio: null,
+          ownerUid: _ownerUid,
+          acessoHash: hashAcessoPedido(acessoPedido),
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
@@ -362,9 +450,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           .collection('pedidos')
           .doc(orderId)
           .set(pedido)
-          .then(function () {
-            return mpData;
-          });
+          .then(function () { return mpData; });
       })
       .then(function (mpData) {
         functions.logger.info('Pedido criado com sucesso', { orderId, mp_id: mpData.id });
@@ -373,12 +459,44 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           init_point: mpData.init_point,
           sandbox_init_point: mpData.sandbox_init_point,
           pedido_id: orderId,
+          acesso_pedido: acessoPedido,
         });
       })
       .catch(function (err) {
         functions.logger.error('createPreference erro', err);
         res.status(500).json({ error: err.message || 'Erro interno ao processar preferência.' });
       });
+  });
+});
+
+// Consulta individual para o retorno do pagamento. O token aleatório substitui
+// a antiga leitura pública do documento inteiro no Firestore.
+exports.obterPedido = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    var pedidoId = String((req.body && req.body.pedidoId) || '');
+    var acesso = String((req.body && req.body.acesso) || '');
+    if (!/^LPK-[A-Z0-9-]{4,40}$/.test(pedidoId) || !/^[a-f0-9]{64}$/.test(acesso)) {
+      res.status(400).json({ error: 'Identificador de pedido inválido.' });
+      return;
+    }
+    db.collection('pedidos').doc(pedidoId).get().then(function (snap) {
+      if (!snap.exists) { res.status(404).json({ error: 'Pedido não encontrado.' }); return; }
+      var pedido = snap.data() || {};
+      var informado = Buffer.from(hashAcessoPedido(acesso), 'hex');
+      var esperado = Buffer.from(String(pedido.acessoHash || ''), 'hex');
+      if (informado.length !== esperado.length || !crypto.timingSafeEqual(informado, esperado)) {
+        res.status(403).json({ error: 'Acesso ao pedido negado.' }); return;
+      }
+      delete pedido.acessoHash;
+      res.status(200).json({ pedido: pedido });
+    }).catch(function (err) {
+      functions.logger.error('obterPedido erro', err);
+      res.status(500).json({ error: 'Erro ao consultar pedido.' });
+    });
   });
 });
 
@@ -949,14 +1067,18 @@ exports.cotarFrete = functions.https.onRequest(function (req, res) {
           throw eSemProvedor;
         }
 
-        return Promise.all(chamadas).then(function (listas) {
-          var todas = [].concat.apply([], listas).sort(function (a, b) { return (a.preco || 0) - (b.preco || 0); });
+          return Promise.all(chamadas).then(function (listas) {
+            var todas = [].concat.apply([], listas).sort(function (a, b) { return (a.preco || 0) - (b.preco || 0); });
           if (!todas.length) {
             var eFalha = new Error('Não foi possível cotar o frete agora. Verifique as credenciais dos provedores no painel.');
             eFalha._status = 502;
             throw eFalha;
           }
-          return todas;
+            var segredoCotacao = process.env.FRETE_QUOTE_SECRET || process.env.MP_ACCESS_TOKEN || secret.mpAccessToken;
+            if (!segredoCotacao) throw new Error('Segredo para assinatura da cotação não configurado.');
+            return todas.map(function (o) {
+              return Object.assign({}, o, { cotacaoToken: assinarCotacaoFrete(o, cepDestino, segredoCotacao) });
+            });
         });
       })
       .then(function (opcoes) {

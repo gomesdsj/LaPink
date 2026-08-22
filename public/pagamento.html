@@ -606,6 +606,7 @@ if (!_cart.length) {
   /* ── Estado global ──────────────────────────────────────── */
   var _modalidadeSelecionada = '';  // 'pac' | 'sedex' | 'retirada' | 'local' | 'me_<id>'
   var _freteValor = 0;
+  var _freteToken = '';
   var _pesoTotal = 0;
   var _subtotal = 0;
   var _freteGratisAtivo = false;
@@ -869,6 +870,7 @@ if (!_cart.length) {
           sub: o.prazo ? ('Entrega em até ' + o.prazo + ' dia(s) útil(eis)') : 'Cotação por CEP',
           icon: 'ti-truck-delivery',
           preco: _freteGratisAtivo ? 0 : (Number(o.preco) || 0),
+          cotacaoToken: o.cotacaoToken || '',
           isGratis: _freteGratisAtivo
         });
       });
@@ -962,6 +964,7 @@ if (!_cart.length) {
         if (checked && !_modalidadeSelecionada) {
           _modalidadeSelecionada = op.id;
           _freteValor = op.preco;
+          _freteToken = op.cotacaoToken || '';
         }
         var precoStr = op.isGratis
           ? '<span class="pg-frete-opt-preco gratis">Grátis</span>'
@@ -992,6 +995,7 @@ if (!_cart.length) {
         _modalidadeSelecionada = this.value;
         var op = opcoes.find(function (o) { return o.id === inp.value; });
         _freteValor = op ? op.preco : 0;
+        _freteToken = op ? (op.cotacaoToken || '') : '';
         renderTotais();
       });
     });
@@ -1108,8 +1112,9 @@ if (!_cart.length) {
       if (!email) return;
       var db = (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) ? firebase.firestore() : null;
       if (!db) { setTimeout(_buscarEnderecoNuvem, 600); return; } // aguarda o Firebase carregar
-      var emailKey = email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      db.collection('enderecos').doc(emailKey).get().then(function (snap) {
+      var authUser = firebase.auth && firebase.auth().currentUser;
+      if (!authUser) return;
+      db.collection('enderecos').doc(authUser.uid).get().then(function (snap) {
         if (!snap.exists) return;
         var d = snap.data() || {};
         var padrao = d.endereco || (Array.isArray(d.enderecos) && d.enderecos[0]) || null;
@@ -1314,7 +1319,8 @@ if (!_cart.length) {
       desconto: _descontoValor,
       frete: _freteValor,
       total: total,
-      modalidadeFrete: _modalidadeSelecionada
+      modalidadeFrete: _modalidadeSelecionada,
+      freteToken: _freteToken
     };
 
     // UI: spinner
@@ -1323,11 +1329,16 @@ if (!_cart.length) {
     btn.innerHTML = '<i class="ti ti-loader-2 spin-icon" aria-hidden="true"></i> Processando...';
 
     try {
+      var authHeaders = { 'Content-Type': 'application/json' };
+      try {
+        var authUser = firebase.auth && firebase.auth().currentUser;
+        if (authUser) authHeaders.Authorization = 'Bearer ' + await authUser.getIdToken();
+      } catch (e) {}
       var resp = await fetch(
         'https://us-central1-lapink-82a39.cloudfunctions.net/createPreference',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders,
           body: JSON.stringify(payload)
         }
       );
@@ -1523,6 +1534,10 @@ if (!_cart.length) {
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
+      try {
+        var authUser = firebase.auth && firebase.auth().currentUser;
+        if (authUser) rec.ownerUid = authUser.uid;
+      } catch (e) {}
       try {
         var arr = JSON.parse(localStorage.getItem('lapinkAbandonados') || '[]');
         var i = arr.findIndex(function (x) { return x.id === _abandonoId; });

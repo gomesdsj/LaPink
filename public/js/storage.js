@@ -113,7 +113,16 @@ function passwordPrecisaUpgrade(stored) {
 
 function getClients() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_CLIENTS_KEY) || '[]');
+    var clients = JSON.parse(localStorage.getItem(STORAGE_CLIENTS_KEY) || '[]');
+    var alterou = false;
+    clients.forEach(function (c) {
+      if (c && Object.prototype.hasOwnProperty.call(c, 'password')) {
+        delete c.password;
+        alterou = true;
+      }
+    });
+    if (alterou) localStorage.setItem(STORAGE_CLIENTS_KEY, JSON.stringify(clients));
+    return clients;
   } catch (e) {
     return [];
   }
@@ -121,7 +130,13 @@ function getClients() {
 
 function saveClients(clients) {
   try {
-    localStorage.setItem(STORAGE_CLIENTS_KEY, JSON.stringify(clients));
+    var semCredenciais = (clients || []).map(function (c) {
+      var seguro = Object.assign({}, c);
+      delete seguro.password;
+      delete seguro.senha;
+      return seguro;
+    });
+    localStorage.setItem(STORAGE_CLIENTS_KEY, JSON.stringify(semCredenciais));
   } catch (e) {
     console.warn('LaPink: localStorage indisponível ou cheio.');
   }

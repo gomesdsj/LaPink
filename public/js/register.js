@@ -70,15 +70,6 @@ async function _doRegister() {
 
   setRegisterMessage('Processando...', true);
 
-  var hash;
-  try {
-    hash = await hashPasswordSalted(password);
-  } catch (err) {
-    setRegisterMessage('Erro ao processar senha. Tente novamente.', false);
-    console.error('[LaPink] hashPasswordSalted falhou:', err);
-    return;
-  }
-
   // Cria a conta no Firebase Authentication ANTES do cadastro local.
   // Se o e-mail já existir na nuvem com OUTRA senha, avisa em vez de criar
   // uma conta local divergente (que só funcionaria neste navegador).
@@ -102,16 +93,22 @@ async function _doRegister() {
             return;
           }
         }
-        /* provedor desativado / outros erros — segue com o cadastro local */
+        setRegisterMessage('Não foi possível criar sua conta com segurança. Tente novamente.', false);
+        return;
       }
+    } else {
+      setRegisterMessage('Serviço de autenticação indisponível. Tente novamente.', false);
+      return;
     }
-  } catch (e) {}
+  } catch (e) {
+    setRegisterMessage('Serviço de autenticação indisponível. Tente novamente.', false);
+    return;
+  }
 
   var newClient = {
     name:       name,
     email:      email,
     whatsapp:   whatsapp,
-    password:   hash,
     totalSpent: 0,
     purchases:  []
   };
