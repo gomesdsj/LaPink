@@ -86,3 +86,17 @@ test('remoção de pedido remoto é arquivamento autenticado e preserva históri
   assert.match(adminPedidos, /cloudfunctions\.net\/arquivarPedido/);
   assert.match(adminPedidos, /if \(!d\.arquivado\)/);
 });
+
+test('painel renova claim antes de gravar pedidos e confirma tags na nuvem', () => {
+  const auth = read('admin/js/auth.js');
+  const pedidos = read('admin/pedidos.html');
+  const editor = read('admin/loja-v1.html');
+  const sync = read('public/js/cloud-sync.js');
+  assert.match(auth, /function garantirAdminFirebase/);
+  assert.match(auth, /sincronizarClaimsAdmin/);
+  assert.match(pedidos, /garantirAdminFirebase\(\).*collection\('pedidos'\)/s);
+  assert.match(editor, /await Promise\.all/);
+  assert.match(editor, /push\('lapinkLojaConfig'/);
+  assert.match(editor, /push\('lapinkProdutos'/);
+  assert.match(sync, /return prepararAuth\.then/);
+});

@@ -1397,19 +1397,23 @@ function coletarConfig() {
   };
 }
 
-function publicarAlteracoes() {
+async function publicarAlteracoes() {
   var config = coletarConfig();
   try {
     localStorage.setItem('lapinkLojaConfig', JSON.stringify(config));
     localStorage.setItem('lapinkLojaConfig_ts', String(Date.now()));
-    if (window.LaPinkSync) window.LaPinkSync.push('lapinkLojaConfig', config);
+    if (!window.LaPinkSync) throw new Error('Sincronização com a nuvem indisponível. Recarregue a página.');
+    await Promise.all([
+      window.LaPinkSync.push('lapinkLojaConfig', config),
+      window.LaPinkSync.push('lapinkProdutos', getProdutos())
+    ]);
     salvarCarrossel();
     salvarBeneficios();
     var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('save-status').textContent = 'Publicado às ' + hora;
-    showToast('Alterações publicadas na loja!');
+    showToast('Alterações e tags publicadas na loja!');
   } catch(e) {
-    showToast('Erro ao salvar — armazenamento cheio.', 'erro');
+    showToast('Não foi possível publicar na nuvem: ' + (e.message || 'tente novamente.'), 'erro');
   }
 }
 

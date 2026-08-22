@@ -72,17 +72,18 @@
   // Grava em /lapink/{key}; se o array for grande, divide em partes < 1 MiB
   function writeToFirestore(key, value) {
     var firestore = db();
-    if (!firestore) return;
+    if (!firestore) return Promise.reject(new Error('Firebase não disponível.'));
     try {
       var data = typeof value === 'string' ? JSON.parse(value) : value;
       var tamanho = JSON.stringify(data).length;
       var agora = Date.now();
 
-      _aguardarAuth().then(function () {
+      var prepararAuth = (typeof garantirAdminFirebase === 'function')
+        ? garantirAdminFirebase()
+        : _aguardarAuth();
+      return prepararAuth.then(function () {
         if (!Array.isArray(data) || tamanho <= CHUNK_LIMIT) {
-          firestore.collection('lapink').doc(key).set({ data: data, updatedAt: agora })
-            .catch(_erroEscrita(key));
-          return;
+          return firestore.collection('lapink').doc(key).set({ data: data, updatedAt: agora });
         }
 
         // Divide o array em partes respeitando o limite por documento
@@ -97,15 +98,18 @@
 
         // Grava as partes primeiro; o doc principal (índice) por último —
         // leitores só usam o índice novo depois que as partes existem
-        Promise.all(partes.map(function (arr, i) {
+        return Promise.all(partes.map(function (arr, i) {
           return firestore.collection('lapink').doc(key + '_' + i).set({ data: arr, updatedAt: agora });
         })).then(function () {
           return firestore.collection('lapink').doc(key).set({ chunked: true, chunks: partes.length, updatedAt: agora });
         }).then(function () {
           console.log('[sync] ' + key + ' → Firestore em ' + partes.length + ' partes (' + Math.round(tamanho / 1024) + ' KB)');
-        }).catch(_erroEscrita(key));
-      });
-    } catch (e) { console.warn('[sync] parse error:', e); }
+        });
+      }).catch(function (e) { _erroEscrita(key)(e); throw e; });
+    } catch (e) {
+      console.warn('[sync] parse error:', e);
+      return Promise.reject(e);
+    }
   }
 
   // ── Intercepta localStorage.setItem ──────────────────────────
@@ -115,7 +119,7 @@
     if (this === localStorage && SYNC_KEYS.indexOf(key) !== -1) {
       // Grava timestamp local para que o Firestore não sobrescreva na próxima carga
       _orig.call(localStorage, key + '_ts', String(Date.now()));
-      writeToFirestore(key, value);
+      writeToFirestore(key, value).catch(function () {});
     }
   };
 

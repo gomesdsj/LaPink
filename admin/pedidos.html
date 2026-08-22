@@ -282,7 +282,7 @@
   function carregarPedidosFirestore() {
     var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
     if (!firestore) return;
-    aguardarFirebaseAuth().then(function() {
+    garantirAdminFirebase().then(function() {
       firestore.collection('pedidos').orderBy('createdAt', 'desc').limit(100).get()
         .then(function(snap) {
           _pedidosFirestore = [];
@@ -404,11 +404,11 @@
   function salvarRastreio(pedidoId, codigo) {
     var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
     if (!firestore) { showToast('Firebase não disponível.', 'erro'); return; }
-    firestore.collection('pedidos').doc(pedidoId).update({
+    garantirAdminFirebase().then(function() { return firestore.collection('pedidos').doc(pedidoId).update({
       rastreio: codigo,
       status: 'transporte',
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function() {
+    }); }).then(function() {
       showToast('Rastreio salvo! Status → Transporte.');
       carregarPedidosFirestore();
     }).catch(function(e) { showToast('Erro ao salvar rastreio: ' + e.message, 'erro'); });
@@ -418,10 +418,10 @@
   function mudarStatusFirestore(pedidoId, novoStatus) {
     var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
     if (!firestore) return;
-    firestore.collection('pedidos').doc(pedidoId).update({
+    garantirAdminFirebase().then(function() { return firestore.collection('pedidos').doc(pedidoId).update({
       status: novoStatus,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function() {
+    }); }).then(function() {
       showToast('Status atualizado!');
       carregarPedidosFirestore();
     }).catch(function(e) { showToast('Erro: ' + e.message, 'erro'); });
@@ -429,9 +429,7 @@
 
   function arquivarPedidoFirestore(pedidoId, numero) {
     if (!confirm('Arquivar o pedido #' + (numero || pedidoId) + '? Ele sairá da lista, mas o histórico financeiro será preservado.')) return;
-    var user = firebase.auth().currentUser;
-    if (!user) { showToast('Sessão expirada. Entre novamente.', 'erro'); return; }
-    user.getIdToken().then(function(token) {
+    garantirAdminFirebase().then(function(user) { return user.getIdToken(); }).then(function(token) {
       return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/arquivarPedido', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },

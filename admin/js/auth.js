@@ -434,9 +434,43 @@ function verificarSessaoReal() {
   });
 }
 
+// Garante, uma vez por carregamento, que o token usado pelo Firestore contém
+// a role atual. A sessão local controla apenas a interface; quem autoriza uma
+// gravação é a custom claim assinada pelo Firebase.
+var _adminFirebasePromise = null;
+function garantirAdminFirebase() {
+  if (_adminFirebasePromise) return _adminFirebasePromise;
+  _adminFirebasePromise = aguardarFirebaseAuth().then(function (user) {
+    if (!user) throw new Error('Sessão Firebase ausente. Saia e entre novamente.');
+    return user.getIdToken().then(function (token) {
+      return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/sincronizarClaimsAdmin', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+    }).then(function (resp) {
+      return resp.json().catch(function () { return {}; }).then(function (data) {
+        if (!resp.ok || (data.role !== 'admin' && data.role !== 'superadmin')) {
+          throw new Error(data.error || 'Sua conta não possui permissão administrativa.');
+        }
+        return user.getIdToken(true).then(function () { return user; });
+      });
+    });
+  }).catch(function (e) {
+    _adminFirebasePromise = null;
+    throw e;
+  });
+  return _adminFirebasePromise;
+}
+
 // ── Init automático em páginas admin ─────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   renderSessionTopbar();
   applyAdminPermissions();
   verificarSessaoReal();
+  var session = getSession();
+  if (session && (session.role === 'admin' || session.role === 'superadmin')) {
+    garantirAdminFirebase().catch(function (e) {
+      console.warn('[auth] não foi possível atualizar a permissão:', e && e.message);
+    });
+  }
 });
