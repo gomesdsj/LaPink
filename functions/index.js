@@ -594,7 +594,9 @@ exports.listarMeusPedidos = functions.https.onRequest(function (req, res) {
             return Promise.all(ids.map(function (id) { return db.collection('pedidos').doc(id).get(); }));
           })
           .then(function (docsAtualizados) {
-          var pedidos = docsAtualizados.filter(function (s) { return s.exists; }).map(function (snap) {
+          var pedidos = docsAtualizados.filter(function (s) {
+            return s.exists && snapNaoArquivado(s);
+          }).map(function (snap) {
             var d = snap.data() || {};
             d.ownerUid = usuario.uid;
             delete d.acessoHash;
@@ -618,6 +620,10 @@ exports.listarMeusPedidos = functions.https.onRequest(function (req, res) {
       });
   });
 });
+
+function snapNaoArquivado(snap) {
+  return !(snap.data() || {}).arquivado;
+}
 
 // Confere um pedido pendente diretamente na API do Mercado Pago. É usado
 // como recuperação quando uma entrega do webhook falha; processarPagamento-
@@ -909,6 +915,45 @@ function _exigirAdmin(req) {
     throw eAuth;
   });
 }
+
+// Retira pedidos da operação diária sem apagar o histórico de pagamento.
+// A exclusão física de uma venda prejudicaria conciliação, auditoria e suporte;
+// por isso o painel usa arquivamento reversível no documento do Firestore.
+exports.arquivarPedido = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    _exigirAdmin(req).then(function (usuario) {
+      var pedidoId = String((req.body && req.body.pedidoId) || '').trim();
+      if (!/^LPK-[A-Z0-9-]{4,40}$/.test(pedidoId)) {
+        var eId = new Error('Identificador de pedido inválido.');
+        eId._status = 400;
+        throw eId;
+      }
+      return db.collection('pedidos').doc(pedidoId).get().then(function (snap) {
+        if (!snap.exists) {
+          var eNotFound = new Error('Pedido não encontrado.');
+          eNotFound._status = 404;
+          throw eNotFound;
+        }
+        return snap.ref.set({
+          arquivado: true,
+          arquivadoAt: admin.firestore.FieldValue.serverTimestamp(),
+          arquivadoPor: String(usuario.email || usuario.uid || '').toLowerCase(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      });
+    }).then(function () {
+      res.status(200).json({ ok: true });
+    }).catch(function (err) {
+      var status = (err && err._status) || 500;
+      if (status >= 500) functions.logger.error('arquivarPedido erro', err);
+      res.status(status).json({ error: status === 500 ? 'Erro ao arquivar pedido.' : err.message });
+    });
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Notificações push (Web Push) — usado para avisar o(s) admin(s) quando uma

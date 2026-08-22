@@ -290,7 +290,7 @@
             var d = doc.data();
             d._id = doc.id;
             d._fonte = 'firestore';
-            _pedidosFirestore.push(d);
+            if (!d.arquivado) _pedidosFirestore.push(d);
           });
           renderStats();
           renderPedidos();
@@ -425,6 +425,28 @@
       showToast('Status atualizado!');
       carregarPedidosFirestore();
     }).catch(function(e) { showToast('Erro: ' + e.message, 'erro'); });
+  }
+
+  function arquivarPedidoFirestore(pedidoId, numero) {
+    if (!confirm('Arquivar o pedido #' + (numero || pedidoId) + '? Ele sairá da lista, mas o histórico financeiro será preservado.')) return;
+    var user = firebase.auth().currentUser;
+    if (!user) { showToast('Sessão expirada. Entre novamente.', 'erro'); return; }
+    user.getIdToken().then(function(token) {
+      return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/arquivarPedido', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ pedidoId: pedidoId })
+      });
+    }).then(function(resp) {
+      return resp.json().catch(function() { return {}; }).then(function(data) {
+        if (!resp.ok) throw new Error(data.error || 'Não foi possível arquivar o pedido.');
+      });
+    }).then(function() {
+      _pedidosFirestore = _pedidosFirestore.filter(function(p) { return p._id !== pedidoId; });
+      renderStats();
+      renderPedidos();
+      showToast('Pedido arquivado.');
+    }).catch(function(e) { showToast(e.message || 'Erro ao arquivar pedido.', 'erro'); });
   }
 
   // ─── Toast ────────────────────────────────────────────────
@@ -565,7 +587,9 @@
           '<button class="btn-icon" type="button" onclick="imprimirPedido(\'' + escHtml(cardId) + '\', ' + (isFS ? 'true' : 'false') + ')"><i class="ti ti-printer"></i> Imprimir</button>' +
           (!isFS ? '<button class="btn-icon" type="button" onclick="abrirEditarPedido(' + p.id + ')"><i class="ti ti-pencil"></i> Editar</button>' : '') +
           (waNum ? '<a href="' + waLink + '" target="_blank" rel="noopener" class="btn-icon wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>' : '') +
-          (!isFS ? '<button class="btn-icon danger" type="button" onclick="excluirPedido(' + p.id + ')"><i class="ti ti-trash"></i> Excluir</button>' : '') +
+          (isFS
+            ? '<button class="btn-icon danger" type="button" onclick="arquivarPedidoFirestore(\'' + escHtml(cardId) + '\', \'' + escHtml(String(p.numero || cardId)) + '\')"><i class="ti ti-archive"></i> Arquivar</button>'
+            : '<button class="btn-icon danger" type="button" onclick="excluirPedido(' + p.id + ')"><i class="ti ti-trash"></i> Excluir</button>') +
         '</div>' +
       '</div>';
     }).join('');
@@ -960,7 +984,7 @@
     if (!alvos.length) return;
     var locais = alvos.filter(function(a) { return a.fonte === 'local'; });
     var fs = alvos.filter(function(a) { return a.fonte === 'fs'; });
-    if (!locais.length) { showToast('Pedidos do Mercado Pago (MP) não podem ser excluídos por aqui.', 'erro'); return; }
+    if (!locais.length) { showToast('Use o botão Arquivar no pedido do Mercado Pago.', 'erro'); return; }
     var msg = 'Excluir ' + locais.length + ' pedido(s) selecionado(s)?' + (fs.length ? ' (' + fs.length + ' pedido(s) MP serão ignorados.)' : '');
     if (!confirm(msg)) return;
     var ids = locais.map(function(a) { return parseInt(a.pid); });

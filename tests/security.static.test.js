@@ -74,3 +74,15 @@ test('assinatura do webhook usa somente data.id recebido na query', () => {
   assert.match(functions, /var dataIdAssinatura = \(req\.query && req\.query\['data\.id'\]\) \|\| ''/);
   assert.match(functions, /if \(dataId\) manifest \+=/);
 });
+
+test('remoção de pedido remoto é arquivamento autenticado e preserva histórico', () => {
+  const functions = read('functions/index.js');
+  const adminPedidos = read('admin/pedidos.html');
+  assert.match(functions, /exports\.arquivarPedido/);
+  assert.match(functions, /_exigirAdmin\(req\)/);
+  assert.match(functions, /arquivado:\s*true/);
+  assert.doesNotMatch(functions.match(/exports\.arquivarPedido[\s\S]*?\n\}\);/)[0], /\.delete\(\)/);
+  assert.match(adminPedidos, /getIdToken\(\)/);
+  assert.match(adminPedidos, /cloudfunctions\.net\/arquivarPedido/);
+  assert.match(adminPedidos, /if \(!d\.arquivado\)/);
+});
