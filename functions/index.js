@@ -69,7 +69,13 @@ function validarAssinaturaMP(req, dataId, secret) {
     });
     var ts = parts.ts, v1 = parts.v1;
     if (!ts || !v1) return false;
-    var manifest = 'id:' + dataId + ';request-id:' + reqId + ';ts:' + ts + ';';
+    // O SDK oficial omite do manifesto qualquer par ausente. Em algumas
+    // notificações o payment id vem apenas no corpo, mas a assinatura foi
+    // calculada sem `id:` porque não havia `data.id` na URL.
+    var manifest = '';
+    if (dataId) manifest += 'id:' + String(dataId).toLowerCase() + ';';
+    if (reqId) manifest += 'request-id:' + reqId + ';';
+    manifest += 'ts:' + ts + ';';
     var hmac = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
     return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(v1));
   } catch (e) {
@@ -536,6 +542,105 @@ exports.obterPedido = functions.https.onRequest(function (req, res) {
   });
 });
 
+// Lista pedidos da conta autenticada e recupera pedidos antigos/órfãos pelo
+// e-mail presente no token do Firebase Auth. O e-mail nunca vem do corpo.
+exports.listarMeusPedidos = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    var authHeader = req.headers.authorization || '';
+    var idToken = authHeader.indexOf('Bearer ') === 0 ? authHeader.slice(7) : '';
+    if (!idToken) { res.status(401).json({ error: 'Autenticação necessária.' }); return; }
+
+    var usuario;
+    admin.auth().verifyIdToken(idToken)
+      .then(function (decoded) {
+        usuario = decoded;
+        var email = String(decoded.email || '').trim().toLowerCase();
+        if (!email) { var e = new Error('Conta sem e-mail.'); e._status = 400; throw e; }
+        return Promise.all([
+          db.collection('pedidos').where('ownerUid', '==', decoded.uid).limit(50).get(),
+          db.collection('pedidos').where('cliente.email', '==', email).limit(50).get()
+        ]);
+      })
+      .then(function (snaps) {
+        var porId = {};
+        var vincular = [];
+        snaps.forEach(function (qs) {
+          qs.forEach(function (doc) {
+            var d = doc.data() || {};
+            porId[doc.id] = d;
+            if (!d.ownerUid) vincular.push(doc.ref.update({
+              ownerUid: usuario.uid,
+              updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }));
+          });
+        });
+        var ids = Object.keys(porId);
+        var pendentes = ids.filter(function (id) {
+          return ['pago', 'cancelado', 'concluido'].indexOf(String(porId[id].status || '')) === -1;
+        }).slice(0, 10);
+        return Promise.all(vincular)
+          .then(function () {
+            return Promise.all(pendentes.map(function (id) {
+              return reconciliarPedidoPendente(id).catch(function (e) {
+                functions.logger.warn('Reconciliação automática falhou para ' + id + ': ' + e.message);
+              });
+            }));
+          })
+          .then(function () {
+            return Promise.all(ids.map(function (id) { return db.collection('pedidos').doc(id).get(); }));
+          })
+          .then(function (docsAtualizados) {
+          var pedidos = docsAtualizados.filter(function (s) { return s.exists; }).map(function (snap) {
+            var d = snap.data() || {};
+            d.ownerUid = usuario.uid;
+            delete d.acessoHash;
+            ['createdAt', 'updatedAt'].forEach(function (campo) {
+              if (d[campo] && typeof d[campo].toMillis === 'function') {
+                d[campo] = { seconds: Math.floor(d[campo].toMillis() / 1000) };
+              }
+            });
+            return d;
+          }).sort(function (a, b) {
+            function ms(x) { return x && typeof x.toMillis === 'function' ? x.toMillis() : Number(x && x.seconds || 0) * 1000; }
+            return ms(b.createdAt) - ms(a.createdAt);
+          }).slice(0, 20);
+          res.status(200).json({ pedidos: pedidos });
+        });
+      })
+      .catch(function (err) {
+        var status = (err && err._status) || ((err && String(err.code || '').indexOf('auth/') === 0) ? 401 : 500);
+        if (status >= 500) functions.logger.error('listarMeusPedidos erro', err);
+        if (!res.headersSent) res.status(status).json({ error: status === 500 ? 'Erro ao consultar pedidos.' : err.message });
+      });
+  });
+});
+
+// Confere um pedido pendente diretamente na API do Mercado Pago. É usado
+// como recuperação quando uma entrega do webhook falha; processarPagamento-
+// Atomico continua validando valor/moeda e garante idempotência do estoque.
+function reconciliarPedidoPendente(orderId) {
+  return getMpToken().then(function (token) {
+    var url = 'https://api.mercadopago.com/v1/payments/search?external_reference=' + encodeURIComponent(orderId)
+      + '&sort=date_created&criteria=desc&limit=5';
+    return fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+  }).then(function (mpRes) {
+    return mpRes.json().then(function (data) {
+      if (!mpRes.ok) throw new Error('Mercado Pago respondeu ' + mpRes.status);
+      var resultados = Array.isArray(data.results) ? data.results : [];
+      var pagamento = resultados.find(function (p) {
+        return String(p.external_reference || '') === String(orderId)
+          && ['approved', 'refunded', 'charged_back'].indexOf(p.status) !== -1;
+      });
+      if (!pagamento) return null;
+      return processarPagamentoAtomico(pagamento, pagamento.id);
+    });
+  });
+}
+
 // ---------------------------------------------------------------------------
 // 2. mpWebhook — recebe notificações do Mercado Pago
 // ---------------------------------------------------------------------------
@@ -562,7 +667,9 @@ exports.mpWebhook = functions.https.onRequest(function (req, res) {
 
   // Valida a assinatura do Mercado Pago (se a chave estiver configurada —
   // env var ou Firestore, ver getMpWebhookSecret)
-  var dataIdAssinatura = (req.query && req.query['data.id']) || bodyDataId || paymentId;
+  // Usa exatamente o data.id da URL. O id do corpo serve para consultar o
+  // pagamento, mas não entra no manifesto se não veio na query.
+  var dataIdAssinatura = (req.query && req.query['data.id']) || '';
 
   getMpWebhookSecret()
     .then(function (secret) {

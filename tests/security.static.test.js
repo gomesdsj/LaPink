@@ -60,3 +60,17 @@ test('domínio personalizado persiste no Firebase e alimenta retornos do pagamen
   assert.match(config, /doc\(['"]lapinkDomainConfig['"]\)/);
   assert.match(config, /function salvarDominio/);
 });
+
+test('pedidos da conta usam token verificado e recuperam vínculo legado no servidor', () => {
+  const functions = read('functions/index.js');
+  const pedidos = read('public/meus-pedidos.html');
+  assert.match(functions, /exports\.listarMeusPedidos/);
+  assert.match(functions, /where\(['"]cliente\.email['"], ['"]==['"], email\)/);
+  assert.match(pedidos, /cloudfunctions\.net\/listarMeusPedidos/);
+});
+
+test('assinatura do webhook usa somente data.id recebido na query', () => {
+  const functions = read('functions/index.js');
+  assert.match(functions, /var dataIdAssinatura = \(req\.query && req\.query\['data\.id'\]\) \|\| ''/);
+  assert.match(functions, /if \(dataId\) manifest \+=/);
+});

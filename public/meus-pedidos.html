@@ -451,17 +451,18 @@ body { background: var(--gray-50); min-height: 100vh; }
     aguardarFirebaseAuth().then(function(user) {
       user = user || (firebase.auth && firebase.auth().currentUser);
       if (!user) { renderLista(mesclarEOrdenar([], email)); return; }
-      firebase.firestore()
-        .collection('pedidos')
-        .where('ownerUid', '==', user.uid)
-        .orderBy('createdAt', 'desc')
-        .limit(20)
-        .get()
-        .then(function(snap) {
-          var lista = [];
-          snap.forEach(function(doc) { lista.push(doc.data()); });
-          renderLista(mesclarEOrdenar(lista, email));
+      user.getIdToken().then(function(token) {
+        return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/listarMeusPedidos', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+      }).then(function(resp) {
+        return resp.json().then(function(data) {
+          if (!resp.ok) throw new Error(data.error || 'Erro ao consultar pedidos.');
+          renderLista(mesclarEOrdenar(data.pedidos || [], email));
         })
+      })
         .catch(function(err) {
           /* Nunca baixa a coleção inteira para filtrar dados pessoais no
              navegador. Em falha/ausência de índice, mostra só o cache local. */

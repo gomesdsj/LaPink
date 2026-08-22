@@ -1331,7 +1331,9 @@ if (!_cart.length) {
     try {
       var authHeaders = { 'Content-Type': 'application/json' };
       try {
-        var authUser = firebase.auth && firebase.auth().currentUser;
+        var authUser = typeof aguardarFirebaseAuth === 'function'
+          ? await aguardarFirebaseAuth()
+          : (firebase.auth && firebase.auth().currentUser);
         if (authUser) authHeaders.Authorization = 'Bearer ' + await authUser.getIdToken();
       } catch (e) {}
       var resp = await fetch(
