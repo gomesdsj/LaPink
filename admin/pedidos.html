@@ -116,16 +116,16 @@
 
           <!-- Filtro por status -->
           <div class="status-tabs" id="statusTabs">
-            <button class="status-tab active" data-status="todos" onclick="filtrarStatus('todos', this)">Todos</button>
-            <button class="status-tab" data-status="aguardando" onclick="filtrarStatus('aguardando', this)">Aguardando</button>
-            <button class="status-tab" data-status="pagamento_analise" onclick="filtrarStatus('pagamento_analise', this)">Pagamento em análise</button>
-            <button class="status-tab" data-status="pedido_analise" onclick="filtrarStatus('pedido_analise', this)">Pedido em análise</button>
-            <button class="status-tab" data-status="pago" onclick="filtrarStatus('pago', this)">Pago</button>
-            <button class="status-tab" data-status="nota_fiscal" onclick="filtrarStatus('nota_fiscal', this)">Nota fiscal</button>
-            <button class="status-tab" data-status="separacao" onclick="filtrarStatus('separacao', this)">Separação</button>
-            <button class="status-tab" data-status="transporte" onclick="filtrarStatus('transporte', this)">Transporte</button>
-            <button class="status-tab" data-status="negado" onclick="filtrarStatus('negado', this)">Negado</button>
-            <button class="status-tab" data-status="cancelado" onclick="filtrarStatus('cancelado', this)">Cancelado</button>
+            <button type="button" class="status-tab active" data-status="todos">Todos</button>
+            <button type="button" class="status-tab" data-status="aguardando">Aguardando</button>
+            <button type="button" class="status-tab" data-status="pagamento_analise">Pagamento em análise</button>
+            <button type="button" class="status-tab" data-status="pedido_analise">Pedido em análise</button>
+            <button type="button" class="status-tab" data-status="pago">Pago</button>
+            <button type="button" class="status-tab" data-status="nota_fiscal">Nota fiscal</button>
+            <button type="button" class="status-tab" data-status="separacao">Separação</button>
+            <button type="button" class="status-tab" data-status="transporte">Transporte</button>
+            <button type="button" class="status-tab" data-status="negado">Negado</button>
+            <button type="button" class="status-tab" data-status="cancelado">Cancelado</button>
           </div>
 
           <!-- Carrinhos abandonados -->
@@ -262,13 +262,25 @@
     enviado:               'transporte',
     concluido:             'pago'
   };
+  function normalizarStatus(status) {
+    var k = String(status || '').trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\s-]+/g, '_');
+    var aliases = {
+      pending: 'pagamento_analise',
+      in_process: 'pagamento_analise',
+      authorized: 'pagamento_analise',
+      approved: 'pago',
+      rejected: 'negado',
+      cancelled: 'cancelado',
+      refunded: 'cancelado',
+      charged_back: 'cancelado'
+    };
+    return aliases[k] || STATUS_LEGADO[k] || k;
+  }
   function _statusInfo(status) {
-    var k = status;
+    var k = normalizarStatus(status);
     for (var i = 0; i < STATUS_PEDIDO.length; i++) { if (STATUS_PEDIDO[i].key === k) return STATUS_PEDIDO[i]; }
-    if (STATUS_LEGADO[k]) {
-      var nk = STATUS_LEGADO[k];
-      for (var j = 0; j < STATUS_PEDIDO.length; j++) { if (STATUS_PEDIDO[j].key === nk) return STATUS_PEDIDO[j]; }
-    }
     return { key: k, label: k || '—', badge: 'badge' };
   }
   function badgeStatus(status) {
@@ -463,11 +475,11 @@
     var pedidos = getTodosPedidos();
     var total = pedidos.length;
     var aguardando = pedidos.filter(function(p) {
-      var st = STATUS_LEGADO[p.status] || p.status;
+      var st = normalizarStatus(p.status);
       return st === 'aguardando' || st === 'pagamento_analise' || st === 'pedido_analise';
     }).length;
     var processando = pedidos.filter(function(p) {
-      var st = STATUS_LEGADO[p.status] || p.status;
+      var st = normalizarStatus(p.status);
       return st === 'pago' || st === 'nota_fiscal' || st === 'separacao' || st === 'transporte';
     }).length;
     var receita = pedidos.filter(function(p) { return p.status !== 'cancelado' && p.status !== 'negado'; }).reduce(function(acc, p) { return acc + (parseFloat(p.total) || 0); }, 0);
@@ -481,11 +493,20 @@
 
   // ─── Filtro por status ────────────────────────────────────
   function filtrarStatus(status, btn) {
-    filtroAtual = status;
+    filtroAtual = normalizarStatus(status) || 'todos';
     document.querySelectorAll('.status-tab').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
+    btn = btn || document.querySelector('.status-tab[data-status="' + filtroAtual + '"]');
+    if (btn) btn.classList.add('active');
     renderPedidos();
   }
+
+  // Listener explícito: evita depender de onclick inline e funciona também
+  // em navegadores/extensões que bloqueiam manipuladores HTML embutidos.
+  document.getElementById('statusTabs').addEventListener('click', function(event) {
+    var btn = event.target.closest('.status-tab');
+    if (!btn || !this.contains(btn)) return;
+    filtrarStatus(btn.getAttribute('data-status'), btn);
+  });
 
   // ─── Render pedidos ───────────────────────────────────────
   function renderPedidos() {
@@ -493,8 +514,8 @@
     var busca = (document.getElementById('searchInput').value || '').toLowerCase().trim();
 
     var filtrados = pedidos.filter(function(p) {
-      var st = STATUS_LEGADO[p.status] || p.status;
-      var passaStatus = filtroAtual === 'todos' || st === filtroAtual || p.status === filtroAtual;
+      var st = normalizarStatus(p.status);
+      var passaStatus = filtroAtual === 'todos' || st === filtroAtual;
       var nome = (p.cliente && (p.cliente.nome || p.cliente.name || '')).toLowerCase();
       var passaBusca = !busca || nome.indexOf(busca) >= 0 || (p.numero || '').toLowerCase().indexOf(busca) >= 0;
       return passaStatus && passaBusca;

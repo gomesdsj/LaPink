@@ -100,3 +100,11 @@ test('painel renova claim antes de gravar pedidos e confirma tags na nuvem', () 
   assert.match(editor, /push\('lapinkProdutos'/);
   assert.match(sync, /return prepararAuth\.then/);
 });
+
+test('filtros de pedidos normalizam status e usam listener explícito', () => {
+  const pedidos = read('admin/pedidos.html');
+  assert.match(pedidos, /function normalizarStatus/);
+  assert.match(pedidos, /pending:\s*'pagamento_analise'/);
+  assert.match(pedidos, /getElementById\('statusTabs'\)\.addEventListener\('click'/);
+  assert.match(pedidos, /var passaStatus = filtroAtual === 'todos' \|\| st === filtroAtual/);
+});
