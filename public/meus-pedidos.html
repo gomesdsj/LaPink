@@ -260,16 +260,34 @@ body { background: var(--gray-50); min-height: 100vh; }
 
   /* ── Status config ── */
   var STATUS_CFG = {
+    aguardando:             { label: 'Aguardando',            cls: 'yellow', icon: 'ti-clock' },
     aguardando_pagamento:   { label: 'Aguardando pagamento', cls: 'yellow', icon: 'ti-clock' },
     aguardando_confirmacao: { label: 'Em confirmação',       cls: 'blue-l', icon: 'ti-loader' },
+    pagamento_analise:     { label: 'Pagamento em análise',  cls: 'blue-l', icon: 'ti-loader' },
+    pedido_analise:        { label: 'Pedido em análise',     cls: 'blue-l', icon: 'ti-loader' },
     pago:                   { label: 'Pago',                 cls: 'green',  icon: 'ti-circle-check' },
+    nota_fiscal:            { label: 'Nota fiscal',           cls: 'blue-l', icon: 'ti-file-invoice' },
+    separacao:              { label: 'Em separação',          cls: 'orange', icon: 'ti-package' },
+    transporte:            { label: 'Em transporte',         cls: 'blue',   icon: 'ti-truck-delivery' },
+    negado:                 { label: 'Pagamento negado',      cls: 'red',    icon: 'ti-x' },
     preparando:             { label: 'Em preparo',           cls: 'orange', icon: 'ti-tool' },
     enviado:                { label: 'Enviado',              cls: 'blue',   icon: 'ti-truck-delivery' },
     concluido:              { label: 'Concluído',            cls: 'green-d',icon: 'ti-checks' },
     cancelado:              { label: 'Cancelado',            cls: 'red',    icon: 'ti-ban' }
   };
 
+  function normalizarStatus(status) {
+    var k = String(status || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    var aliases = {
+      pending: 'pagamento_analise', in_process: 'pagamento_analise', authorized: 'pagamento_analise',
+      approved: 'pago', rejected: 'negado', cancelled: 'cancelado', refunded: 'cancelado', charged_back: 'cancelado',
+      preparando: 'separacao', enviado: 'transporte', concluido: 'concluido'
+    };
+    return aliases[k] || k;
+  }
+
   function badgeHtml(status) {
+    status = normalizarStatus(status);
     var cfg = STATUS_CFG[status] || { label: status || 'Desconhecido', cls: 'yellow', icon: 'ti-help-circle' };
     return '<span class="mp-badge ' + cfg.cls + '"><i class="ti ' + cfg.icon + '"></i>' + cfg.label + '</span>';
   }
@@ -284,7 +302,7 @@ body { background: var(--gray-50); min-height: 100vh; }
 
   /* ── Render de um pedido ── */
   function renderPedido(pedido, idx) {
-    var status   = (pedido.status || 'aguardando_pagamento').toLowerCase();
+    var status   = normalizarStatus(pedido.status || 'aguardando_pagamento');
     var rastreio = pedido.rastreio || null;
     var itens    = pedido.itens || [];
     var num      = pedido.numero || ('Pedido #' + (idx + 1));
@@ -328,7 +346,8 @@ body { background: var(--gray-50); min-height: 100vh; }
         '<span class="mp-tracking-label">Rastreio:</span>' +
         '<span class="mp-tracking-code">' + esc(rastreio) + '</span>' +
         '<a href="https://rastreamento.correios.com.br/app/index.php?objetos=' + encodeURIComponent(rastreio) + '" target="_blank" rel="noopener" class="mp-tracking-btn"><i class="ti ti-external-link"></i> Acompanhar</a>' +
-      '</div>' : '';
+      '</div>' : (status === 'pago' || status === 'nota_fiscal' || status === 'separacao' ?
+        '<div class="mp-order-tracking"><span class="mp-tracking-label">Envio:</span><span>Seu pedido está sendo preparado. O código de rastreio aparecerá aqui assim que for enviado.</span></div>' : '');
 
     return '<div class="mp-order" id="' + id + '">' +
       /* cabeçalho clicável */

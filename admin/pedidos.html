@@ -442,6 +442,37 @@
     }).catch(function(e) { showToast('Erro: ' + e.message, 'erro'); });
   }
 
+  function _mensagemWhatsPedido(pedido, nomeCliente) {
+    var numero = pedido.numero || pedido._id || '';
+    var status = normalizarStatus(pedido.status);
+    var etapas = {
+      aguardando: 'está aguardando o início do atendimento',
+      pagamento_analise: 'está com o pagamento em análise',
+      pedido_analise: 'está em análise pela nossa equipe',
+      pago: 'teve o pagamento confirmado e está sendo preparado',
+      nota_fiscal: 'está na etapa de emissão da nota fiscal',
+      separacao: 'está em separação e sendo preparado para envio',
+      transporte: 'já foi enviado e está em transporte',
+      negado: 'teve o pagamento não aprovado',
+      cancelado: 'foi cancelado'
+    };
+    var primeiroNome = String(nomeCliente || 'cliente').trim().split(/\s+/)[0];
+    var msg = 'Olá, ' + primeiroNome + '! Temos uma atualização do seu pedido #' + numero + ': ele ' +
+      (etapas[status] || ('está na etapa "' + _statusInfo(status).label + '"')) + '.';
+    if (pedido.rastreio) {
+      msg += '\n\nCódigo de rastreio: ' + pedido.rastreio +
+        '\nAcompanhe em: https://rastreamento.correios.com.br/app/index.php?objetos=' + pedido.rastreio;
+    }
+    msg += '\n\nObrigada por comprar com a LaPink! 💖';
+    return msg;
+  }
+
+  function _numeroWhats(numero) {
+    var limpo = String(numero || '').replace(/\D/g, '');
+    if (!limpo) return '';
+    return limpo.indexOf('55') === 0 ? limpo : '55' + limpo;
+  }
+
   function _arquivarPedidoRemoto(pedidoId) {
     return garantirAdminFirebase().then(function(user) { return user.getIdToken(); }).then(function(token) {
       return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/arquivarPedido', {
@@ -572,9 +603,9 @@
       var estoqueAlertaHtml = p.revisaoEstoque
         ? '<div class="pedido-obs" style="background:#fff7ed;color:#9a3412;border:1px solid #fdba74;"><i class="ti ti-alert-triangle"></i> Pagamento confirmado, mas revise o estoque: ' + escHtml((p.estoquePendente || []).join(', ')) + '</div>'
         : '';
-      var waNum = telCli.replace(/\D/g, '');
-      var waMsg = 'Olá ' + nomeCli + ', temos uma atualização sobre seu pedido #' + p.numero + '.';
-      var waLink = 'https://wa.me/55' + waNum + '?text=' + encodeURIComponent(waMsg);
+      var waNum = _numeroWhats(telCli);
+      var waMsg = _mensagemWhatsPedido(p, nomeCli);
+      var waLink = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(waMsg);
 
       var statusOptions = STATUS_PEDIDO.map(function(s) {
         return '<option value="' + s.key + '"' + (p.status === s.key ? ' selected' : '') + '>' + escHtml(s.label) + '</option>';

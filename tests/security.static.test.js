@@ -118,3 +118,14 @@ test('renovação de claim devolve o usuário e exclusão em massa arquiva pedid
   assert.match(pedidos, /Promise\.all\(arquivamentos\)/);
   assert.doesNotMatch(pedidos, /Use o botão Arquivar no pedido do Mercado Pago/);
 });
+
+test('rastreio aparece para cliente e WhatsApp informa a etapa atual', () => {
+  const adminPedidos = read('admin/pedidos.html');
+  const meusPedidos = read('public/meus-pedidos.html');
+  assert.match(adminPedidos, /function _mensagemWhatsPedido/);
+  assert.match(adminPedidos, /Código de rastreio:/);
+  assert.match(adminPedidos, /pagamento confirmado e está sendo preparado/);
+  assert.match(meusPedidos, /O código de rastreio aparecerá aqui assim que for enviado/);
+  assert.match(meusPedidos, /Em transporte/);
+  assert.match(meusPedidos, /rastreamento\.correios\.com\.br/);
+});
