@@ -50,3 +50,13 @@ test('backend relê catálogo e promoção e grava histórico por item', () => {
   assert.match(backend, /if \(_totalCalc === 0\)/);
   assert.match(backend, /pagamento: mpData\.gratuito \? 'gratuito'/);
 });
+
+test('vitrine e detalhe exibem selo na imagem somente para desconto calculado', () => {
+  const vitrine = fs.readFileSync(path.join(root, 'public/V1.html'), 'utf8');
+  const detalhe = fs.readFileSync(path.join(root, 'public/produto.html'), 'utf8');
+  assert.match(vitrine, /calcDesc\.descontoPct > 0[\s\S]*badgeHtml = [^;]+% OFF/);
+  assert.doesNotMatch(vitrine, /p\.promocao\)\s*\{\s*badgeHtml/);
+  assert.match(vitrine, /calcModal\.descontoPct > 0[\s\S]*descontoBadgeHtml/);
+  assert.match(detalhe, /id="prod-discount-badge"/);
+  assert.match(detalhe, /badge\.style\.display = c\.descontoPct \? 'inline-flex' : 'none'/);
+});
