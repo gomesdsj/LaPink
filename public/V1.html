@@ -1885,6 +1885,16 @@ if (installBtn) {
     goTo(0); startTimer();
   };
 
+  // O cloud-sync carrega o Firestore depois que o HTML já foi renderizado.
+  // Ao receber o carrossel remoto, redesenha imediatamente em vez de manter
+  // as imagens antigas que estavam no localStorage durante a primeira carga.
+  document.addEventListener('lapinkCarrosselAtualizados', function() {
+    window.reloadCarrossel();
+  });
+  window.addEventListener('storage', function(event) {
+    if (event.key === 'lapinkCarrossel') window.reloadCarrossel();
+  });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

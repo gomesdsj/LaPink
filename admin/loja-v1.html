@@ -1350,16 +1350,35 @@ function atualizarFotoSlide(idx, input) {
   if (!file) return;
   if (!_validarImagem(file)) { input.value = ''; return; }
   showToast('Processando imagem...', 'info');
-  _comprimirImagem(file, 1920, 1080, 0.92).then(function(dataUrl) {
+  // Mantém cada imagem abaixo da margem usada para os documentos particionados
+  // do Firestore. Base64 muito grande fazia o painel mostrar a prévia local,
+  // mas o Firebase recusava a publicação.
+  _comprimirImagem(file, 1440, 810, 0.78).then(function(dataUrl) {
+    if (dataUrl.length > 700 * 1024) {
+      throw new Error('A imagem continuou muito grande após a compactação. Use JPG/WebP com menor resolução.');
+    }
     slidesData[idx].imagem = dataUrl;
     renderCarrossel();
     showToast('Foto do slide ' + (idx+1) + ' atualizada!');
-  }).catch(function() { showToast('Erro ao processar imagem.', 'erro'); });
+  }).catch(function(e) { showToast(e.message || 'Erro ao processar imagem.', 'erro'); });
 }
 
 function salvarCarrossel() {
   localStorage.setItem('lapinkCarrossel', JSON.stringify(slidesData));
-  if (window.LaPinkSync) window.LaPinkSync.push('lapinkCarrossel', slidesData);
+  if (!window.LaPinkSync) return Promise.reject(new Error('Sincronização do carrossel indisponível.'));
+  return window.LaPinkSync.push('lapinkCarrossel', slidesData);
+}
+
+function otimizarImagensCarrossel() {
+  return Promise.all(slidesData.map(function(slide) {
+    if (!slide.imagem || slide.imagem.length <= 700 * 1024) return Promise.resolve();
+    return fetch(slide.imagem).then(function(resp) { return resp.blob(); })
+      .then(function(blob) { return _comprimirImagem(blob, 1440, 810, 0.72); })
+      .then(function(dataUrl) {
+        if (dataUrl.length > 700 * 1024) throw new Error('Uma imagem do carrossel ainda está grande demais para o Firebase.');
+        slide.imagem = dataUrl;
+      });
+  }));
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1400,18 +1419,19 @@ function coletarConfig() {
 async function publicarAlteracoes() {
   var config = coletarConfig();
   try {
+    await otimizarImagensCarrossel();
     localStorage.setItem('lapinkLojaConfig', JSON.stringify(config));
     localStorage.setItem('lapinkLojaConfig_ts', String(Date.now()));
     if (!window.LaPinkSync) throw new Error('Sincronização com a nuvem indisponível. Recarregue a página.');
     await Promise.all([
       window.LaPinkSync.push('lapinkLojaConfig', config),
-      window.LaPinkSync.push('lapinkProdutos', getProdutos())
+      window.LaPinkSync.push('lapinkProdutos', getProdutos()),
+      salvarCarrossel()
     ]);
-    salvarCarrossel();
     salvarBeneficios();
     var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('save-status').textContent = 'Publicado às ' + hora;
-    showToast('Alterações e tags publicadas na loja!');
+    showToast('Alterações, tags e banners confirmados no Firebase!');
   } catch(e) {
     showToast('Não foi possível publicar na nuvem: ' + (e.message || 'tente novamente.'), 'erro');
   }

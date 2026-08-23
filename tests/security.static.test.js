@@ -129,3 +129,14 @@ test('rastreio aparece para cliente e WhatsApp informa a etapa atual', () => {
   assert.match(meusPedidos, /Em transporte/);
   assert.match(meusPedidos, /rastreamento\.correios\.com\.br/);
 });
+
+test('publicação do banner aguarda Firestore e a loja redesenha após sincronizar', () => {
+  const editor = read('admin/loja-v1.html');
+  const loja = read('public/V1.html');
+  assert.match(editor, /return window\.LaPinkSync\.push\('lapinkCarrossel'/);
+  assert.match(editor, /salvarCarrossel\(\)/);
+  assert.match(editor, /await otimizarImagensCarrossel\(\)/);
+  assert.match(editor, /700 \* 1024/);
+  assert.match(loja, /lapinkCarrosselAtualizados/);
+  assert.match(loja, /window\.reloadCarrossel\(\)/);
+});
