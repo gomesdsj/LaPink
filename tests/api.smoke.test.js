@@ -83,6 +83,11 @@ describe('API do LaPink', () => {
     assert.equal(res.status, 401);
   });
 
+  test('servidor local não publica o arquivo do banco', async () => {
+    const res = await fetch(`${BASE}/data/db.json`);
+    assert.equal(res.status, 404);
+  });
+
   test('usuário autenticado consegue listar e criar produto', async () => {
     const db = readDb();
     const admin = db.users.find((u) => u.role === 'superadmin') || db.users[0];

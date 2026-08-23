@@ -1323,6 +1323,9 @@ if (!_cart.length) {
       freteToken: _freteToken
     };
 
+    // Garante que existe um token de conversão antes de criar o pedido.
+    await salvarAbandono();
+
     // UI: spinner
     var btn = document.getElementById('pgBtnMP');
     btn.disabled = true;
@@ -1358,7 +1361,7 @@ if (!_cart.length) {
         localStorage.setItem('lapinkUltimoPedido', data.pedido_id);
       }
       _marcarDescontoUsado();     // desconto de boas-vindas é uma vez só
-      marcarAbandonoConvertido(); // compra concluída — sai da lista de abandonados
+      await marcarAbandonoConvertido(); // confirma no servidor antes de sair
 
       // Redirecionar para o Mercado Pago
       window.location.href = data.init_point;
@@ -1518,7 +1521,8 @@ if (!_cart.length) {
 
   /* ── Captura de carrinho abandonado (chamar no WhatsApp depois) ── */
   var _abandonoId = null;
-  function salvarAbandono() {
+  var _abandonoToken = null;
+  async function salvarAbandono() {
     try {
       var cel  = (document.getElementById('pgCelular').value || '').replace(/\D/g, '');
       var nome = (document.getElementById('pgNome').value || '').trim();
@@ -1537,33 +1541,33 @@ if (!_cart.length) {
         updatedAt: Date.now()
       };
       try {
-        var authUser = firebase.auth && firebase.auth().currentUser;
-        if (authUser) rec.ownerUid = authUser.uid;
-      } catch (e) {}
-      try {
         var arr = JSON.parse(localStorage.getItem('lapinkAbandonados') || '[]');
         var i = arr.findIndex(function (x) { return x.id === _abandonoId; });
         if (i >= 0) arr[i] = rec; else arr.push(rec);
         localStorage.setItem('lapinkAbandonados', JSON.stringify(arr));
       } catch (e) {}
-      try {
-        if (typeof firebase !== 'undefined' && firebase.apps.length) {
-          firebase.firestore().collection('abandonados').doc(_abandonoId).set(rec, { merge: true }).catch(function () {});
-        }
-      } catch (e) {}
+      var resp = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarCarrinhoAbandonado', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({}, rec, { token: _abandonoToken }))
+      });
+      var data = await resp.json().catch(function() { return {}; });
+      if (!resp.ok) throw new Error(data.error || 'Falha ao registrar carrinho.');
+      _abandonoToken = data.token;
     } catch (e) {}
   }
-  function marcarAbandonoConvertido() {
-    if (!_abandonoId) return;
+  async function marcarAbandonoConvertido() {
+    if (!_abandonoId || !_abandonoToken) return;
     try {
       var arr = JSON.parse(localStorage.getItem('lapinkAbandonados') || '[]').filter(function (x) { return x.id !== _abandonoId; });
       localStorage.setItem('lapinkAbandonados', JSON.stringify(arr));
     } catch (e) {}
     try {
-      if (typeof firebase !== 'undefined' && firebase.apps.length) {
-        firebase.firestore().collection('abandonados').doc(_abandonoId).set({ status: 'convertido', updatedAt: Date.now() }, { merge: true }).catch(function () {});
-      }
-    } catch (e) {}
+      var resp = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/converterCarrinhoAbandonado', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: _abandonoId, token: _abandonoToken })
+      });
+      if (!resp.ok) throw new Error('Falha ao converter carrinho.');
+    } catch (e) { console.warn('[abandono] conversão pendente:', e.message); }
   }
   var _abTimer;
   ['pgCelular', 'pgNome'].forEach(function (id) {

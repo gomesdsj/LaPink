@@ -277,9 +277,9 @@
   }
 
   // ── Excluir ─────────────────────────────────────────────
-  function excluir(email, nome) {
+  async function excluir(email, nome) {
     if (!confirm('Excluir o usuário "' + nome + '"?\nEsta ação não pode ser desfeita.')) return;
-    var r = deleteUser(email);
+    var r = await deleteUser(email);
     showToast(r.ok ? 'Usuário excluído.' : r.error, r.ok ? '' : 'erro');
     if (r.ok) renderTabela();
   }
@@ -361,7 +361,7 @@
     });
   }
 
-  function salvarEdicao() {
+  async function salvarEdicao() {
     if (!_editTarget) return;
     var errEl = document.getElementById('ed-error');
     var nome  = document.getElementById('ed-nome').value.trim();
@@ -384,7 +384,7 @@
       pages = selecionadas.length === PAGES_LIST.length ? null : selecionadas;
     }
 
-    var r = updateUser(_editTarget.email, { name: nome, role: role, pages: pages });
+    var r = await updateUser(_editTarget.email, { name: nome, role: role, pages: pages });
     if (!r.ok) { errEl.textContent = r.error; errEl.style.display = 'block'; return; }
     fecharModalEditar();
     showToast('Usuário atualizado com sucesso!');
@@ -403,6 +403,9 @@
   }
 
   renderTabela();
+  carregarUsuariosAdmin().then(renderTabela).catch(function(e) {
+    showToast('Não foi possível carregar os usuários da nuvem: ' + e.message, 'erro');
+  });
 
   // Re-renderiza a tabela se outro dispositivo sincronizar lapinkUsers via Firestore
   window.addEventListener('storage', function(e) {

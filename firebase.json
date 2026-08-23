@@ -30,6 +30,8 @@
       "**/node_modules/**",
       "functions/**",
       "data/**",
+      "admin/recuperacao.html",
+      "public/diagnostico.html",
       "screenshots/**",
       ".env",
       "**/.git/**",

@@ -151,3 +151,76 @@ test('status e rastreio são atualizados por função administrativa restrita', 
   assert.match(pedidos, /cloudfunctions\.net\/atualizarPedidoAdmin/);
   assert.doesNotMatch(pedidos, /collection\('pedidos'\)\.doc\(pedidoId\)\.update/);
 });
+
+test('usuários e permissões são gerenciados no servidor por superadmin', () => {
+  const functions = read('functions/index.js');
+  const auth = read('admin/js/auth.js');
+  const usuarios = read('admin/gerenciar-usuarios.html');
+  assert.match(functions, /exports\.gerenciarUsuarioAdmin/);
+  assert.match(functions, /_exigirSuperAdmin\(req\)/);
+  assert.match(functions, /setCustomUserClaims/);
+  assert.match(functions, /admin\.auth\(\)\.updateUser/);
+  assert.match(auth, /function _operacaoUsuarioAdmin/);
+  assert.match(auth, /cloudfunctions\.net\/gerenciarUsuarioAdmin/);
+  assert.match(usuarios, /await updateUser/);
+  assert.match(usuarios, /await deleteUser/);
+});
+
+test('pagamento manual remoto é auditado no servidor e processa estoque', () => {
+  const functions = read('functions/index.js');
+  const financeiro = read('admin/financeiro.html');
+  assert.match(functions, /exports\.registrarPagamentoManualAdmin/);
+  assert.match(functions, /processarPagamentoAtomico/);
+  assert.match(functions, /pagamentoManualPor/);
+  assert.match(functions, /Pedidos do Mercado Pago só podem ser confirmados pelo webhook/);
+  assert.match(financeiro, /carregarPedidosFinanceiroRemotos/);
+  assert.match(financeiro, /cloudfunctions\.net\/registrarPagamentoManualAdmin/);
+});
+
+test('configuração financeira só confirma depois da gravação na nuvem', () => {
+  const sync = read('public/js/cloud-sync.js');
+  const financeiro = read('admin/financeiro.html');
+  assert.match(sync, /window\.lapinkCloudWrite = writeToFirestore/);
+  assert.match(financeiro, /async function salvarPagamentos/);
+  assert.match(financeiro, /await window\.lapinkCloudWrite\(PAY_KEY, cfg\)/);
+});
+
+test('pedido legado por e-mail exige e-mail verificado', () => {
+  const functions = read('functions/index.js');
+  assert.match(functions, /decoded\.email_verified === true/);
+  assert.match(functions, /where\(['"]ownerUid['"], ['"]==['"], decoded\.uid\)/);
+});
+
+test('permissões por aba são aplicadas no servidor e nas regras', () => {
+  const functions = read('functions/index.js');
+  const rules = read('firestore.rules');
+  assert.match(functions, /function _exigirPermissao/);
+  assert.match(functions, /_exigirPermissao\(req, 'pedidos'\)/);
+  assert.match(functions, /_exigirPermissao\(req, 'financeiro'\)/);
+  assert.match(rules, /function hasPage\(page\)/);
+  assert.match(rules, /adminPermissions/);
+});
+
+test('carrinho abandonado usa token do servidor e não aceita create direto', () => {
+  const functions = read('functions/index.js');
+  const pagamento = read('public/pagamento.html');
+  const rules = read('firestore.rules');
+  assert.match(functions, /exports\.registrarCarrinhoAbandonado/);
+  assert.match(functions, /exports\.converterCarrinhoAbandonado/);
+  assert.match(pagamento, /registrarCarrinhoAbandonado/);
+  assert.match(pagamento, /converterCarrinhoAbandonado/);
+  assert.match(rules, /match \/abandonados\/\{id\}[\s\S]*?allow create: if false/);
+});
+
+test('sincronização detecta conflito de edição concorrente', () => {
+  const sync = read('public/js/cloud-sync.js');
+  assert.match(sync, /runTransaction/);
+  assert.match(sync, /Conflito: estes dados foram alterados em outro dispositivo/);
+  assert.match(sync, /_lapinkCloudBase_/);
+});
+
+test('analytics deduplica em transação e não usa IP legível no ID', () => {
+  const functions = read('functions/index.js');
+  assert.match(functions, /createHash\('sha256'\)\.update\(String\(chave\)\)/);
+  assert.match(functions, /tx\.create\(ref/);
+});

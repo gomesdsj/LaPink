@@ -78,6 +78,9 @@ async function _doRegister() {
       try {
         var cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
         var uid = cred.user && cred.user.uid;
+        if (cred.user && !cred.user.emailVerified) {
+          try { await cred.user.sendEmailVerification(); } catch (e) {}
+        }
         try {
           await firebase.firestore().collection('usuarios').doc(uid).set({
             email: email, name: name, whatsapp: whatsapp, role: 'client', createdAt: Date.now()

@@ -186,10 +186,14 @@
       var clients = getClients();
 
       if (isEditing) {
+        if (email !== currentEmail) { setMessage('A alteração do e-mail de login não é permitida. Crie uma nova conta.', 'error'); return; }
         var index = clients.findIndex(function(c) { return c.email === currentEmail; });
         if (index === -1) { setMessage('Cliente não encontrado.', 'error'); return; }
         var conflito = clients.find(function(c) { return c.email === email; });
         if (conflito && conflito.email !== currentEmail) { setMessage('Este e-mail já está em uso.', 'error'); return; }
+        var usuarioAtual = (typeof getAllUsers === 'function' ? getAllUsers() : []).find(function(u) { return u.email === currentEmail; }) || {};
+        var atualizacao = await updateUser(currentEmail, { name: name, role: usuarioAtual.role === 'admin' ? 'admin' : 'client', pages: usuarioAtual.pages || null });
+        if (!atualizacao.ok) { setMessage(atualizacao.error, 'error'); return; }
         clients[index].name     = name;
         clients[index].email    = email;
         clients[index].whatsapp = whatsapp;
@@ -200,7 +204,9 @@
         if (clients.find(function(c) { return c.email === email; })) {
           setMessage('Este e-mail já está cadastrado.', 'error'); return;
         }
-        clients.push({ name: name, email: email, whatsapp: whatsapp, password: hashedSenha, totalSpent: 0, purchases: [] });
+        var criacao = await addUser({ name: name, email: email, password: password, role: 'client' });
+        if (!criacao.ok) { setMessage(criacao.error, 'error'); return; }
+        clients.push({ name: name, email: email, whatsapp: whatsapp, totalSpent: 0, purchases: [] });
         saveClients(clients);
         setMessage('Cliente cadastrado com sucesso. Redirecionando...', 'success');
       }
@@ -224,8 +230,8 @@
       var idx = clients.findIndex(function(c) { return c.email === targetEmail; });
       if (idx === -1) { setMessage('Cliente não encontrado.', 'error'); return; }
 
-      clients[idx].password = await hashSenha(novaSenha);
-      saveClients(clients);
+      var resultado = await updatePassword(targetEmail, novaSenha);
+      if (!resultado.ok) { setMessage(resultado.error, 'error'); return; }
       setMessage('Senha redefinida com sucesso!', 'success');
       document.getElementById('forgotPasswordSection').classList.remove('active');
       document.getElementById('nova-senha').value = '';

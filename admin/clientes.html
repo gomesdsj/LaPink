@@ -435,20 +435,20 @@
           '<div class="cli-section-title"><i class="ti ti-shopping-cart"></i> Pedidos do cliente</div>' +
           purchases +
           '<div class="cli-modal-actions">' +
-            '<button type="button" class="btn btn-secondary" onclick="editClient(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-pencil"></i> Editar</button>' +
+            (isSuper ? '<button type="button" class="btn btn-secondary" onclick="editClient(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-pencil"></i> Editar</button>' : '') +
             (waUrl ? '<button type="button" class="btn btn-secondary" onclick="window.open(\'' + escHtml(waUrl) + '\',\'_blank\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>' : '') +
-            '<button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)"><i class="ti ti-key"></i> Redefinir senha</button>' +
+            (isSuper ? '<button type="button" class="btn btn-secondary reset-password-button" onclick="togglePasswordReset(this)"><i class="ti ti-key"></i> Redefinir senha</button>' : '') +
             adminBtn +
-            '<button type="button" class="btn btn-danger" onclick="deleteClient(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-trash"></i> Excluir</button>' +
+            (isSuper ? '<button type="button" class="btn btn-danger" onclick="deleteClient(\'' + encodeURIComponent(email) + '\')"><i class="ti ti-trash"></i> Excluir</button>' : '') +
           '</div>' +
-          '<form class="reset-password-form">' +
+          (isSuper ? '<form class="reset-password-form">' +
             '<div class="form-group"><label>Nova senha</label><input name="resetPassword" type="password" placeholder="Digite a nova senha" /></div>' +
             '<div class="form-group"><label>Confirmar senha</label><input name="confirmResetPassword" type="password" placeholder="Repita a nova senha" /></div>' +
             '<div class="cli-modal-actions">' +
               '<button type="button" class="btn btn-primary" onclick="saveClientPassword(this)">Salvar senha</button>' +
               '<button type="button" class="btn btn-secondary" onclick="togglePasswordReset(this, true)">Cancelar</button>' +
             '</div>' +
-          '</form>' +
+          '</form>' : '') +
         '</div>';
 
       document.getElementById('cliModalBody').innerHTML = body;
@@ -494,9 +494,11 @@
       location.href = 'cadastro-cliente.html?email=' + encodeURIComponent(email);
     }
 
-    function deleteClient(encodedEmail) {
+    async function deleteClient(encodedEmail) {
       var email = decodeURIComponent(encodedEmail);
       if (!confirm('Deseja excluir o cliente ' + email + '?')) return;
+      var result = await deleteUser(email);
+      if (!result.ok) { showToast(result.error, 'erro'); return; }
       var clients = getClients().filter(function(client) { return client.email !== email; });
       saveClients(clients);
       fecharClienteModal();
@@ -542,21 +544,20 @@
         showToast('Cliente não encontrado.', 'erro');
         return;
       }
-      var hash = await _hashPassword(password);
-      clients[index].password = hash;
-      saveClients(clients);
+      var result = await updatePassword(email, password);
+      if (!result.ok) { showToast(result.error, 'erro'); return; }
       showToast('Senha atualizada com sucesso.');
       togglePasswordReset(button, true);
       // Reabre o modal com os dados atualizados
       abrirClienteModal(encodeURIComponent(email));
     }
 
-    function promoteClientToAdmin(encodedEmail) {
+    async function promoteClientToAdmin(encodedEmail) {
       var email = decodeURIComponent(encodedEmail);
       var client = getClients().find(function(c) { return c.email === email; });
       if (!client) { showToast('Cliente não encontrado.', 'erro'); return; }
       if (!confirm('Tornar "' + (client.name || email) + '" administrador da loja?\n\nEle poderá acessar o painel admin com a senha atual.')) return;
-      var result = addUserFromClient(client);
+      var result = await addUserFromClient(client);
       if (result.ok) {
         showToast((client.name || email) + ' agora é Admin.');
         renderClients();
@@ -566,12 +567,12 @@
       }
     }
 
-    function revokeClientAdmin(encodedEmail) {
+    async function revokeClientAdmin(encodedEmail) {
       var email = decodeURIComponent(encodedEmail);
       var client = getClients().find(function(c) { return c.email === email; });
       var name = client ? (client.name || email) : email;
       if (!confirm('Revogar acesso de administrador de "' + name + '"?')) return;
-      var result = revokeAdmin(email);
+      var result = await revokeAdmin(email);
       if (result.ok) {
         showToast('Acesso admin revogado de ' + name + '.');
         renderClients();
@@ -583,6 +584,9 @@
 
     window.addEventListener('DOMContentLoaded', function() {
       renderClients();
+      if (getSession() && getSession().role === 'superadmin') {
+        carregarUsuariosAdmin().then(renderClients).catch(function(e) { showToast(e.message, 'erro'); });
+      }
       var buscaEl = document.getElementById('busca-cliente');
       if (buscaEl) {
         buscaEl.addEventListener('input', function() { renderClients(); });

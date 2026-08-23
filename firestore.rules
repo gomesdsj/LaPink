@@ -36,13 +36,23 @@ service cloud.firestore {
     // de coleções com PII (pedidos, carrinhos abandonados) sem exigir que o
     // catálogo/config pública deixe de ser aberta (isso ainda depende da
     // migração completa descrita no comentário abaixo).
-    function isAdmin() {
-      return request.auth != null &&
-        (request.auth.token.role == 'admin' || request.auth.token.role == 'superadmin');
-    }
-
     function isSuperAdmin() {
       return request.auth != null && request.auth.token.role == 'superadmin';
+    }
+
+    function hasPage(page) {
+      return isSuperAdmin() || (request.auth != null && request.auth.token.role == 'admin'
+        && exists(/databases/$(database)/documents/adminPermissions/$(request.auth.uid))
+        && get(/databases/$(database)/documents/adminPermissions/$(request.auth.uid)).data.active == true
+        && (!(get(/databases/$(database)/documents/adminPermissions/$(request.auth.uid)).data.pages is list)
+          || page in get(/databases/$(database)/documents/adminPermissions/$(request.auth.uid)).data.pages));
+    }
+
+    function canWritePublicDoc(doc) {
+      return (doc.matches('lapinkProdutos(_[0-9]+)?') || doc == 'lapinkCategorias') ? hasPage('produtos')
+        : (doc.matches('(lapinkCarrossel|lapinkLojaConfig)(_[0-9]+)?') || doc == 'lapinkBeneficios') ? hasPage('loja-v1')
+        : doc == 'lapinkPaymentConfig' ? hasPage('financeiro')
+        : hasPage('configuracoes');
     }
 
     function isOwner(field) {
@@ -79,7 +89,7 @@ service cloud.firestore {
     // (sabotar) o token de pagamento/frete de qualquer navegador, sem login.
     // As Cloud Functions leem via Admin SDK (ignoram as rules).
     match /lapink/apiConfig {
-      allow write: if isAdmin();   // read continua negado (sem allow read)
+      allow write: if hasPage('configuracoes');
     }
 
     // Domínio altera URLs de retorno de pagamento: leitura pública para o
@@ -91,7 +101,7 @@ service cloud.firestore {
 
     match /lapink/{doc} {
       allow read: if isDocPublico(doc);
-      allow write: if isDocPublico(doc) && isAdmin();
+      allow write: if isDocPublico(doc) && canWritePublicDoc(doc);
       // Qualquer outro doc em /lapink/ (lapinkClients, lapinkUsers,
       // lapinkApiConfig…) → negado (sem allow = sem acesso).
     }
@@ -111,21 +121,9 @@ service cloud.firestore {
     // telefone, itens) agora exige admin autenticado; nada no site faz get
     // avulso aqui hoje, então só liberar list pro admin não quebra nada.
     match /abandonados/{id} {
-      allow read: if isAdmin();
-      allow create: if request.resource.data.keys().hasOnly([
-        'id', 'nome', 'celular', 'email', 'itens', 'total', 'status',
-        'createdAt', 'updatedAt', 'ownerUid'
-      ]) && request.resource.data.status == 'aberto'
-        && request.resource.data.celular is string
-        && request.resource.data.celular.size() >= 10
-        && request.resource.data.celular.size() <= 11
-        && request.resource.data.itens is list
-        && request.resource.data.itens.size() <= 50
-        && request.resource.data.total is number
-        && request.resource.data.total >= 0
-        && ((!('ownerUid' in request.resource.data) && request.auth == null)
-          || isOwner(request.resource.data.ownerUid));
-      allow update, delete: if isAdmin();
+      allow read: if hasPage('pedidos');
+      allow create: if false;
+      allow update, delete: if hasPage('pedidos');
     }
 
     // Endereços salvos pelo cliente (Minha conta / pagamento) — o painel admin
@@ -135,11 +133,11 @@ service cloud.firestore {
     // list aqui, então bloquear não quebra nada e evita vazar o endereço de
     // TODOS os clientes para quem descobrir que a coleção existe.
     match /enderecos/{id} {
-      allow read: if isAdmin() || isOwner(resource.data.ownerUid);
+      allow read: if hasPage('clientes') || isOwner(resource.data.ownerUid);
       allow create: if isOwner(request.resource.data.ownerUid);
-      allow update: if (isAdmin() || isOwner(resource.data.ownerUid))
+      allow update: if (hasPage('clientes') || isOwner(resource.data.ownerUid))
                     && request.resource.data.ownerUid == resource.data.ownerUid;
-      allow delete: if isAdmin() || isOwner(resource.data.ownerUid);
+      allow delete: if hasPage('clientes') || isOwner(resource.data.ownerUid);
     }
 
     // Pedidos criados via Cloud Functions (Admin SDK ignora as rules).
@@ -159,9 +157,9 @@ service cloud.firestore {
     // rastreio de um pedido alheio, sem autenticação nenhuma.
     // Criação/exclusão continuam bloqueadas (só a Function cria/apaga).
     match /pedidos/{pedidoId} {
-      allow read: if isAdmin() || isOwner(resource.data.ownerUid);
+      allow read: if hasPage('pedidos') || hasPage('financeiro') || hasPage('relatorios') || hasPage('clientes') || hasPage('dashboard') || isOwner(resource.data.ownerUid);
       allow create, delete: if false;
-      allow update: if isAdmin() && request.resource.data.diff(resource.data)
+      allow update: if hasPage('pedidos') && request.resource.data.diff(resource.data)
                       .affectedKeys().hasOnly(['rastreio', 'status', 'updatedAt']);
     }
 
@@ -171,13 +169,19 @@ service cloud.firestore {
     // aqui direto, senão bastaria chamar setDoc pra inflar os números.
     // Leitura só para admin (é o que alimenta a aba de Analytics do painel).
     match /analytics/{doc} {
-      allow read: if isAdmin();
+      allow read: if hasPage('clientes');
       allow write: if false;
     }
 
     // Dedupe interno das Functions acima (1 doc por IP+dia). Não tem por
     // que ser lido nem escrito por ninguém fora da Function.
     match /analyticsDedupe/{doc} {
+      allow read, write: if false;
+    }
+
+    // Fonte de autorização consultada em tempo real pelas rules. Somente o
+    // Admin SDK grava; revogar aqui interrompe novas operações imediatamente.
+    match /adminPermissions/{uid} {
       allow read, write: if false;
     }
 

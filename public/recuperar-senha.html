@@ -208,6 +208,11 @@
         }
       }
 
+      // Não tenta mais ler/gravar bases legadas bloqueadas pelas regras. A
+      // resposta permanece genérica para não revelar se o e-mail possui conta.
+      _mostrarSucesso();
+      return;
+
       // 1) Fluxo legado (conta ainda não migrada) — procura a conta
       //    local + Firestore e envia senha temporária via EmailJS
       var clients = getClients();

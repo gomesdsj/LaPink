@@ -77,13 +77,35 @@
       var data = typeof value === 'string' ? JSON.parse(value) : value;
       var tamanho = JSON.stringify(data).length;
       var agora = Date.now();
+      var baseRemota = Number(localStorage.getItem('_lapinkCloudBase_' + key) || 0);
+      var refPrincipal = firestore.collection('lapink').doc(key);
+
+      function reservarEscrita() {
+        return firestore.runTransaction(function(tx) {
+          return tx.get(refPrincipal).then(function(snap) {
+            var remoto = snap.exists ? Number((snap.data() || {}).updatedAt || 0) : 0;
+            if (baseRemota && remoto > baseRemota) {
+              var conflito = new Error('Conflito: estes dados foram alterados em outro dispositivo. Recarregue antes de salvar.');
+              conflito.code = 'conflict';
+              throw conflito;
+            }
+            tx.set(refPrincipal, { writeStartedAt: agora, updatedAt: agora }, { merge: true });
+          });
+        });
+      }
+
+      function confirmarBase() {
+        _orig.call(localStorage, '_lapinkCloudBase_' + key, String(agora));
+      }
 
       var prepararAuth = (typeof garantirAdminFirebase === 'function')
         ? garantirAdminFirebase()
         : _aguardarAuth();
       return prepararAuth.then(function () {
         if (!Array.isArray(data) || tamanho <= CHUNK_LIMIT) {
-          return firestore.collection('lapink').doc(key).set({ data: data, updatedAt: agora });
+          return reservarEscrita().then(function() {
+            return refPrincipal.set({ data: data, updatedAt: agora, writeStartedAt: firebase.firestore.FieldValue.delete() });
+          }).then(confirmarBase);
         }
 
         // Divide o array em partes respeitando o limite por documento
@@ -98,11 +120,12 @@
 
         // Grava as partes primeiro; o doc principal (índice) por último —
         // leitores só usam o índice novo depois que as partes existem
-        return Promise.all(partes.map(function (arr, i) {
+        return reservarEscrita().then(function() { return Promise.all(partes.map(function (arr, i) {
           return firestore.collection('lapink').doc(key + '_' + i).set({ data: arr, updatedAt: agora });
-        })).then(function () {
-          return firestore.collection('lapink').doc(key).set({ chunked: true, chunks: partes.length, updatedAt: agora });
+        })); }).then(function () {
+          return refPrincipal.set({ chunked: true, chunks: partes.length, updatedAt: agora, writeStartedAt: firebase.firestore.FieldValue.delete() });
         }).then(function () {
+          confirmarBase();
           console.log('[sync] ' + key + ' → Firestore em ' + partes.length + ' partes (' + Math.round(tamanho / 1024) + ' KB)');
         });
       }).catch(function (e) { _erroEscrita(key)(e); throw e; });
@@ -111,6 +134,9 @@
       return Promise.reject(e);
     }
   }
+  // API explícita para telas administrativas que precisam aguardar a
+  // confirmação remota antes de exibir "salvo com sucesso".
+  window.lapinkCloudWrite = writeToFirestore;
 
   // ── Intercepta localStorage.setItem ──────────────────────────
   var _orig = Storage.prototype.setItem;
@@ -156,11 +182,13 @@
         // (ex.: catálogo com fotos que estourava o limite de 1 MiB por doc)
         if (localRaw && localUpdated > (remote.updatedAt || 0)) {
           console.log('[sync] ' + key + ' local mais novo que a nuvem — reenviando');
+          _orig.call(localStorage, '_lapinkCloudBase_' + key, String(remote.updatedAt || 0));
           writeToFirestore(key, localRaw);
           return;
         }
 
-        function aplicar(dataRemota) {
+          function aplicar(dataRemota) {
+          _orig.call(localStorage, '_lapinkCloudBase_' + key, String(remote.updatedAt || 0));
           if (!localRaw || remote.updatedAt > localUpdated) {
             _orig.call(localStorage, key, JSON.stringify(dataRemota));
             _orig.call(localStorage, key + '_ts', String(remote.updatedAt));

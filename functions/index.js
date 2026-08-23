@@ -560,10 +560,13 @@ exports.listarMeusPedidos = functions.https.onRequest(function (req, res) {
         usuario = decoded;
         var email = String(decoded.email || '').trim().toLowerCase();
         if (!email) { var e = new Error('Conta sem e-mail.'); e._status = 400; throw e; }
-        return Promise.all([
-          db.collection('pedidos').where('ownerUid', '==', decoded.uid).limit(50).get(),
-          db.collection('pedidos').where('cliente.email', '==', email).limit(50).get()
-        ]);
+        var consultas = [db.collection('pedidos').where('ownerUid', '==', decoded.uid).limit(50).get()];
+        // A busca legada por e-mail pode vincular pedidos sem ownerUid. Ela
+        // só é segura depois que o Firebase comprovou a posse do e-mail.
+        if (decoded.email_verified === true) {
+          consultas.push(db.collection('pedidos').where('cliente.email', '==', email).limit(50).get());
+        }
+        return Promise.all(consultas);
       })
       .then(function (snaps) {
         var porId = {};
@@ -897,13 +900,15 @@ function _exigirAdmin(req) {
   }
   return admin.auth().verifyIdToken(idToken).then(function (decoded) {
     var email = String(decoded.email || '').toLowerCase();
-    if (SUPERADMINS_FIXOS.indexOf(email) !== -1) return decoded;
+    if (SUPERADMINS_FIXOS.indexOf(email) !== -1) return Object.assign({}, decoded, { role: 'superadmin', pages: null });
     return db.collection('lapink').doc('lapinkUsers').get().then(function (snap) {
       var lista = (snap.exists && snap.data() && snap.data().data) || [];
       var match = (Array.isArray(lista) ? lista : []).find(function (u) {
         return u && String(u.email || '').toLowerCase() === email;
       });
-      if (match && (match.role === 'admin' || match.role === 'superadmin')) return decoded;
+      if (match && (match.role === 'admin' || match.role === 'superadmin')) {
+        return Object.assign({}, decoded, { role: match.role, pages: Array.isArray(match.pages) ? match.pages : null });
+      }
       var eForbidden = new Error('Acesso restrito a administradores.');
       eForbidden._status = 403;
       throw eForbidden;
@@ -916,6 +921,154 @@ function _exigirAdmin(req) {
   });
 }
 
+function _exigirPermissao(req, pagina) {
+  return _exigirAdmin(req).then(function(decoded) {
+    if (decoded.role === 'superadmin' || !Array.isArray(decoded.pages) || decoded.pages.indexOf(pagina) !== -1) return decoded;
+    var erro = new Error('Sua conta não possui permissão para a aba ' + pagina + '.');
+    erro._status = 403;
+    throw erro;
+  });
+}
+
+function _exigirSuperAdmin(req) {
+  return _exigirAdmin(req).then(function (decoded) {
+    var email = String(decoded.email || '').toLowerCase();
+    if (SUPERADMINS_FIXOS.indexOf(email) !== -1 || decoded.role === 'superadmin') return decoded;
+    var erro = new Error('Acesso restrito ao Super Admin.');
+    erro._status = 403;
+    throw erro;
+  });
+}
+
+function _normalizarEmailAdmin(valor) {
+  var email = String(valor || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    var erro = new Error('E-mail inválido.'); erro._status = 400; throw erro;
+  }
+  return email;
+}
+
+function _salvarRegistroAdmin(email, dados) {
+  var ref = db.collection('lapink').doc('lapinkUsers');
+  return db.runTransaction(function (tx) {
+    return tx.get(ref).then(function (snap) {
+      var lista = (snap.exists && snap.data() && snap.data().data) || [];
+      if (!Array.isArray(lista)) lista = [];
+      var indice = lista.findIndex(function (u) { return u && String(u.email || '').toLowerCase() === email; });
+      var atual = indice >= 0 ? lista[indice] : { email: email, createdAt: new Date().toISOString() };
+      var novo = Object.assign({}, atual, dados, { email: email });
+      delete novo.password;
+      if (indice >= 0) lista[indice] = novo; else lista.push(novo);
+      tx.set(ref, { data: lista, updatedAt: Date.now() }, { merge: true });
+      return novo;
+    });
+  });
+}
+
+// Fonte central de verdade para usuários e permissões do painel. O navegador
+// nunca grava roles diretamente: Admin SDK atualiza Auth, custom claims e o
+// registro usado por _exigirAdmin em uma única operação protegida.
+exports.gerenciarUsuarioAdmin = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido. Use POST.' }); return; }
+    var body = req.body || {};
+    var acao = String(body.acao || '').trim();
+    var operador;
+    var email;
+    var resposta = { ok: true };
+    _exigirSuperAdmin(req).then(function (decoded) {
+      operador = decoded;
+      if (acao === 'listar') {
+        return db.collection('lapink').doc('lapinkUsers').get().then(function (snap) {
+          var lista = (snap.exists && snap.data() && snap.data().data) || [];
+          resposta.usuarios = (Array.isArray(lista) ? lista : []).map(function (u) {
+            return { email: u.email, name: u.name || u.email, role: u.role || 'client', pages: Array.isArray(u.pages) ? u.pages : null, createdAt: u.createdAt || null };
+          });
+          return { _listagem: true };
+        });
+      }
+      email = _normalizarEmailAdmin(body.email);
+      if (SUPERADMINS_FIXOS.indexOf(email) !== -1) {
+        var protegido = new Error('O Super Admin fixo não pode ser alterado ou excluído.');
+        protegido._status = 400; throw protegido;
+      }
+      return admin.auth().getUserByEmail(email).catch(function (err) {
+        if (err && err.code === 'auth/user-not-found' && acao === 'criar') return null;
+        throw err;
+      });
+    }).then(function (usuario) {
+      if (usuario && usuario._listagem) return;
+      if (acao === 'criar') {
+        var senha = String(body.senha || '');
+        var nome = String(body.nome || '').trim();
+        var role = body.role === 'admin' ? 'admin' : 'client';
+        if (!nome || senha.length < 6) { var e = new Error('Informe nome e senha com pelo menos 6 caracteres.'); e._status = 400; throw e; }
+        if (usuario) { var existe = new Error('Este e-mail já está cadastrado.'); existe._status = 409; throw existe; }
+        return admin.auth().createUser({ email: email, password: senha, displayName: nome, emailVerified: false })
+          .then(function (novo) {
+            var claims = role === 'admin' ? { role: 'admin', pages: null } : null;
+            return admin.auth().setCustomUserClaims(novo.uid, claims).then(function () {
+              return Promise.all([
+                db.collection('usuarios').doc(novo.uid).set({ email: email, name: nome, role: role, createdAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }),
+                db.collection('adminPermissions').doc(novo.uid).set({ active: role === 'admin', pages: null, updatedAt: admin.firestore.FieldValue.serverTimestamp() })
+              ]);
+            }).then(function () { return _salvarRegistroAdmin(email, { name: nome, role: role, pages: null }); });
+          });
+      }
+      if (!usuario) { var nf = new Error('Usuário não encontrado no Firebase Authentication.'); nf._status = 404; throw nf; }
+      if (acao === 'atualizar') {
+        var novoNome = String(body.nome || usuario.displayName || email).trim();
+        var novaRole = body.role === 'admin' ? 'admin' : 'client';
+        var paginas = novaRole === 'admin' && Array.isArray(body.pages) ? body.pages.map(String) : null;
+        var claimsAtualizadas = novaRole === 'admin' ? { role: 'admin', pages: paginas } : null;
+        return admin.auth().updateUser(usuario.uid, { displayName: novoNome })
+          .then(function () { return admin.auth().setCustomUserClaims(usuario.uid, claimsAtualizadas); })
+          .then(function () { return admin.auth().revokeRefreshTokens(usuario.uid); })
+          .then(function () { return Promise.all([
+            db.collection('usuarios').doc(usuario.uid).set({ email: email, name: novoNome, role: novaRole, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }),
+            db.collection('adminPermissions').doc(usuario.uid).set({ active: novaRole === 'admin', pages: paginas, updatedAt: admin.firestore.FieldValue.serverTimestamp() })
+          ]); })
+          .then(function () { return _salvarRegistroAdmin(email, { name: novoNome, role: novaRole, pages: paginas }); });
+      }
+      if (acao === 'senha') {
+        var novaSenha = String(body.senha || '');
+        if (novaSenha.length < 6) { var curta = new Error('A senha deve ter pelo menos 6 caracteres.'); curta._status = 400; throw curta; }
+        return admin.auth().updateUser(usuario.uid, { password: novaSenha });
+      }
+      if (acao === 'excluir') {
+        return db.collection('enderecos').where('email', '==', email).get().then(function (enderecos) {
+          var exclusoes = [];
+          enderecos.forEach(function (doc) { exclusoes.push(doc.ref.delete()); });
+          exclusoes.push(db.collection('enderecos').doc(usuario.uid).delete().catch(function () {}));
+          exclusoes.push(db.collection('usuarios').doc(usuario.uid).delete().catch(function () {}));
+          exclusoes.push(db.collection('adminPermissions').doc(usuario.uid).delete().catch(function () {}));
+          exclusoes.push(admin.auth().revokeRefreshTokens(usuario.uid).then(function () { return admin.auth().deleteUser(usuario.uid); }));
+          return Promise.all(exclusoes);
+        }).then(function () {
+          var ref = db.collection('lapink').doc('lapinkUsers');
+          return db.runTransaction(function (tx) { return tx.get(ref).then(function (snap) {
+            var lista = (snap.exists && snap.data() && snap.data().data) || [];
+            lista = (Array.isArray(lista) ? lista : []).filter(function (u) { return String((u && u.email) || '').toLowerCase() !== email; });
+            tx.set(ref, { data: lista, updatedAt: Date.now() }, { merge: true });
+          }); });
+        });
+      }
+      var invalida = new Error('Ação administrativa inválida.'); invalida._status = 400; throw invalida;
+    }).then(function () {
+      functions.logger.info('gerenciarUsuarioAdmin', {
+        acao: acao,
+        alvoHash: email ? crypto.createHash('sha256').update(email).digest('hex').slice(0, 16) : null,
+        operadorUid: operador && operador.uid
+      });
+      res.status(200).json(resposta);
+    }).catch(function (err) {
+      var status = (err && err._status) || (err && err.code === 'auth/email-already-exists' ? 409 : 500);
+      if (status >= 500) functions.logger.error('gerenciarUsuarioAdmin erro', err);
+      res.status(status).json({ error: status >= 500 ? 'Erro ao gerenciar usuário.' : err.message });
+    });
+  });
+});
+
 // Retira pedidos da operação diária sem apagar o histórico de pagamento.
 // A exclusão física de uma venda prejudicaria conciliação, auditoria e suporte;
 // por isso o painel usa arquivamento reversível no documento do Firestore.
@@ -925,7 +1078,7 @@ exports.arquivarPedido = functions.https.onRequest(function (req, res) {
       res.status(405).json({ error: 'Método não permitido. Use POST.' });
       return;
     }
-    _exigirAdmin(req).then(function (usuario) {
+    _exigirPermissao(req, 'pedidos').then(function (usuario) {
       var pedidoId = String((req.body && req.body.pedidoId) || '').trim();
       if (!/^LPK-[A-Z0-9-]{4,40}$/.test(pedidoId)) {
         var eId = new Error('Identificador de pedido inválido.');
@@ -964,7 +1117,7 @@ exports.atualizarPedidoAdmin = functions.https.onRequest(function (req, res) {
       res.status(405).json({ error: 'Método não permitido. Use POST.' });
       return;
     }
-    _exigirAdmin(req).then(function () {
+    _exigirPermissao(req, 'pedidos').then(function () {
       var body = req.body || {};
       var pedidoId = String(body.pedidoId || '').trim();
       var status = body.status == null ? null : String(body.status).trim().toLowerCase();
@@ -999,6 +1152,43 @@ exports.atualizarPedidoAdmin = functions.https.onRequest(function (req, res) {
       if (statusHttp >= 500) functions.logger.error('atualizarPedidoAdmin erro', err);
       res.status(statusHttp).json({ error: statusHttp === 500 ? 'Erro ao atualizar pedido.' : err.message });
     });
+  });
+});
+
+exports.registrarPagamentoManualAdmin = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido. Use POST.' }); return; }
+    var pedidoId = String((req.body && req.body.pedidoId) || '').trim();
+    var usuarioAdmin;
+    _exigirPermissao(req, 'financeiro').then(function (decoded) {
+      usuarioAdmin = decoded;
+      if (!/^LPK-[A-Z0-9-]{4,40}$/.test(pedidoId)) { var e = new Error('Identificador de pedido inválido.'); e._status = 400; throw e; }
+      return db.collection('pedidos').doc(pedidoId).get();
+    }).then(function (snap) {
+      if (!snap.exists) { var e404 = new Error('Pedido não encontrado.'); e404._status = 404; throw e404; }
+      var pedido = snap.data() || {};
+      if (pedido.mp_payment_id && pedido.mp_status && pedido.mp_status !== 'manual') {
+        var eMp = new Error('Pedidos do Mercado Pago só podem ser confirmados pelo webhook do pagamento.'); eMp._status = 409; throw eMp;
+      }
+      return processarPagamentoAtomico({
+        external_reference: pedidoId,
+        transaction_amount: Number(pedido.total),
+        currency_id: 'BRL',
+        status: 'approved'
+      }, 'manual-' + Date.now()).then(function () {
+        return snap.ref.set({
+          pagamentoManual: true,
+          mp_status: 'manual',
+          pagamentoManualPor: String(usuarioAdmin.email || usuarioAdmin.uid || '').toLowerCase(),
+          pagamentoManualAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      });
+    }).then(function () { res.status(200).json({ ok: true }); })
+      .catch(function (err) {
+        var status = (err && err._status) || 500;
+        if (status >= 500) functions.logger.error('registrarPagamentoManualAdmin erro', err);
+        res.status(status).json({ error: status >= 500 ? 'Erro ao registrar pagamento manual.' : err.message });
+      });
   });
 });
 
@@ -1072,9 +1262,66 @@ function _notificarVendaAdmins(pedido, numeroPedido) {
 //    Acione pelo painel (ou Cloud Scheduler usando uma conta de serviço admin).
 //    Janela: > 30 min abertos.
 // ---------------------------------------------------------------------------
+exports.registrarCarrinhoAbandonado = functions.https.onRequest(function(req, res) {
+  cors(req, res, function() {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido. Use POST.' }); return; }
+    var body = req.body || {};
+    var id = String(body.id || '').trim();
+    var celular = String(body.celular || '').replace(/\D/g, '');
+    var itens = Array.isArray(body.itens) ? body.itens.slice(0, 50) : [];
+    var token = String(body.token || '');
+    if (!/^AB-[A-Z0-9]{6,30}$/.test(id) || celular.length < 10 || celular.length > 11 || !itens.length) {
+      res.status(400).json({ error: 'Carrinho abandonado inválido.' }); return;
+    }
+    var ref = db.collection('abandonados').doc(id);
+    ref.get().then(function(snap) {
+      var segredo = token;
+      if (snap.exists) {
+        var d = snap.data() || {};
+        if (!segredo || hashAcessoPedido(segredo) !== d.acessoHash) { var e = new Error('Acesso ao carrinho negado.'); e._status = 403; throw e; }
+      } else {
+        segredo = crypto.randomBytes(32).toString('hex');
+      }
+      var itensLimpos = itens.map(function(item) {
+        return { id: _sanitizarTexto(item.id, 30), nome: _sanitizarTexto(item.nome, 120), qty: Math.max(1, Math.min(100, Number(item.qty) || 1)), preco: Math.max(0, Number(item.preco) || 0) };
+      });
+      return ref.set({
+        id: id, nome: _sanitizarTexto(body.nome, 120), celular: celular,
+        email: _sanitizarTexto(body.email, 160).toLowerCase(), itens: itensLimpos,
+        total: Math.max(0, Number(body.total) || 0), status: 'aberto',
+        acessoHash: hashAcessoPedido(segredo), createdAt: snap.exists ? (snap.data().createdAt || Date.now()) : Date.now(),
+        updatedAt: Date.now(), expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      }, { merge: false }).then(function() { res.status(200).json({ ok: true, token: segredo }); });
+    }).catch(function(err) {
+      var status = err._status || 500;
+      if (status >= 500) functions.logger.error('registrarCarrinhoAbandonado erro', err);
+      if (!res.headersSent) res.status(status).json({ error: status >= 500 ? 'Erro ao registrar carrinho.' : err.message });
+    });
+  });
+});
+
+exports.converterCarrinhoAbandonado = functions.https.onRequest(function(req, res) {
+  cors(req, res, function() {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido. Use POST.' }); return; }
+    var id = String((req.body && req.body.id) || '').trim();
+    var token = String((req.body && req.body.token) || '');
+    if (!/^AB-[A-Z0-9]{6,30}$/.test(id) || !/^[a-f0-9]{64}$/.test(token)) { res.status(400).json({ error: 'Identificador inválido.' }); return; }
+    var ref = db.collection('abandonados').doc(id);
+    db.runTransaction(function(tx) { return tx.get(ref).then(function(snap) {
+      if (!snap.exists) { var e404 = new Error('Carrinho não encontrado.'); e404._status = 404; throw e404; }
+      var d = snap.data() || {};
+      if (hashAcessoPedido(token) !== d.acessoHash) { var e403 = new Error('Acesso ao carrinho negado.'); e403._status = 403; throw e403; }
+      tx.update(ref, { status: 'convertido', convertedAt: Date.now(), updatedAt: Date.now() });
+    }); }).then(function() { res.status(200).json({ ok: true }); }).catch(function(err) {
+      var status = err._status || 500;
+      if (!res.headersSent) res.status(status).json({ error: status >= 500 ? 'Erro ao converter carrinho.' : err.message });
+    });
+  });
+});
+
 exports.cobrarAbandonados = functions.https.onRequest(function (req, res) {
   cors(req, res, function () {
-    _exigirAdmin(req).then(function () {
+    _exigirPermissao(req, 'pedidos').then(function () {
       return db.collection('lapink').doc('apiConfig').get()
       .then(function (snap) {
         var cfg = (snap.exists && snap.data() && snap.data().data) || {};
@@ -1289,6 +1536,37 @@ exports.verificarCarrinhosAbandonados = functions.pubsub.schedule('every 10 minu
     });
 });
 
+// Retenção LGPD: elimina dados transitórios após o prazo definido no próprio
+// documento. A rotina torna a política efetiva mesmo sem configurar TTL no
+// console e processa em lotes para não exceder os limites do Firestore.
+exports.limparDadosExpiradosLGPD = functions.pubsub.schedule('every day 03:15').timeZone('America/Bahia').onRun(function () {
+  var agora = new Date();
+
+  function limparColecao(nome) {
+    return db.collection(nome).where('expiresAt', '<=', agora).limit(400).get()
+      .then(function (qs) {
+        if (qs.empty) return 0;
+        var batch = db.batch();
+        qs.docs.forEach(function (doc) { batch.delete(doc.ref); });
+        return batch.commit().then(function () { return qs.size; });
+      });
+  }
+
+  return Promise.all([
+    limparColecao('abandonados'),
+    limparColecao('analyticsDedupe')
+  ]).then(function (quantidades) {
+    functions.logger.info('Limpeza LGPD concluída', {
+      abandonados: quantidades[0],
+      analyticsDedupe: quantidades[1]
+    });
+    return { removidos: quantidades[0] + quantidades[1] };
+  }).catch(function (err) {
+    functions.logger.error('limparDadosExpiradosLGPD erro', err);
+    throw err;
+  });
+});
+
 exports.cotarFrete = functions.https.onRequest(function (req, res) {
   cors(req, res, function () {
     if (req.method !== 'POST') {
@@ -1444,7 +1722,10 @@ exports.sincronizarClaimsAdmin = functions.https.onRequest(function (req, res) {
       })
       .then(function (resultado) {
         var claims = resultado.role ? { role: resultado.role, pages: resultado.pages } : null;
-        return admin.auth().setCustomUserClaims(resultado.uid, claims).then(function () {
+        var permissao = resultado.role === 'admin'
+          ? db.collection('adminPermissions').doc(resultado.uid).set({ active: true, pages: resultado.pages, updatedAt: admin.firestore.FieldValue.serverTimestamp() })
+          : db.collection('adminPermissions').doc(resultado.uid).delete().catch(function () {});
+        return permissao.then(function() { return admin.auth().setCustomUserClaims(resultado.uid, claims); }).then(function () {
           res.status(200).json({ role: resultado.role || null });
         });
       })
@@ -1740,11 +2021,17 @@ exports.verificarLimiteIP = functions.https.onRequest(function (req, res) {
 var ANALYTICS_TTL_DIAS = 35; // usado só se um TTL policy for configurado no console
 
 function _analyticsDedupe(chave) {
-  var ref = db.collection('analyticsDedupe').doc(chave);
-  return ref.get().then(function (snap) {
-    if (snap.exists) return false; // já contado hoje
-    var expiresAt = new Date(Date.now() + ANALYTICS_TTL_DIAS * 24 * 60 * 60 * 1000);
-    return ref.set({ ts: Date.now(), expiresAt: expiresAt }).then(function () { return true; });
+  // O IP nunca fica legível no ID. A transação impede duas chamadas
+  // simultâneas de contarem o mesmo visitante duas vezes.
+  var docId = crypto.createHash('sha256').update(String(chave)).digest('hex');
+  var ref = db.collection('analyticsDedupe').doc(docId);
+  return db.runTransaction(function(tx) {
+    return tx.get(ref).then(function(snap) {
+      if (snap.exists) return false;
+      var expiresAt = new Date(Date.now() + ANALYTICS_TTL_DIAS * 24 * 60 * 60 * 1000);
+      tx.create(ref, { ts: Date.now(), expiresAt: expiresAt });
+      return true;
+    });
   });
 }
 

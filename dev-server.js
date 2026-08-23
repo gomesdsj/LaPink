@@ -19,8 +19,16 @@ function readDB() {
 
 function writeDB(db) {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  const tmp = DB_PATH + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(db, null, 2));
+  fs.renameSync(tmp, DB_PATH);
 }
+
+function novoId() { return Date.now() * 1000 + crypto.randomInt(0, 1000); }
+function idValido(v) { const n = Number(v); return Number.isSafeInteger(n) && n > 0 ? n : null; }
+function emailValido(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim()); }
+function produtoValido(p) { const preco = p && (p.precoVarejo ?? p.precoAtacado ?? p.preco); return p && String(p.nome || '').trim() && Number.isFinite(Number(preco)) && Number(preco) >= 0; }
+function pedidoValido(p) { return p && Array.isArray(p.itens) && p.itens.length > 0 && Number.isFinite(Number(p.total)) && Number(p.total) >= 0; }
 
 function _seedDB() {
   // Senha aleatória a cada seed local (nunca fixa no código-fonte) —
@@ -62,6 +70,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// Nunca exponha banco, código do backend, testes ou arquivos de ambiente na rede local.
+app.use((req, res, next) => {
+  if (/^\/(data|functions|tests)(\/|$)/i.test(req.path) || /(^|\/)\.(env|git)/i.test(req.path)) {
+    return res.status(404).end();
+  }
+  next();
+});
 // Arquivos estáticos (loja, admin)
 app.use(express.static(ROOT, { dotfiles: 'ignore' }));
 app.get('/', (req, res) => res.redirect('/public/V1.html'));
@@ -140,15 +155,17 @@ app.get('/api/produtos', requireAuth, requirePage('produtos'), (req, res) => {
 });
 
 app.post('/api/produtos', requireAuth, requireRole('superadmin', 'admin'), requirePage('produtos'), (req, res) => {
+  if (!produtoValido(req.body)) return res.status(400).json({ error: 'Produto inválido: informe nome e preço não negativo.' });
   const db = readDB();
-  const produto = { ...req.body, id: Date.now() };
+  const produto = { ...req.body, id: novoId() };
   db.produtos = [...(db.produtos || []), produto];
   writeDB(db);
   res.status(201).json(produto);
 });
 
 app.put('/api/produtos/:id', requireAuth, requireRole('superadmin', 'admin'), requirePage('produtos'), (req, res) => {
-  const db = readDB(); const id = parseInt(req.params.id);
+  const db = readDB(); const id = idValido(req.params.id);
+  if (!id || !produtoValido(req.body)) return res.status(400).json({ error: 'ID ou produto inválido.' });
   const idx = (db.produtos || []).findIndex(p => p.id === id);
   if (idx < 0) return res.status(404).json({ error: 'Produto não encontrado.' });
   db.produtos[idx] = { ...req.body, id };
@@ -157,7 +174,9 @@ app.put('/api/produtos/:id', requireAuth, requireRole('superadmin', 'admin'), re
 });
 
 app.delete('/api/produtos/:id', requireAuth, requireRole('superadmin', 'admin'), requirePage('produtos'), (req, res) => {
-  const db = readDB(); const id = parseInt(req.params.id);
+  const db = readDB(); const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID inválido.' });
+  if (!(db.produtos || []).some(p => p.id === id)) return res.status(404).json({ error: 'Produto não encontrado.' });
   db.produtos = (db.produtos || []).filter(p => p.id !== id);
   writeDB(db);
   res.json({ ok: true });
@@ -171,15 +190,17 @@ app.get('/api/pedidos', requireAuth, requirePage('pedidos'), (req, res) => {
 });
 
 app.post('/api/pedidos', requireAuth, requireRole('superadmin', 'admin'), requirePage('pedidos'), (req, res) => {
+  if (!pedidoValido(req.body)) return res.status(400).json({ error: 'Pedido inválido.' });
   const db = readDB();
-  const pedido = { ...req.body, id: Date.now(), data: req.body.data || new Date().toISOString() };
+  const pedido = { ...req.body, id: novoId(), data: req.body.data || new Date().toISOString() };
   db.pedidos = [...(db.pedidos || []), pedido];
   writeDB(db);
   res.status(201).json(pedido);
 });
 
 app.put('/api/pedidos/:id', requireAuth, requireRole('superadmin', 'admin'), requirePage('pedidos'), (req, res) => {
-  const db = readDB(); const id = parseInt(req.params.id);
+  const db = readDB(); const id = idValido(req.params.id);
+  if (!id || !pedidoValido(req.body)) return res.status(400).json({ error: 'ID ou pedido inválido.' });
   const idx = (db.pedidos || []).findIndex(p => p.id === id);
   if (idx < 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
   db.pedidos[idx] = { ...req.body, id };
@@ -192,7 +213,8 @@ app.patch('/api/pedidos/:id/status', requireAuth, requireRole('superadmin', 'adm
   const { status } = req.body;
   if (!VALIDOS.includes(status))
     return res.status(400).json({ error: 'Status inválido.', validos: VALIDOS });
-  const db = readDB(); const id = parseInt(req.params.id);
+  const db = readDB(); const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID inválido.' });
   const idx = (db.pedidos || []).findIndex(p => p.id === id);
   if (idx < 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
   db.pedidos[idx].status = status;
@@ -201,7 +223,8 @@ app.patch('/api/pedidos/:id/status', requireAuth, requireRole('superadmin', 'adm
 });
 
 app.patch('/api/pedidos/:id/pagamento', requireAuth, requireRole('superadmin', 'admin'), requirePage('pedidos'), (req, res) => {
-  const db = readDB(); const id = parseInt(req.params.id);
+  const db = readDB(); const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID inválido.' });
   const idx = (db.pedidos || []).findIndex(p => p.id === id);
   if (idx < 0) return res.status(404).json({ error: 'Pedido não encontrado.' });
   db.pedidos[idx].pago = !!req.body.pago;
@@ -210,7 +233,9 @@ app.patch('/api/pedidos/:id/pagamento', requireAuth, requireRole('superadmin', '
 });
 
 app.delete('/api/pedidos/:id', requireAuth, requireRole('superadmin', 'admin'), requirePage('pedidos'), (req, res) => {
-  const db = readDB(); const id = parseInt(req.params.id);
+  const db = readDB(); const id = idValido(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID inválido.' });
+  if (!(db.pedidos || []).some(p => p.id === id)) return res.status(404).json({ error: 'Pedido não encontrado.' });
   db.pedidos = (db.pedidos || []).filter(p => p.id !== id);
   writeDB(db);
   res.json({ ok: true });
@@ -224,8 +249,9 @@ app.get('/api/clientes', requireAuth, requirePage('clientes'), (req, res) => {
 });
 
 app.post('/api/clientes', requireAuth, requireRole('superadmin', 'admin'), requirePage('clientes'), (req, res) => {
+  if (!emailValido(req.body.email) || !String(req.body.name || req.body.nome || '').trim()) return res.status(400).json({ error: 'Cliente inválido.' });
   const db = readDB();
-  if ((db.clientes || []).some(c => c.email === req.body.email))
+  if ((db.clientes || []).some(c => c.email.toLowerCase() === req.body.email.toLowerCase()))
     return res.status(409).json({ error: 'E-mail já cadastrado.' });
   const client = { ...req.body, createdAt: req.body.createdAt || new Date().toISOString() };
   db.clientes = [...(db.clientes || []), client];
@@ -244,7 +270,9 @@ app.put('/api/clientes/:email', requireAuth, requireRole('superadmin', 'admin'),
 
 app.delete('/api/clientes/:email', requireAuth, requireRole('superadmin', 'admin'), requirePage('clientes'), (req, res) => {
   const db = readDB(); const email = decodeURIComponent(req.params.email);
-  db.clientes = (db.clientes || []).filter(c => c.email !== email);
+  if (!emailValido(email)) return res.status(400).json({ error: 'E-mail inválido.' });
+  if (!(db.clientes || []).some(c => c.email.toLowerCase() === email.toLowerCase())) return res.status(404).json({ error: 'Cliente não encontrado.' });
+  db.clientes = (db.clientes || []).filter(c => c.email.toLowerCase() !== email.toLowerCase());
   writeDB(db);
   res.json({ ok: true });
 });

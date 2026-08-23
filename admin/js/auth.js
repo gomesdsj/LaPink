@@ -267,106 +267,71 @@ function applyAdminPermissions() {
 
 function getAllUsers() { return _getUsers(); }
 
-function addUser(data) {
-  var users = _getUsers();
-  if (users.some(function(u) { return u.email.toLowerCase() === data.email.toLowerCase(); })) {
-    return Promise.resolve({ ok: false, error: 'E-mail já cadastrado.' });
-  }
-  return _hashPassword(data.password).then(function(hash) {
-    users.push({
-      email:     data.email.trim().toLowerCase(),
-      password:  hash,
-      role:      data.role || 'client',
-      name:      data.name || data.email,
-      address:   data.address || '',
-      createdAt: new Date().toISOString()
+function _operacaoUsuarioAdmin(payload) {
+  return garantirAdminFirebase().then(function(user) {
+    return user.getIdToken().then(function(token) {
+      return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/gerenciarUsuarioAdmin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(payload || {})
+      });
     });
-    _saveUsers(users);
-    return { ok: true };
+  }).then(function(resp) {
+    return resp.json().catch(function() { return {}; }).then(function(data) {
+      if (!resp.ok) throw new Error(data.error || 'Não foi possível concluir a operação.');
+      return data;
+    });
   });
+}
+
+function carregarUsuariosAdmin() {
+  return _operacaoUsuarioAdmin({ acao: 'listar' }).then(function(data) {
+    var fixos = _getUsers().filter(function(u) { return u.role === 'superadmin'; });
+    var lista = Array.isArray(data.usuarios) ? data.usuarios : [];
+    fixos.forEach(function(fixo) {
+      if (!lista.some(function(u) { return u.email.toLowerCase() === fixo.email.toLowerCase(); })) lista.unshift(fixo);
+    });
+    localStorage.setItem(_USERS_KEY, JSON.stringify(lista));
+    return lista;
+  });
+}
+
+function addUser(data) {
+  return _operacaoUsuarioAdmin({ acao: 'criar', nome: data.name, email: data.email, senha: data.password, role: data.role })
+    .then(function() { return carregarUsuariosAdmin(); }).then(function() { return { ok: true }; })
+    .catch(function(e) { return { ok: false, error: e.message }; });
 }
 
 function promoteToAdmin(email) {
-  var users = _getUsers();
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].email.toLowerCase() === email.toLowerCase()) {
-      if (users[i].role === 'superadmin') return { ok: false, error: 'Não é possível alterar o Super Admin.' };
-      users[i].role = 'admin';
-      _saveUsers(users);
-      return { ok: true };
-    }
-  }
-  return { ok: false, error: 'Usuário não encontrado.' };
+  var u = _getUsers().find(function(x) { return x.email.toLowerCase() === email.toLowerCase(); }) || {};
+  return updateUser(email, { name: u.name || email, role: 'admin', pages: null });
 }
 
 function revokeAdmin(email) {
-  var users = _getUsers();
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].email.toLowerCase() === email.toLowerCase()) {
-      if (users[i].role === 'superadmin') return { ok: false, error: 'Não é possível alterar o Super Admin.' };
-      users[i].role = 'client';
-      _saveUsers(users);
-      return { ok: true };
-    }
-  }
-  return { ok: false, error: 'Usuário não encontrado.' };
+  var u = _getUsers().find(function(x) { return x.email.toLowerCase() === email.toLowerCase(); }) || {};
+  return updateUser(email, { name: u.name || email, role: 'client', pages: null });
 }
 
 function addUserFromClient(client) {
-  var users = _getUsers();
   var email = (client.email || '').trim().toLowerCase();
-  var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email; });
-  if (idx !== -1) {
-    if (users[idx].role === 'superadmin') return { ok: false, error: 'Não é possível alterar o Super Admin.' };
-    users[idx].role = 'admin';
-    if (client.name || client.nome) users[idx].name = client.name || client.nome;
-  } else {
-    users.push({
-      email: email,
-      password: client.password || '',
-      role: 'admin',
-      name: client.name || client.nome || email,
-      address: client.endereco || client.address || '',
-      createdAt: new Date().toISOString()
-    });
-  }
-  _saveUsers(users);
-  return { ok: true };
+  return updateUser(email, { name: client.name || client.nome || email, role: 'admin', pages: null });
 }
 
 function deleteUser(email) {
-  var users = _getUsers();
-  var target = users.find(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
-  if (!target) return { ok: false, error: 'Usuário não encontrado.' };
-  if (target.role === 'superadmin') return { ok: false, error: 'Não é possível excluir o Super Admin.' };
-  _saveUsers(users.filter(function(u) { return u.email.toLowerCase() !== email.toLowerCase(); }));
-  return { ok: true };
+  return _operacaoUsuarioAdmin({ acao: 'excluir', email: email })
+    .then(function() { return carregarUsuariosAdmin(); }).then(function() { return { ok: true }; })
+    .catch(function(e) { return { ok: false, error: e.message }; });
 }
 
 function updateUser(email, data) {
-  var users = _getUsers();
-  var idx = users.findIndex(function(u) { return u.email.toLowerCase() === email.toLowerCase(); });
-  if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' };
-  if (users[idx].role === 'superadmin') return { ok: false, error: 'Não é possível alterar o Super Admin.' };
-  if (data.name  !== undefined) users[idx].name  = data.name;
-  if (data.role  !== undefined) users[idx].role  = data.role;
-  if (data.pages !== undefined) users[idx].pages = data.pages; // null = acesso total, array = restrito
-  _saveUsers(users);
-  return { ok: true };
+  return _operacaoUsuarioAdmin({ acao: 'atualizar', email: email, nome: data.name, role: data.role, pages: data.pages })
+    .then(function() { return carregarUsuariosAdmin(); }).then(function() { return { ok: true }; })
+    .catch(function(e) { return { ok: false, error: e.message }; });
 }
 
 function updatePassword(email, newPassword) {
-  return _hashPassword(newPassword).then(function(hash) {
-    var users = _getUsers();
-    for (var i = 0; i < users.length; i++) {
-      if (users[i].email.toLowerCase() === email.toLowerCase()) {
-        users[i].password = hash;
-        _saveUsers(users);
-        return { ok: true };
-      }
-    }
-    return { ok: false, error: 'Usuário não encontrado.' };
-  });
+  return _operacaoUsuarioAdmin({ acao: 'senha', email: email, senha: newPassword })
+    .then(function() { return { ok: true }; }).catch(function(e) { return { ok: false, error: e.message }; });
 }
 
 function updateAddress(email, address) {

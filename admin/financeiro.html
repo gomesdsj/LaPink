@@ -604,7 +604,22 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
 
 /* ── Helpers ── */
 function getPedidos() {
-  try { return JSON.parse(localStorage.getItem('lapinkPedidos') || '[]') || []; } catch(e) { return []; }
+  var locais = [];
+  try { locais = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]') || []; } catch(e) {}
+  return locais.concat(_pedidosFinanceiroRemotos);
+}
+var _pedidosFinanceiroRemotos = [];
+function carregarPedidosFinanceiroRemotos() {
+  return garantirAdminFirebase().then(function() {
+    return firebase.firestore().collection('pedidos').get();
+  }).then(function(qs) {
+    _pedidosFinanceiroRemotos = [];
+    qs.forEach(function(doc) {
+      var p = Object.assign({}, doc.data(), { id: doc.id, numero: doc.id, _fonte: 'fs' });
+      if (!p.arquivado) _pedidosFinanceiroRemotos.push(p);
+    });
+    render();
+  }).catch(function(e) { showToast('Falha ao carregar pedidos da nuvem: ' + e.message, 'erro'); });
 }
 function setPedidos(arr) {
   localStorage.setItem('lapinkPedidos', JSON.stringify(arr));
@@ -743,8 +758,8 @@ function renderCobrancas() {
         '<div class="cob-total">' + formatBRL(p.total) + '</div>' +
         '<span class="status-pill ' + st + '">' + (STATUS_LABEL[st] || st) + '</span>' +
         '<div class="cob-actions">' +
-          (wa ? '<button class="btn btn-secondary" onclick="cobrarWA(' + p.id + ')"><i class="ti ti-brand-whatsapp"></i> Cobrar</button>' : '') +
-          '<button class="btn btn-primary" onclick="marcarPago(' + p.id + ')"><i class="ti ti-check"></i> Marcar pago</button>' +
+          (wa ? '<button class="btn btn-secondary" onclick="cobrarWA(' + JSON.stringify(String(p.id)) + ')"><i class="ti ti-brand-whatsapp"></i> Cobrar</button>' : '') +
+          '<button class="btn btn-primary" onclick="marcarPago(' + JSON.stringify(String(p.id)) + ')"><i class="ti ti-check"></i> Marcar pago</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -778,7 +793,7 @@ function renderHistorico() {
         '<span class="badge badge-pago"><i class="ti ti-check"></i> Pago</span>' +
         // "Desfazer" só quando foi marcado manualmente; se o pago vem do status, altere em Pedidos
         (p.pago === true
-          ? '<div class="cob-actions"><button class="btn btn-secondary" style="font-size:11px;" onclick="desfazerPago(' + p.id + ')"><i class="ti ti-x"></i> Desfazer</button></div>'
+          ? '<div class="cob-actions"><button class="btn btn-secondary" style="font-size:11px;" onclick="desfazerPago(' + JSON.stringify(String(p.id)) + ')"><i class="ti ti-x"></i> Desfazer</button></div>'
           : '') +
       '</div>' +
     '</div>';
@@ -902,9 +917,9 @@ function renderRelatorio() {
         var data = p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '—';
         var pagoHtml = isPedidoPago(p)
           ? '<span class="badge badge-pago"><i class="ti ti-check"></i> Pago</span>'
-          : '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="marcarPago(' + p.id + ')">Marcar pago</button>';
+          : '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="marcarPago(' + JSON.stringify(String(p.id)) + ')">Marcar pago</button>';
         var desfHtml = p.pago === true
-          ? '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;margin-left:4px;" onclick="desfazerPago(' + p.id + ')"><i class="ti ti-x"></i></button>'
+          ? '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;margin-left:4px;" onclick="desfazerPago(' + JSON.stringify(String(p.id)) + ')"><i class="ti ti-x"></i></button>'
           : '';
         return '<tr>' +
           '<td><strong>#' + escHtml(String(p.numero || p.id || '—')) + '</strong></td>' +
@@ -915,7 +930,7 @@ function renderRelatorio() {
           '<td>' + data + '</td>' +
           '<td>' +
             ((p.cliente && p.cliente.whatsapp)
-              ? '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="cobrarWA(' + p.id + ')"><i class="ti ti-brand-whatsapp"></i></button>'
+              ? '<button class="btn btn-secondary" style="font-size:11px;padding:3px 10px;" onclick="cobrarWA(' + JSON.stringify(String(p.id)) + ')"><i class="ti ti-brand-whatsapp"></i></button>'
               : '') +
           '</td>' +
         '</tr>';
@@ -925,10 +940,26 @@ function renderRelatorio() {
 }
 
 /* ── Actions ── */
-function marcarPago(id) {
+async function marcarPago(id) {
   var pedidos = getPedidos();
-  var idx = pedidos.findIndex(function(p) { return p.id === id; });
+  var idx = pedidos.findIndex(function(p) { return String(p.id) === String(id); });
   if (idx === -1) return;
+  if (pedidos[idx]._fonte === 'fs') {
+    if (!confirm('Confirmar este pagamento manualmente? Pedidos do Mercado Pago devem ser confirmados automaticamente pelo gateway.')) return;
+    try {
+      var user = await garantirAdminFirebase();
+      var token = await user.getIdToken();
+      var resp = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/registrarPagamentoManualAdmin', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ pedidoId: String(pedidos[idx].id) })
+      });
+      var data = await resp.json().catch(function() { return {}; });
+      if (!resp.ok) throw new Error(data.error || 'Falha ao registrar pagamento.');
+      await carregarPedidosFinanceiroRemotos();
+      showToast('Pagamento manual registrado e estoque processado!', 'success');
+    } catch(e) { showToast(e.message, 'erro'); }
+    return;
+  }
   pedidos[idx].pago = true;
   // Pedido do checkout (WhatsApp) ainda sem baixa de estoque → baixa agora
   if (typeof baixarEstoquePedidoLocal === 'function') baixarEstoquePedidoLocal(pedidos[idx]);
@@ -939,7 +970,7 @@ function marcarPago(id) {
 
 function desfazerPago(id) {
   var pedidos = getPedidos();
-  var idx = pedidos.findIndex(function(p) { return p.id === id; });
+  var idx = pedidos.findIndex(function(p) { return String(p.id) === String(id); });
   if (idx === -1) return;
   pedidos[idx].pago = false;
   setPedidos(pedidos);
@@ -949,7 +980,7 @@ function desfazerPago(id) {
 
 function cobrarWA(id) {
   var pedidos = getPedidos();
-  var p = pedidos.find(function(x) { return x.id === id; });
+  var p = pedidos.find(function(x) { return String(x.id) === String(id); });
   if (!p) return;
   var wa = ((p.cliente && p.cliente.whatsapp) || '').replace(/\D/g, '');
   if (!wa) { showToast('WhatsApp do cliente não informado.', 'erro'); return; }
@@ -1065,7 +1096,7 @@ function carregarPagamentos() {
   togglePaySection('dinheiro');
 }
 
-function salvarPagamentos() {
+async function salvarPagamentos() {
   var bandeiras = [];
   document.querySelectorAll('.bandeira-cb:checked').forEach(function(cb) { bandeiras.push(cb.value); });
 
@@ -1109,9 +1140,15 @@ function salvarPagamentos() {
     showToast('Informe banco e conta para ativar a transferência.', 'erro'); return;
   }
 
-  setPayConfig(cfg);
-  atualizarPreviewPix();
-  showToast('Configurações de pagamento salvas!', 'success');
+  try {
+    if (typeof window.lapinkCloudWrite !== 'function') throw new Error('Sincronização com a nuvem indisponível.');
+    await window.lapinkCloudWrite(PAY_KEY, cfg);
+    localStorage.setItem(PAY_KEY, JSON.stringify(cfg));
+    atualizarPreviewPix();
+    showToast('Configurações de pagamento salvas na nuvem!', 'success');
+  } catch(e) {
+    showToast('Não foi possível salvar: ' + e.message, 'erro');
+  }
 }
 
 /* Preview ao vivo no PIX */
@@ -1125,6 +1162,7 @@ if (pixTipoEl) pixTipoEl.addEventListener('change', atualizarPreviewPix);
 window.addEventListener('DOMContentLoaded', function() {
   render();
   carregarPagamentos();
+  carregarPedidosFinanceiroRemotos();
 });
 </script>
 <style>
