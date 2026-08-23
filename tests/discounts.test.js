@@ -108,3 +108,10 @@ test('vitrine redesenha os cards quando descontos chegam do Firebase', () => {
   assert.match(vitrine, /lapinkDescontosAtualizados[\s\S]*window\.recarregarVitrineComDescontos\(\)/);
   assert.doesNotMatch(vitrine, /lapinkDescontosAtualizados', function\(\) \{\s*atualizarProdutos\(\)/);
 });
+
+test('checkout não exibe prazo médio de envio ao cliente', () => {
+  const carrinho = fs.readFileSync(path.join(root, 'public/checkout.html'), 'utf8');
+  const pagamento = fs.readFileSync(path.join(root, 'public/pagamento.html'), 'utf8');
+  assert.doesNotMatch(carrinho, /5 a 10 dias úteis|1 a 3 dias úteis|cfg\.local\.prazo/);
+  assert.doesNotMatch(pagamento, /Entrega em até[^\n]+o\.prazo|Prazo padrão dos Correios/);
+});

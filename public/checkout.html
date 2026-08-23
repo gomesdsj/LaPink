@@ -443,7 +443,7 @@ function _esc(s) {
       opts.push({
         key: 'local', icon: 'ti-motorbike',
         taxa: gratuito ? 0 : (cfg.local.taxa || 0),
-        label: 'Entrega local' + (cfg.local.prazo ? ' — ' + cfg.local.prazo : ''),
+        label: 'Entrega local',
         sub: cfg.local.area || ''
       });
     }
@@ -460,9 +460,7 @@ function _esc(s) {
         taxa:      aCombinar ? 0 : (taxa || 0),
         aCombinar: aCombinar,
         label:    srv.servico + (srv.caixa ? ' — ' + srv.caixa : '') + ' · ' + fmtPeso(srv.pesoG),
-        sub:       gratis
-          ? 'Frete grátis aplicado!'
-          : (srv.prazo ? srv.prazo + (aCombinar ? ' · A combinar — entre em contato' : '') : (aCombinar ? 'A combinar — entre em contato' : ''))
+        sub:       gratis ? 'Frete grátis aplicado!' : (aCombinar ? 'A combinar — entre em contato' : '')
       });
     });
 
@@ -600,17 +598,17 @@ function _esc(s) {
 
     if (cfg.pac && cfg.pac.ativo && cfg.pac.tabela && cfg.pac.tabela.length) {
       var r = _consultarTabela(cfg.pac.tabela, pesoG);
-      servicos.push({ key:'pac', servico:'PAC', prazo:'5 a 10 dias úteis', pesoG: pesoG, preco: r.preco, caixa: r.caixa });
+      servicos.push({ key:'pac', servico:'PAC', pesoG: pesoG, preco: r.preco, caixa: r.caixa });
     }
     if (cfg.sedex && cfg.sedex.ativo && cfg.sedex.tabela && cfg.sedex.tabela.length) {
       var r2 = _consultarTabela(cfg.sedex.tabela, pesoG);
-      servicos.push({ key:'sedex', servico:'SEDEX', prazo:'1 a 3 dias úteis', pesoG: pesoG, preco: r2.preco, caixa: r2.caixa });
+      servicos.push({ key:'sedex', servico:'SEDEX', pesoG: pesoG, preco: r2.preco, caixa: r2.caixa });
     }
 
     // Fallback: tabelaPeso legado (sem PAC/SEDEX separados)
     if (!servicos.length && cfg.tabelaPeso && cfg.tabelaPeso.length) {
       var r3 = _consultarTabela(cfg.tabelaPeso, pesoG);
-      servicos.push({ key:'correios', servico:'Correios', prazo:'', pesoG: pesoG, preco: r3.preco, caixa: r3.caixa || '' });
+      servicos.push({ key:'correios', servico:'Correios', pesoG: pesoG, preco: r3.preco, caixa: r3.caixa || '' });
     }
 
     return servicos;
