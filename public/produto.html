@@ -247,10 +247,14 @@
   document.getElementById('prod-desc').textContent  = produto.descricao || '';
 
   var preco = Number(produto.precoAtacado) || Number(produto.precoVarejo) || 0;
+  var calcDesc = window.LaPinkDescontos ? window.LaPinkDescontos.calcular(produto) : { precoOriginal: preco, precoFinal: preco, descontoPct: 0 };
   var est   = parseInt(produto.estoque)    || 0;
 
-  document.getElementById('prod-price').textContent   = 'R$ ' + preco.toFixed(2).replace('.', ',');
-  document.getElementById('prod-atacado').textContent = 'Preço de atacado';
+  preco = calcDesc.precoFinal;
+  document.getElementById('prod-price').textContent = (calcDesc.descontoPct ? 'Por: ' : '') + 'R$ ' + preco.toFixed(2).replace('.', ',');
+  document.getElementById('prod-atacado').innerHTML = calcDesc.descontoPct
+    ? '<span style="text-decoration:line-through">De: R$ ' + calcDesc.precoOriginal.toFixed(2).replace('.', ',') + '</span> · <b style="color:#D4537E">' + calcDesc.descontoPct + '% OFF</b>'
+    : 'Preço de atacado';
 
   var stockEl = document.getElementById('prod-stock');
   var stockTx = document.getElementById('prod-stock-txt');
@@ -351,7 +355,19 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/cloud-sync.js"></script>
+<script src="js/descontos.js"></script>
 <script src="js/cart.js"></script>
+<script>
+function atualizarPrecoPromocionalDetalhe() {
+  if (typeof produto === 'undefined' || !produto || !window.LaPinkDescontos) return;
+  var c = window.LaPinkDescontos.calcular(produto);
+  var p = document.getElementById('prod-price'), a = document.getElementById('prod-atacado');
+  if (p) p.textContent = (c.descontoPct ? 'Por: ' : '') + 'R$ ' + c.precoFinal.toFixed(2).replace('.', ',');
+  if (a) a.innerHTML = c.descontoPct ? '<span style="text-decoration:line-through">De: R$ '+c.precoOriginal.toFixed(2).replace('.',',')+'</span> · <b style="color:#D4537E">'+c.descontoPct+'% OFF</b>' : 'Preço de atacado';
+}
+atualizarPrecoPromocionalDetalhe();
+document.addEventListener('lapinkDescontosAtualizados', atualizarPrecoPromocionalDetalhe);
+</script>
 <script src="js/storage.js"></script>
 <script>
   try {

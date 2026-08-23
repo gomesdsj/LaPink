@@ -14,7 +14,7 @@
 // cliente passam a ser locais ao dispositivo até a migração para Firebase Auth.
 
 (function () {
-  var SYNC_KEYS = ['lapinkProdutos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkPaymentConfig', 'lapinkEntregaConfig', 'lapinkPedidoCounter', 'lapinkCategorias', 'lapinkBeneficios', 'lapinkEmailConfig'];
+  var SYNC_KEYS = ['lapinkProdutos', 'lapinkDescontos', 'lapinkPedidos', 'lapinkConfig', 'lapinkLojaConfig', 'lapinkCarrossel', 'lapinkStoreConfig', 'lapinkNotifConfig', 'lapinkPaymentConfig', 'lapinkEntregaConfig', 'lapinkPedidoCounter', 'lapinkCategorias', 'lapinkBeneficios', 'lapinkEmailConfig'];
   var MAX_RETRIES = 20; // 20 × 300ms = 6s máximo de espera pelo Firebase
 
   // ── Firestore helpers ─────────────────────────────────────────
@@ -140,6 +140,14 @@
 
   // ── Intercepta localStorage.setItem ──────────────────────────
   var _orig = Storage.prototype.setItem;
+  window.lapinkCloudSave = function(key, data) {
+    return writeToFirestore(key, data).then(function() {
+      _orig.call(localStorage, key, JSON.stringify(data));
+      _orig.call(localStorage, key + '_ts', String(Date.now()));
+      document.dispatchEvent(new CustomEvent(key + 'Atualizados', { detail: data }));
+      return data;
+    });
+  };
   Storage.prototype.setItem = function (key, value) {
     _orig.call(this, key, value);
     if (this === localStorage && SYNC_KEYS.indexOf(key) !== -1) {

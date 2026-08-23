@@ -367,6 +367,7 @@ body { background: var(--gray-50); min-height: 100vh; }
         <span id="co-count-label">Itens</span>
         <span id="co-subtotal" style="font-weight:700;color:var(--gray-800);">R$ 0,00</span>
       </div>
+      <div class="co-summary-row" id="co-descontos-row" style="display:none;color:var(--green-400);font-weight:700"><span>Descontos</span><span id="co-descontos">R$ 0,00</span></div>
       <div id="co-frete-progress" style="display:none;"></div>
 
       <div class="co-summary-row" id="co-frete-row">
@@ -396,6 +397,7 @@ body { background: var(--gray-50); min-height: 100vh; }
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <script src="js/cloud-sync.js"></script>
+<script src="js/descontos.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
 <script>
@@ -764,8 +766,8 @@ function _esc(s) {
         '<div class="cart-item-img">' + imgHtml + '</div>' +
         '<div class="cart-item-info">' +
           '<div class="cart-item-name">' + _esc(item.nome) + '</div>' +
-          '<div class="cart-item-price">' + fmtMoeda(item.preco) + '</div>' +
-          '<div class="cart-item-sub">Subtotal: ' + fmtMoeda(item.preco * item.qty) + '</div>' +
+          (item.descontoPct ? '<div class="cart-item-sub" style="text-decoration:line-through">De: ' + fmtMoeda(item.precoOriginal) + '</div><div class="cart-item-price">Por: ' + fmtMoeda(item.preco) + ' · ' + item.descontoPct + '% OFF</div><div class="cart-item-sub">Economia: ' + fmtMoeda((item.precoOriginal-item.preco)*item.qty) + '</div>' : '<div class="cart-item-price">' + fmtMoeda(item.preco) + '</div>') +
+          '<div class="cart-item-sub">Qtd: ' + item.qty + ' · Subtotal final: ' + fmtMoeda(item.preco * item.qty) + '</div>' +
         '</div>' +
         '<div class="cart-item-right">' +
           '<button class="cart-item-remove" data-action="remove" data-id="' + item.id + '" aria-label="Remover"><i class="ti ti-trash"></i></button>' +
@@ -778,11 +780,14 @@ function _esc(s) {
       '</div>';
     }).join('');
 
-    var total = getCartTotal();
+    var totais = typeof getCartTotals === 'function' ? getCartTotals() : { subtotalOriginal:getCartTotal(), descontos:0, total:getCartTotal() };
+    var total = totais.total;
     var count = getCartCount();
     document.getElementById('co-count-label').textContent = count + (count === 1 ? ' item' : ' itens');
-    document.getElementById('co-subtotal').textContent    = fmtMoeda(total);
+    document.getElementById('co-subtotal').textContent    = fmtMoeda(totais.subtotalOriginal);
     document.getElementById('co-total').textContent       = fmtMoeda(total);
+    document.getElementById('co-descontos-row').style.display = totais.descontos > 0 ? 'flex' : 'none';
+    document.getElementById('co-descontos').textContent = '− ' + fmtMoeda(totais.descontos);
     renderDeliveryOpts();
 
     document.querySelectorAll('[data-action]').forEach(function(btn) {
@@ -804,7 +809,7 @@ function _esc(s) {
     });
   }
 
-  document.getElementById('co-btn-confirm').addEventListener('click', function() {
+  document.getElementById('co-btn-confirm').addEventListener('click', async function() {
     var nome     = document.getElementById('co-nome').value.trim();
     var whatsapp = document.getElementById('co-whatsapp').value.trim();
     var email    = document.getElementById('co-email').value.trim();
@@ -825,7 +830,18 @@ function _esc(s) {
     if (!obs)      { obsInp.classList.add('error');   obsInp.focus();   return; }
 
     var cart      = getCart();
-    var subtotal  = getCartTotal();
+    var cotacao;
+    try {
+      var vr = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/validarCarrinhoDescontos', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({itens:cart.map(function(i){return {id:i.id,qty:i.qty}})})
+      });
+      cotacao = await vr.json();
+      if (!vr.ok) throw new Error(cotacao.error || 'Falha ao validar preços.');
+    } catch (erro) { alert('Não foi possível confirmar os preços: '+erro.message); return; }
+    cart = cotacao.itens;
+    var subtotalOriginal = cotacao.subtotal;
+    var subtotal  = cotacao.totalProdutos;
     var delivery  = getSelectedDelivery();
     var freteTaxa = delivery && !delivery.aCombinar ? (delivery.taxa || 0) : 0;
     var total     = subtotal + freteTaxa;
@@ -839,8 +855,9 @@ function _esc(s) {
       numero:       numPedido,
       clienteEmail: email,
       cliente:      { name: nome, email: email, whatsapp: whatsapp },
-      itens:        cart.map(function(i) { return { nome: i.nome, qty: i.qty, preco: i.preco }; }),
-      subtotal:     subtotal,
+      itens:        cart.map(function(i) { return Object.assign({},i); }),
+      subtotal:     subtotalOriginal,
+      desconto:     cotacao.desconto,
       frete:        freteTaxa,
       entrega:      delivery ? delivery.label : 'A combinar',
       total:        total,
@@ -880,7 +897,8 @@ function _esc(s) {
       '*WhatsApp:* ' + whatsapp + '\n' +
       (email ? '*E-mail:* ' + email + '\n' : '') +
       '\n*Itens:*\n' + itensMsg + '\n\n' +
-      '*Subtotal:* ' + fmtMoeda(subtotal) + '\n' +
+      '*Subtotal:* ' + fmtMoeda(subtotalOriginal) + '\n' +
+      (cotacao.desconto > 0 ? '*Descontos:* -' + fmtMoeda(cotacao.desconto) + '\n' : '') +
       delivLine +
       '*Total:* ' + fmtMoeda(total) + '\n' +
       (payLabel ? '*Pagamento:* ' + payLabel + '\n' : '') +
@@ -917,6 +935,7 @@ function _esc(s) {
   });
 
   render();
+  document.addEventListener('lapinkDescontosAtualizados', render);
 
 })();
 </script>

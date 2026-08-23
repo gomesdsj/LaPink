@@ -409,6 +409,7 @@ body { background: var(--gray-50); min-height: 100vh; margin: 0; }
 <script src="js/firebase-init.js"></script>
 <script src="js/cloud-sync.js"></script>
 <script src="js/perfil-db.js"></script>
+<script src="js/descontos.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/auth.js"></script>
@@ -609,6 +610,7 @@ if (!_cart.length) {
   var _freteToken = '';
   var _pesoTotal = 0;
   var _subtotal = 0;
+  var _descontoProdutos = 0;       // promoções específicas dos produtos
   var _freteGratisAtivo = false;
   var _freteOpcoesAPI = null;       // cotação real por CEP (Melhor Envio); null = usa tabela
   var _formaPagamento = 'pix';      // forma de pagamento escolhida (visual; MP processa quando ativo)
@@ -627,7 +629,17 @@ if (!_cart.length) {
       var user = _perfilAtual();
       if (user && user.descontoUsado) return;            // já usou o desconto
       _descontoPct = Math.max(0, Math.min(90, Number(d.percentual) || 0));
-      _descontoValor = Math.round(_subtotal * _descontoPct) / 100;
+      // Não acumula com promoção: o benefício só substitui o desconto do
+      // produto quando for maior. O backend repete esta mesma decisão.
+      var cart = typeof getCart === 'function' ? getCart() : _cart;
+      _descontoValor = Math.round(cart.reduce(function (s, item) {
+        var original = Number(item.precoOriginal);
+        if (!Number.isFinite(original)) original = Number(item.preco) || 0;
+        var promocional = Number(item.preco) || 0;
+        var comWelcome = Math.max(0, Math.round(original * (1 - _descontoPct / 100) * 100) / 100);
+        return s + Math.max(0, promocional - comWelcome) * item.qty;
+      }, 0) * 100) / 100;
+      if (_descontoValor <= 0) _descontoPct = 0;
     } catch (e) {}
   }
 
@@ -821,7 +833,8 @@ if (!_cart.length) {
   function renderItens() {
     var cart = typeof getCart === 'function' ? getCart() : _cart;
     var el = document.getElementById('pgItems');
-    _subtotal = cart.reduce(function (s, i) { return s + i.preco * i.qty; }, 0);
+    _subtotal = cart.reduce(function (s, i) { var o=Number(i.precoOriginal);return s+(Number.isFinite(o)?o:Number(i.preco)||0)*i.qty; }, 0);
+    _descontoProdutos = cart.reduce(function (s, i) { var o=Number(i.precoOriginal);if(!Number.isFinite(o))o=Number(i.preco)||0;return s+Math.max(0,o-(Number(i.preco)||0))*i.qty; }, 0);
 
     el.innerHTML = cart.map(function (item) {
       var imgHtml = item.imagem
@@ -831,9 +844,9 @@ if (!_cart.length) {
         '<div class="pg-item-img">' + imgHtml + '</div>' +
         '<div class="pg-item-info">' +
           '<div class="pg-item-name">' + _esc(item.nome) + '</div>' +
-          '<div class="pg-item-qty">Qtd: ' + item.qty + '</div>' +
+          '<div class="pg-item-qty">Qtd: ' + item.qty + (item.descontoPct ? ' · ' + item.descontoPct + '% OFF · economia ' + fmtR((item.precoOriginal-item.preco)*item.qty) : '') + '</div>' +
         '</div>' +
-        '<div class="pg-item-price">' + fmtR(item.preco * item.qty) + '</div>' +
+        '<div class="pg-item-price">' + (item.descontoPct ? '<small style="display:block;text-decoration:line-through;color:#999">'+fmtR(item.precoOriginal*item.qty)+'</small>' : '') + fmtR(item.preco * item.qty) + '</div>' +
         '</div>';
     }).join('');
   }
@@ -845,9 +858,10 @@ if (!_cart.length) {
     _pesoTotal = calcularPeso();
 
     // Verificar frete grátis
+    _calcularDesconto();
     var gratisAtivo = cfg.gratis && cfg.gratis.ativo;
     var gratisMin = gratisAtivo ? Number(cfg.gratis.minimo || 0) : Infinity;
-    _freteGratisAtivo = gratisAtivo && _subtotal >= gratisMin;
+    _freteGratisAtivo = gratisAtivo && (_subtotal - _descontoProdutos - _descontoValor) >= gratisMin;
 
     var opcoes = [];
     var excedeuTabela = false;
@@ -1007,7 +1021,7 @@ if (!_cart.length) {
   function renderTotais() {
     var el = document.getElementById('pgTotais');
     _calcularDesconto();
-    var total = _subtotal - _descontoValor + _freteValor;
+    var total = _subtotal - _descontoProdutos - _descontoValor + _freteValor;
 
     var freteHtml = '';
     if (_modalidadeSelecionada === 'retirada' || (_freteGratisAtivo && _freteValor === 0 && _modalidadeSelecionada)) {
@@ -1018,12 +1032,15 @@ if (!_cart.length) {
       freteHtml = '<div class="pg-tot-row"><span>Frete</span><span style="color:var(--gray-400)">A combinar</span></div>';
     }
 
+    var descontoProdutoHtml = _descontoProdutos > 0
+      ? '<div class="pg-tot-row"><span>Descontos dos produtos</span><span class="pg-tot-gratis">− ' + fmtR(_descontoProdutos) + '</span></div>' : '';
     var descontoHtml = _descontoValor > 0
       ? '<div class="pg-tot-row"><span>Desconto boas-vindas (' + _descontoPct + '%)</span><span class="pg-tot-gratis">− ' + fmtR(_descontoValor) + '</span></div>'
       : '';
 
     el.innerHTML =
       '<div class="pg-tot-row"><span>Subtotal</span><span>' + fmtR(_subtotal) + '</span></div>' +
+      descontoProdutoHtml +
       descontoHtml +
       freteHtml +
       '<div class="pg-tot-row bold"><span>TOTAL</span><span>' + fmtR(total) + '</span></div>';
@@ -1035,7 +1052,7 @@ if (!_cart.length) {
   function renderFormaPagamento() {
     var el = document.getElementById('pgPagamento');
     if (!el) return;
-    var total = _subtotal - _descontoValor + _freteValor;
+    var total = _subtotal - _descontoProdutos - _descontoValor + _freteValor;
     var base = total > 0 ? total : _subtotal;
     var parcelas = Math.max(1, Math.min(12, Math.floor(base / 5))); // parcela mínima ~R$5
     var valorParc = parcelas > 0 ? base / parcelas : base;
@@ -1293,7 +1310,7 @@ if (!_cart.length) {
     var estado      = document.getElementById('pgEstado').value.trim().toUpperCase();
 
     _calcularDesconto(); // garante o desconto atualizado antes de cobrar
-    var total = _subtotal - _descontoValor + _freteValor;
+    var total = _subtotal - _descontoProdutos - _descontoValor + _freteValor;
 
     var payload = {
       cliente: {
@@ -1393,7 +1410,7 @@ if (!_cart.length) {
 
   /* ── Monta o pedido e abre o WhatsApp da loja ── */
   window._pedidoWhatsApp = _pedidoWhatsApp;
-  function _pedidoWhatsApp() {
+  async function _pedidoWhatsApp() {
     var cart = typeof getCart === 'function' ? getCart() : _cart;
     if (!cart || !cart.length) { location.replace('V1.html'); return; }
     _salvarPerfilCheckout(); // guarda dados/endereço p/ próximas compras
@@ -1412,12 +1429,30 @@ if (!_cart.length) {
     var uf   = (document.getElementById('pgEstado').value || '').trim();
 
     _calcularDesconto();
-    var linhas = cart.map(function (i) { return '• ' + i.qty + 'x ' + i.nome + ' — ' + fmtR(i.preco * i.qty); });
-    var total = _subtotal - _descontoValor + _freteValor;
+    var cotacao;
+    try {
+      var headers = { 'Content-Type':'application/json' };
+      var fu = firebase.auth && firebase.auth().currentUser;
+      if (fu) headers.Authorization = 'Bearer ' + await fu.getIdToken();
+      var vr = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/validarCarrinhoDescontos', {
+        method:'POST', headers:headers,
+        body:JSON.stringify({ itens:cart.map(function(i){return {id:i.id,qty:i.qty}}), descontoPct:_descontoPct })
+      });
+      cotacao = await vr.json();
+      if (!vr.ok) throw new Error(cotacao.error || 'Não foi possível validar os preços.');
+    } catch (erro) {
+      alert('Não foi possível confirmar os preços do pedido: ' + erro.message);
+      return;
+    }
+    cart = cotacao.itens;
+    _subtotal = cotacao.subtotal;
+    var descontoServidor = cotacao.desconto;
+    var linhas = cart.map(function (i) { return '• ' + i.qty + 'x ' + i.nome + ' — ' + fmtR(i.subtotalFinal); });
+    var total = cotacao.totalProdutos + _freteValor;
     var endereco = (rua || cidade)
       ? ('\n\nEndereço: ' + [rua + (num ? ', ' + num : ''), bairro, cidade + (uf ? '/' + uf : ''), cep].filter(Boolean).join(' - '))
       : '';
-    var descontoLinha = _descontoValor > 0 ? '\nDesconto boas-vindas (' + _descontoPct + '%): -' + fmtR(_descontoValor) : '';
+    var descontoLinha = descontoServidor > 0 ? '\nDescontos: -' + fmtR(descontoServidor) : '';
 
     // Registra o pedido (aguardando pagamento) para aparecer em Pedidos,
     // Financeiro e Relatórios do painel — antes o pedido via WhatsApp sumia
@@ -1431,10 +1466,11 @@ if (!_cart.length) {
           celular: (document.getElementById('pgCelular').value || '').trim()
         },
         endereco: { cep: cep, rua: rua, numero: num, bairro: bairro, cidade: cidade, estado: uf },
-        itens: cart.map(function (i) { return { id: i.id, nome: i.nome, qty: i.qty, preco: i.preco }; }),
+        itens: cart.map(function (i) { return Object.assign({}, i); }),
         subtotal: _subtotal,
-        desconto: _descontoValor,
-        descontoPct: _descontoPct,
+        desconto: descontoServidor,
+        descontoPct: cart.reduce(function(m,i){return Math.max(m,Number(i.descontoPct)||0)},0),
+        usouDescontoBoasVindas: !!cotacao.usouDescontoBoasVindas,
         frete: _freteValor,
         total: total,
         modalidadeFrete: _modalidadeSelecionada,
@@ -1451,7 +1487,7 @@ if (!_cart.length) {
               '\nTotal: ' + fmtR(total) +
               endereco +
               '\n\nComo faço o pagamento?';
-    _marcarDescontoUsado(); // desconto de boas-vindas é uma vez só
+    if (cotacao.usouDescontoBoasVindas) { _descontoValor = Math.max(_descontoValor, 0.01); _marcarDescontoUsado(); }
     window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(msg), '_blank');
   }
 
@@ -1503,6 +1539,7 @@ if (!_cart.length) {
         subtotal: payload.subtotal,
         desconto: payload.desconto || 0,
         descontoPct: payload.descontoPct || 0,
+        usouDescontoBoasVindas: payload.usouDescontoBoasVindas === true,
         frete: payload.frete,
         total: payload.total,
         modalidadeFrete: payload.modalidadeFrete,
@@ -1580,6 +1617,7 @@ if (!_cart.length) {
   renderFrete();
   preencherDados();
   _buscarEnderecoNuvem(); // endereço salvo em outro dispositivo → busca na nuvem
+  document.addEventListener('lapinkDescontosAtualizados', function(){ renderItens(); renderFrete(); });
 
 })();
 </script>

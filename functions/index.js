@@ -286,6 +286,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
     var _descontoInfo = { pct: 0, valor: 0 };
     var _ownerUid = null;
     var _descontoReservado = false;
+    var _usouBoasVindas = false;
     var _domainConfig = {};
 
     Promise.all([
@@ -294,7 +295,8 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
       db.collection('lapink').doc('lapinkLojaConfig').get(), // desconto boas-vindas
       usuarioOpcional(req),
       db.collection('lapink').doc('lapinkEntregaConfig').get(),
-      db.collection('lapink').doc('lapinkDomainConfig').get()
+      db.collection('lapink').doc('lapinkDomainConfig').get(),
+      lerDescontos()
     ])
       .then(function (arr) {
         var token = arr[0];
@@ -303,6 +305,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         var usuario = arr[3];
         var entregaCfg = (arr[4].exists && arr[4].data() && arr[4].data().data) || {};
         _domainConfig = (arr[5].exists && arr[5].data() && arr[5].data().data) || {};
+        var descontosProduto = arr[6];
         _ownerUid = usuario ? usuario.uid : null;
         var mapa = {};
         (Array.isArray(prods) ? prods : []).forEach(function (p) { if (p && typeof p.id !== 'undefined') mapa[String(p.id)] = p; });
@@ -317,10 +320,9 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           if (!usuario) throw new Error('Entre na sua conta para usar o desconto de boas-vindas.');
           descontoPct = Math.min(Number(body.descontoPct), Number(descCfg.percentual), 90);
         }
-        var fatorDesc = 1 - descontoPct / 100;
-
         // Recalcula preços e valida estoque a partir do catálogo no servidor
         const mpItems = [];
+        var agoraDesconto = Date.now();
         itens.forEach(function (item) {
           var p = mapa[String(item.id)];
           if (!p) throw new Error('Produto inválido no carrinho: ' + (item.nome || item.id));
@@ -335,11 +337,24 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
             if (qty > estoque) qty = estoque; // limita ao estoque disponível
           }
           var preco = precoDe(p);
-          // Preço cobrado no MP já com o desconto aplicado (proporcional por item)
-          var precoCobrado = Math.round(preco * fatorDesc * 100) / 100;
+          var promocao = descontoProdutoValido(p.id, descontosProduto, agoraDesconto);
+          var usarPromocao = !!(promocao && promocao.percentual >= descontoPct);
+          var pctItem = usarPromocao ? promocao.percentual : descontoPct;
+          if (!usarPromocao && pctItem > 0) _usouBoasVindas = true;
+          var precoCobrado = Math.max(0, Math.round(preco * (1 - pctItem / 100) * 100) / 100);
+          var descontoUnitario = Math.round((preco - precoCobrado) * 100) / 100;
           _subtotalCalc += preco * qty;
           _pesoCalc += (Number(p.pesoEnvioGramas || p.pesoEnvioG) || 0) * qty;
-          _itensCalc.push({ id: p.id, nome: p.nome, qty: qty, preco: preco });
+          _itensCalc.push({
+            id: p.id, nome: p.nome, qty: qty, preco: precoCobrado,
+            precoOriginal: preco, descontoPct: pctItem,
+            descontoValor: descontoUnitario,
+            precoUnitarioFinal: precoCobrado,
+            subtotalFinal: Math.round(precoCobrado * qty * 100) / 100,
+            promocaoId: usarPromocao ? promocao.id : null,
+            promocaoNome: usarPromocao ? promocao.nome : (pctItem > 0 ? 'Boas-vindas' : null),
+            tipoDesconto: pctItem > 0 ? (usarPromocao ? 'produto' : 'boas_vindas') : null
+          });
           mpItems.push({ id: String(p.id), title: String(p.nome || 'Produto'), quantity: qty, unit_price: precoCobrado, currency_id: 'BRL' });
         });
 
@@ -352,7 +367,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         // Frete sempre recalculado ou validado por assinatura do servidor.
         _pesoCalc += Number(entregaCfg.embalagem && entregaCfg.embalagem.pesoG) || 75;
         var gratis = !!(entregaCfg.gratis && entregaCfg.gratis.ativo
-          && _subtotalCalc >= Number(entregaCfg.gratis.minimo || 0));
+          && (_subtotalCalc - _descontoCalc) >= Number(entregaCfg.gratis.minimo || 0));
         function tabelaPreco(tipo) {
           var cfg = entregaCfg[tipo] || {};
           if (!cfg.ativo || !Array.isArray(cfg.tabela)) return null;
@@ -382,7 +397,10 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         if (_freteCalc > 0) {
           mpItems.push({ id: 'FRETE', title: 'Frete', quantity: 1, unit_price: _freteCalc, currency_id: 'BRL' });
         }
-        _descontoInfo = { pct: descontoPct, valor: _descontoCalc };
+        _descontoInfo = {
+          pct: _itensCalc.reduce(function (m, it) { return Math.max(m, Number(it.descontoPct) || 0); }, 0),
+          valor: _descontoCalc
+        };
 
         // Monta payer
         const clienteNome = (cliente && cliente.nome) || 'Comprador';
@@ -415,7 +433,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         };
 
         var reservarDesconto = Promise.resolve();
-        if (_ownerUid && _descontoInfo.pct) {
+        if (_ownerUid && _usouBoasVindas) {
           var usoRef = db.collection('descontoBoasVindasUsos').doc(_ownerUid);
           reservarDesconto = db.runTransaction(function (tx) {
             return tx.get(usoRef).then(function (uso) {
@@ -431,14 +449,20 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
             });
           }).then(function () { _descontoReservado = true; });
         }
-        return reservarDesconto.then(function () { return fetch('https://api.mercadopago.com/checkout/preferences', {
+        return reservarDesconto.then(function () {
+          if (_totalCalc === 0) {
+            var urlGratis = baseUrlDe(req, _domainConfig) + '/public/sucesso.html?pedido=' + orderId + '&acesso=' + acessoPedido;
+            return { ok: true, json: function () { return Promise.resolve({ id: 'GRATIS-' + orderId, init_point: urlGratis, sandbox_init_point: urlGratis, gratuito: true }); } };
+          }
+          return fetch('https://api.mercadopago.com/checkout/preferences', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token,
           },
           body: JSON.stringify(preference),
-        }); });
+          });
+        });
       })
       .then(function (mpRes) {
         return mpRes.json().then(function (mpData) {
@@ -453,7 +477,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         // Salva pedido rascunho no Firestore
         const pedido = {
           numero: orderId,
-          status: 'aguardando_pagamento',
+          status: mpData.gratuito ? 'pago' : 'aguardando_pagamento',
           mp_preference_id: mpData.id || null,
           mp_payment_id: null,
           mp_status: null,
@@ -461,12 +485,13 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           endereco: endereco || {},
           itens: _itensCalc,            // itens validados no servidor
           subtotal: _subtotalCalc,      // recalculado no servidor
-          desconto: _descontoInfo.valor,       // desconto boas-vindas (R$)
-          descontoPct: _descontoInfo.pct,      // desconto boas-vindas (%)
+          desconto: _descontoInfo.valor,
+          descontoPct: _descontoInfo.pct,
+          usouDescontoBoasVindas: _usouBoasVindas,
           frete: _freteCalc,
           total: _totalCalc,            // recalculado no servidor
           modalidadeFrete: modalidadeFrete || '',
-          pagamento: 'mercadopago',
+          pagamento: mpData.gratuito ? 'gratuito' : 'mercadopago',
           rastreio: null,
           ownerUid: _ownerUid,
           acessoHash: hashAcessoPedido(acessoPedido),
@@ -478,7 +503,11 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           .collection('pedidos')
           .doc(orderId)
           .set(pedido)
-          .then(function () { return mpData; });
+          .then(function () {
+            if (!mpData.gratuito) return mpData;
+            return processarPagamentoAtomico({ external_reference:orderId, transaction_amount:0, currency_id:'BRL', status:'approved' }, 'GRATIS-' + orderId)
+              .then(function () { return mpData; });
+          });
       })
       .then(function (mpData) {
         functions.logger.info('Pedido criado com sucesso', { orderId, mp_id: mpData.id });
@@ -488,6 +517,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           sandbox_init_point: mpData.sandbox_init_point,
           pedido_id: orderId,
           acesso_pedido: acessoPedido,
+          gratuito: !!mpData.gratuito,
         });
       })
       .catch(function (err) {
@@ -648,6 +678,29 @@ function reconciliarPedidoPendente(orderId) {
       return processarPagamentoAtomico(pagamento, pagamento.id);
     });
   });
+}
+
+function lerDescontos() {
+  return db.collection('lapink').doc('lapinkDescontos').get().then(function (snap) {
+    var d = snap.exists ? (snap.data() || {}) : {};
+    return Array.isArray(d.data) ? d.data : [];
+  });
+}
+
+// Retorna apenas a maior promoção válida para o produto. Percentuais nunca
+// são somados e datas são verificadas novamente no servidor.
+function descontoProdutoValido(produtoId, descontos, agora) {
+  var melhor = null;
+  (Array.isArray(descontos) ? descontos : []).forEach(function (d) {
+    var pct = Number(d && d.percentual);
+    var ids = d && Array.isArray(d.produtoIds) ? d.produtoIds.map(String) : [];
+    if (!d || d.ativo !== true || !Number.isFinite(pct) || pct <= 0 || pct > 100 || ids.indexOf(String(produtoId)) < 0) return;
+    var inicio = d.inicio ? new Date(String(d.inicio) + (/^\d{4}-\d{2}-\d{2}$/.test(String(d.inicio)) ? 'T00:00:00' : '')).getTime() : null;
+    var fim = d.fim ? new Date(String(d.fim) + (/^\d{4}-\d{2}-\d{2}$/.test(String(d.fim)) ? 'T23:59:59.999' : '')).getTime() : null;
+    if ((Number.isFinite(inicio) && agora < inicio) || (Number.isFinite(fim) && agora > fim)) return;
+    if (!melhor || pct > melhor.percentual) melhor = { id: String(d.id), nome: _sanitizarTexto(d.nome || 'Promoção', 80), percentual: pct };
+  });
+  return melhor;
 }
 
 // ---------------------------------------------------------------------------
@@ -818,7 +871,7 @@ function processarPagamentoAtomico(payment, paymentId) {
           tx.update(orderRef, updatePedido);
           resultado.notificar = primeiraBaixa;
 
-          if (pedido.ownerUid && Number(pedido.descontoPct || 0) > 0) {
+          if (pedido.ownerUid && pedido.usouDescontoBoasVindas === true) {
             tx.set(db.collection('descontoBoasVindasUsos').doc(pedido.ownerUid), {
               pedidoId: externalRef,
               status: 'usado',
@@ -1151,6 +1204,78 @@ exports.atualizarPedidoAdmin = functions.https.onRequest(function (req, res) {
       var statusHttp = (err && err._status) || 500;
       if (statusHttp >= 500) functions.logger.error('atualizarPedidoAdmin erro', err);
       res.status(statusHttp).json({ error: statusHttp === 500 ? 'Erro ao atualizar pedido.' : err.message });
+    });
+  });
+});
+
+// Liga/desliga o benefício de recém-inscrito sem dar à página de descontos
+// permissão para sobrescrever toda a configuração visual da loja.
+exports.configurarDescontoBoasVindas = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido.' }); return; }
+    var ativo = !!(req.body && req.body.ativo);
+    _exigirPermissao(req, 'descontos').then(function () {
+      var ref = db.collection('lapink').doc('lapinkLojaConfig');
+      return db.runTransaction(function (tx) {
+        return tx.get(ref).then(function (snap) {
+          var atual = snap.exists ? (snap.data() || {}) : {};
+          var dados = atual.data && typeof atual.data === 'object' ? atual.data : {};
+          var anterior = dados.descontoBoasVindas && typeof dados.descontoBoasVindas === 'object' ? dados.descontoBoasVindas : {};
+          dados.descontoBoasVindas = Object.assign({}, anterior, {
+            ativo: ativo,
+            percentual: Math.max(0, Math.min(90, Number(anterior.percentual) || 10))
+          });
+          tx.set(ref, { data: dados, updatedAt: Date.now() }, { merge: true });
+        });
+      });
+    }).then(function () { res.json({ ok: true, ativo: ativo }); })
+      .catch(function (err) {
+        var status = err && err._status ? err._status : 500;
+        res.status(status).json({ error: status >= 500 ? 'Erro ao alterar desconto de recém-inscrito.' : err.message });
+      });
+  });
+});
+
+// Cotação de preços para pedidos finalizados pelo WhatsApp. Nenhum preço do
+// navegador é aceito: catálogo, promoções e boas-vindas são relidos aqui.
+exports.validarCarrinhoDescontos = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido.' }); return; }
+    var itens = req.body && req.body.itens;
+    if (!Array.isArray(itens) || !itens.length || itens.length > 50) { res.status(400).json({ error: 'Carrinho inválido.' }); return; }
+    Promise.all([
+      lerCatalogo(), lerDescontos(), db.collection('lapink').doc('lapinkLojaConfig').get(), usuarioOpcional(req)
+    ]).then(function (arr) {
+      var mapa = {};
+      arr[0].prods.forEach(function (p) { mapa[String(p.id)] = p; });
+      var cfg = (arr[2].exists && arr[2].data() && arr[2].data().data) || {};
+      var welcomeCfg = cfg.descontoBoasVindas || {};
+      var welcome = welcomeCfg.ativo && arr[3] && Number(req.body.descontoPct) > 0
+        ? Math.min(90, Number(req.body.descontoPct), Number(welcomeCfg.percentual) || 0) : 0;
+      var subtotal = 0, descontos = 0, usouWelcome = false;
+      var calculados = itens.map(function (it) {
+        var p = mapa[String(it.id)];
+        var qty = Number(it.qty);
+        if (!p || !Number.isInteger(qty) || qty < 1 || qty > 100) throw Object.assign(new Error('Produto ou quantidade inválida.'), { _status: 400 });
+        var estoque = typeof p.estoque === 'undefined' ? null : (parseInt(p.estoque) || 0);
+        if (estoque !== null && (estoque <= 0 || qty > estoque)) throw Object.assign(new Error('Estoque insuficiente para ' + p.nome + '.'), { _status: 409 });
+        var original = (Number(p.precoAtacado) || Number(p.precoVarejo) || 0);
+        var promo = descontoProdutoValido(p.id, arr[1], Date.now());
+        var usarPromo = !!(promo && promo.percentual >= welcome);
+        var pct = usarPromo ? promo.percentual : welcome;
+        if (!usarPromo && pct > 0) usouWelcome = true;
+        var final = Math.max(0, Math.round(original * (1 - pct / 100) * 100) / 100);
+        subtotal += original * qty; descontos += (original - final) * qty;
+        return { id:p.id, nome:p.nome, qty:qty, preco:final, precoOriginal:original, descontoPct:pct,
+          descontoValor:Math.round((original-final)*100)/100, precoUnitarioFinal:final,
+          subtotalFinal:Math.round(final*qty*100)/100, promocaoId:usarPromo?promo.id:null,
+          promocaoNome:usarPromo?promo.nome:(pct?'Boas-vindas':null), tipoDesconto:pct?(usarPromo?'produto':'boas_vindas'):null };
+      });
+      res.json({ itens:calculados, subtotal:Math.round(subtotal*100)/100, desconto:Math.round(descontos*100)/100,
+        totalProdutos:Math.round((subtotal-descontos)*100)/100, usouDescontoBoasVindas:usouWelcome });
+    }).catch(function (err) {
+      var status = err && err._status ? err._status : 500;
+      res.status(status).json({ error:status >= 500 ? 'Erro ao validar preços.' : err.message });
     });
   });
 });

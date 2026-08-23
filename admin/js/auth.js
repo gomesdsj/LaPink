@@ -108,6 +108,7 @@ function _pushUsersCloud(localArr) {
 var ADMIN_PAGES = [
   { id: 'dashboard',     href: 'admin.html',            label: 'Dashboard',     icon: 'ti-layout-dashboard' },
   { id: 'produtos',      href: 'cadastro-produto.html', label: 'Produtos',      icon: 'ti-package' },
+  { id: 'descontos',     href: 'descontos.html',        label: 'Descontos',     icon: 'ti-discount-2' },
   { id: 'pedidos',       href: 'pedidos.html',          label: 'Pedidos',       icon: 'ti-shopping-cart' },
   { id: 'clientes',      href: 'clientes.html',         label: 'Clientes',      icon: 'ti-users' },
   { id: 'loja-v1',       href: 'loja-v1.html',          label: 'Editor Loja V1',icon: 'ti-layout' },

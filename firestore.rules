@@ -50,6 +50,7 @@ service cloud.firestore {
 
     function canWritePublicDoc(doc) {
       return (doc.matches('lapinkProdutos(_[0-9]+)?') || doc == 'lapinkCategorias') ? hasPage('produtos')
+        : doc == 'lapinkDescontos' ? hasPage('descontos')
         : (doc.matches('(lapinkCarrossel|lapinkLojaConfig)(_[0-9]+)?') || doc == 'lapinkBeneficios') ? hasPage('loja-v1')
         : doc == 'lapinkPaymentConfig' ? hasPage('financeiro')
         : hasPage('configuracoes');
@@ -62,6 +63,7 @@ service cloud.firestore {
     function isDocPublico(doc) {
       return doc in [
         'lapinkProdutos',
+        'lapinkDescontos',
         'lapinkLojaConfig',
         'lapinkStoreConfig',
         'lapinkCarrossel',

@@ -1,5 +1,5 @@
-/* LaPink — Service Worker v27 */
-var CACHE = 'lapink-v27';
+/* LaPink — Service Worker v28 */
+var CACHE = 'lapink-v28';
 
 /* Permite que a página peça ativação imediata do novo SW */
 self.addEventListener('message', function(e) {
@@ -14,6 +14,7 @@ var PRECACHE = [
   './js/storage.js',
   './js/auth.js',
   './js/cart.js',
+  './js/descontos.js',
   './js/v1.js',
   './assets/icon.svg?v=2'
 ];

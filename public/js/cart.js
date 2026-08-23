@@ -2,7 +2,22 @@
 var CART_KEY = 'lapinkCart';
 
 function getCart() {
-  try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch(e) { return []; }
+  try {
+    var cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+    var prods = JSON.parse(localStorage.getItem('lapinkProdutos') || '[]');
+    if (!Array.isArray(cart)) return [];
+    return cart.map(function (item) {
+      var p = (Array.isArray(prods) ? prods : []).find(function (x) { return String(x.id) === String(item.id); });
+      if (!p || !window.LaPinkDescontos) return item;
+      var c = window.LaPinkDescontos.calcular(p);
+      return Object.assign({}, item, {
+        nome: p.nome || item.nome, imagem: p.imagem || item.imagem || null,
+        preco: c.precoFinal, precoOriginal: c.precoOriginal,
+        descontoPct: c.descontoPct, descontoValor: c.descontoValor,
+        promocaoId: c.promocaoId, promocaoNome: c.promocaoNome
+      });
+    });
+  } catch(e) { return []; }
 }
 
 function saveCart(cart) {
@@ -39,7 +54,17 @@ function addToCart(produto, qty) {
   if (idx >= 0) {
     cart[idx].qty = finalQty;
   } else {
-    cart.push({ id: produto.id, nome: produto.nome, preco: (produto.precoAtacado || produto.precoVarejo), qty: finalQty, imagem: produto.imagem || null });
+    var calc = window.LaPinkDescontos ? window.LaPinkDescontos.calcular(produto) : null;
+    cart.push({
+      id: produto.id, nome: produto.nome,
+      preco: calc ? calc.precoFinal : (produto.precoAtacado || produto.precoVarejo),
+      precoOriginal: calc ? calc.precoOriginal : (produto.precoAtacado || produto.precoVarejo),
+      descontoPct: calc ? calc.descontoPct : 0,
+      descontoValor: calc ? calc.descontoValor : 0,
+      promocaoId: calc ? calc.promocaoId : null,
+      promocaoNome: calc ? calc.promocaoNome : null,
+      qty: finalQty, imagem: produto.imagem || null
+    });
   }
   saveCart(cart);
 
@@ -71,6 +96,18 @@ function clearCart() {
 
 function getCartTotal() {
   return getCart().reduce(function(s, i) { return s + (i.preco * i.qty); }, 0);
+}
+
+function getCartTotals() {
+  return getCart().reduce(function (r, i) {
+    var original = Number(i.precoOriginal);
+    if (!Number.isFinite(original)) original = Number(i.preco) || 0;
+    var final = Number(i.preco) || 0;
+    r.subtotalOriginal += original * i.qty;
+    r.descontos += Math.max(0, original - final) * i.qty;
+    r.total += final * i.qty;
+    return r;
+  }, { subtotalOriginal: 0, descontos: 0, total: 0 });
 }
 
 function getCartCount() {
