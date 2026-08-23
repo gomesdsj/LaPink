@@ -560,6 +560,12 @@ if (!_cart.length) {
       <div id="pgFreteConteudo"><!-- JS --></div>
     </div>
 
+    <div class="card">
+      <div class="card-title"><i class="ti ti-ticket" aria-hidden="true"></i> Cupom de desconto</div>
+      <div style="display:flex;gap:8px"><input id="pgCupom" maxlength="30" placeholder="Digite seu cupom" style="flex:1;text-transform:uppercase;padding:11px;border:1px solid var(--gray-200);border-radius:9px" /><button type="button" id="pgCupomBtn" onclick="aplicarCupom()" style="border:0;border-radius:9px;padding:0 18px;background:var(--pink-500);color:#fff;font-weight:700;cursor:pointer">Aplicar</button></div>
+      <div id="pgCupomMsg" style="font-size:12px;margin-top:8px;color:var(--gray-500)">Cupons não acumulam: será usado apenas o maior desconto válido.</div>
+    </div>
+
     <!-- Card: Totais -->
     <div class="card">
       <div class="card-title"><i class="ti ti-receipt" aria-hidden="true"></i> Totais</div>
@@ -616,6 +622,29 @@ if (!_cart.length) {
   var _formaPagamento = 'pix';      // forma de pagamento escolhida (visual; MP processa quando ativo)
   var _descontoPct = 0;             // desconto de boas-vindas (%) aplicado
   var _descontoValor = 0;           // valor do desconto em R$
+  var _cupomCodigo = '';
+  var _cupomValor = 0;
+  var _cupomInfo = null;
+
+  window.aplicarCupom = async function () {
+    var input=document.getElementById('pgCupom'), msg=document.getElementById('pgCupomMsg'), btn=document.getElementById('pgCupomBtn');
+    var codigo=String(input.value||'').trim().toUpperCase();
+    if(!codigo){_cupomCodigo='';_cupomValor=0;_cupomInfo=null;msg.textContent='Cupom removido.';renderTotais();return}
+    btn.disabled=true;msg.textContent='Validando cupom no Firebase…';
+    try{
+      _calcularDesconto();
+      var headers={'Content-Type':'application/json'},fu=firebase.auth&&firebase.auth().currentUser;
+      if(fu)headers.Authorization='Bearer '+await fu.getIdToken();
+      var cart=typeof getCart==='function'?getCart():_cart;
+      var resp=await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/validarCarrinhoDescontos',{method:'POST',headers:headers,body:JSON.stringify({itens:cart.map(function(i){return{id:i.id,qty:i.qty}}),descontoPct:_descontoPct,cupom:codigo})});
+      var dados=await resp.json();if(!resp.ok)throw new Error(dados.error||'Não foi possível validar o cupom.');
+      if(!dados.cupom)throw new Error('Cupom inválido, inativo, fora do período ou abaixo do valor mínimo.');
+      var descontoSemCupom=_descontoProdutos+_descontoValor;
+      _cupomCodigo=dados.cupom.codigo;_cupomInfo=dados.cupom;_cupomValor=Math.max(0,Math.round((Number(dados.desconto)-descontoSemCupom)*100)/100);
+      if(_cupomValor<=0)throw new Error('Cupom válido, mas já existe um desconto igual ou maior no pedido. Ele não foi acumulado.');
+      msg.style.color='#218653';msg.textContent='Cupom '+_cupomCodigo+' aplicado: '+dados.cupom.percentual+'% (sem acumular).';renderTotais();
+    }catch(e){_cupomCodigo='';_cupomValor=0;_cupomInfo=null;msg.style.color='#c0392b';msg.textContent=e.message;renderTotais()}finally{btn.disabled=false}
+  };
 
   /* ── Desconto de boas-vindas (config em lapinkLojaConfig.descontoBoasVindas) ──
      Aplica para cliente logado que ainda não usou (primeira compra). */
@@ -1021,7 +1050,7 @@ if (!_cart.length) {
   function renderTotais() {
     var el = document.getElementById('pgTotais');
     _calcularDesconto();
-    var total = _subtotal - _descontoProdutos - _descontoValor + _freteValor;
+    var total = _subtotal - _descontoProdutos - _descontoValor - _cupomValor + _freteValor;
 
     var freteHtml = '';
     if (_modalidadeSelecionada === 'retirada' || (_freteGratisAtivo && _freteValor === 0 && _modalidadeSelecionada)) {
@@ -1037,11 +1066,14 @@ if (!_cart.length) {
     var descontoHtml = _descontoValor > 0
       ? '<div class="pg-tot-row"><span>Desconto boas-vindas (' + _descontoPct + '%)</span><span class="pg-tot-gratis">− ' + fmtR(_descontoValor) + '</span></div>'
       : '';
+    var cupomHtml = _cupomValor > 0 && _cupomInfo
+      ? '<div class="pg-tot-row"><span>Cupom '+_esc(_cupomInfo.codigo)+' ('+_cupomInfo.percentual+'%)</span><span class="pg-tot-gratis">− '+fmtR(_cupomValor)+'</span></div>' : '';
 
     el.innerHTML =
       '<div class="pg-tot-row"><span>Subtotal</span><span>' + fmtR(_subtotal) + '</span></div>' +
       descontoProdutoHtml +
       descontoHtml +
+      cupomHtml +
       freteHtml +
       '<div class="pg-tot-row bold"><span>TOTAL</span><span>' + fmtR(total) + '</span></div>';
 
@@ -1052,7 +1084,7 @@ if (!_cart.length) {
   function renderFormaPagamento() {
     var el = document.getElementById('pgPagamento');
     if (!el) return;
-    var total = _subtotal - _descontoProdutos - _descontoValor + _freteValor;
+    var total = _subtotal - _descontoProdutos - _descontoValor - _cupomValor + _freteValor;
     var base = total > 0 ? total : _subtotal;
     var parcelas = Math.max(1, Math.min(12, Math.floor(base / 5))); // parcela mínima ~R$5
     var valorParc = parcelas > 0 ? base / parcelas : base;
@@ -1310,7 +1342,7 @@ if (!_cart.length) {
     var estado      = document.getElementById('pgEstado').value.trim().toUpperCase();
 
     _calcularDesconto(); // garante o desconto atualizado antes de cobrar
-    var total = _subtotal - _descontoProdutos - _descontoValor + _freteValor;
+    var total = _subtotal - _descontoProdutos - _descontoValor - _cupomValor + _freteValor;
 
     var payload = {
       cliente: {
@@ -1334,6 +1366,7 @@ if (!_cart.length) {
       subtotal: _subtotal,
       descontoPct: _descontoPct,   // validado no servidor contra a config da loja
       desconto: _descontoValor,
+      cupom: _cupomCodigo,
       frete: _freteValor,
       total: total,
       modalidadeFrete: _modalidadeSelecionada,
@@ -1377,7 +1410,7 @@ if (!_cart.length) {
       if (data.pedido_id) {
         localStorage.setItem('lapinkUltimoPedido', data.pedido_id);
       }
-      _marcarDescontoUsado();     // desconto de boas-vindas é uma vez só
+      if (data.usou_desconto_boas_vindas) _marcarDescontoUsado();
       await marcarAbandonoConvertido(); // confirma no servidor antes de sair
 
       // Redirecionar para o Mercado Pago
@@ -1436,7 +1469,7 @@ if (!_cart.length) {
       if (fu) headers.Authorization = 'Bearer ' + await fu.getIdToken();
       var vr = await fetch('https://us-central1-lapink-82a39.cloudfunctions.net/validarCarrinhoDescontos', {
         method:'POST', headers:headers,
-        body:JSON.stringify({ itens:cart.map(function(i){return {id:i.id,qty:i.qty}}), descontoPct:_descontoPct })
+        body:JSON.stringify({ itens:cart.map(function(i){return {id:i.id,qty:i.qty}}), descontoPct:_descontoPct, cupom:_cupomCodigo })
       });
       cotacao = await vr.json();
       if (!vr.ok) throw new Error(cotacao.error || 'Não foi possível validar os preços.');

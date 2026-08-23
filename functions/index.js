@@ -287,6 +287,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
     var _ownerUid = null;
     var _descontoReservado = false;
     var _usouBoasVindas = false;
+    var _cupomInfo = null;
     var _domainConfig = {};
 
     Promise.all([
@@ -296,7 +297,8 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
       usuarioOpcional(req),
       db.collection('lapink').doc('lapinkEntregaConfig').get(),
       db.collection('lapink').doc('lapinkDomainConfig').get(),
-      lerDescontos()
+      lerDescontos(),
+      lerCupons()
     ])
       .then(function (arr) {
         var token = arr[0];
@@ -306,6 +308,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
         var entregaCfg = (arr[4].exists && arr[4].data() && arr[4].data().data) || {};
         _domainConfig = (arr[5].exists && arr[5].data() && arr[5].data().data) || {};
         var descontosProduto = arr[6];
+        var cupons = arr[7];
         _ownerUid = usuario ? usuario.uid : null;
         var mapa = {};
         (Array.isArray(prods) ? prods : []).forEach(function (p) { if (p && typeof p.id !== 'undefined') mapa[String(p.id)] = p; });
@@ -320,6 +323,14 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           if (!usuario) throw new Error('Entre na sua conta para usar o desconto de boas-vindas.');
           descontoPct = Math.min(Number(body.descontoPct), Number(descCfg.percentual), 90);
         }
+        var subtotalCatalogo = itens.reduce(function (s, item) {
+          var produto = mapa[String(item.id)], qtd = Number(item.qty);
+          return s + (produto && Number.isInteger(qtd) && qtd > 0 ? precoDe(produto) * qtd : 0);
+        }, 0);
+        var cupom = cupomValido(body.cupom, cupons, subtotalCatalogo, Date.now());
+        if (String(body.cupom || '').trim() && !cupom) throw new Error('Cupom inválido, inativo, fora do período ou abaixo do valor mínimo.');
+        _cupomInfo = cupom;
+        var cupomPct = cupom ? cupom.percentual : 0;
         // Recalcula preços e valida estoque a partir do catálogo no servidor
         const mpItems = [];
         var agoraDesconto = Date.now();
@@ -338,9 +349,10 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           }
           var preco = precoDe(p);
           var promocao = descontoProdutoValido(p.id, descontosProduto, agoraDesconto);
-          var usarPromocao = !!(promocao && promocao.percentual >= descontoPct);
-          var pctItem = usarPromocao ? promocao.percentual : descontoPct;
-          if (!usarPromocao && pctItem > 0) _usouBoasVindas = true;
+          var usarPromocao = !!(promocao && promocao.percentual >= Math.max(descontoPct, cupomPct));
+          var pctItem = usarPromocao ? promocao.percentual : Math.max(descontoPct, cupomPct);
+          var usarCupom = !usarPromocao && cupomPct >= descontoPct && cupomPct > 0;
+          if (!usarPromocao && !usarCupom && pctItem > 0) _usouBoasVindas = true;
           var precoCobrado = Math.max(0, Math.round(preco * (1 - pctItem / 100) * 100) / 100);
           var descontoUnitario = Math.round((preco - precoCobrado) * 100) / 100;
           _subtotalCalc += preco * qty;
@@ -351,9 +363,9 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
             descontoValor: descontoUnitario,
             precoUnitarioFinal: precoCobrado,
             subtotalFinal: Math.round(precoCobrado * qty * 100) / 100,
-            promocaoId: usarPromocao ? promocao.id : null,
-            promocaoNome: usarPromocao ? promocao.nome : (pctItem > 0 ? 'Boas-vindas' : null),
-            tipoDesconto: pctItem > 0 ? (usarPromocao ? 'produto' : 'boas_vindas') : null
+            promocaoId: usarPromocao ? promocao.id : (usarCupom ? cupom.id : null),
+            promocaoNome: usarPromocao ? promocao.nome : (usarCupom ? cupom.nome : (pctItem > 0 ? 'Boas-vindas' : null)),
+            tipoDesconto: pctItem > 0 ? (usarPromocao ? 'produto' : (usarCupom ? 'cupom' : 'boas_vindas')) : null
           });
           mpItems.push({ id: String(p.id), title: String(p.nome || 'Produto'), quantity: qty, unit_price: precoCobrado, currency_id: 'BRL' });
         });
@@ -487,6 +499,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           subtotal: _subtotalCalc,      // recalculado no servidor
           desconto: _descontoInfo.valor,
           descontoPct: _descontoInfo.pct,
+          cupom: _cupomInfo ? _cupomInfo.codigo : null,
           usouDescontoBoasVindas: _usouBoasVindas,
           frete: _freteCalc,
           total: _totalCalc,            // recalculado no servidor
@@ -518,6 +531,7 @@ exports.createPreference = functions.https.onRequest(function (req, res) {
           pedido_id: orderId,
           acesso_pedido: acessoPedido,
           gratuito: !!mpData.gratuito,
+          usou_desconto_boas_vindas: _usouBoasVindas,
         });
       })
       .catch(function (err) {
@@ -685,6 +699,28 @@ function lerDescontos() {
     var d = snap.exists ? (snap.data() || {}) : {};
     return Array.isArray(d.data) ? d.data : [];
   });
+}
+
+function lerCupons() {
+  return db.collection('lapink').doc('lapinkCupons').get().then(function (snap) {
+    var d = snap.exists ? (snap.data() || {}) : {};
+    return Array.isArray(d.data) ? d.data : [];
+  });
+}
+
+function cupomValido(codigo, cupons, subtotal, agora) {
+  var normalizado = String(codigo || '').trim().toUpperCase();
+  if (!normalizado || !/^[A-Z0-9_-]{3,30}$/.test(normalizado)) return null;
+  var cupom = (Array.isArray(cupons) ? cupons : []).find(function (c) {
+    return c && String(c.codigo || '').toUpperCase() === normalizado;
+  });
+  if (!cupom || cupom.ativo !== true) return null;
+  var pct = Number(cupom.percentual);
+  var minimo = Math.max(0, Number(cupom.valorMinimo) || 0);
+  var inicio = new Date(String(cupom.inicio) + 'T00:00:00').getTime();
+  var fim = new Date(String(cupom.fim) + 'T23:59:59.999').getTime();
+  if (!Number.isFinite(pct) || pct <= 0 || pct > 100 || subtotal < minimo || agora < inicio || agora > fim) return null;
+  return { id: String(cupom.id), codigo: normalizado, nome: _sanitizarTexto(cupom.nome || normalizado, 80), percentual: pct };
 }
 
 // Retorna apenas a maior promoção válida para o produto. Percentuais nunca
@@ -1366,6 +1402,63 @@ exports.configurarDescontoBoasVindas = functions.https.onRequest(function (req, 
   });
 });
 
+// Cupons ficam em documento privado: somente administradores listam e alteram;
+// clientes descobrem apenas se o código digitado é válido durante a cotação.
+exports.gerenciarCupomAdmin = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido.' }); return; }
+    var body = req.body || {}, acao = String(body.acao || '').toLowerCase();
+    var id = String(body.id || (body.cupom && body.cupom.id) || '').trim();
+    var resposta, operador;
+    _exigirPermissao(req, 'descontos').then(function (usuario) {
+      operador = usuario;
+      if (['listar', 'salvar', 'alternar', 'excluir'].indexOf(acao) < 0) throw Object.assign(new Error('Ação de cupom inválida.'), { _status:400 });
+      if (acao !== 'listar' && !/^[A-Za-z0-9_-]{1,100}$/.test(id)) throw Object.assign(new Error('Identificador de cupom inválido.'), { _status:400 });
+      var ref = db.collection('lapink').doc('lapinkCupons');
+      return db.runTransaction(function (tx) {
+        return tx.get(ref).then(function (snap) {
+          var remoto = snap.exists ? (snap.data() || {}) : {};
+          var lista = Array.isArray(remoto.data) ? remoto.data.slice() : [];
+          var indice = lista.findIndex(function (c) { return c && String(c.id) === id; });
+          var agora = Date.now();
+          if (acao === 'listar') { resposta = { ok:true, cupons:lista, updatedAt:Number(remoto.updatedAt)||0 }; return; }
+          if (acao === 'excluir') {
+            if (indice < 0) throw Object.assign(new Error('Cupom não encontrado.'), { _status:404 });
+            lista.splice(indice, 1);
+          } else if (acao === 'alternar') {
+            if (indice < 0) throw Object.assign(new Error('Cupom não encontrado.'), { _status:404 });
+            lista[indice] = Object.assign({}, lista[indice], { ativo:!lista[indice].ativo, updatedAt:agora });
+          } else {
+            var entrada = body.cupom || {};
+            var codigo = String(entrada.codigo || '').trim().toUpperCase();
+            var nome = _sanitizarTexto(entrada.nome, 80), pct = Number(entrada.percentual);
+            var minimo = Number(entrada.valorMinimo) || 0, inicio = String(entrada.inicio || ''), fim = String(entrada.fim || '');
+            if (!/^[A-Z0-9_-]{3,30}$/.test(codigo)) throw Object.assign(new Error('Use um código de 3 a 30 letras, números, _ ou -.'), { _status:400 });
+            if (lista.some(function (c, i) { return i !== indice && String(c.codigo).toUpperCase() === codigo; })) throw Object.assign(new Error('Este código já existe.'), { _status:409 });
+            if (!nome) throw Object.assign(new Error('Informe o nome do cupom.'), { _status:400 });
+            if (!Number.isFinite(pct) || pct <= 0 || pct > 100) throw Object.assign(new Error('Percentual inválido.'), { _status:400 });
+            if (!Number.isFinite(minimo) || minimo < 0) throw Object.assign(new Error('Valor mínimo inválido.'), { _status:400 });
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fim) || fim < inicio) throw Object.assign(new Error('Período inválido.'), { _status:400 });
+            var anterior = indice >= 0 ? lista[indice] : {};
+            var cupom = { id:id, codigo:codigo, nome:nome, percentual:pct, valorMinimo:minimo, inicio:inicio, fim:fim,
+              ativo:entrada.ativo === true, createdAt:Number(anterior.createdAt)||agora, updatedAt:agora };
+            if (indice >= 0) lista[indice] = cupom; else lista.push(cupom);
+          }
+          resposta = { ok:true, cupons:lista, updatedAt:agora };
+          tx.set(ref, { data:lista, updatedAt:agora });
+        });
+      });
+    }).then(function () {
+      functions.logger.info('gerenciarCupomAdmin', { acao:acao, cupomId:id || null, operadorUid:operador && operador.uid });
+      res.json(resposta);
+    }).catch(function (err) {
+      var status = err && err._status ? err._status : 500;
+      if (status >= 500) functions.logger.error('gerenciarCupomAdmin erro', err);
+      res.status(status).json({ error:status >= 500 ? 'Erro ao gerenciar cupom.' : err.message });
+    });
+  });
+});
+
 // Cotação de preços para pedidos finalizados pelo WhatsApp. Nenhum preço do
 // navegador é aceito: catálogo, promoções e boas-vindas são relidos aqui.
 exports.validarCarrinhoDescontos = functions.https.onRequest(function (req, res) {
@@ -1374,7 +1467,7 @@ exports.validarCarrinhoDescontos = functions.https.onRequest(function (req, res)
     var itens = req.body && req.body.itens;
     if (!Array.isArray(itens) || !itens.length || itens.length > 50) { res.status(400).json({ error: 'Carrinho inválido.' }); return; }
     Promise.all([
-      lerCatalogo(), lerDescontos(), db.collection('lapink').doc('lapinkLojaConfig').get(), usuarioOpcional(req)
+      lerCatalogo(), lerDescontos(), db.collection('lapink').doc('lapinkLojaConfig').get(), usuarioOpcional(req), lerCupons()
     ]).then(function (arr) {
       var mapa = {};
       arr[0].prods.forEach(function (p) { mapa[String(p.id)] = p; });
@@ -1382,6 +1475,13 @@ exports.validarCarrinhoDescontos = functions.https.onRequest(function (req, res)
       var welcomeCfg = cfg.descontoBoasVindas || {};
       var welcome = welcomeCfg.ativo && arr[3] && Number(req.body.descontoPct) > 0
         ? Math.min(90, Number(req.body.descontoPct), Number(welcomeCfg.percentual) || 0) : 0;
+      var subtotalCatalogo = itens.reduce(function (s, it) {
+        var p = mapa[String(it.id)], q = Number(it.qty);
+        return s + (p && Number.isInteger(q) && q > 0 ? (Number(p.precoAtacado) || Number(p.precoVarejo) || 0) * q : 0);
+      }, 0);
+      var cupom = cupomValido(req.body.cupom, arr[4], subtotalCatalogo, Date.now());
+      if (String(req.body.cupom || '').trim() && !cupom) throw Object.assign(new Error('Cupom inválido, inativo, fora do período ou abaixo do valor mínimo.'), { _status:400 });
+      var cupomPct = cupom ? cupom.percentual : 0;
       var subtotal = 0, descontos = 0, usouWelcome = false;
       var calculados = itens.map(function (it) {
         var p = mapa[String(it.id)];
@@ -1391,18 +1491,20 @@ exports.validarCarrinhoDescontos = functions.https.onRequest(function (req, res)
         if (estoque !== null && (estoque <= 0 || qty > estoque)) throw Object.assign(new Error('Estoque insuficiente para ' + p.nome + '.'), { _status: 409 });
         var original = (Number(p.precoAtacado) || Number(p.precoVarejo) || 0);
         var promo = descontoProdutoValido(p.id, arr[1], Date.now());
-        var usarPromo = !!(promo && promo.percentual >= welcome);
-        var pct = usarPromo ? promo.percentual : welcome;
-        if (!usarPromo && pct > 0) usouWelcome = true;
+        var usarPromo = !!(promo && promo.percentual >= Math.max(welcome, cupomPct));
+        var pct = usarPromo ? promo.percentual : Math.max(welcome, cupomPct);
+        var usarCupom = !usarPromo && cupomPct >= welcome && cupomPct > 0;
+        if (!usarPromo && !usarCupom && pct > 0) usouWelcome = true;
         var final = Math.max(0, Math.round(original * (1 - pct / 100) * 100) / 100);
         subtotal += original * qty; descontos += (original - final) * qty;
         return { id:p.id, nome:p.nome, qty:qty, preco:final, precoOriginal:original, descontoPct:pct,
           descontoValor:Math.round((original-final)*100)/100, precoUnitarioFinal:final,
           subtotalFinal:Math.round(final*qty*100)/100, promocaoId:usarPromo?promo.id:null,
-          promocaoNome:usarPromo?promo.nome:(pct?'Boas-vindas':null), tipoDesconto:pct?(usarPromo?'produto':'boas_vindas'):null };
+          promocaoNome:usarPromo?promo.nome:(usarCupom?cupom.nome:(pct?'Boas-vindas':null)), tipoDesconto:pct?(usarPromo?'produto':(usarCupom?'cupom':'boas_vindas')):null };
       });
       res.json({ itens:calculados, subtotal:Math.round(subtotal*100)/100, desconto:Math.round(descontos*100)/100,
-        totalProdutos:Math.round((subtotal-descontos)*100)/100, usouDescontoBoasVindas:usouWelcome });
+        totalProdutos:Math.round((subtotal-descontos)*100)/100, usouDescontoBoasVindas:usouWelcome,
+        cupom:cupom ? { codigo:cupom.codigo, nome:cupom.nome, percentual:cupom.percentual } : null });
     }).catch(function (err) {
       var status = err && err._status ? err._status : 500;
       res.status(status).json({ error:status >= 500 ? 'Erro ao validar preços.' : err.message });

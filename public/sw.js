@@ -1,5 +1,5 @@
-/* LaPink — Service Worker v33 */
-var CACHE = 'lapink-v33';
+/* LaPink — Service Worker v34 */
+var CACHE = 'lapink-v34';
 
 /* Permite que a página peça ativação imediata do novo SW */
 self.addEventListener('message', function(e) {

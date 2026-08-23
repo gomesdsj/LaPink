@@ -45,10 +45,26 @@ test('backend relê catálogo e promoção e grava histórico por item', () => {
   assert.match(backend, /lerCatalogo\(\).*lerDescontos\(\)/s);
   assert.match(backend, /precoOriginal: preco/);
   assert.match(backend, /precoUnitarioFinal: precoCobrado/);
-  assert.match(backend, /promocao\.percentual >= descontoPct/);
+  assert.match(backend, /promocao\.percentual >= Math\.max\(descontoPct, cupomPct\)/);
   assert.match(backend, /exports\.validarCarrinhoDescontos/);
   assert.match(backend, /if \(_totalCalc === 0\)/);
   assert.match(backend, /pagamento: mpData\.gratuito \? 'gratuito'/);
+});
+
+test('cupons são privados, administráveis e revalidados no servidor', () => {
+  const backend = fs.readFileSync(path.join(root, 'functions/index.js'), 'utf8');
+  const painel = fs.readFileSync(path.join(root, 'admin/descontos.html'), 'utf8');
+  const pagamento = fs.readFileSync(path.join(root, 'public/pagamento.html'), 'utf8');
+  const rules = fs.readFileSync(path.join(root, 'firestore.rules'), 'utf8');
+  assert.match(backend, /exports\.gerenciarCupomAdmin/);
+  assert.match(backend, /_exigirPermissao\(req, 'descontos'\)/);
+  assert.match(backend, /function cupomValido/);
+  assert.match(backend, /lerCupons\(\)/);
+  assert.match(backend, /tipoDesconto:[^\n]+cupom/);
+  assert.match(painel, /cloudfunctions\.net\/gerenciarCupomAdmin/);
+  assert.match(pagamento, /id="pgCupom"/);
+  assert.match(pagamento, /cupom:_cupomCodigo/);
+  assert.doesNotMatch(rules, /'lapinkCupons'/);
 });
 
 test('vitrine e detalhe exibem selo na imagem somente para desconto calculado', () => {
