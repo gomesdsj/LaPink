@@ -1367,6 +1367,17 @@
   renderCatalogoCompleto();
   atualizarBadgeFavoritos();
 
+  // API pública de redesenho: descontos chegam do Firestore depois da
+  // primeira montagem da página. As funções acima pertencem a este escopo,
+  // então o listener externo deve entrar por esta função em vez de tentar
+  // chamá-las diretamente (o que gerava ReferenceError e mantinha o card
+  // com o preço antigo até o cliente abrir o produto).
+  window.recarregarVitrineComDescontos = function() {
+    atualizarProdutos();
+    renderCatalogoCompleto();
+    if (typeof renderizarCarrinhoPanel === 'function') renderizarCarrinhoPanel();
+  };
+
   // Toggle do catálogo completo por categoria
   window.toggleCatalogo = function() {
     var secao = document.getElementById('secao-catalogo');
@@ -1900,10 +1911,15 @@ if (installBtn) {
     window.reloadCarrossel();
   });
   document.addEventListener('lapinkDescontosAtualizados', function() {
-    atualizarProdutos();
-    renderCatalogoCompleto();
-    if (typeof renderizarCarrinhoPanel === 'function') renderizarCarrinhoPanel();
+    if (typeof window.recarregarVitrineComDescontos === 'function') {
+      window.recarregarVitrineComDescontos();
+    }
   });
+  // Cobre também o caso em que o Firestore respondeu antes deste listener
+  // ser registrado: neste ponto descontos.js e o cache local já estão prontos.
+  if (typeof window.recarregarVitrineComDescontos === 'function') {
+    window.recarregarVitrineComDescontos();
+  }
   window.addEventListener('storage', function(event) {
     if (event.key === 'lapinkCarrossel') window.reloadCarrossel();
   });

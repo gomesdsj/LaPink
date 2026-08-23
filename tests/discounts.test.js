@@ -85,3 +85,10 @@ test('selo de desconto fica visível e destacado sobre a foto inicial da vitrine
   assert.match(regra, /z-index:\s*6/);
   assert.match(regra, /padding:\s*7px 12px/);
 });
+
+test('vitrine redesenha os cards quando descontos chegam do Firebase', () => {
+  const vitrine = fs.readFileSync(path.join(root, 'public/V1.html'), 'utf8');
+  assert.match(vitrine, /window\.recarregarVitrineComDescontos = function/);
+  assert.match(vitrine, /lapinkDescontosAtualizados[\s\S]*window\.recarregarVitrineComDescontos\(\)/);
+  assert.doesNotMatch(vitrine, /lapinkDescontosAtualizados', function\(\) \{\s*atualizarProdutos\(\)/);
+});
