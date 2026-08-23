@@ -29,7 +29,10 @@
 .pedido-total { font-size: 16px; font-weight: 800; color: var(--pink-500); }
 .pedido-itens { margin-top: 10px; padding: 10px 14px; background: var(--gray-50); border-radius: 8px; font-size: 12px; color: var(--gray-600); display: none; }
 .pedido-itens.open { display: block; }
-.pedido-itens li { padding: 3px 0; }
+.pedido-itens li { padding: 6px 0; display:flex; align-items:center; gap:9px; }
+.pedido-item-foto { width:46px; height:46px; border-radius:7px; object-fit:cover; flex:0 0 46px; border:1px solid var(--gray-150); background:#fff; }
+.pedido-item-sem-foto { display:inline-flex; align-items:center; justify-content:center; color:var(--gray-300); font-size:18px; }
+.pedido-item-texto { min-width:0; line-height:1.35; }
 .pedido-footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: .5px solid var(--gray-100); }
 .pedido-status-select { border: .5px solid var(--gray-200); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: var(--gray-700); background: var(--white); cursor: pointer; }
 .pedido-check { display: inline-flex; align-items: center; margin: 0 2px 0 0; cursor: pointer; }
@@ -548,6 +551,31 @@
   });
 
   // ─── Render pedidos ───────────────────────────────────────
+  function _catalogoPedidos() {
+    try { var lista=JSON.parse(localStorage.getItem('lapinkProdutos')||'[]');return Array.isArray(lista)?lista:[]; } catch(e) { return []; }
+  }
+
+  function _produtoDoItemPedido(item) {
+    var produtos=_catalogoPedidos(), id=String(item && item.id != null ? item.id : '');
+    var porId=id ? produtos.find(function(p){return String(p.id)===id}) : null;
+    if(porId)return porId;
+    var nome=String(item && item.nome || '').trim().toLowerCase();
+    return nome ? (produtos.find(function(p){return String(p.nome||'').trim().toLowerCase()===nome})||null) : null;
+  }
+
+  function _imagemDoItemPedido(item) {
+    if(item && item.imagem)return String(item.imagem);
+    var produto=_produtoDoItemPedido(item);
+    return produto ? String((Array.isArray(produto.imagens)&&produto.imagens[0])||produto.imagem||'') : '';
+  }
+
+  function _fotoItemHtml(item, classe) {
+    var src=_imagemDoItemPedido(item), alt=escHtml((item&&item.nome)||'Produto');
+    return src
+      ? '<img class="'+classe+'" src="'+escHtml(src)+'" alt="'+alt+'" />'
+      : '<span class="'+classe+' pedido-item-sem-foto" aria-label="Produto sem foto"><i class="ti ti-photo-off"></i></span>';
+  }
+
   function renderPedidos() {
     var pedidos = getTodosPedidos();
     var busca = (document.getElementById('searchInput').value || '').toLowerCase().trim();
@@ -581,7 +609,7 @@
       var data    = p.data || (p.createdAt && p.createdAt.seconds ? new Date(p.createdAt.seconds * 1000).toISOString() : '');
 
       var itensHtml = (p.itens || []).map(function(it) {
-        return '<li>' + escHtml(it.nome) + ' &times; ' + escHtml(String(it.qty)) + ' — ' + fmtMoeda((it.preco || 0) * (it.qty || 1)) + '</li>';
+        return '<li>' + _fotoItemHtml(it,'pedido-item-foto') + '<span class="pedido-item-texto"><strong>' + escHtml(it.nome) + '</strong><br>&times; ' + escHtml(String(it.qty)) + ' — ' + fmtMoeda((it.preco || 0) * (it.qty || 1)) + '</span></li>';
       }).join('');
 
       var enderecoHtml = isFS && p.endereco ? '<div style="font-size:11px;color:var(--gray-400);margin-top:4px;"><i class="ti ti-map-pin" style="font-size:10px"></i> ' +
@@ -685,8 +713,8 @@
       : '';
 
     var itensHtml = itens.map(function(it) {
-      return '<tr><td class="qt">' + escHtml(String(it.qty || 1)) + '×</td><td>' + escHtml(it.nome || 'Item') + '</td></tr>';
-    }).join('') || '<tr><td colspan="2" style="color:#999;">Nenhum item.</td></tr>';
+      return '<tr><td class="foto">' + _fotoItemHtml(it,'nota-item-foto') + '</td><td class="qt">' + escHtml(String(it.qty || 1)) + '×</td><td>' + escHtml(it.nome || 'Item') + '</td></tr>';
+    }).join('') || '<tr><td colspan="3" style="color:#999;">Nenhum item.</td></tr>';
 
     var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
       '<title>Nota de entrega — Pedido #' + escHtml(String(p.numero || '')) + '</title>' +
@@ -703,6 +731,9 @@
         'table { width: 100%; border-collapse: collapse; font-size: 14px; }' +
         'td { padding: 5px 0; border-bottom: 1px dashed #ddd; }' +
         'td.qt { width: 34px; font-weight: bold; color: #D4537E; }' +
+        'td.foto { width: 54px; padding-right: 8px; }' +
+        '.nota-item-foto { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; border: 1px solid #ddd; display: inline-flex; align-items:center; justify-content:center; }' +
+        '.pedido-item-sem-foto { color:#bbb; font-size:10px; text-align:center; }' +
         '.nota-total { text-align: right; font-size: 12px; color: #555; margin-top: 8px; font-weight: bold; }' +
         '.nota-foot { text-align: center; font-size: 11px; color: #999; margin-top: 22px; border-top: 1px solid #eee; padding-top: 10px; }' +
         '@media print { .no-print { display: none; } }' +

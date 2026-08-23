@@ -130,6 +130,15 @@ test('rastreio aparece para cliente e WhatsApp informa a etapa atual', () => {
   assert.match(meusPedidos, /rastreamento\.correios\.com\.br/);
 });
 
+test('itens do pedido exibem foto no painel e na impressão', () => {
+  const pedidos = read('admin/pedidos.html');
+  assert.match(pedidos, /function _imagemDoItemPedido/);
+  assert.match(pedidos, /String\(p\.id\)===id/);
+  assert.match(pedidos, /produto\.imagens\)\&\&produto\.imagens\[0\]/);
+  assert.match(pedidos, /_fotoItemHtml\(it,'pedido-item-foto'\)/);
+  assert.match(pedidos, /_fotoItemHtml\(it,'nota-item-foto'\)/);
+});
+
 test('publicação do banner aguarda Firestore e a loja redesenha após sincronizar', () => {
   const editor = read('admin/loja-v1.html');
   const loja = read('public/V1.html');
