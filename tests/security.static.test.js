@@ -96,8 +96,8 @@ test('painel renova claim antes de gravar pedidos e confirma tags na nuvem', () 
   assert.match(auth, /sincronizarClaimsAdmin/);
   assert.match(pedidos, /garantirAdminFirebase\(\).*collection\('pedidos'\)/s);
   assert.match(editor, /await Promise\.all/);
-  assert.match(editor, /push\('lapinkLojaConfig'/);
-  assert.match(editor, /push\('lapinkProdutos'/);
+  assert.match(editor, /lapinkCloudSave\('lapinkLojaConfig'/);
+  assert.match(editor, /lapinkCloudSave\('lapinkProdutos'/);
   assert.match(sync, /return prepararAuth\.then/);
 });
 
@@ -133,12 +133,25 @@ test('rastreio aparece para cliente e WhatsApp informa a etapa atual', () => {
 test('publicação do banner aguarda Firestore e a loja redesenha após sincronizar', () => {
   const editor = read('admin/loja-v1.html');
   const loja = read('public/V1.html');
-  assert.match(editor, /return window\.LaPinkSync\.push\('lapinkCarrossel'/);
+  assert.match(editor, /cloudfunctions\.net\/salvarCarrosselAdmin/);
   assert.match(editor, /salvarCarrossel\(\)/);
   assert.match(editor, /await otimizarImagensCarrossel\(\)/);
   assert.match(editor, /700 \* 1024/);
   assert.match(loja, /lapinkCarrosselAtualizados/);
   assert.match(loja, /window\.reloadCarrossel\(\)/);
+});
+
+test('carrossel é publicado uma única vez pelo servidor e atualiza o cache confirmado', () => {
+  const functions = read('functions/index.js');
+  const editor = read('admin/loja-v1.html');
+  const trecho = functions.match(/exports\.salvarCarrosselAdmin[\s\S]*?\n\}\);/)[0];
+  assert.match(trecho, /_exigirPermissao\(req, 'loja-v1'\)/);
+  assert.match(trecho, /db\.runTransaction/);
+  assert.match(trecho, /lapinkCarrossel_/);
+  assert.match(editor, /cloudfunctions\.net\/salvarCarrosselAdmin/);
+  assert.match(editor, /lapinkCloudCache\('lapinkCarrossel'/);
+  assert.doesNotMatch(editor.match(/function salvarCarrossel\(\)[\s\S]*?\n\}/)[0], /localStorage\.setItem|LaPinkSync\.push/);
+  assert.match(editor, /lapinkCarrosselAtualizados/);
 });
 
 test('status e rastreio são atualizados por função administrativa restrita', () => {

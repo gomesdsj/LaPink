@@ -1228,6 +1228,7 @@ var SLIDE_DEFAULTS = [
 ];
 
 var slidesData = [];
+var carrosselAlterado = false;
 
 function getCarrossel() {
   try {
@@ -1329,12 +1330,14 @@ function renderCarrossel() {
 function adicionarSlide() {
   if (slidesData.length >= 6) { showToast('Máximo de 6 slides.', 'erro'); return; }
   slidesData.push({ eyebrow:'', titulo:'Novo slide', subtitulo:'', btn1Txt:'Ver coleção', btn1Acao:'colecao', btn2Txt:'', btn2Acao:'', imagem:'', icone:'ti-diamond', cor:'pink' });
+  carrosselAlterado = true;
   renderCarrossel();
 }
 
 function restaurarSlidesDefault() {
   if (!confirm('Restaurar os ' + SLIDE_DEFAULTS.length + ' slides padrão? Os slides atuais serão substituídos.')) return;
   slidesData = JSON.parse(JSON.stringify(SLIDE_DEFAULTS));
+  carrosselAlterado = true;
   renderCarrossel();
   showToast('Slides restaurados! Clique em Publicar para salvar.');
 }
@@ -1342,6 +1345,7 @@ function restaurarSlidesDefault() {
 function removerUltimoSlide() {
   if (slidesData.length <= 1) return;
   slidesData.pop();
+  carrosselAlterado = true;
   renderCarrossel();
 }
 
@@ -1358,15 +1362,24 @@ function atualizarFotoSlide(idx, input) {
       throw new Error('A imagem continuou muito grande após a compactação. Use JPG/WebP com menor resolução.');
     }
     slidesData[idx].imagem = dataUrl;
+    carrosselAlterado = true;
     renderCarrossel();
     showToast('Foto do slide ' + (idx+1) + ' atualizada!');
   }).catch(function(e) { showToast(e.message || 'Erro ao processar imagem.', 'erro'); });
 }
 
 function salvarCarrossel() {
-  localStorage.setItem('lapinkCarrossel', JSON.stringify(slidesData));
-  if (!window.LaPinkSync) return Promise.reject(new Error('Sincronização do carrossel indisponível.'));
-  return window.LaPinkSync.push('lapinkCarrossel', slidesData);
+  return garantirAdminFirebase().then(function(u) { return u.getIdToken(true); }).then(function(token) {
+    return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/salvarCarrosselAdmin', {
+      method: 'POST', headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
+      body: JSON.stringify({ slides: slidesData })
+    });
+  }).then(function(r) { return r.json().then(function(d) { if (!r.ok) throw new Error(d.error || 'Falha ao publicar carrossel.'); return d; }); })
+    .then(function(d) {
+      if (window.lapinkCloudCache) window.lapinkCloudCache('lapinkCarrossel', slidesData, d.updatedAt);
+      carrosselAlterado = false;
+      return d;
+    });
 }
 
 function otimizarImagensCarrossel() {
@@ -1420,15 +1433,13 @@ async function publicarAlteracoes() {
   var config = coletarConfig();
   try {
     await otimizarImagensCarrossel();
-    localStorage.setItem('lapinkLojaConfig', JSON.stringify(config));
-    localStorage.setItem('lapinkLojaConfig_ts', String(Date.now()));
-    if (!window.LaPinkSync) throw new Error('Sincronização com a nuvem indisponível. Recarregue a página.');
+    if (!window.lapinkCloudSave) throw new Error('Sincronização com a nuvem indisponível. Recarregue a página.');
     await Promise.all([
-      window.LaPinkSync.push('lapinkLojaConfig', config),
-      window.LaPinkSync.push('lapinkProdutos', getProdutos()),
-      salvarCarrossel()
+      window.lapinkCloudSave('lapinkLojaConfig', config),
+      window.lapinkCloudSave('lapinkProdutos', getProdutos()),
+      salvarCarrossel(),
+      salvarBeneficios()
     ]);
-    salvarBeneficios();
     var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('save-status').textContent = 'Publicado às ' + hora;
     showToast('Alterações, tags e banners confirmados no Firebase!');
@@ -1507,8 +1518,8 @@ function restaurarBeneficiosDefault() {
 
 function salvarBeneficios() {
   var lista = beneficiosData.filter(function(b) { return b && b.texto && b.texto.trim(); });
-  localStorage.setItem('lapinkBeneficios', JSON.stringify(lista));
-  if (window.LaPinkSync) window.LaPinkSync.push('lapinkBeneficios', lista);
+  if (!window.lapinkCloudSave) return Promise.reject(new Error('Sincronização dos benefícios indisponível.'));
+  return window.lapinkCloudSave('lapinkBeneficios', lista);
 }
 
 (function init() {
@@ -1549,10 +1560,17 @@ function salvarBeneficios() {
 
   slidesData = getCarrossel().map(function(s) { return Object.assign({}, s); });
   renderCarrossel();
+  document.getElementById('carrossel-editor').addEventListener('input', function() { carrosselAlterado = true; });
+  document.getElementById('carrossel-editor').addEventListener('change', function() { carrosselAlterado = true; });
 
   beneficiosData = getBeneficios().map(function(b) { return Object.assign({}, b); });
   renderBeneficiosEditor();
 })();
+document.addEventListener('lapinkCarrosselAtualizados', function(e) {
+  if (carrosselAlterado || !e.detail || !Array.isArray(e.detail)) return;
+  slidesData = e.detail.map(function(s) { return Object.assign({}, s); });
+  renderCarrossel();
+});
 </script>
 <script src="js/sidebar.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>

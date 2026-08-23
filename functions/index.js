@@ -1208,6 +1208,66 @@ exports.atualizarPedidoAdmin = functions.https.onRequest(function (req, res) {
   });
 });
 
+// Publica o carrossel como uma unidade autoritativa. Imagens tornam o array
+// grande, então ele é particionado dentro da mesma transação e o índice
+// principal só passa a apontar para as partes depois que todas foram gravadas.
+exports.salvarCarrosselAdmin = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido.' }); return; }
+    var entrada = req.body && req.body.slides;
+    var operador;
+    _exigirPermissao(req, 'loja-v1').then(function (usuario) {
+      operador = usuario;
+      if (!Array.isArray(entrada) || entrada.length < 2 || entrada.length > 6) {
+        var eLista = new Error('O carrossel deve possuir entre 2 e 6 slides.'); eLista._status = 400; throw eLista;
+      }
+      var cores = ['pink', 'rose', 'gold', 'mint', 'dark'];
+      var acoes = ['colecao', 'colecoes', 'limpar', 'promocoes', 'promocao', 'brincos', 'aneis', 'colares', 'bolsas', ''];
+      var slides = entrada.map(function (s) {
+        s = s || {};
+        var imagem = String(s.imagem || '');
+        if (imagem && !/^data:image\/(jpeg|png|webp);base64,/i.test(imagem) && !/^https:\/\//i.test(imagem)) {
+          var eImagem = new Error('Formato de imagem do carrossel inválido.'); eImagem._status = 400; throw eImagem;
+        }
+        if (imagem.length > 700 * 1024) { var eTam = new Error('Uma imagem do carrossel excede 700 KB.'); eTam._status = 400; throw eTam; }
+        return {
+          eyebrow: _sanitizarTexto(s.eyebrow, 100), titulo: _sanitizarTexto(s.titulo, 180),
+          subtitulo: _sanitizarTexto(s.subtitulo, 260), btn1Txt: _sanitizarTexto(s.btn1Txt, 50),
+          btn1Acao: acoes.indexOf(String(s.btn1Acao || '')) >= 0 ? String(s.btn1Acao || '') : '',
+          btn2Txt: _sanitizarTexto(s.btn2Txt, 50),
+          btn2Acao: acoes.indexOf(String(s.btn2Acao || '')) >= 0 ? String(s.btn2Acao || '') : '',
+          imagem: imagem, icone: /^ti-[a-z0-9-]+$/.test(String(s.icone || '')) ? String(s.icone) : 'ti-diamond',
+          cor: cores.indexOf(String(s.cor || '')) >= 0 ? String(s.cor) : 'pink'
+        };
+      });
+      if (JSON.stringify(slides).length > 5 * 1024 * 1024) { var eTotal = new Error('O carrossel completo está muito grande.'); eTotal._status = 400; throw eTotal; }
+
+      var partes = [], atual = [], tamanho = 2;
+      slides.forEach(function (slide) {
+        var len = JSON.stringify(slide).length + 1;
+        if (atual.length && tamanho + len > 850 * 1024) { partes.push(atual); atual = []; tamanho = 2; }
+        atual.push(slide); tamanho += len;
+      });
+      if (atual.length) partes.push(atual);
+      var agora = Date.now();
+      var principal = db.collection('lapink').doc('lapinkCarrossel');
+      return db.runTransaction(function (tx) {
+        partes.forEach(function (parte, i) {
+          tx.set(db.collection('lapink').doc('lapinkCarrossel_' + i), { data: parte, updatedAt: agora });
+        });
+        tx.set(principal, { chunked: true, chunks: partes.length, updatedAt: agora });
+      }).then(function () { return { slides: slides, updatedAt: agora }; });
+    }).then(function (resultado) {
+      functions.logger.info('salvarCarrosselAdmin', { slides: resultado.slides.length, operadorUid: operador && operador.uid });
+      res.status(200).json({ ok: true, updatedAt: resultado.updatedAt });
+    }).catch(function (err) {
+      var status = err && err._status ? err._status : 500;
+      if (status >= 500) functions.logger.error('salvarCarrosselAdmin erro', err);
+      res.status(status).json({ error: status >= 500 ? 'Erro ao publicar carrossel.' : err.message });
+    });
+  });
+});
+
 // CRUD de promoções centralizado no servidor. Cada alteração é aplicada pelo
 // ID dentro de uma transação, impedindo que duas telas sobrescrevam a lista
 // inteira ou que uma exclusão seja desfeita por um cache antigo.
