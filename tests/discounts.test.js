@@ -75,3 +75,13 @@ test('CRUD administrativo altera desconto por ID em transação no Firebase', ()
   assert.match(painel, /chamarCrudDesconto\('excluir',\{id:id\}/);
   assert.match(sync, /window\.lapinkCloudCache/);
 });
+
+test('selo de desconto fica visível e destacado sobre a foto inicial da vitrine', () => {
+  const vitrine = fs.readFileSync(path.join(root, 'public/V1.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'public/css/v1.css'), 'utf8');
+  assert.match(vitrine, /<div class="prod-img">' \+ thumb \+ badgeHtml/);
+  const regra = css.match(/\.prod-badge\s*\{[\s\S]*?\}/)[0];
+  assert.match(regra, /font-size:\s*12px/);
+  assert.match(regra, /z-index:\s*6/);
+  assert.match(regra, /padding:\s*7px 12px/);
+});

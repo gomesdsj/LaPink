@@ -364,13 +364,17 @@ body {
 .prod-badge {
   background: var(--pk-500);
   color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 7px 12px;
+  border-radius: 14px;
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 10px;
+  left: 10px;
+  z-index: 6;
+  pointer-events: none;
+  box-shadow: 0 3px 10px rgba(153,53,86,.28);
 }
 .prod-fav {
   position: absolute;
