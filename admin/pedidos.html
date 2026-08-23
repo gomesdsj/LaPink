@@ -58,9 +58,6 @@
 .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); font-size: 14px; }
 .empty-state i { font-size: 40px; display: block; margin-bottom: 12px; opacity: .4; }
 </style>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script defer src="../public/js/firebase-init.js"></script>
 <script defer src="../public/js/cloud-sync.js"></script>
 </head>
 <body>
@@ -416,14 +413,23 @@
   }
 
   // Salvar rastreio de pedido Firestore
+  function _atualizarPedidoRemoto(pedidoId, alteracoes) {
+    return garantirAdminFirebase().then(function(user) { return user.getIdToken(); }).then(function(token) {
+      return fetch('https://us-central1-lapink-82a39.cloudfunctions.net/atualizarPedidoAdmin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(Object.assign({ pedidoId: pedidoId }, alteracoes || {}))
+      });
+    }).then(function(resp) {
+      return resp.json().catch(function() { return {}; }).then(function(data) {
+        if (!resp.ok) throw new Error(data.error || 'Não foi possível atualizar o pedido.');
+        return data;
+      });
+    });
+  }
+
   function salvarRastreio(pedidoId, codigo) {
-    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
-    if (!firestore) { showToast('Firebase não disponível.', 'erro'); return; }
-    garantirAdminFirebase().then(function() { return firestore.collection('pedidos').doc(pedidoId).update({
-      rastreio: codigo,
-      status: 'transporte',
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }); }).then(function() {
+    _atualizarPedidoRemoto(pedidoId, { rastreio: codigo, status: 'transporte' }).then(function() {
       showToast('Rastreio salvo! Status → Transporte.');
       carregarPedidosFirestore();
     }).catch(function(e) { showToast('Erro ao salvar rastreio: ' + e.message, 'erro'); });
@@ -431,12 +437,7 @@
 
   // Mudar status de pedido Firestore
   function mudarStatusFirestore(pedidoId, novoStatus) {
-    var firestore = typeof firebase !== 'undefined' && firebase.apps.length ? firebase.firestore() : null;
-    if (!firestore) return;
-    garantirAdminFirebase().then(function() { return firestore.collection('pedidos').doc(pedidoId).update({
-      status: novoStatus,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }); }).then(function() {
+    _atualizarPedidoRemoto(pedidoId, { status: novoStatus }).then(function() {
       showToast('Status atualizado!');
       carregarPedidosFirestore();
     }).catch(function(e) { showToast('Erro: ' + e.message, 'erro'); });

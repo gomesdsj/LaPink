@@ -140,3 +140,14 @@ test('publicação do banner aguarda Firestore e a loja redesenha após sincroni
   assert.match(loja, /lapinkCarrosselAtualizados/);
   assert.match(loja, /window\.reloadCarrossel\(\)/);
 });
+
+test('status e rastreio são atualizados por função administrativa restrita', () => {
+  const functions = read('functions/index.js');
+  const pedidos = read('admin/pedidos.html');
+  assert.match(functions, /exports\.atualizarPedidoAdmin/);
+  assert.match(functions, /_exigirAdmin\(req\)/);
+  assert.match(functions, /statusPermitidos/);
+  assert.match(functions, /alteracoes\.rastreio = rastreio/);
+  assert.match(pedidos, /cloudfunctions\.net\/atualizarPedidoAdmin/);
+  assert.doesNotMatch(pedidos, /collection\('pedidos'\)\.doc\(pedidoId\)\.update/);
+});

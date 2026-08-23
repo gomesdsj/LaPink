@@ -955,6 +955,53 @@ exports.arquivarPedido = functions.https.onRequest(function (req, res) {
   });
 });
 
+// Atualização operacional de pedido pelo painel. Centraliza a autorização no
+// servidor e aceita somente status/rastreio, impedindo alteração de valores,
+// cliente, pagamento ou itens mesmo para uma conta administrativa.
+exports.atualizarPedidoAdmin = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Método não permitido. Use POST.' });
+      return;
+    }
+    _exigirAdmin(req).then(function () {
+      var body = req.body || {};
+      var pedidoId = String(body.pedidoId || '').trim();
+      var status = body.status == null ? null : String(body.status).trim().toLowerCase();
+      var rastreio = body.rastreio == null ? null : String(body.rastreio).trim().toUpperCase();
+      var statusPermitidos = [
+        'aguardando', 'pagamento_analise', 'pedido_analise', 'pago',
+        'nota_fiscal', 'separacao', 'transporte', 'negado', 'cancelado'
+      ];
+      if (!/^LPK-[A-Z0-9-]{4,40}$/.test(pedidoId)) {
+        var eId = new Error('Identificador de pedido inválido.'); eId._status = 400; throw eId;
+      }
+      if (status !== null && statusPermitidos.indexOf(status) === -1) {
+        var eStatus = new Error('Status de pedido inválido.'); eStatus._status = 400; throw eStatus;
+      }
+      if (rastreio !== null && (!/^[A-Z0-9-]{5,40}$/.test(rastreio))) {
+        var eRastreio = new Error('Código de rastreio inválido.'); eRastreio._status = 400; throw eRastreio;
+      }
+      if (status === null && rastreio === null) {
+        var eVazio = new Error('Nenhuma alteração informada.'); eVazio._status = 400; throw eVazio;
+      }
+      var alteracoes = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+      if (status !== null) alteracoes.status = status;
+      if (rastreio !== null) alteracoes.rastreio = rastreio;
+      return db.collection('pedidos').doc(pedidoId).get().then(function(snap) {
+        if (!snap.exists) { var e404 = new Error('Pedido não encontrado.'); e404._status = 404; throw e404; }
+        return snap.ref.update(alteracoes);
+      });
+    }).then(function () {
+      res.status(200).json({ ok: true });
+    }).catch(function (err) {
+      var statusHttp = (err && err._status) || 500;
+      if (statusHttp >= 500) functions.logger.error('atualizarPedidoAdmin erro', err);
+      res.status(statusHttp).json({ error: statusHttp === 500 ? 'Erro ao atualizar pedido.' : err.message });
+    });
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Notificações push (Web Push) — usado para avisar o(s) admin(s) quando uma
 // venda é confirmada, sem precisar de aplicativo: é o mesmo mecanismo por
