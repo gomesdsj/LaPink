@@ -148,6 +148,17 @@
       return data;
     });
   };
+  // Atualiza somente o cache local depois que uma Cloud Function já confirmou
+  // a gravação. Evita que o interceptor abaixo envie uma segunda escrita e
+  // transforme uma resposta autoritativa do servidor em conflito.
+  window.lapinkCloudCache = function(key, data, updatedAt) {
+    var ts = Number(updatedAt) || Date.now();
+    _orig.call(localStorage, key, JSON.stringify(data));
+    _orig.call(localStorage, key + '_ts', String(ts));
+    _orig.call(localStorage, '_lapinkCloudBase_' + key, String(ts));
+    document.dispatchEvent(new CustomEvent(key + 'Atualizados', { detail: data }));
+    return data;
+  };
   Storage.prototype.setItem = function (key, value) {
     _orig.call(this, key, value);
     if (this === localStorage && SYNC_KEYS.indexOf(key) !== -1) {

@@ -60,3 +60,18 @@ test('vitrine e detalhe exibem selo na imagem somente para desconto calculado', 
   assert.match(detalhe, /id="prod-discount-badge"/);
   assert.match(detalhe, /badge\.style\.display = c\.descontoPct \? 'inline-flex' : 'none'/);
 });
+
+test('CRUD administrativo altera desconto por ID em transação no Firebase', () => {
+  const backend = fs.readFileSync(path.join(root, 'functions/index.js'), 'utf8');
+  const painel = fs.readFileSync(path.join(root, 'admin/descontos.html'), 'utf8');
+  const sync = fs.readFileSync(path.join(root, 'public/js/cloud-sync.js'), 'utf8');
+  const trecho = backend.match(/exports\.gerenciarDescontoAdmin[\s\S]*?\n\}\);/)[0];
+  assert.match(trecho, /_exigirPermissao\(req, 'descontos'\)/);
+  assert.match(trecho, /db\.runTransaction/);
+  assert.match(trecho, /lista\.splice\(indice, 1\)/);
+  assert.match(trecho, /Desconto não encontrado/);
+  assert.match(painel, /cloudfunctions\.net\/gerenciarDescontoAdmin/);
+  assert.match(painel, /getIdToken\(true\)/);
+  assert.match(painel, /chamarCrudDesconto\('excluir',\{id:id\}/);
+  assert.match(sync, /window\.lapinkCloudCache/);
+});

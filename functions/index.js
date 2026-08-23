@@ -1208,6 +1208,76 @@ exports.atualizarPedidoAdmin = functions.https.onRequest(function (req, res) {
   });
 });
 
+// CRUD de promoções centralizado no servidor. Cada alteração é aplicada pelo
+// ID dentro de uma transação, impedindo que duas telas sobrescrevam a lista
+// inteira ou que uma exclusão seja desfeita por um cache antigo.
+exports.gerenciarDescontoAdmin = functions.https.onRequest(function (req, res) {
+  cors(req, res, function () {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido.' }); return; }
+    var body = req.body || {};
+    var acao = String(body.acao || '').trim().toLowerCase();
+    var id = String(body.id || (body.desconto && body.desconto.id) || '').trim();
+    var resposta;
+    var operador;
+
+    _exigirPermissao(req, 'descontos').then(function (usuario) {
+      operador = usuario;
+      if (['salvar', 'alternar', 'excluir'].indexOf(acao) === -1) {
+        var eAcao = new Error('Ação de desconto inválida.'); eAcao._status = 400; throw eAcao;
+      }
+      if (!/^[A-Za-z0-9_-]{1,100}$/.test(id)) {
+        var eId = new Error('Identificador de desconto inválido.'); eId._status = 400; throw eId;
+      }
+
+      var ref = db.collection('lapink').doc('lapinkDescontos');
+      return db.runTransaction(function (tx) {
+        return tx.get(ref).then(function (snap) {
+          var remoto = snap.exists ? (snap.data() || {}) : {};
+          var lista = Array.isArray(remoto.data) ? remoto.data.slice() : [];
+          var indice = lista.findIndex(function (d) { return d && String(d.id) === id; });
+          var agora = Date.now();
+
+          if (acao === 'excluir') {
+            if (indice < 0) { var e404 = new Error('Desconto não encontrado.'); e404._status = 404; throw e404; }
+            lista.splice(indice, 1);
+          } else if (acao === 'alternar') {
+            if (indice < 0) { var eToggle = new Error('Desconto não encontrado.'); eToggle._status = 404; throw eToggle; }
+            lista[indice] = Object.assign({}, lista[indice], { ativo: !lista[indice].ativo, updatedAt: agora });
+          } else {
+            var entrada = body.desconto || {};
+            var nome = _sanitizarTexto(entrada.nome, 80);
+            var percentual = Number(entrada.percentual);
+            var inicio = String(entrada.inicio || '');
+            var fim = String(entrada.fim || '');
+            var produtoIds = Array.isArray(entrada.produtoIds)
+              ? Array.from(new Set(entrada.produtoIds.map(String).filter(function (v) { return /^[A-Za-z0-9_-]{1,100}$/.test(v); }))).slice(0, 5000)
+              : [];
+            if (!nome) { var eNome = new Error('Informe o nome da promoção.'); eNome._status = 400; throw eNome; }
+            if (!Number.isFinite(percentual) || percentual < 0 || percentual > 100) { var ePct = new Error('Percentual inválido.'); ePct._status = 400; throw ePct; }
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fim) || fim < inicio) { var eData = new Error('Período inválido.'); eData._status = 400; throw eData; }
+            if (!produtoIds.length) { var eProdutos = new Error('Selecione ao menos um produto.'); eProdutos._status = 400; throw eProdutos; }
+            var anterior = indice >= 0 ? lista[indice] : {};
+            var desconto = { id: id, nome: nome, percentual: percentual, inicio: inicio, fim: fim,
+              ativo: entrada.ativo === true, produtoIds: produtoIds,
+              createdAt: Number(anterior.createdAt) || agora, updatedAt: agora };
+            if (indice >= 0) lista[indice] = desconto; else lista.push(desconto);
+          }
+
+          resposta = { ok: true, descontos: lista, updatedAt: agora };
+          tx.set(ref, { data: lista, updatedAt: agora });
+        });
+      });
+    }).then(function () {
+      functions.logger.info('gerenciarDescontoAdmin', { acao: acao, descontoId: id, operadorUid: operador && operador.uid });
+      res.status(200).json(resposta);
+    }).catch(function (err) {
+      var status = err && err._status ? err._status : 500;
+      if (status >= 500) functions.logger.error('gerenciarDescontoAdmin erro', err);
+      res.status(status).json({ error: status >= 500 ? 'Erro ao gerenciar desconto.' : err.message });
+    });
+  });
+});
+
 // Liga/desliga o benefício de recém-inscrito sem dar à página de descontos
 // permissão para sobrescrever toda a configuração visual da loja.
 exports.configurarDescontoBoasVindas = functions.https.onRequest(function (req, res) {
