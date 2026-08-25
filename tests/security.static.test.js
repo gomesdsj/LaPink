@@ -50,6 +50,13 @@ test('hosting envia cabeçalhos mínimos de segurança', () => {
   }
 });
 
+test('rotas reescritas não ficam presas no cache do domínio personalizado', () => {
+  const config = read('firebase.json');
+  ['/','/admin','/login'].forEach(function (rota) {
+    assert.match(config, new RegExp('"source"\\s*:\\s*"' + rota.replace('/', '\\/') + '"[\\s\\S]*?no-cache, no-store, must-revalidate'));
+  });
+});
+
 test('domínio personalizado persiste no Firebase e alimenta retornos do pagamento', () => {
   const rules = read('firestore.rules');
   const functions = read('functions/index.js');
