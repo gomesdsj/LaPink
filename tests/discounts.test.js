@@ -115,3 +115,10 @@ test('checkout não exibe prazo médio de envio ao cliente', () => {
   assert.doesNotMatch(carrinho, /5 a 10 dias úteis|1 a 3 dias úteis|cfg\.local\.prazo/);
   assert.doesNotMatch(pagamento, /Entrega em até[^\n]+o\.prazo|Prazo padrão dos Correios/);
 });
+
+test('prévia do link não anuncia peças banhadas a ouro', () => {
+  const vitrine = fs.readFileSync(path.join(root, 'public/V1.html'), 'utf8');
+  const cabecalho = vitrine.slice(0, vitrine.indexOf('</head>'));
+  assert.doesNotMatch(cabecalho, /Compre semijoias banhadas a ouro|acessórios banhados a ouro/i);
+  assert.match(cabecalho, /og:description" content="Acessórios escolhidos/);
+});
