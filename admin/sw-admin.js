@@ -1,4 +1,4 @@
-/* LaPink — Service Worker do painel admin (v1)
+/* LaPink — Service Worker do painel admin (v2)
  *
  * Objetivo: deixar a troca entre as abas do painel instantânea.
  *
@@ -17,7 +17,7 @@
  * ouvir "não mudou".
  */
 
-var CACHE = 'lapink-admin-v1';
+var CACHE = 'lapink-admin-v2';
 
 self.addEventListener('install', function () {
   self.skipWaiting();

@@ -253,3 +253,25 @@ test('analytics deduplica em transação e não usa IP legível no ID', () => {
   assert.match(functions, /createHash\('sha256'\)\.update\(String\(chave\)\)/);
   assert.match(functions, /tx\.create\(ref/);
 });
+
+test('desconto de boas-vindas tem uma única tela de edição e atualização transacional', () => {
+  const loja = read('admin/loja-v1.html');
+  const descontos = read('admin/descontos.html');
+  const functions = read('functions/index.js');
+  assert.doesNotMatch(loja, /id="cfg-desc-ativo"|id="cfg-desc-pct"/);
+  assert.match(loja, /Gerenciar em Descontos/);
+  assert.match(descontos, /id="welcome-pct"/);
+  assert.match(functions, /exports\.configurarDescontoBoasVindas[\s\S]*?runTransaction/);
+  assert.match(functions, /Percentual deve ficar entre 0% e 90%/);
+});
+
+test('financeiro e relatórios usam fonte única sem persistir pedidos remotos no cache local', () => {
+  const utils = read('admin/js/utils.js');
+  const financeiro = read('admin/financeiro.html');
+  const relatorios = read('admin/relatorios.html');
+  assert.match(utils, /function carregarPedidosNuvemAdmin/);
+  assert.match(utils, /p\._fonte !== 'fs'/);
+  assert.match(financeiro, /carregarPedidosNuvemAdmin\(\)/);
+  assert.match(relatorios, /carregarPedidosNuvemAdmin\(200\)/);
+  assert.doesNotMatch(relatorios, /getPedidos\s*=\s*function/);
+});

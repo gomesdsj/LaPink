@@ -1129,18 +1129,7 @@ renderProdutos();
 renderClientes();
 renderEstoque();
 
-// Sobrescreve getPedidos localmente para mesclar localStorage + Firestore
-var _pedidosFS = [];
-var _getPedidosOrig = getPedidos;
-getPedidos = function() {
-  var ls = _getPedidosOrig() || [];
-  if (!_pedidosFS.length) return ls;
-  var fsNumeros = new Set(_pedidosFS.map(function(p) { return p.numero; }));
-  var lsFiltrado = ls.filter(function(p) { return !fsNumeros.has(p.numero); });
-  return _pedidosFS.concat(lsFiltrado);
-};
-
-// Carrega pedidos do Firestore (coleção 'pedidos' = pedidos via MP)
+// Carrega a mesma fonte unificada usada por Pedidos e Financeiro.
 (function carregarPedidosFS() {
   function tryLoad(retries) {
     retries = retries || 0;
@@ -1150,27 +1139,10 @@ getPedidos = function() {
       return;
     }
     aguardarFirebaseAuth().then(function() {
-      firestore.collection('pedidos').limit(200).get().then(function(snap) {
-        _pedidosFS = [];
-        snap.forEach(function(doc) {
-          var d = doc.data();
-          d._id = doc.id;
-          // Normaliza campos para compatibilidade com renderVendas/renderClientes
-          d.total = d.total || 0;
-          d.cliente = d.cliente || {};
-          d.cliente.name = d.cliente.nome || d.cliente.name || '';
-          d.cliente.whatsapp = d.cliente.celular || d.cliente.whatsapp || '';
-          // Data unificada (Firestore usa createdAt timestamp)
-          if (!d.data && d.createdAt && d.createdAt.seconds) {
-            d.data = new Date(d.createdAt.seconds * 1000).toISOString();
-          }
-          _pedidosFS.push(d);
-        });
-        if (_pedidosFS.length) {
-          renderVendas();
-          renderEstoque();
-          renderClientes();
-        }
+      carregarPedidosNuvemAdmin(200).then(function() {
+        renderVendas();
+        renderEstoque();
+        renderClientes();
       }).catch(function(e) { console.warn('[relatorios] Firestore pedidos:', e); });
     });
   }

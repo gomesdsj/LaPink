@@ -1380,6 +1380,11 @@ exports.configurarDescontoBoasVindas = functions.https.onRequest(function (req, 
   cors(req, res, function () {
     if (req.method !== 'POST') { res.status(405).json({ error: 'Método não permitido.' }); return; }
     var ativo = !!(req.body && req.body.ativo);
+    var percentualSolicitado = Number(req.body && req.body.percentual);
+    if (!Number.isFinite(percentualSolicitado) || percentualSolicitado < 0 || percentualSolicitado > 90) {
+      res.status(400).json({ error: 'Percentual deve ficar entre 0% e 90%.' });
+      return;
+    }
     _exigirPermissao(req, 'descontos').then(function () {
       var ref = db.collection('lapink').doc('lapinkLojaConfig');
       return db.runTransaction(function (tx) {
@@ -1389,12 +1394,12 @@ exports.configurarDescontoBoasVindas = functions.https.onRequest(function (req, 
           var anterior = dados.descontoBoasVindas && typeof dados.descontoBoasVindas === 'object' ? dados.descontoBoasVindas : {};
           dados.descontoBoasVindas = Object.assign({}, anterior, {
             ativo: ativo,
-            percentual: Math.max(0, Math.min(90, Number(anterior.percentual) || 10))
+            percentual: percentualSolicitado
           });
           tx.set(ref, { data: dados, updatedAt: Date.now() }, { merge: true });
         });
       });
-    }).then(function () { res.json({ ok: true, ativo: ativo }); })
+    }).then(function () { res.json({ ok: true, ativo: ativo, percentual: percentualSolicitado }); })
       .catch(function (err) {
         var status = err && err._status ? err._status : 500;
         res.status(status).json({ error: status >= 500 ? 'Erro ao alterar desconto de recém-inscrito.' : err.message });

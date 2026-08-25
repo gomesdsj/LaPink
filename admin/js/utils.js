@@ -66,12 +66,59 @@ function saveCategorias(arr) {
   localStorage.setItem('lapinkCategorias', JSON.stringify(arr));
 }
 
-function getPedidos() {
+var _pedidosNuvemAdmin = [];
+
+function _chavePedido(p) {
+  return String((p && (p.numero || p.id || p._id)) || '');
+}
+
+function mesclarPedidosAdmin(locais, remotos) {
+  var mapa = new Map();
+  (locais || []).forEach(function(p) { var k = _chavePedido(p); if (k) mapa.set(k, p); });
+  (remotos || []).forEach(function(p) { var k = _chavePedido(p); if (k) mapa.set(k, p); });
+  return Array.from(mapa.values());
+}
+
+function getPedidosLocais() {
   try { return JSON.parse(localStorage.getItem('lapinkPedidos') || '[]'); } catch(e) { return []; }
 }
 
+function getPedidos() {
+  return mesclarPedidosAdmin(getPedidosLocais(), _pedidosNuvemAdmin);
+}
+
+function carregarPedidosNuvemAdmin(limite) {
+  if (typeof garantirAdminFirebase !== 'function') return Promise.reject(new Error('Autenticação administrativa indisponível.'));
+  return garantirAdminFirebase().then(function() {
+    var q = firebase.firestore().collection('pedidos');
+    if (limite) q = q.limit(limite);
+    return q.get();
+  }).then(function(qs) {
+    var remotos = [];
+    qs.forEach(function(doc) {
+      var d = Object.assign({}, doc.data());
+      if (d.arquivado) return;
+      d.id = doc.id;
+      d._id = doc.id;
+      d.numero = d.numero || doc.id;
+      d._fonte = 'fs';
+      d.total = Number(d.total) || 0;
+      d.cliente = d.cliente || {};
+      d.cliente.name = d.cliente.nome || d.cliente.name || '';
+      d.cliente.whatsapp = d.cliente.celular || d.cliente.whatsapp || '';
+      if (!d.data && d.createdAt && d.createdAt.seconds) d.data = new Date(d.createdAt.seconds * 1000).toISOString();
+      remotos.push(d);
+    });
+    _pedidosNuvemAdmin = remotos;
+    document.dispatchEvent(new CustomEvent('lapinkPedidosUnificadosAtualizados', { detail: getPedidos() }));
+    return getPedidos();
+  });
+}
+
 function savePedidos(arr) {
-  localStorage.setItem('lapinkPedidos', JSON.stringify(arr));
+  // Documentos do Firestore nunca podem ser copiados de volta para o cache
+  // local: isso ressuscitava pedidos arquivados e criava duplicidades.
+  localStorage.setItem('lapinkPedidos', JSON.stringify((arr || []).filter(function(p) { return p && p._fonte !== 'fs'; })));
 }
 
 function getClients() {

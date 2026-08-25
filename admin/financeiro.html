@@ -228,7 +228,7 @@ textarea.form-control { resize: vertical; }
         <div class="page-tabs">
           <button class="tab-btn active" data-tab="cobrancas"><i class="ti ti-bell-dollar"></i> Cobranças</button>
           <button class="tab-btn" data-tab="historico"><i class="ti ti-history"></i> Histórico</button>
-          <button class="tab-btn" data-tab="relatorio"><i class="ti ti-chart-bar"></i> Relatório</button>
+          <button class="tab-btn" data-tab="relatorio"><i class="ti ti-chart-bar"></i> Análise de cobranças</button>
           <button class="tab-btn" data-tab="pagamentos"><i class="ti ti-credit-card"></i> Pagamentos</button>
         </div>
 
@@ -289,7 +289,7 @@ textarea.form-control { resize: vertical; }
         </div>
 
         <!-- ══════════════════════════════
-             TAB RELATÓRIO
+             TAB ANÁLISE DE COBRANÇAS
         ══════════════════════════════ -->
         <div class="tab-content" id="tab-relatorio">
 
@@ -603,26 +603,13 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
 });
 
 /* ── Helpers ── */
-function getPedidos() {
-  var locais = [];
-  try { locais = JSON.parse(localStorage.getItem('lapinkPedidos') || '[]') || []; } catch(e) {}
-  return locais.concat(_pedidosFinanceiroRemotos);
-}
-var _pedidosFinanceiroRemotos = [];
 function carregarPedidosFinanceiroRemotos() {
-  return garantirAdminFirebase().then(function() {
-    return firebase.firestore().collection('pedidos').get();
-  }).then(function(qs) {
-    _pedidosFinanceiroRemotos = [];
-    qs.forEach(function(doc) {
-      var p = Object.assign({}, doc.data(), { id: doc.id, numero: doc.id, _fonte: 'fs' });
-      if (!p.arquivado) _pedidosFinanceiroRemotos.push(p);
-    });
+  return carregarPedidosNuvemAdmin().then(function() {
     render();
   }).catch(function(e) { showToast('Falha ao carregar pedidos da nuvem: ' + e.message, 'erro'); });
 }
 function setPedidos(arr) {
-  localStorage.setItem('lapinkPedidos', JSON.stringify(arr));
+  savePedidos(arr);
 }
 function getStoreConfig() {
   try { return JSON.parse(localStorage.getItem('lapinkStoreConfig') || '{}') || {}; } catch(e) { return {}; }
@@ -792,7 +779,7 @@ function renderHistorico() {
         '<span class="status-pill ' + st + '">' + (STATUS_LABEL[st] || st) + '</span>' +
         '<span class="badge badge-pago"><i class="ti ti-check"></i> Pago</span>' +
         // "Desfazer" só quando foi marcado manualmente; se o pago vem do status, altere em Pedidos
-        (p.pago === true
+        (p.pago === true && p._fonte !== 'fs'
           ? '<div class="cob-actions"><button class="btn btn-secondary" style="font-size:11px;" onclick="desfazerPago(' + JSON.stringify(String(p.id)) + ')"><i class="ti ti-x"></i> Desfazer</button></div>'
           : '') +
       '</div>' +
