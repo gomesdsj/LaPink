@@ -474,6 +474,19 @@ body {
 }
 .newsletter h3 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
 .newsletter p { font-size: 12px; color: rgba(255,255,255,.82); margin-bottom: 16px; }
+
+/* Instagram — cards próprios, sem incorporar scripts/rastreadores externos */
+.instagram-section { padding: 28px 20px; text-align: center; }
+.instagram-heading { margin-bottom: 18px; }
+.instagram-heading .section-title { display: inline-flex; align-items: center; gap: 8px; }
+.instagram-heading i { color: var(--pink, #ec407a); font-size: 24px; }
+.instagram-grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.instagram-card { display: block; overflow: hidden; border-radius: 18px; background: #fff; color: inherit; text-decoration: none; border: 1px solid rgba(236,64,122,.18); box-shadow: 0 8px 25px rgba(53,25,38,.08); transition: transform .2s ease, box-shadow .2s ease; }
+.instagram-card:hover { transform: translateY(-4px); box-shadow: 0 13px 32px rgba(53,25,38,.14); }
+.instagram-card img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; }
+.instagram-caption { display: block; padding: 13px 15px 15px; font-size: 13px; line-height: 1.45; text-align: left; color: #4a3540; }
+.instagram-follow { margin-top: 18px; align-items: center; justify-content: center; gap: 7px; padding: 11px 20px; border-radius: 999px; background: #ef3f83; color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; }
+.instagram-follow:hover { filter: brightness(.95); }
 .nl-form { display: flex; gap: 8px; max-width: 340px; margin: 0 auto; }
 .nl-input {
   flex: 1;
@@ -593,6 +606,8 @@ body {
 .colecao-tile-name { font-size: 15px; font-weight: 800; color: var(--pk-dark); }
 .colecao-tile-count { font-size: 12px; color: var(--pk-500); font-weight: 600; margin-top: 2px; }
 @media (max-width: 640px) {
+  .instagram-section { padding: 24px 12px; }
+  .instagram-grid { grid-template-columns: 1fr; gap: 14px; }
   .colecao-tile-media { height: 150px; }
   .colecao-tile-name { font-size: 13px; }
 }

@@ -628,6 +628,15 @@
     </div>
   </div>
 
+  <!-- Publicações do Instagram (configuradas no Editor Loja V1) -->
+  <section class="instagram-section" id="v1-instagram" style="display:none;" aria-labelledby="v1-instagram-title">
+    <div class="instagram-heading">
+      <span class="section-title" id="v1-instagram-title"><i class="ti ti-brand-instagram" aria-hidden="true"></i> Siga a LaPink no Instagram</span>
+    </div>
+    <div class="instagram-grid" id="v1-instagram-grid"></div>
+    <a class="instagram-follow" id="v1-instagram-follow" href="#" target="_blank" rel="noopener noreferrer" style="display:none;"><i class="ti ti-brand-instagram" aria-hidden="true"></i> Seguir no Instagram</a>
+  </section>
+
   <!-- Newsletter -->
   <div class="newsletter">
     <h3 id="v1-nl-titulo">Receba novidades e ofertas exclusivas</h3>
@@ -815,7 +824,8 @@
       titulo: 'Ganhe 10% de desconto na primeira compra',
       sub:    'Cadastre seu e-mail e receba o cupom + novidades em primeira mão',
       btn:    'Quero meu desconto'
-    }
+    },
+    instagram: { titulo: 'Siga a LaPink no Instagram', perfilUrl: '', posts: [] }
   };
 
   // ── Lê config e produtos do localStorage ──
@@ -825,6 +835,9 @@
       if (!c) return DEFAULT;
       c.hero       = Object.assign({}, DEFAULT.hero,       c.hero       || {});
       c.newsletter = Object.assign({}, DEFAULT.newsletter, c.newsletter || {});
+      c.instagram  = Object.assign({}, DEFAULT.instagram, c.instagram || {});
+      if (!Array.isArray(c.instagram.posts)) c.instagram.posts = [];
+      c.instagram.posts = c.instagram.posts.slice(0, 3);
       c.banner     = Object.assign({}, DEFAULT.banner,     c.banner     || {});
       if (typeof c.destaqueTitulo !== 'string' || !c.destaqueTitulo) c.destaqueTitulo = DEFAULT.destaqueTitulo;
       if (typeof c.destaqueOculto !== 'boolean') c.destaqueOculto = false;
@@ -1336,6 +1349,40 @@
   } else if (revSection) {
     revSection.style.display = 'none';
   }
+
+  function urlInstagramSegura(valor) {
+    try {
+      var u = new URL(String(valor || ''));
+      return u.protocol === 'https:' && (u.hostname === 'instagram.com' || u.hostname === 'www.instagram.com') ? u.href : '';
+    } catch (e) { return ''; }
+  }
+
+  function renderInstagram(cfg) {
+    var secao = document.getElementById('v1-instagram');
+    var grid = document.getElementById('v1-instagram-grid');
+    if (!secao || !grid) return;
+    var dados = (cfg && cfg.instagram) || {};
+    var posts = Array.isArray(dados.posts) ? dados.posts.slice(0, 3).filter(function(post) {
+      return post && post.imagem && urlInstagramSegura(post.link);
+    }) : [];
+    if (!posts.length) { secao.style.display = 'none'; grid.innerHTML = ''; return; }
+    var titulo = document.getElementById('v1-instagram-title');
+    if (titulo) titulo.innerHTML = '<i class="ti ti-brand-instagram" aria-hidden="true"></i> ' + esc(dados.titulo || DEFAULT.instagram.titulo);
+    grid.innerHTML = posts.map(function(post) {
+      return '<a class="instagram-card" href="' + esc(urlInstagramSegura(post.link)) + '" target="_blank" rel="noopener noreferrer">' +
+        '<img src="' + esc(post.imagem) + '" alt="' + esc(post.legenda || 'Publicação da LaPink no Instagram') + '" loading="lazy" />' +
+        (post.legenda ? '<span class="instagram-caption">' + esc(post.legenda) + '</span>' : '') +
+      '</a>';
+    }).join('');
+    var seguir = document.getElementById('v1-instagram-follow');
+    var perfil = urlInstagramSegura(dados.perfilUrl);
+    if (seguir) { seguir.href = perfil || '#'; seguir.style.display = perfil ? 'inline-flex' : 'none'; }
+    secao.style.display = '';
+  }
+  renderInstagram(config);
+  document.addEventListener('lapinkLojaConfigAtualizados', function(e) {
+    renderInstagram(e.detail || getConfig());
+  });
 
   // Newsletter
   var nlTit = document.getElementById('v1-nl-titulo');

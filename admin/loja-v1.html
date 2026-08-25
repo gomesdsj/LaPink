@@ -507,6 +507,7 @@
           <button class="tab-btn" data-tab="hero"><i class="ti ti-star"></i> Hero</button>
           <button class="tab-btn" data-tab="depoimentos"><i class="ti ti-message-circle"></i> Depoimentos</button>
           <button class="tab-btn" data-tab="newsletter"><i class="ti ti-mail"></i> Newsletter</button>
+          <button class="tab-btn" data-tab="instagram"><i class="ti ti-brand-instagram"></i> Instagram</button>
           <button class="tab-btn" data-tab="carrossel"><i class="ti ti-photo-up"></i> Carrossel</button>
           <button class="tab-btn" data-tab="beneficios"><i class="ti ti-carousel-horizontal"></i> Benefícios</button>
         </div>
@@ -733,6 +734,30 @@
             </div>
           </div>
 
+          <!-- ─── TAB INSTAGRAM ─── -->
+          <div class="tab-content" id="tab-instagram">
+            <div class="sub-section-header">
+              <span class="sub-badge"><i class="ti ti-brand-instagram"></i></span>
+              <div>
+                <h2>Publicações do Instagram</h2>
+                <p>Mostre até 3 publicações na página inicial. A imagem fica salva no Firebase e cada card abre a publicação original.</p>
+              </div>
+            </div>
+            <div class="card" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-insta-titulo">Título da seção</label>
+                <input id="cfg-insta-titulo" type="text" placeholder="Siga a LaPink no Instagram" />
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cfg-insta-perfil">Link do perfil</label>
+                <input id="cfg-insta-perfil" type="url" placeholder="https://www.instagram.com/seu_perfil/" />
+              </div>
+            </div>
+            <div id="instagram-editor"></div>
+            <button class="btn btn-secondary" type="button" onclick="adicionarInstagramCard()"><i class="ti ti-plus"></i> Adicionar publicação</button>
+            <p style="font-size:11px;color:var(--gray-400);margin-top:10px;"><i class="ti ti-info-circle"></i> Use somente links oficiais do Instagram. A seção não aparece na loja enquanto não houver publicação completa.</p>
+          </div>
+
           <!-- ─── TAB CARROSSEL ─── -->
           <div class="tab-content" id="tab-carrossel">
             <div class="sub-section-header">
@@ -841,7 +866,8 @@ var DEFAULT_CONFIG = {
     titulo: 'Receba novidades e ofertas exclusivas',
     sub:    'Cadastre seu e-mail e ganhe 10% de desconto na primeira compra',
     btn:    'Quero desconto'
-  }
+  },
+  instagram: { titulo: 'Siga a LaPink no Instagram', perfilUrl: '', posts: [] }
 };
 
 function getConfig() {
@@ -851,6 +877,9 @@ function getConfig() {
     var c = JSON.parse(raw);
     c.hero        = Object.assign({}, DEFAULT_CONFIG.hero,       c.hero       || {});
     c.newsletter  = Object.assign({}, DEFAULT_CONFIG.newsletter, c.newsletter || {});
+    c.instagram   = Object.assign({}, DEFAULT_CONFIG.instagram, c.instagram || {});
+    if (!Array.isArray(c.instagram.posts)) c.instagram.posts = [];
+    c.instagram.posts = c.instagram.posts.slice(0, 3);
     if (!Array.isArray(c.depoimentos) || !c.depoimentos.length) c.depoimentos = DEFAULT_CONFIG.depoimentos.map(function(d) { return Object.assign({}, d); });
     if (!Array.isArray(c.destaque)) c.destaque = [];
     if (!Array.isArray(c.colecoes)) c.colecoes = [];
@@ -1396,7 +1425,76 @@ function otimizarImagensCarrossel() {
 
 // ══════════════════════════════════════════════════════════════════════
 
+var instagramData = [];
+
+function urlInstagramValida(valor, permitirVazio) {
+  valor = String(valor || '').trim();
+  if (!valor) return !!permitirVazio;
+  try {
+    var u = new URL(valor);
+    return u.protocol === 'https:' && (u.hostname === 'instagram.com' || u.hostname === 'www.instagram.com');
+  } catch (e) { return false; }
+}
+
+function renderInstagramEditor() {
+  var el = document.getElementById('instagram-editor');
+  if (!el) return;
+  if (!instagramData.length) {
+    el.innerHTML = '<div class="sel-empty" style="padding:24px;margin-bottom:12px;">Nenhuma publicação configurada.</div>';
+    return;
+  }
+  el.innerHTML = instagramData.map(function(post, i) {
+    var imagem = post.imagem
+      ? '<img src="' + escHtml(post.imagem) + '" alt="Prévia da publicação" style="width:120px;height:120px;object-fit:cover;border-radius:12px;" />'
+      : '<div style="width:120px;height:120px;border-radius:12px;background:var(--gray-100);display:grid;place-items:center;color:var(--gray-400);"><i class="ti ti-photo" style="font-size:30px;"></i></div>';
+    return '<div class="card" style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;">' +
+      imagem +
+      '<div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:10px;">' +
+        '<label class="btn btn-secondary" style="align-self:flex-start;cursor:pointer;"><i class="ti ti-upload"></i> Escolher imagem<input type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="selecionarImagemInstagram(' + i + ',this)" /></label>' +
+        '<input type="text" maxlength="180" placeholder="Legenda curta" value="' + escHtml(post.legenda || '') + '" oninput="instagramData[' + i + '].legenda=this.value" />' +
+        '<input type="url" placeholder="https://www.instagram.com/p/..." value="' + escHtml(post.link || '') + '" oninput="instagramData[' + i + '].link=this.value" />' +
+      '</div>' +
+      '<button type="button" class="btn btn-secondary" style="color:var(--red-400);" onclick="removerInstagramCard(' + i + ')" title="Remover publicação"><i class="ti ti-trash"></i></button>' +
+    '</div>';
+  }).join('');
+}
+
+function adicionarInstagramCard() {
+  if (instagramData.length >= 3) { showToast('Você pode publicar no máximo 3 cards.', 'erro'); return; }
+  instagramData.push({ imagem: '', legenda: '', link: '' });
+  renderInstagramEditor();
+}
+
+function removerInstagramCard(i) {
+  instagramData.splice(i, 1);
+  renderInstagramEditor();
+}
+
+function selecionarImagemInstagram(i, input) {
+  var file = input && input.files && input.files[0];
+  if (!file) return;
+  if (!_validarImagem(file)) { input.value = ''; return; }
+  _comprimirImagem(file, 900, 900, 0.82).then(function(dataUrl) {
+    instagramData[i].imagem = dataUrl;
+    renderInstagramEditor();
+  }).catch(function(e) { showToast(e.message || 'Não foi possível preparar a imagem.', 'erro'); });
+}
+
+async function salvarImagensInstagram() {
+  if (typeof uploadFoto !== 'function') throw new Error('Upload de imagens indisponível. Recarregue a página.');
+  await Promise.all(instagramData.map(async function(post) {
+    if (post.imagem && post.imagem.indexOf('data:image/') === 0) post.imagem = await uploadFoto(post.imagem, 'instagram');
+  }));
+}
+
 function coletarConfig() {
+  var perfil = document.getElementById('cfg-insta-perfil').value.trim();
+  if (!urlInstagramValida(perfil, true)) throw new Error('O link do perfil deve ser um endereço HTTPS do Instagram.');
+  instagramData.forEach(function(post, i) {
+    if (!post.imagem || !post.link || !urlInstagramValida(post.link, false)) {
+      throw new Error('Complete a imagem e o link oficial do Instagram na publicação ' + (i + 1) + '.');
+    }
+  });
   return {
     anuncio: document.getElementById('cfg-anuncio').value.trim()       || DEFAULT_CONFIG.anuncio,
     hero: {
@@ -1425,14 +1523,24 @@ function coletarConfig() {
       titulo: document.getElementById('cfg-nl-titulo').value.trim() || DEFAULT_CONFIG.newsletter.titulo,
       sub:    document.getElementById('cfg-nl-sub').value.trim()    || DEFAULT_CONFIG.newsletter.sub,
       btn:    document.getElementById('cfg-nl-btn').value.trim()    || DEFAULT_CONFIG.newsletter.btn,
+    },
+    instagram: {
+      titulo: document.getElementById('cfg-insta-titulo').value.trim() || DEFAULT_CONFIG.instagram.titulo,
+      perfilUrl: perfil,
+      posts: instagramData.slice(0, 3).map(function(post) {
+        return { imagem: post.imagem, legenda: String(post.legenda || '').trim(), link: String(post.link || '').trim() };
+      })
     }
   };
 }
 
 async function publicarAlteracoes() {
-  var config = coletarConfig();
   try {
+    // Valida todos os campos antes de enviar arquivos, evitando imagens órfãs.
+    coletarConfig();
     await otimizarImagensCarrossel();
+    await salvarImagensInstagram();
+    var config = coletarConfig();
     if (!window.lapinkCloudSave) throw new Error('Sincronização com a nuvem indisponível. Recarregue a página.');
     await Promise.all([
       window.lapinkCloudSave('lapinkLojaConfig', config),
@@ -1534,6 +1642,10 @@ function salvarBeneficios() {
   document.getElementById('cfg-nl-titulo').value    = cfg.newsletter.titulo;
   document.getElementById('cfg-nl-sub').value       = cfg.newsletter.sub;
   document.getElementById('cfg-nl-btn').value       = cfg.newsletter.btn;
+  document.getElementById('cfg-insta-titulo').value = cfg.instagram.titulo;
+  document.getElementById('cfg-insta-perfil').value = cfg.instagram.perfilUrl || '';
+  instagramData = cfg.instagram.posts.map(function(p) { return { imagem: p.imagem || '', legenda: p.legenda || '', link: p.link || '' }; });
+  renderInstagramEditor();
 
   // "Mais vendidos" + Banner
   document.getElementById('cfg-destaque-titulo').value = cfg.destaqueTitulo || DEFAULT_CONFIG.destaqueTitulo;
@@ -1576,7 +1688,9 @@ document.addEventListener('lapinkCarrosselAtualizados', function(e) {
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script defer src="../public/js/firebase-init.js"></script>
 <script defer src="../public/js/cloud-sync.js"></script>
+<script defer src="js/fotos.js"></script>
 </body>
 </html>

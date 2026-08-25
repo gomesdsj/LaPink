@@ -24,6 +24,16 @@ service firebase.storage {
               || 'produtos' in firestore.get(/databases/(default)/documents/adminPermissions/$(request.auth.uid)).data.pages)));
     }
 
+    function hasLojaV1() {
+      return request.auth != null &&
+        (request.auth.token.role == 'superadmin' ||
+          (request.auth.token.role == 'admin' &&
+            firestore.exists(/databases/(default)/documents/adminPermissions/$(request.auth.uid)) &&
+            firestore.get(/databases/(default)/documents/adminPermissions/$(request.auth.uid)).data.active == true &&
+            (!(firestore.get(/databases/(default)/documents/adminPermissions/$(request.auth.uid)).data.pages is list)
+              || 'loja-v1' in firestore.get(/databases/(default)/documents/adminPermissions/$(request.auth.uid)).data.pages)));
+    }
+
     function ehImagemValida() {
       return request.resource != null
         && request.resource.size < 5 * 1024 * 1024
@@ -34,6 +44,12 @@ service firebase.storage {
       allow read: if true;
       allow create, update: if hasProdutos() && ehImagemValida();
       allow delete: if hasProdutos();
+    }
+
+    match /instagram/{arquivo} {
+      allow read: if true;
+      allow create, update: if hasLojaV1() && ehImagemValida();
+      allow delete: if hasLojaV1();
     }
 
     // Qualquer outro caminho fica negado (sem allow = sem acesso).
