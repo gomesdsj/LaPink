@@ -1017,7 +1017,7 @@
       }
       var preco = 'R$ ' + precoPrincipal.toFixed(2).replace('.', ',');
       var precoHtml = calcDesc.descontoPct > 0
-        ? '<small style="display:block;color:#9b8791;text-decoration:line-through">De: R$ ' + calcDesc.precoOriginal.toFixed(2).replace('.', ',') + '</small><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">Por: ' + preco + '</span> <b style="font-size:10px;color:#fff;background:#D4537E;border-radius:10px;padding:3px 6px">' + calcDesc.descontoPct + '% OFF</b>'
+        ? '<small>De: R$ ' + calcDesc.precoOriginal.toFixed(2).replace('.', ',') + '</small><span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">Por: ' + preco + '</span>'
         : '<span class="prod-price' + (esgotado ? ' prod-price--esgotado' : '') + '">' + preco + '</span>';
       var fav           = (typeof isFavorito === 'function') && isFavorito(p.id);
       var favHtml       = '<button type="button" class="prod-fav' + (fav ? ' is-fav' : '') + '" data-fid="' + esc(String(p.id)) + '" aria-label="' + (fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '" onclick="toggleFavorito(event, \'' + esc(String(p.id)) + '\')"><i class="ti ' + (fav ? 'ti-heart-filled' : 'ti-heart') + '"></i></button>';
@@ -1028,7 +1028,7 @@
         '<div class="prod-img">' + thumb + badgeHtml + favHtml + '</div>' +
         '<div class="prod-info">' +
           '<div class="prod-name">' + esc(p.nome) + '</div>' +
-          '<div>' + precoHtml + '</div>' +
+          '<div class="prod-price-block">' + precoHtml + '</div>' +
           (esgotado ? '' : '<button type="button" class="prod-add-cart" onclick="addCardCart(event,this)" aria-label="Adicionar ao carrinho"><i class="ti ti-shopping-cart-plus"></i> Adicionar</button>') +
         '</div>' +
       '</div>';

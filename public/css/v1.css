@@ -243,7 +243,7 @@ body {
 .cat-name { font-size: 12px; color: var(--pk-dark); font-weight: 600; }
 
 /* ── Cards de produto ─────────── */
-.prod-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 4px; }
+.prod-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 4px; align-items: stretch; }
 .prod-card {
   background: #fff;
   border: 1.5px solid var(--pk-200);
@@ -252,6 +252,10 @@ body {
   cursor: pointer;
   transition: border-color .18s, box-shadow .18s, transform .18s;
   position: relative;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── input qty: remove setas nativas ── */
@@ -266,7 +270,8 @@ body {
 }
 .prod-img {
   background: var(--pk-50);
-  height: 160px;
+  height: auto;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -400,18 +405,23 @@ body {
 .prod-fav:hover { color: var(--pk-500); transform: scale(1.12); }
 .prod-fav.is-fav { color: #e0397a; }
 .prod-fav.is-fav i { color: #e0397a; }
-.prod-info { padding: 11px 12px; }
+.prod-info { padding: 11px 12px; display: flex; flex: 1; min-width: 0; flex-direction: column; }
 .prod-name { font-size: 12px; font-weight: 600; color: var(--pk-dark); margin-bottom: 4px; line-height: 1.25;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.5em; overflow-wrap: anywhere; }
 .prod-price { font-size: 13px; color: var(--pk-500); font-weight: 700; }
+.prod-price-block { min-height: 34px; display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
+.prod-price-block small { display: block; color: #9b8791; text-decoration: line-through; font-size: 10px; line-height: 1.2; }
 .prod-old { font-size: 10px; color: var(--pk-300); text-decoration: line-through; margin-left: 5px; }
 .prod-add-cart {
-  margin-top: 8px; width: 100%;
+  margin-top: auto; width: 100%;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   background: var(--pk-500); color: #fff; border: none;
   border-radius: var(--radius-full, 999px); padding: 8px 10px;
   font-size: 12px; font-weight: 700; cursor: pointer;
   transition: background .15s, transform .12s;
+  min-height: 34px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .prod-add-cart i { font-size: 15px; }
 .prod-add-cart:hover { background: var(--pk-600); }
@@ -914,11 +924,11 @@ body {
 @media (max-width: 1024px) {
   .section { padding: 22px 16px; }
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
-  .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .prod-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   /* Mesma altura de foto do celular (abaixo de 640px) — abaixo do notebook
      padrão (1025px), o card já usa 2 colunas largas; com 140px a foto ficava
      baixa demais e cortava o produto quase todo (aparência de "não carregou"). */
-  .prod-img { height: 230px; }
+  .prod-img { height: auto; aspect-ratio: 1 / 1; }
   .reviews .rev-grid { grid-template-columns: repeat(2, 1fr); }
   .banner, .newsletter { margin: 0 16px 20px; }
   .footer { grid-template-columns: repeat(2, 1fr); padding: 22px 16px; }
@@ -959,23 +969,27 @@ body {
 
 @media (max-width: 640px) {
   .cat-grid { grid-template-columns: repeat(2, 1fr); }
-  .prod-grid { grid-template-columns: repeat(2, 1fr); }
-  /* Fotos maiores no mobile na exposição principal */
-  .prod-img { height: 230px; }
+  .prod-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .prod-img { height: auto; aspect-ratio: 1 / 1; }
   /* Fontes menores na parte de baixo do card — evita barra de rolagem */
   .prod-info { padding: 9px 10px; }
   .prod-name { font-size: 11px; margin-bottom: 3px; }
   .prod-price { font-size: 12px; }
-  .reviews .rev-grid { grid-template-columns: repeat(2, 1fr); }
+  .reviews .rev-grid { grid-template-columns: 1fr; }
   .banner, .newsletter { padding: 20px; margin: 0 12px 18px; }
   .footer { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 400px) {
-  .prod-img { height: 190px; }
+  .section { padding-left: 10px; padding-right: 10px; }
+  .prod-grid { gap: 8px; }
+  .prod-img { height: auto; aspect-ratio: 1 / 1; }
   .prod-info { padding: 8px 9px; }
   .prod-name { font-size: 10.5px; }
   .prod-price { font-size: 11.5px; }
+  .prod-add-cart { padding: 7px 5px; gap: 4px; font-size: 10.5px; }
+  .prod-badge { top: 6px; left: 6px; padding: 6px 8px; font-size: 10px; }
+  .prod-fav { top: 5px; right: 5px; }
 }
 
 @media (max-width: 480px) {
